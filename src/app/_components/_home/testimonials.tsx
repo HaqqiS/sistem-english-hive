@@ -88,16 +88,18 @@ export default function Testimonials() {
                     </div>
 
                     <div className="flex gap-1">
-                      {[...Array(testimonial?.rating)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="fill-primary text-primary h-4 w-4"
-                        />
-                      ))}
+                      {Array.from({ length: testimonial?.rating ?? 0 }).map(
+                        (_, i) => (
+                          <Star
+                            key={i}
+                            className="fill-primary text-primary h-4 w-4"
+                          />
+                        ),
+                      )}
                     </div>
 
                     <p className="text-muted-foreground italic">
-                      "{testimonial?.text}"
+                      &quot;{testimonial?.text}&quot;
                     </p>
 
                     <div className="pt-2">

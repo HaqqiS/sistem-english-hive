@@ -6,13 +6,13 @@ import Image from "next/image";
 
 export default function Hero() {
   return (
-    <section className="bg-background relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+    <section className="bg-background relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 lg:py-16">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           {/* Left Content */}
           <div className="animate-fade-in space-y-6">
             <h1 className="text-4xl leading-tight font-bold text-balance sm:text-5xl lg:text-6xl">
-              <span className="from-primary to-secondary bg-gradient-to-r bg-clip-text text-transparent">
+              <span className="from-primary to-secondary bg-linear-to-r bg-clip-text text-transparent">
                 Belajar Bahasa Inggris
               </span>{" "}
               Jadi Seru dan Percaya Diri!
@@ -42,13 +42,14 @@ export default function Hero() {
 
           {/* Right Content - Hero Image */}
           <div className="animate-float relative h-96 min-h-96 lg:h-full">
-            <div className="from-primary/20 to-secondary/20 absolute inset-0 rounded-3xl bg-gradient-to-br blur-3xl" />
+            <div className="from-primary/20 to-secondary/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-3xl" />
             <div className="relative flex h-full items-center justify-center">
               <Image
-                src="/professional-female-student-in-pink-shirt-with-bac.jpg"
+                src="/professional-female-student-in-pink-shirt-with-bac.png"
+                // src="/professional-female-studnt-in-pink-shirt-with-bac.png"
                 alt="Student learning English"
-                width={400}
-                height={400}
+                width={350}
+                height={350}
                 className="rounded-2xl shadow-2xl"
               />
             </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, Beef as Bee } from "lucide-react";
 import { Button } from "@/app/_components/ui/button";
+import { signIn } from "next-auth/react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,7 +44,7 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden items-center gap-4 md:flex">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => signIn()}>
               Log In
             </Button>
           </div>

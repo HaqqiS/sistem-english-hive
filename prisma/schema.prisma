@@ -6,23 +6,22 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
+    provider  = "postgresql"
+    directUrl = env("DIRECT_URL")
+    url       = env("DATABASE_URL")
 }
 
+// test trpc
 model Post {
     id        Int      @id @default(autoincrement())
     name      String
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    createdBy   User   @relation(fields: [createdById], references: [id])
+    createdBy   Staff  @relation(fields: [createdById], references: [id])
     createdById String
 
+    @@index([createdById])
     @@index([name])
 }
 
@@ -40,10 +39,11 @@ model Account {
     scope                    String?
     id_token                 String? // @db.Text
     session_state            String?
-    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user                     Staff   @relation(fields: [userId], references: [id], onDelete: Cascade)
     refresh_token_expires_in Int?
 
     @@unique([provider, providerAccountId])
+    @@index([userId])
 }
 
 model Session {
@@ -51,18 +51,42 @@ model Session {
     sessionToken String   @unique
     userId       String
     expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user         Staff    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
 }
 
-model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
-    posts         Post[]
+enum UserRole {
+    TEACHER
+    ADMIN
+}
+
+model Staff {
+    id       String   @id @default(cuid())
+    name     String?
+    email    String?  @unique
+    image    String?
+    password String?
+    role     UserRole @default(TEACHER)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    accounts Account[]
+    sessions Session[]
+    posts    Post[]
+
+    // Relasi sebagai Guru Utama di ProgramKelas
+    programKelas ProgramKelas[]
+
+    // Relasi sebagai Guru yang mengajar (Absensi)
+    absensiDiajar AbsensiGuru[] @relation("guruRelation")
+
+    // Relasi sebagai Admin yang memverifikasi Absensi
+    absenDiverifikasi      AbsensiGuru[] @relation("verifiedByRelation")
+    pembayaranDiverifikasi Pembayaran[]
+
+    @@index([role])
 }
 
 model VerificationToken {
@@ -71,4 +95,219 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+model Cabang {
+    id         String @id @default(cuid())
+    namaCabang String
+    alamat     String
+    noTelp     String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    murid Murid[]
+    ruang Ruang[]
+}
+
+model Ruang {
+    id        String  @id @default(cuid())
+    namaRuang String
+    kodeRuang String
+    isAktif   Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    cabangId String
+    cabang   Cabang @relation(fields: [cabangId], references: [id])
+
+    jadwalSesi JadwalSesi[]
+
+    @@index([cabangId])
+    @@index([kodeRuang])
+}
+
+enum Gender {
+    LAKI_LAKI
+    PEREMPUAN
+}
+
+enum StatusMurid {
+    AKTIF //sudah masuk program kelas
+    NON_AKTIF //belum masuk program kelas
+    LULUS //sudah selesai program kelas
+}
+
+model Murid {
+    id             String      @id @default(cuid())
+    namaLengkap    String
+    email          String      @unique
+    alamat         String
+    gender         Gender
+    umur           Int
+    asalSekolah    String
+    kelasSekolah   String
+    jamPulang      String //HH:mm
+    noWA           String      @unique
+    pilihanProgram String?
+    sumberInfo     String
+    statusMurid    StatusMurid @default(NON_AKTIF)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    cabangId String
+    cabang   Cabang @relation(fields: [cabangId], references: [id])
+
+    absensiMurid     AbsensiMurid[]
+    pendaftaranKelas pendaftaranKelas[]
+    pembayaran       Pembayaran[]
+
+    @@index([cabangId])
+    @@index([namaLengkap])
+    @@index([statusMurid])
+}
+
+model ProgramKelas {
+    id                String @id @default(cuid())
+    namaProgram       String
+    level             String
+    tahunAjar         Int
+    durasiBulan       Int
+    deskripsi         String
+    hargaProgramKelas Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    idGuruUtama String
+    guruUtama   Staff  @relation(fields: [idGuruUtama], references: [id])
+
+    jadwalSesi       JadwalSesi[]
+    pendaftaranKelas pendaftaranKelas[]
+    pembayaran       Pembayaran[]
+
+    @@index([idGuruUtama])
+    @@index([namaProgram])
+    @@index([level])
+    @@index([tahunAjar])
+}
+
+model JadwalSesi {
+    id             String   @id @default(cuid())
+    kelasProgramId String
+    ruangId        String
+    tanggalWaktu   DateTime
+    durasiMenit    Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    kelasProgram ProgramKelas @relation(fields: [kelasProgramId], references: [id], onDelete: Cascade)
+    ruang        Ruang        @relation(fields: [ruangId], references: [id], onDelete: Restrict)
+
+    absensiMurid AbsensiMurid[]
+    absensiGuru  AbsensiGuru[]
+
+    @@index([kelasProgramId])
+    @@index([ruangId])
+    @@index([tanggalWaktu])
+}
+
+enum StatusAbsen {
+    HADIR
+    SAKIT
+    IJIN
+    ALPA
+}
+
+model AbsensiMurid {
+    id           String      @id @default(cuid())
+    muridId      String
+    jadwalSesiId String
+    status       StatusAbsen
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    murid      Murid      @relation(fields: [muridId], references: [id], onDelete: Cascade)
+    jadwalSesi JadwalSesi @relation(fields: [jadwalSesiId], references: [id], onDelete: Cascade)
+
+    // Mencegah murid punya >1 record di sesi yang sama
+    @@unique([muridId, jadwalSesiId])
+    // Anda tetap perlu indeks biasa untuk FK (untuk performa JOIN)
+    @@index([muridId])
+    @@index([jadwalSesiId])
+}
+
+model AbsensiGuru {
+    id           String      @id @default(cuid())
+    guruId       String
+    jadwalSesiId String
+    status       StatusAbsen
+    isVerified   Boolean     @default(false)
+    verifiedById String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    guru       Staff      @relation("guruRelation", fields: [guruId], references: [id], onDelete: Restrict)
+    jadwalSesi JadwalSesi @relation(fields: [jadwalSesiId], references: [id], onDelete: Cascade)
+    verifiedBy Staff?     @relation("verifiedByRelation", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+    @@unique([guruId, jadwalSesiId])
+    @@index([guruId])
+    @@index([jadwalSesiId])
+    @@index([verifiedById])
+}
+
+model pendaftaranKelas {
+    id             String   @id @default(cuid())
+    muridId        String
+    programKelasId String
+    tanggalMulai   DateTime
+    isAktif        Boolean  @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    murid        Murid        @relation(fields: [muridId], references: [id], onDelete: Cascade)
+    programKelas ProgramKelas @relation(fields: [programKelasId], references: [id], onDelete: Cascade)
+
+    @@index([muridId])
+    @@index([programKelasId])
+    @@index([isAktif])
+}
+
+enum StatusPembayaran {
+    LUNAS
+    BELUM_LUNAS
+    PENDING
+}
+
+model Pembayaran {
+    id             String           @id @default(cuid())
+    muridId        String
+    programKelasId String
+    pembayaranKe   Int
+    jumlahBayar    Int
+    tanggalBayar   DateTime?
+    imageUrl       String?
+    statusBayar    StatusPembayaran @default(BELUM_LUNAS)
+    note           String?
+
+    verifiedById String? // ID Admin yang memverifikasi
+    verifiedBy   Staff?  @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    murid        Murid        @relation(fields: [muridId], references: [id], onDelete: Cascade)
+    programKelas ProgramKelas @relation(fields: [programKelasId], references: [id], onDelete: Restrict)
+
+    @@index([muridId])
+    @@index([programKelasId])
+    @@index([statusBayar])
+    @@index([verifiedById])
 }

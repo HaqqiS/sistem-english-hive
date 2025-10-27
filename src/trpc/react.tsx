@@ -10,6 +10,9 @@ import SuperJSON from "superjson";
 import { type AppRouter } from "@/server/api/root";
 import { createQueryClient } from "./query-client";
 
+import { SessionProvider } from "next-auth/react";
+import type { Session } from "next-auth";
+
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 const getQueryClient = () => {
   if (typeof window === "undefined") {
@@ -38,7 +41,10 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export function TRPCReactProvider(props: { children: React.ReactNode }) {
+export function TRPCReactProvider(props: {
+  children: React.ReactNode;
+  session: Session | null;
+}) {
   const queryClient = getQueryClient();
 
   const [trpcClient] = useState(() =>
@@ -65,7 +71,9 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <api.Provider client={trpcClient} queryClient={queryClient}>
-        {props.children}
+        <SessionProvider session={props.session}>
+          {props.children}
+        </SessionProvider>
       </api.Provider>
     </QueryClientProvider>
   );

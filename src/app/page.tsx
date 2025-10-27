@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { LatestPost } from "@/app/_components/post";
+import { LatestPost } from "@/app/_components/shared/post";
 import { auth } from "@/server/auth";
 import { api, HydrateClient } from "@/trpc/server";
 import Navbar from "./_components/_home/navbar";
@@ -19,7 +19,6 @@ import Footer from "./_components/_home/footer";
 import FloatingButtons from "./_components/ui/floating_buttons";
 
 export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
   const session = await auth();
 
   if (session?.user) {

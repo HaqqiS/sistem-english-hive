@@ -1,10 +1,12 @@
 import "@/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "./_components/providers/theme-provider";
+import { auth } from "@/server/auth";
+import { Toaster } from "@/app/_components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "English Hive",
@@ -17,21 +19,27 @@ const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist-sans",
 });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+// const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await auth();
   return (
-    <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${geist.variable} scroll-smooth`}
+      suppressHydrationWarning
+    >
       <body>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <Toaster />
+          <TRPCReactProvider session={session}>{children}</TRPCReactProvider>
         </ThemeProvider>
       </body>
     </html>

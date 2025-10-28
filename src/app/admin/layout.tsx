@@ -12,20 +12,19 @@ const adminNavItems: NavItem[] = [
     icon: "Home",
   },
   {
-    title: "Manage Users",
-    url: "/admin/users",
+    title: "Kelola Guru",
+    url: "/admin/guru",
     icon: "Users",
   },
   {
-    title: "Manage Courses",
-    url: "/admin/courses",
+    title: "Kelola Cabang",
+    url: "/admin/cabang",
     icon: "BookCopy",
   },
   {
-    title: "Settings",
-    url: "/admin/settings",
+    title: "Kelola Program Kelas",
+    url: "/admin/kelas",
     icon: "Settings",
-    disabled: true, // Contoh link non-aktif
   },
 ];
 

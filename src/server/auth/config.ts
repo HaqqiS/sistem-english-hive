@@ -127,7 +127,7 @@ export const authConfig = {
       // Initial sign in
       if (user) {
         token.id = user.id ?? "";
-        token.role = user.role ?? UserRole.TEACHER;
+        token.role = user.role ?? UserRole.GURU;
       }
 
       // Update session (dari client dengan update() function)
@@ -177,20 +177,20 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const role = auth?.user?.role;
-      const isOnTeacherPage = nextUrl.pathname.startsWith("/teacher");
+      const isOnGuruPage = nextUrl.pathname.startsWith("/guru");
       const isOnAdminPage = nextUrl.pathname.startsWith("/admin");
 
       // Akses halaman /admin
       if (isOnAdminPage) {
-        // Hanya ADMIN yang boleh ke /admin (admin juga boleh ke /teacher)
+        // Hanya ADMIN yang boleh ke /admin (admin juga boleh ke /guru)
         return isLoggedIn && role === UserRole.ADMIN;
       }
 
-      // Akses halaman /teacher
-      if (isOnTeacherPage) {
-        // ADMIN dan TEACHER boleh ke /teacher
+      // Akses halaman /guru
+      if (isOnGuruPage) {
+        // ADMIN dan GURU boleh ke /guru
         return (
-          isLoggedIn && (role === UserRole.TEACHER || role === UserRole.ADMIN)
+          isLoggedIn && (role === UserRole.GURU || role === UserRole.ADMIN)
         );
       }
 

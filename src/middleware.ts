@@ -10,7 +10,7 @@ export default auth((req) => {
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
   const isPublicRoute =
     nextUrl.pathname === "/" || nextUrl.pathname.startsWith("/auth");
-  const isTeacherRoute = nextUrl.pathname.startsWith("/teacher");
+  const isGuruRoute = nextUrl.pathname.startsWith("/guru");
   const isAdminRoute = nextUrl.pathname.startsWith("/admin");
 
   // Allow auth API routes
@@ -23,8 +23,8 @@ export default auth((req) => {
     if (role === UserRole.ADMIN) {
       return Response.redirect(new URL("/admin", nextUrl));
     }
-    if (role === UserRole.TEACHER) {
-      return Response.redirect(new URL("/teacher", nextUrl));
+    if (role === UserRole.GURU) {
+      return Response.redirect(new URL("/guru", nextUrl));
     }
     // fallback ke root
     return Response.redirect(new URL("/", nextUrl));
@@ -37,9 +37,9 @@ export default auth((req) => {
     }
   }
 
-  // halaman /teacher
-  if (isTeacherRoute) {
-    if (!isLoggedIn || (role !== UserRole.TEACHER && role !== UserRole.ADMIN)) {
+  // halaman /guru
+  if (isGuruRoute) {
+    if (!isLoggedIn || (role !== UserRole.GURU && role !== UserRole.ADMIN)) {
       return Response.redirect(new URL("/auth/login", nextUrl));
     }
   }

@@ -8,24 +8,8 @@ import DashboardLayout from "../_components/layouts/dashboard-layout";
 const teacherNavItems: NavItem[] = [
   {
     title: "Dashboard",
-    url: "/teacher",
+    url: "/guru",
     icon: "Home",
-  },
-  {
-    title: "Manage Users",
-    url: "/teacher/users",
-    icon: "Users",
-  },
-  {
-    title: "Manage Courses",
-    url: "/teacher/courses",
-    icon: "BookCopy",
-  },
-  {
-    title: "Settings",
-    url: "/teacher/settings",
-    icon: "Settings",
-    disabled: true, // Contoh link non-aktif
   },
 ];
 

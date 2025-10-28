@@ -45,12 +45,23 @@ export function NavMain({ projects }: NavMainProps) {
   const pathname = usePathname();
 
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+    <SidebarGroup className="">
       <SidebarGroupLabel>Projects</SidebarGroupLabel>
       <SidebarMenu>
         {projects.map((item) => {
           const IconComponent = iconMap[item.icon] ?? Folder;
-          const isActive = pathname.startsWith(item.url);
+          const itemUrlSegments = item.url.split("/").filter(Boolean).length;
+
+          let isActive;
+
+          if (itemUrlSegments === 1) {
+            // Ini adalah link root (cth: /admin). Gunakan exact match.
+            isActive = pathname === item.url;
+          } else {
+            // Ini adalah link sub-halaman (cth: /admin/kelas).
+            // Gunakan startsWith untuk menangani dynamic routes (cth: /admin/users/123)
+            isActive = pathname.startsWith(item.url);
+          }
 
           return (
             <SidebarMenuItem key={item.title}>
@@ -66,44 +77,9 @@ export function NavMain({ projects }: NavMainProps) {
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
-
-              {/* <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuAction showOnHover>
-                    <MoreHorizontal />
-                    <span className="sr-only">More</span>
-                  </SidebarMenuAction>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-48 rounded-lg"
-                  side={isMobile ? "bottom" : "right"}
-                  align={isMobile ? "end" : "start"}
-                >
-                  <DropdownMenuItem>
-                    <Folder className="text-muted-foreground" />
-                    <span>View Project</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Forward className="text-muted-foreground" />
-                    <span>Share Project</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Trash2 className="text-muted-foreground" />
-                    <span>Delete Project</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu> */}
             </SidebarMenuItem>
           );
         })}
-
-        {/* <SidebarMenuItem>
-          <SidebarMenuButton className="text-sidebar-foreground/70">
-            <MoreHorizontal className="text-sidebar-foreground/70" />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem> */}
       </SidebarMenu>
     </SidebarGroup>
   );

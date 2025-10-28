@@ -57,7 +57,7 @@ model Session {
 }
 
 enum UserRole {
-    TEACHER
+    GURU
     ADMIN
 }
 
@@ -67,7 +67,7 @@ model Staff {
     email    String?  @unique
     image    String?
     password String?
-    role     UserRole @default(TEACHER)
+    role     UserRole @default(GURU)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -76,14 +76,9 @@ model Staff {
     sessions Session[]
     posts    Post[]
 
-    // Relasi sebagai Guru Utama di ProgramKelas
-    programKelas ProgramKelas[]
-
-    // Relasi sebagai Guru yang mengajar (Absensi)
-    absensiDiajar AbsensiGuru[] @relation("guruRelation")
-
-    // Relasi sebagai Admin yang memverifikasi Absensi
-    absenDiverifikasi      AbsensiGuru[] @relation("verifiedByRelation")
+    programKelas           ProgramKelas[]
+    absensiDiajar          AbsensiGuru[]  @relation("guruRelation")
+    absenDiverifikasi      AbsensiGuru[]  @relation("verifiedByRelation")
     pembayaranDiverifikasi Pembayaran[]
 
     @@index([role])
@@ -169,10 +164,17 @@ model Murid {
     @@index([statusMurid])
 }
 
+enum TipeKelas {
+    REGULAR
+    PRIVATE
+}
+
 model ProgramKelas {
-    id                String @id @default(cuid())
-    namaProgram       String
-    level             String
+    id                String    @id @default(cuid())
+    namaProgram       String // e.g., "Rising Star", "Tiny Tod's"
+    level             Int // e.g., 1, 2, 3
+    tipe              TipeKelas // BARU: REGULAR atau PRIVATE
+    grup              String? // BARU: "A", "B", atau null (opsional)
     tahunAjar         Int
     durasiBulan       Int
     deskripsi         String

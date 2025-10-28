@@ -22,10 +22,7 @@ export function DynamicBreadcrumb() {
   const pathname = usePathname(); // Cth: /admin/verivikasi
   const segments = pathname.split("/").filter(Boolean); // Cth: ["admin", "verivikasi"]
 
-  // Menangani kasus khusus yang Anda minta:
-  // /admin -> Dashboard
-  // /teacher -> Dashboard
-  if (pathname === "/admin" || pathname === "/teacher") {
+  if (pathname === "/admin" || pathname === "/guru") {
     return (
       <Breadcrumb>
         <BreadcrumbList>

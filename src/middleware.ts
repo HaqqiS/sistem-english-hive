@@ -30,17 +30,25 @@ export default auth((req) => {
     return Response.redirect(new URL("/", nextUrl));
   }
 
-  /// halaman /admin
+  // halaman /admin
   if (isAdminRoute) {
     if (!isLoggedIn || role !== UserRole.ADMIN) {
-      return Response.redirect(new URL("/auth/login", nextUrl));
+      // return Response.redirect(new URL("/auth/login", nextUrl));
+      const url = new URL("/auth/login", req.nextUrl);
+      const callbackPath = req.nextUrl.pathname + req.nextUrl.search;
+      url.searchParams.set("callbackUrl", callbackPath);
+      return Response.redirect(url);
     }
   }
 
   // halaman /guru
   if (isGuruRoute) {
     if (!isLoggedIn || (role !== UserRole.GURU && role !== UserRole.ADMIN)) {
-      return Response.redirect(new URL("/auth/login", nextUrl));
+      // return Response.redirect(new URL("/auth/login", nextUrl));
+      const url = new URL("/auth/login", req.nextUrl);
+      const callbackPath = req.nextUrl.pathname + req.nextUrl.search;
+      url.searchParams.set("callbackUrl", callbackPath);
+      return Response.redirect(url);
     }
   }
   // Selalu allow halaman lain

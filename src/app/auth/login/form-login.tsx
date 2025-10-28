@@ -54,9 +54,11 @@ export default function LoginForm() {
         throw new Error("Email atau password yang Anda masukkan salah.");
       }
 
-      toast.success("Login berhasil!", { id: toastId });
-      // router.push(callbackUrl ?? "/");
-      router.refresh();
+      toast.success("Login berhasil! Mengarahkan ke dashboard...", {
+        id: toastId,
+        duration: 3000,
+      });
+      router.push(callbackUrl ?? "/");
     } catch (error) {
       if (toastId) {
         toast.dismiss(toastId);
@@ -70,7 +72,6 @@ export default function LoginForm() {
         setError("root", { message: errorMessage });
         toast.error(errorMessage);
       }
-    } finally {
       setIsPending(false);
     }
   };

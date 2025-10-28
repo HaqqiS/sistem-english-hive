@@ -1,7 +1,4 @@
 import type { NavItem } from "@/types/nav.type";
-import { Home, Users, BookCopy, Settings } from "lucide-react"; // Impor ikon yang Anda butuhkan
-import { auth } from "@/server/auth"; // Impor fungsi auth dari T3/NextAuth
-import { redirect } from "next/navigation";
 import DashboardLayout from "../_components/layouts/dashboard-layout";
 
 // Tentukan navigasi khusus untuk ADMIN
@@ -28,6 +25,8 @@ const adminNavItems: NavItem[] = [
   },
 ];
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default async function AdminLayout({
   children,
 }: {
@@ -40,6 +39,7 @@ export default async function AdminLayout({
   // if (session?.user?.role !== "ADMIN") {
   //   redirect("/unauthorized"); // atau halaman login
   // }
+  // await delay(600000);
 
   return <DashboardLayout navItems={adminNavItems}>{children}</DashboardLayout>;
 }

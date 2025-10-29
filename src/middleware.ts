@@ -1,5 +1,4 @@
 import { auth } from "@/server/auth";
-import { UserRole } from "@prisma/client";
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -20,10 +19,10 @@ export default auth((req) => {
 
   // Redirect user yang sudah login keluar dari halaman /auth kembali ke dashboard sesuai role
   if (isLoggedIn && isPublicRoute && nextUrl.pathname.startsWith("/auth")) {
-    if (role === UserRole.ADMIN) {
+    if (role === "ADMIN") {
       return Response.redirect(new URL("/admin", nextUrl));
     }
-    if (role === UserRole.GURU) {
+    if (role === "GURU") {
       return Response.redirect(new URL("/guru", nextUrl));
     }
     // fallback ke root
@@ -32,7 +31,7 @@ export default auth((req) => {
 
   // halaman /admin
   if (isAdminRoute) {
-    if (!isLoggedIn || role !== UserRole.ADMIN) {
+    if (!isLoggedIn || role !== "ADMIN") {
       // return Response.redirect(new URL("/auth/login", nextUrl));
       const url = new URL("/auth/login", req.nextUrl);
       const callbackPath = req.nextUrl.pathname + req.nextUrl.search;
@@ -43,7 +42,7 @@ export default auth((req) => {
 
   // halaman /guru
   if (isGuruRoute) {
-    if (!isLoggedIn || (role !== UserRole.GURU && role !== UserRole.ADMIN)) {
+    if (!isLoggedIn || (role !== "GURU" && role !== "ADMIN")) {
       // return Response.redirect(new URL("/auth/login", nextUrl));
       const url = new URL("/auth/login", req.nextUrl);
       const callbackPath = req.nextUrl.pathname + req.nextUrl.search;

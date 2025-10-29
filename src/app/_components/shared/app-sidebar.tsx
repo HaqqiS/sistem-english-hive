@@ -10,7 +10,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/app/_components/ui/sidebar";
+} from "@/components/ui/sidebar";
 import type { NavItem } from "@/types/nav.type";
 // This is sample data.
 import { data } from "@/app/_components/shared/data";

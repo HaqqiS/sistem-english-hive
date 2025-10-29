@@ -1,6 +1,7 @@
 import { postRouter } from "@/server/api/routers/post.router";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { cabangRouter } from "./routers/cabang.router";
+import { ruangRouter } from "./routers/ruang.router";
 
 /**
  * This is the primary router for your server.
@@ -10,6 +11,7 @@ import { cabangRouter } from "./routers/cabang.router";
 export const appRouter = createTRPCRouter({
   post: postRouter,
   cabang: cabangRouter,
+  ruang: ruangRouter,
 });
 
 // export type definition of API

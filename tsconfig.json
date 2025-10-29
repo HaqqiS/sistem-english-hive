@@ -27,7 +27,7 @@
     /* Path Aliases */
     "paths": {
       "@/*": ["./src/*"],
-      "@/app/_components/*": ["./src/app/_components/*"]
+      "@/styles/globals.css": ["./src/styles/globals.css"]
     }
   },
   "include": [

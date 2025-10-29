@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeClosed } from "lucide-react";
-import { Input } from "@/app/_components/ui/input";
+import { Input } from "@/components/ui/input";
 
 export default function InputPassword({ ...props }) {
   const [showPassword, setShowPassword] = useState(false);

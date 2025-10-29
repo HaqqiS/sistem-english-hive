@@ -29,4 +29,29 @@ export const cabangRouter = createTRPCRouter({
       });
       return cabang;
     }),
+
+  updateCabang: protectedProcedure
+    .input(serverCabangSchema.extend({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const cabang = await db.cabang.update({
+        where: { id: input.id },
+        data: {
+          namaCabang: input.nama,
+          alamat: input.alamat,
+          noTelp: input.noTelp,
+        },
+      });
+      return cabang;
+    }),
+
+  deleteCabang: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const cabang = await db.cabang.delete({
+        where: { id: input.id },
+      });
+      return cabang;
+    }),
 });

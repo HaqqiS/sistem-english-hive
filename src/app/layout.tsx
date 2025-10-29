@@ -1,4 +1,4 @@
-// @ts-expect-error -- CSS imports
+// @ts-exopect-error Async Server Component
 import "@/styles/globals.css";
 
 import { type Metadata } from "next";
@@ -7,7 +7,8 @@ import { Geist } from "next/font/google";
 import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "./_components/providers/theme-provider";
 import { auth } from "@/server/auth";
-import { Toaster } from "@/app/_components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   title: "English Hive",
@@ -33,15 +34,17 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Toaster />
-          <TRPCReactProvider session={session}>{children}</TRPCReactProvider>
-        </ThemeProvider>
+        <SessionProvider session={session}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Toaster />
+            <TRPCReactProvider>{children}</TRPCReactProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/app/_components/ui/card";
+} from "@/components/ui/card";
 
 type AuthLayoutProps = {
   className?: string;

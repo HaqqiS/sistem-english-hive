@@ -1,5 +1,5 @@
 import { ArrowRight, MessageCircle } from "lucide-react";
-import { Button } from "@/app/_components/ui/button";
+import { Button } from "@/components/ui/button";
 
 export default function CTA() {
   return (

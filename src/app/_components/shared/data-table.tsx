@@ -21,25 +21,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/app/_components/ui/table";
-import { Button } from "@/app/_components/ui/button";
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Input } from "@/app/_components/ui/input";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/app/_components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/app/_components/ui/select";
+} from "@/components/ui/select";
 
-import { Label } from "@/app/_components/ui/label";
+import { Label } from "@/components/ui/label";
 // import type { Payment } from "./columns";
 import {
   ChevronLeftIcon,
@@ -89,8 +89,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="flex items-center py-4">
-        <div>{toolbar ? toolbar(table) : null}</div>
+      <div className="flex items-center gap-4 py-4">
         <Input
           placeholder={filterColumnPlaceholder}
           value={
@@ -99,8 +98,9 @@ export function DataTable<TData, TValue>({
           onChange={(event) =>
             table.getColumn(filterColumnId)?.setFilterValue(event.target.value)
           }
-          className="max-w-sm"
+          className="max-w-xs"
         />
+        <div>{toolbar ? toolbar(table) : null}</div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">

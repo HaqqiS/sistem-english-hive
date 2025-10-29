@@ -69,6 +69,9 @@ model Staff {
     password String?
     role     UserRole @default(GURU)
 
+    cabangId String?
+    cabang   Cabang? @relation(fields: [cabangId], references: [id])
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
@@ -101,6 +104,7 @@ model Cabang {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
+    staff Staff[]
     murid Murid[]
     ruang Ruang[]
 }

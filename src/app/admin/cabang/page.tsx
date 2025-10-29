@@ -1,7 +1,7 @@
 import { api } from "@/trpc/server";
-import CabangClient from "./cabang-client";
+import CabangClient from "@/app/_components/views/admin/cabang/cabang-client";
 import type { CabangType } from "@/types/cabang.type";
-import TambahCabang from "./tambah-cabang";
+import RuangClient from "@/app/_components/views/admin/cabang/ruang-client";
 
 async function getData(): Promise<CabangType[]> {
   return [
@@ -21,26 +21,28 @@ async function getData(): Promise<CabangType[]> {
 export default async function CabangPage() {
   // await delay(600000);
 
-  // const data = await getData();
+  const data = await getData();
   const dataCabang = await api.cabang.getAll();
+
+  const dataRuang = await api.ruang.getRuangByCabangId({
+    cabangId: null,
+  });
+
+  // console.table(dataRuang);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <header className="flex items-center justify-between pt-6">
         <div>
-          <h1 className="text-xl">CabangPage</h1>
+          <h1 className="text-xl">Ruang & Cabang</h1>
           <p className="text-muted-foreground text-sm">
             This is the cabang management page.
           </p>
         </div>
-        {/* <TambahCabang /> */}
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        {/* <div className="bg-muted/50 min-h-screen rounded-xl"></div> */}
-        {/* <CabangClientPage initialData={dataCabang} /> */}
+        {/* <RuangClient initialData={dataRuang} /> */}
         <CabangClient initialData={dataCabang} />
-
-        {/* <DataTable columns={columns} data={dataCabang} /> */}
       </main>
     </div>
   );

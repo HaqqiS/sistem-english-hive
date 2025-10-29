@@ -2,26 +2,27 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, EllipsisVertical } from "lucide-react";
-
-import { Button } from "@/app/_components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/app/_components/ui/dropdown-menu";
-import { Checkbox } from "@/app/_components/ui/checkbox";
-import type { CabangType } from "@/types/cabang.type";
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { RuangType } from "@/types/ruang.type";
+
+interface ColumnsConfig {
+  onEditClick: (item: RuangType) => void;
+  onDeleteClick: (ruangId: string, ruangName: string) => void;
+}
 
 export const columns = ({
   onEditClick,
   onDeleteClick,
-}: {
-  onEditClick: (item: CabangType) => void;
-  onDeleteClick: (cabangId: string, cabangName: string) => void;
-}): ColumnDef<CabangType>[] => [
-  // export const columns: ColumnDef<CabangType>[] = [
+}: ColumnsConfig): ColumnDef<RuangType>[] => [
+  // Checkbox selection
   {
     id: "select",
     header: ({ table }) => (
@@ -44,48 +45,70 @@ export const columns = ({
     enableSorting: false,
     enableHiding: false,
   },
+
   {
-    accessorKey: "namaCabang",
-    header: "Nama Cabang",
+    accessorKey: "namaRuang",
+    header: "Nama Ruang",
     cell: ({ row }) => (
       <Button
         variant="link"
         className="text-foreground w-fit px-0 text-left text-base"
         onClick={() => onEditClick(row.original)}
       >
-        {row.original.namaCabang}
+        {row.original.namaRuang}
       </Button>
     ),
     enableHiding: false,
   },
+
   {
-    accessorKey: "alamat",
-    header: "Alamat",
+    accessorKey: "kodeRuang",
+    header: "Kode Ruang",
+    cell: ({ row }) => (
+      <div className="max-w-[300px] truncate" title={row.original.kodeRuang}>
+        {row.original.kodeRuang}
+      </div>
+    ),
   },
   {
-    accessorKey: "noTelp",
+    accessorKey: "namaCabang",
+    header: "Cabang",
+    cell: ({ row }) => (
+      <div
+        className="max-w-[300px] truncate"
+        title={row.original.cabang?.namaCabang}
+      >
+        {row.original.cabang?.namaCabang}
+      </div>
+    ),
+  },
+
+  {
+    accessorKey: "cabangId",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          No Telepon
+          Cabang ID
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
   },
 
+  // Actions dropdown
   {
     id: "actions",
+    header: "Aksi",
     cell: ({ row }) => {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+              className="text-muted-foreground data-[state=open]:bg-muted flex size-8"
               size="icon"
             >
               <EllipsisVertical />
@@ -93,16 +116,14 @@ export const columns = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem
-              onClick={() => onEditClick(row.original)} // Panggil "perintah" saat di-klik
-            >
+            <DropdownMenuItem onClick={() => onEditClick(row.original)}>
               Edit
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               onClick={() =>
-                onDeleteClick(row.original.id, row.original.namaCabang)
+                onDeleteClick(row.original.id, row.original.namaRuang)
               }
             >
               Delete

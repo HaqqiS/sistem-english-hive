@@ -28,6 +28,8 @@ import { db } from "@/server/db";
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth();
+  // const { req, res } = opts;
+  // console.log("Session in TRPC context:", session);
 
   return {
     db,
@@ -96,7 +98,8 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  const durationMs = end - start;
+  console.log(`[TRPC] ${path} took ${durationMs}ms to execute`);
 
   return result;
 });

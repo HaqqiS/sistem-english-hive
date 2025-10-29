@@ -16,7 +16,7 @@ import FAQ from "./_components/_home/faq";
 import Registration from "./_components/_home/registration";
 import CTA from "./_components/_home/cta";
 import Footer from "./_components/_home/footer";
-import FloatingButtons from "./_components/ui/floating_buttons";
+import FloatingButtons from "@/app/_components/_home/floating_buttons";
 
 export default async function Home() {
   const session = await auth();

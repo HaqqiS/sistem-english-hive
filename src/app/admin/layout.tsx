@@ -14,14 +14,19 @@ const adminNavItems: NavItem[] = [
     icon: "Users",
   },
   {
-    title: "Kelola Cabang",
-    url: "/admin/cabang",
-    icon: "BookCopy",
-  },
-  {
     title: "Kelola Program Kelas",
     url: "/admin/kelas",
     icon: "Settings",
+  },
+  // {
+  //   title: "Kelola Ruang",
+  //   url: "/admin/ruang",
+  //   icon: "Landmark",
+  // },
+  {
+    title: "Ruangan & Cabang",
+    url: "/admin/cabang",
+    icon: "Building",
   },
 ];
 

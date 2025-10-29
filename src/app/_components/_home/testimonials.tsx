@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { Card, CardContent } from "@/app/_components/ui/card";
-import { Button } from "@/app/_components/ui/button";
-import { Avatar, AvatarFallback } from "@/app/_components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const testimonials = [
   {

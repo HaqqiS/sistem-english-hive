@@ -1,10 +1,5 @@
 "use client";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/app/_components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -12,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/app/_components/ui/table";
+} from "@/components/ui/table";
 
 const scheduleData = {
   weekday: [

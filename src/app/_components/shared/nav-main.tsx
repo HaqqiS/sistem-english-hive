@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/app/_components/ui/sidebar";
+} from "@/components/ui/sidebar";
 import type { NavItem } from "@/types/nav.type";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";

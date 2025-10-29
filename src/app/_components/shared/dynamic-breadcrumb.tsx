@@ -10,7 +10,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/app/_components/ui/breadcrumb";
+} from "@/components/ui/breadcrumb";
 
 // Fungsi helper untuk membuat huruf pertama kapital
 function capitalize(str: string) {

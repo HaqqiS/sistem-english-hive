@@ -1,10 +1,11 @@
+"use client";
 import { AppSidebar } from "@/app/_components/shared/app-sidebar";
-import { Separator } from "@/app/_components/ui/separator";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/app/_components/ui/sidebar";
+} from "@/components/ui/sidebar";
 import type { NavItem } from "@/types/nav.type";
 import { DynamicBreadcrumb } from "../shared/dynamic-breadcrumb";
 

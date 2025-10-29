@@ -1,12 +1,9 @@
 import { api } from "@/trpc/server";
-import { DataTable } from "./data-table";
-import TambahCabang from "./tambah-cabang";
 import CabangClient from "./cabang-client";
-import { columns } from "./columns";
 import type { CabangType } from "@/types/cabang.type";
+import TambahCabang from "./tambah-cabang";
 
 async function getData(): Promise<CabangType[]> {
-  // Fetch data from your API here.
   return [
     {
       id: "728ed52f",
@@ -16,8 +13,6 @@ async function getData(): Promise<CabangType[]> {
       createdAt: new Date(),
       updatedAt: new Date(),
     },
-
-    // ...
   ];
 }
 
@@ -38,14 +33,14 @@ export default async function CabangPage() {
             This is the cabang management page.
           </p>
         </div>
-        <TambahCabang />
+        {/* <TambahCabang /> */}
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
         {/* <div className="bg-muted/50 min-h-screen rounded-xl"></div> */}
         {/* <CabangClientPage initialData={dataCabang} /> */}
         <CabangClient initialData={dataCabang} />
 
-        <DataTable columns={columns} data={dataCabang} />
+        {/* <DataTable columns={columns} data={dataCabang} /> */}
       </main>
     </div>
   );

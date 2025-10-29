@@ -174,26 +174,86 @@ export const authConfig = {
       return session;
     },
 
+    // authorized({ auth, request: { nextUrl } }) {
+    //   const isLoggedIn = !!auth?.user;
+    //   const role = auth?.user?.role;
+    //   const isOnGuruPage = nextUrl.pathname.startsWith("/guru");
+    //   const isOnAdminPage = nextUrl.pathname.startsWith("/admin");
+
+    //   // Akses halaman /admin
+    //   if (isOnAdminPage) {
+    //     // Hanya ADMIN yang boleh ke /admin (admin juga boleh ke /guru)
+    //     return isLoggedIn && role === UserRole.ADMIN;
+    //   }
+
+    //   // Akses halaman /guru
+    //   if (isOnGuruPage) {
+    //     // ADMIN dan GURU boleh ke /guru
+    //     return (
+    //       isLoggedIn && (role === UserRole.GURU || role === UserRole.ADMIN)
+    //     );
+    //   }
+
+    //   return true;
+    // },
+
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const role = auth?.user?.role;
       const isOnGuruPage = nextUrl.pathname.startsWith("/guru");
       const isOnAdminPage = nextUrl.pathname.startsWith("/admin");
+      const isOnAuthPage = nextUrl.pathname.startsWith("/auth");
 
-      // Akses halaman /admin
+      // 1. Jika mencoba akses halaman admin
       if (isOnAdminPage) {
-        // Hanya ADMIN yang boleh ke /admin (admin juga boleh ke /guru)
-        return isLoggedIn && role === UserRole.ADMIN;
+        if (!isLoggedIn) {
+          // Belum login? Redirect ke login DENGAN callbackUrl
+          const loginUrl = new URL("/auth/login", nextUrl);
+          loginUrl.searchParams.set(
+            "callbackUrl",
+            nextUrl.pathname + nextUrl.search,
+          );
+          return Response.redirect(loginUrl); // <-- Gunakan NextResponse
+        }
+        if (role !== "ADMIN") {
+          // Bukan admin? Redirect ke halaman "unauthorized" atau dashboard guru
+          // return NextResponse.redirect(new URL("/unauthorized", nextUrl));
+          // Atau jika admin boleh ke guru:
+          return false; // Biarkan admin di halaman admin
+        }
+        return true; // User adalah admin, izinkan akses
       }
 
-      // Akses halaman /guru
+      // 2. Jika mencoba akses halaman guru
       if (isOnGuruPage) {
-        // ADMIN dan GURU boleh ke /guru
-        return (
-          isLoggedIn && (role === UserRole.GURU || role === UserRole.ADMIN)
-        );
+        if (!isLoggedIn) {
+          // Belum login? Redirect ke login DENGAN callbackUrl
+          const loginUrl = new URL("/auth/login", nextUrl);
+          loginUrl.searchParams.set(
+            "callbackUrl",
+            nextUrl.pathname + nextUrl.search,
+          );
+          return Response.redirect(loginUrl);
+        }
+        if (role !== "GURU" && role !== "ADMIN") {
+          // Bukan guru atau admin? Redirect ke unauthorized
+          return Response.redirect(new URL("/unauthorized", nextUrl));
+        }
+        return true; // User adalah guru atau admin, izinkan akses
       }
 
+      // 3. Jika SUDAH login TAPI mencoba akses halaman /auth/*
+      if (isLoggedIn && isOnAuthPage) {
+        // Redirect ke dashboard sesuai role
+        if (role === "ADMIN")
+          return Response.redirect(new URL("/admin", nextUrl));
+        if (role === "GURU")
+          return Response.redirect(new URL("/guru", nextUrl));
+        // Fallback jika role lain
+        return Response.redirect(new URL("/", nextUrl));
+      }
+
+      // 4. Untuk halaman publik lainnya, selalu izinkan
       return true;
     },
   },

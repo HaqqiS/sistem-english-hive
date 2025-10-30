@@ -1,7 +1,6 @@
 import { api } from "@/trpc/server";
 import CabangClient from "@/app/_components/views/admin/cabang/cabang-client";
 import type { CabangType } from "@/types/cabang.type";
-import RuangClient from "@/app/_components/views/admin/cabang/ruang-client";
 
 async function getData(): Promise<CabangType[]> {
   return [
@@ -22,13 +21,7 @@ export default async function CabangPage() {
   // await delay(600000);
 
   const data = await getData();
-  const dataCabang = await api.cabang.getAll();
-
-  const dataRuang = await api.ruang.getRuangByCabangId({
-    cabangId: null,
-  });
-
-  // console.table(dataRuang);
+  // const dataCabang = await api.cabang.getAll();
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -41,8 +34,7 @@ export default async function CabangPage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        {/* <RuangClient initialData={dataRuang} /> */}
-        <CabangClient initialData={dataCabang} />
+        <CabangClient initialData={[]} />
       </main>
     </div>
   );

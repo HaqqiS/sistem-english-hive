@@ -1,87 +1,11 @@
-// import { auth } from "@/server/auth";
-
-// export default auth((req) => {
-//   const { nextUrl } = req;
-//   const isLoggedIn = !!req.auth;
-//   const role = req.auth?.user?.role;
-
-//   // Define protected routes
-//   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
-//   const isPublicRoute =
-//     nextUrl.pathname === "/" || nextUrl.pathname.startsWith("/auth");
-//   const isGuruRoute = nextUrl.pathname.startsWith("/guru");
-//   const isAdminRoute = nextUrl.pathname.startsWith("/admin");
-
-//   // Allow auth API routes
-//   if (isApiAuthRoute) {
-//     return;
-//   }
-
-//   // Redirect user yang sudah login keluar dari halaman /auth kembali ke dashboard sesuai role
-//   if (isLoggedIn && isPublicRoute && nextUrl.pathname.startsWith("/auth")) {
-//     if (role === "ADMIN") {
-//       return Response.redirect(new URL("/admin", nextUrl));
-//     }
-//     if (role === "GURU") {
-//       return Response.redirect(new URL("/guru", nextUrl));
-//     }
-//     // fallback ke root
-//     return Response.redirect(new URL("/", nextUrl));
-//   }
-
-//   // halaman /admin
-//   if (isAdminRoute) {
-//     if (!isLoggedIn || role !== "ADMIN") {
-//       // return Response.redirect(new URL("/auth/login", nextUrl));
-//       const url = new URL("/auth/login", req.nextUrl);
-//       const callbackPath = req.nextUrl.pathname + req.nextUrl.search;
-//       url.searchParams.set("callbackUrl", callbackPath);
-//       return Response.redirect(url);
-//     }
-//   }
-
-//   // halaman /guru
-//   if (isGuruRoute) {
-//     if (!isLoggedIn || (role !== "GURU" && role !== "ADMIN")) {
-//       // return Response.redirect(new URL("/auth/login", nextUrl));
-//       const url = new URL("/auth/login", req.nextUrl);
-//       const callbackPath = req.nextUrl.pathname + req.nextUrl.search;
-//       url.searchParams.set("callbackUrl", callbackPath);
-//       return Response.redirect(url);
-//     }
-//   }
-//   // Selalu allow halaman lain
-//   return;
-// });
-
-// /**
-//  * Matcher configuration
-//  * Specify which routes should trigger the middleware
-//  */
-// export const config = {
-//   matcher: [
-//     /*
-//      * Match all request paths except:
-//      * - _next/static (static files)
-//      * - _next/image (image optimization files)
-//      * - favicon.ico (favicon file)
-//      * - public files (public folder)
-//      */
-//     "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/trpc).*)",
-//   ],
-// };
-
 import NextAuth from "next-auth";
-// 1. Impor HANYA authConfig, BUKAN 'auth' dari @/server/auth
 import { authConfig } from "@/server/auth";
 
-// 2. Gunakan NextAuth langsung dengan config Anda
-const { auth: middleware } = NextAuth(authConfig);
+// Middleware ini hanya menjalankan mekanisme otorisasi dari authConfig.
+// Semua logika ada di dalam callback `authorized`.
+export default NextAuth(authConfig).auth;
 
-// 3. Ekspor middleware tersebut
-export default middleware;
-
-// Config matcher Anda tetap sama
+// Matcher ini juga tetap sama.
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/trpc).*)"],
 };

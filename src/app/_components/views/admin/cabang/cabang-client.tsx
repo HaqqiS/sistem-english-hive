@@ -7,7 +7,8 @@ import { api, type RouterOutputs } from "@/trpc/react";
 import { DataTable } from "@/app/_components/shared/data-table";
 import { Input } from "@/components/ui/input";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { columns as createColumns } from "./cabang-columns";
+import { columns as createCabangColumns } from "./cabang-columns";
+import { columns as createRuangColumns } from "./ruang-columns";
 import TambahCabang from "./tambah-cabang";
 import {
   type CabangType,
@@ -19,6 +20,13 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import CabangForm from "./cabang-form";
 import { keepPreviousData } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CabangClientProps {
   initialData: RouterOutputs["cabang"]["getAll"];
@@ -46,15 +54,18 @@ export default function CabangClient({ initialData }: CabangClientProps) {
   // });
   const { data: dataCabang } = api.cabang.getAll.useQuery(undefined, {
     // initialData: initialData,
-    initialData: initialData,
     placeholderData: keepPreviousData,
+  });
+
+  const { data: dataRuang } = api.ruang.getRuangByCabangId.useQuery({
+    cabangId: null,
   });
 
   // Mutation for delete
   const { mutateAsync: deleteCabang, isPending: isDeleting } =
     api.cabang.deleteCabang.useMutation({
       onSuccess: async () => {
-        // await apiUtils.cabang.getAll.invalidate();
+        await apiUtils.cabang.getAll.invalidate();
         toast.success("Cabang berhasil dihapus");
         setDeleteCabangDialogOpen(false);
         setSelectedCabangToDelete(null);
@@ -80,7 +91,7 @@ export default function CabangClient({ initialData }: CabangClientProps) {
     });
 
   // Event handlers
-  const handleEditClick = (item: CabangType) => {
+  const handleEditClickCabang = (item: CabangType) => {
     setSelectedCabangToEdit(item);
     editCabangForm.reset({
       nama: item.namaCabang,
@@ -90,7 +101,7 @@ export default function CabangClient({ initialData }: CabangClientProps) {
     setEditFormCabangOpen(true);
   };
 
-  const handleDeleteClick = (id: string, nama: string) => {
+  const handleDeleteClickCabang = (id: string, nama: string) => {
     // const cabang = dataCabang.find((c) => c.id === id);
     const cabang = initialData.find((c) => c.id === id);
     if (cabang) {
@@ -115,9 +126,18 @@ export default function CabangClient({ initialData }: CabangClientProps) {
   };
 
   // Create columns with handlers
-  const columns = createColumns({
-    onEditClick: handleEditClick,
-    onDeleteClick: handleDeleteClick,
+  const columnsCabang = createCabangColumns({
+    onEditClick: handleEditClickCabang,
+    onDeleteClick: handleDeleteClickCabang,
+  });
+
+  const columnsRuang = createRuangColumns({
+    onEditClick: () => {
+      console.log("clicked");
+    },
+    onDeleteClick: () => {
+      console.log("deleted");
+    },
   });
 
   return (
@@ -163,10 +183,41 @@ export default function CabangClient({ initialData }: CabangClientProps) {
       <div className="flex justify-end">{/* <TambahCabang /> */}</div>
 
       {/* Data Table */}
+
+      <DataTable
+        filterColumnId="namaRuang"
+        filterColumnPlaceholder="Filter Nama Ruang..."
+        columns={columnsRuang}
+        data={dataRuang ?? []}
+        toolbar={(table) => (
+          <div className="flex items-center gap-2">
+            <Select
+              onValueChange={(value) =>
+                table.getColumn("cabangId")?.setFilterValue(value)
+              }
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Cabang" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {dataCabang?.map((cabang) => {
+                  return (
+                    <SelectItem key={cabang.id} value={cabang.id}>
+                      {cabang.namaCabang}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      />
+
       <DataTable
         filterColumnId="namaCabang"
         filterColumnPlaceholder="Filter Nama Cabang..."
-        columns={columns}
+        columns={columnsCabang}
         data={dataCabang ?? []}
         toolbar={(table) => (
           <div className="flex items-center gap-2">

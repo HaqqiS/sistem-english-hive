@@ -1,11 +1,12 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
-import DiscordProvider from "next-auth/providers/discord";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import "next-auth/jwt";
 import { db } from "@/server/db";
 import { UserRole } from "@prisma/client";
+import { NextResponse } from "next/server";
+import { protectedRoutes } from "@/constants/routes";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -18,7 +19,7 @@ declare module "next-auth" {
     accessToken?: string;
     user: {
       id: string;
-      role?: UserRole;
+      role: UserRole;
       name: string;
       email: string;
       image: string | null;
@@ -49,6 +50,7 @@ interface SessionUpdate {
   user?: {
     name?: string;
     email?: string;
+    role: UserRole;
     image?: string | null;
   };
 }
@@ -68,7 +70,7 @@ export const authConfig = {
   },
 
   providers: [
-    DiscordProvider,
+    // DiscordProvider,
     CredentialsProvider({
       id: "credentials",
       name: "Credentials",
@@ -130,16 +132,6 @@ export const authConfig = {
         token.role = user.role ?? UserRole.GURU;
       }
 
-      // Update session (dari client dengan update() function)
-      // if (trigger === "update" && session) {
-      //   // Type assertion dengan proper checking
-      //   if (session.user) {
-      //     token.image = session.user.image ?? token.image;
-      //     token.name = session.user.name ?? token.name;
-      //     token.email = session.user.email ?? token.email;
-      //   }
-      // }
-
       if (trigger === "update" && session) {
         const updateData = session as SessionUpdate;
 
@@ -170,7 +162,6 @@ export const authConfig = {
         session.user.id = token.id;
         session.user.role = token.role;
       }
-
       return session;
     },
 
@@ -179,82 +170,102 @@ export const authConfig = {
     //   const role = auth?.user?.role;
     //   const isOnGuruPage = nextUrl.pathname.startsWith("/guru");
     //   const isOnAdminPage = nextUrl.pathname.startsWith("/admin");
+    //   const isOnAuthPage = nextUrl.pathname.startsWith("/auth");
 
-    //   // Akses halaman /admin
+    //   // 1. Jika mencoba akses halaman admin
     //   if (isOnAdminPage) {
-    //     // Hanya ADMIN yang boleh ke /admin (admin juga boleh ke /guru)
-    //     return isLoggedIn && role === UserRole.ADMIN;
+    //     if (!isLoggedIn) {
+    //       // Belum login? Redirect ke login DENGAN callbackUrl
+    //       const loginUrl = new URL("/auth/login", nextUrl);
+    //       loginUrl.searchParams.set(
+    //         "callbackUrl",
+    //         nextUrl.pathname + nextUrl.search,
+    //       );
+    //       return Response.redirect(loginUrl); // <-- Gunakan NextResponse
+    //     }
+    //     if (role !== "ADMIN") {
+    //       return false; // Biarkan admin di halaman admin
+    //     }
+    //     return true; // User adalah admin, izinkan akses
     //   }
 
-    //   // Akses halaman /guru
+    //   // 2. Jika mencoba akses halaman guru
     //   if (isOnGuruPage) {
-    //     // ADMIN dan GURU boleh ke /guru
-    //     return (
-    //       isLoggedIn && (role === UserRole.GURU || role === UserRole.ADMIN)
-    //     );
+    //     if (!isLoggedIn) {
+    //       // Belum login? Redirect ke login DENGAN callbackUrl
+    //       const loginUrl = new URL("/auth/login", nextUrl);
+    //       loginUrl.searchParams.set(
+    //         "callbackUrl",
+    //         nextUrl.pathname + nextUrl.search,
+    //       );
+    //       return Response.redirect(loginUrl);
+    //     }
+    //     if (role !== "GURU" && role !== "ADMIN") {
+    //       // Bukan guru atau admin? Redirect ke unauthorized
+    //       return Response.redirect(new URL("/unauthorized", nextUrl));
+    //     }
+    //     return true; // User adalah guru atau admin, izinkan akses
     //   }
 
+    //   // 3. Jika SUDAH login TAPI mencoba akses halaman /auth/*
+    //   if (isLoggedIn && isOnAuthPage) {
+    //     // Redirect ke dashboard sesuai role
+    //     if (role === "ADMIN")
+    //       return Response.redirect(new URL("/admin", nextUrl));
+    //     if (role === "GURU")
+    //       return Response.redirect(new URL("/guru", nextUrl));
+    //     // Fallback jika role lain
+    //     return Response.redirect(new URL("/", nextUrl));
+    //   }
+
+    //   // 4. Untuk halaman publik lainnya, selalu izinkan
     //   return true;
     // },
 
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const role = auth?.user?.role;
-      const isOnGuruPage = nextUrl.pathname.startsWith("/guru");
-      const isOnAdminPage = nextUrl.pathname.startsWith("/admin");
-      const isOnAuthPage = nextUrl.pathname.startsWith("/auth");
+      const userRole = auth?.user?.role;
+      const { pathname } = nextUrl;
 
-      // 1. Jika mencoba akses halaman admin
-      if (isOnAdminPage) {
-        if (!isLoggedIn) {
-          // Belum login? Redirect ke login DENGAN callbackUrl
-          const loginUrl = new URL("/auth/login", nextUrl);
-          loginUrl.searchParams.set(
-            "callbackUrl",
-            nextUrl.pathname + nextUrl.search,
-          );
-          return Response.redirect(loginUrl); // <-- Gunakan NextResponse
-        }
-        if (role !== "ADMIN") {
-          // Bukan admin? Redirect ke halaman "unauthorized" atau dashboard guru
-          // return NextResponse.redirect(new URL("/unauthorized", nextUrl));
-          // Atau jika admin boleh ke guru:
-          return false; // Biarkan admin di halaman admin
-        }
-        return true; // User adalah admin, izinkan akses
+      // 1. Cek apakah rute yang diminta ada dalam daftar rute yang dilindungi
+      // Urutkan berdasarkan panjang path (desc) untuk memastikan '/admin/cabang' dicek sebelum '/admin'
+      const sortedProtectedRoutes = [...protectedRoutes].sort(
+        (a, b) => b.path.length - a.path.length,
+      );
+      const routeRule = sortedProtectedRoutes.find((rule) =>
+        pathname.startsWith(rule.path),
+      );
+
+      // Jika rute TIDAK DILINDUNGI (seperti '/' atau '/about'), izinkan akses
+      if (!routeRule) {
+        return true;
       }
 
-      // 2. Jika mencoba akses halaman guru
-      if (isOnGuruPage) {
-        if (!isLoggedIn) {
-          // Belum login? Redirect ke login DENGAN callbackUrl
-          const loginUrl = new URL("/auth/login", nextUrl);
-          loginUrl.searchParams.set(
-            "callbackUrl",
-            nextUrl.pathname + nextUrl.search,
-          );
-          return Response.redirect(loginUrl);
-        }
-        if (role !== "GURU" && role !== "ADMIN") {
-          // Bukan guru atau admin? Redirect ke unauthorized
-          return Response.redirect(new URL("/unauthorized", nextUrl));
-        }
-        return true; // User adalah guru atau admin, izinkan akses
+      // --- LOGIKA UNTUK RUTE YANG DILINDUNGI ---
+
+      // 2. Jika pengguna BELUM LOGIN, lempar ke halaman login
+      if (!isLoggedIn) {
+        const loginUrl = new URL("/auth/login", nextUrl);
+        const callbackPath = nextUrl.pathname + nextUrl.search;
+        loginUrl.searchParams.set("callbackUrl", callbackPath);
+        return NextResponse.redirect(loginUrl);
       }
 
-      // 3. Jika SUDAH login TAPI mencoba akses halaman /auth/*
-      if (isLoggedIn && isOnAuthPage) {
-        // Redirect ke dashboard sesuai role
-        if (role === "ADMIN")
-          return Response.redirect(new URL("/admin", nextUrl));
-        if (role === "GURU")
-          return Response.redirect(new URL("/guru", nextUrl));
-        // Fallback jika role lain
-        return Response.redirect(new URL("/", nextUrl));
+      // 3. Jika pengguna SUDAH LOGIN, cek perannya
+      if (userRole && routeRule.roles.includes(userRole)) {
+        // Pengguna memiliki peran yang diizinkan, izinkan akses
+        return true;
       }
 
-      // 4. Untuk halaman publik lainnya, selalu izinkan
-      return true;
+      // 4. Jika pengguna SUDAH LOGIN tapi TIDAK PUNYA AKSES
+      // (Contoh: GURU mencoba akses /admin)
+      // Lempar mereka ke dashboard mereka sendiri sebagai fallback
+      if (userRole === "GURU") {
+        return NextResponse.redirect(new URL("/guru", nextUrl));
+      }
+
+      // Fallback untuk kasus lain (misal, tidak ada peran), lempar ke halaman unauthorized atau login
+      return NextResponse.redirect(new URL("/auth/login", nextUrl));
     },
   },
 } satisfies NextAuthConfig;

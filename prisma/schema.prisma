@@ -18,7 +18,7 @@ model Post {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    createdBy   Staff  @relation(fields: [createdById], references: [id])
+    createdBy   User   @relation(fields: [createdById], references: [id])
     createdById String
 
     @@index([createdById])
@@ -39,7 +39,7 @@ model Account {
     scope                    String?
     id_token                 String? // @db.Text
     session_state            String?
-    user                     Staff   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
     refresh_token_expires_in Int?
 
     @@unique([provider, providerAccountId])
@@ -51,7 +51,7 @@ model Session {
     sessionToken String   @unique
     userId       String
     expires      DateTime
-    user         Staff    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@index([userId])
 }
@@ -61,7 +61,7 @@ enum UserRole {
     ADMIN
 }
 
-model Staff {
+model User {
     id       String   @id @default(cuid())
     name     String?
     email    String?  @unique
@@ -104,7 +104,7 @@ model Cabang {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    staff Staff[]
+    staff User[]
     murid Murid[]
     ruang Ruang[]
 }
@@ -188,7 +188,7 @@ model ProgramKelas {
     updatedAt DateTime @updatedAt
 
     idGuruUtama String
-    guruUtama   Staff  @relation(fields: [idGuruUtama], references: [id])
+    guruUtama   User   @relation(fields: [idGuruUtama], references: [id])
 
     jadwalSesi       JadwalSesi[]
     pendaftaranKelas pendaftaranKelas[]
@@ -258,9 +258,9 @@ model AbsensiGuru {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    guru       Staff      @relation("guruRelation", fields: [guruId], references: [id], onDelete: Restrict)
+    guru       User       @relation("guruRelation", fields: [guruId], references: [id], onDelete: Restrict)
     jadwalSesi JadwalSesi @relation(fields: [jadwalSesiId], references: [id], onDelete: Cascade)
-    verifiedBy Staff?     @relation("verifiedByRelation", fields: [verifiedById], references: [id], onDelete: SetNull)
+    verifiedBy User?      @relation("verifiedByRelation", fields: [verifiedById], references: [id], onDelete: SetNull)
 
     @@unique([guruId, jadwalSesiId])
     @@index([guruId])
@@ -304,7 +304,7 @@ model Pembayaran {
     note           String?
 
     verifiedById String? // ID Admin yang memverifikasi
-    verifiedBy   Staff?  @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
+    verifiedBy   User?   @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

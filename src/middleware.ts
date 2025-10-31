@@ -1,11 +1,7 @@
-import NextAuth from "next-auth";
-import { authConfig } from "@/server/auth";
+import edgeAuth from "@/server/auth/edge-config";
 
-// Middleware ini hanya menjalankan mekanisme otorisasi dari authConfig.
-// Semua logika ada di dalam callback `authorized`.
-export default NextAuth(authConfig).auth;
+export default edgeAuth;
 
-// Matcher ini juga tetap sama.
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/trpc).*)"],
 };

@@ -11,12 +11,14 @@ import type { JWT } from "next-auth/jwt";
 import { db } from "@/server/db";
 import { NextResponse } from "next/server";
 import { protectedRoutes } from "@/constants/routes";
-import { UserRole } from "@prisma/client";
+// import { UserRole } from "@prisma/client";
 import type { Adapter } from "next-auth/adapters";
 
-/**
- * Extend NextAuth session type for role and id support
- */
+export enum UserRole {
+  ADMIN = "ADMIN",
+  GURU = "GURU",
+}
+
 declare module "next-auth" {
   interface Session extends DefaultSession {
     accessToken?: string;
@@ -151,20 +153,25 @@ export const authConfig: NextAuthConfig = {
      */
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const role = auth?.user?.role;
+      console.log("isLogin: ", isLoggedIn);
+      const role = auth?.user.role;
+      console.log("role: ", auth?.user.role);
       const pathname = nextUrl.pathname.replace(/\/+$/, ""); // hapus trailing slash
+      console.log("pathname", pathname);
 
       const sortedRoutes = [...protectedRoutes].sort(
         (a, b) => b.path.length - a.path.length,
       );
-
-      console.log("pathname", pathname);
       console.log("sortedRoutes", sortedRoutes);
+
       const routeRule = sortedRoutes.find(
         (r) => pathname === r.path || pathname.startsWith(`${r.path}/`),
       );
       console.log("routeRule", routeRule);
 
+      if (isLoggedIn && pathname === "/auth/login") {
+        return NextResponse.redirect(new URL("/", nextUrl));
+      }
       if (!routeRule) return true;
 
       if (!isLoggedIn) {

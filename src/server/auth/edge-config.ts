@@ -7,6 +7,7 @@ export const edgeAuthConfig = {
   adapter: undefined, // PrismaAdapter berat, tidak perlu di middleware
   providers: [], // CredentialsProvider berat, tidak perlu di middleware
   callbacks: {
+    ...authConfig.callbacks,
     authorized: authConfig.callbacks?.authorized, // hanya authorized
   },
 };

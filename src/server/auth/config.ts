@@ -153,21 +153,21 @@ export const authConfig: NextAuthConfig = {
      */
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      console.log("isLogin: ", isLoggedIn);
+      // console.log("isLogin: ", isLoggedIn);
       const role = auth?.user.role;
-      console.log("role: ", auth?.user.role);
+      // console.log("role: ", auth?.user.role);
       const pathname = nextUrl.pathname.replace(/\/+$/, ""); // hapus trailing slash
-      console.log("pathname", pathname);
+      // console.log("pathname", pathname);
 
       const sortedRoutes = [...protectedRoutes].sort(
         (a, b) => b.path.length - a.path.length,
       );
-      console.log("sortedRoutes", sortedRoutes);
+      // console.log("sortedRoutes", sortedRoutes);
 
       const routeRule = sortedRoutes.find(
         (r) => pathname === r.path || pathname.startsWith(`${r.path}/`),
       );
-      console.log("routeRule", routeRule);
+      // console.log("routeRule", routeRule);
 
       if (isLoggedIn && pathname === "/auth/login") {
         return NextResponse.redirect(new URL("/", nextUrl));

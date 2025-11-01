@@ -3,44 +3,44 @@
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Form } from "@/components/ui/form";
 import { api } from "@/trpc/react";
-import {
-  clientCabangSchema,
-  type TypeClientCabangSchema,
-} from "@/types/cabang.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import CabangForm from "./cabang-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import {
+  clientRuangSchema,
+  type TypeClientRuangSchema,
+} from "@/types/ruang.type";
+import RuangForm from "../forms/ruang-form";
 
-export default function TambahCabang() {
+export default function TambahRuang() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const form = useForm<TypeClientCabangSchema>({
-    resolver: zodResolver(clientCabangSchema),
+  const form = useForm<TypeClientRuangSchema>({
+    resolver: zodResolver(clientRuangSchema),
     defaultValues: {
-      nama: "",
-      alamat: "",
-      noTelp: "",
+      namaRuang: "",
+      kodeRuang: "",
+      cabangId: "",
     },
   });
 
-  const { mutate: createCabang, isPending } =
-    api.cabang.createCabang.useMutation({
-      onSuccess: () => {
-        toast.success("Cabang berhasil ditambahkan");
-        form.reset();
-        setIsOpen(false);
-      },
-      onError: (error) => {
-        toast.error(`Gagal membuat cabang: ${error.message}`);
-      },
-    });
+  const { mutate: createRuang, isPending } = api.ruang.createRuang.useMutation({
+    onSuccess: () => {
+      toast.success("Ruang berhasil ditambahkan");
+      form.reset();
+      setIsOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`Gagal membuat Ruang: ${error.message}`);
+    },
+  });
 
-  const onSubmit = (values: TypeClientCabangSchema) => {
-    createCabang(values);
+  const onSubmit = (values: TypeClientRuangSchema) => {
+    // console.log(values);
+    createRuang(values);
   };
 
   return (
@@ -51,23 +51,23 @@ export default function TambahCabang() {
       </Button> */}
 
       <AddDrawer
-        title="Tambah Cabang"
-        description="Tambahkan cabang baru ke sistem"
+        title="Tambah Ruang"
+        description="Tambahkan ruang baru ke sistem"
         onSubmit={form.handleSubmit(onSubmit)}
         isPending={isPending}
-        submitText="Tambah Cabang"
+        submitText="Tambah Ruang"
         cancelText="Batal"
         trigger={
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Tambah
+            Tambah Ruang
           </Button>
         }
         isOpen={isOpen}
         onOpenChange={setIsOpen}
       >
         <Form {...form}>
-          <CabangForm onSubmit={onSubmit} />
+          <RuangForm onSubmit={onSubmit} />
         </Form>
       </AddDrawer>
     </>

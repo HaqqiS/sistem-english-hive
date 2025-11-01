@@ -1,5 +1,5 @@
-import { api } from "@/trpc/server";
 import CabangClient from "@/app/_components/views/admin/cabang/cabang-client";
+import { api, HydrateClient } from "@/trpc/server";
 import type { CabangType } from "@/types/cabang.type";
 
 async function getData(): Promise<CabangType[]> {
@@ -20,8 +20,12 @@ async function getData(): Promise<CabangType[]> {
 export default async function CabangPage() {
   // await delay(600000);
 
-  const data = await getData();
+  // const data = await getData();
   // const dataCabang = await api.cabang.getAll();
+  const [cabang, ruang] = await Promise.all([
+    api.cabang.getAll(),
+    api.ruang.getRuangByCabangId({ cabangId: "all" }),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -33,8 +37,10 @@ export default async function CabangPage() {
           </p>
         </div>
       </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <CabangClient initialData={[]} />
+      <main className="flex flex-1 flex-col gap-4 pt-0">
+        <HydrateClient>
+          <CabangClient initialDataCabang={cabang} initialDataRuang={ruang} />
+        </HydrateClient>
       </main>
     </div>
   );

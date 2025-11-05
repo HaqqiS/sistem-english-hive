@@ -2,18 +2,17 @@
 
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Form } from "@/components/ui/form";
-import { api } from "@/trpc/react";
 import {
   clientCabangSchema,
   type TypeClientCabangSchema,
 } from "@/types/cabang.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import CabangForm from "../forms/cabang-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useCabang } from "../../../../../../hooks/useCabang";
 
 export default function TambahCabang() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,20 +26,15 @@ export default function TambahCabang() {
     },
   });
 
-  const { mutate: createCabang, isPending } =
-    api.cabang.createCabang.useMutation({
-      onSuccess: () => {
-        toast.success("Cabang berhasil ditambahkan");
-        form.reset();
-        setIsOpen(false);
-      },
-      onError: (error) => {
-        toast.error(`Gagal membuat cabang: ${error.message}`);
-      },
-    });
+  const { mutations } = useCabang({
+    onSuccessCreate: () => {
+      form.reset();
+      setIsOpen(false);
+    },
+  });
 
   const onSubmit = (values: TypeClientCabangSchema) => {
-    createCabang(values);
+    mutations.create.mutate(values);
   };
 
   return (
@@ -54,7 +48,7 @@ export default function TambahCabang() {
         title="Tambah Cabang"
         description="Tambahkan cabang baru ke sistem"
         onSubmit={form.handleSubmit(onSubmit)}
-        isPending={isPending}
+        isPending={mutations.create.isPending}
         submitText="Tambah Cabang"
         cancelText="Batal"
         trigger={

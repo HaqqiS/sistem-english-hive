@@ -173,7 +173,7 @@ enum TipeKelas {
     PRIVATE
 }
 
-enum EnumJenisKelas {
+enum JenisKelas {
     TinyTods
     PreLittleStar
     LittleStar
@@ -184,21 +184,21 @@ enum EnumJenisKelas {
 }
 
 model Kelas {
-    id             String         @id @default(cuid())
-    jenisKelas     EnumJenisKelas // e.g., "Rising Star", "Tiny Tod's"
+    id             String     @id @default(cuid())
+    jenisKelas     JenisKelas // e.g., "Rising Star", "Tiny Tod's"
     level          Int // e.g., 1, 2, 3
     tipe           TipeKelas // BARU: REGULAR atau PRIVATE
     grup           String? // BARU: "A", "B", atau null (opsional)
-    bulanTahunAjar String         @db.VarChar(7) // format: "MM/YYYY", e.g., "08/2025"
+    bulanTahunAjar String     @db.VarChar(7) // format: "MM/YYYY", e.g., "08/2025"
     deskripsi      String?
     hargaKelas     Int
-    kodeKelas      String // e.g., "RisingStar-1A-8/2023-reg"
-    historyGuru    String? // catatan pergantian guru untuk kelas ini
+    kodeKelas      String // e.g., "TinyTods 1-A|reguler|03/2025"
+    // historyGuru    String? // catatan pergantian guru untuk kelas ini
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    namaGuruUtama String?
+    // namaGuruUtama String?
     // guruUtama   User   @relation(fields: [idGuruUtama], references: [id])
 
     User   User?   @relation(fields: [guruId], references: [id])
@@ -241,7 +241,6 @@ model SesiPertemuanKelas {
     id           String   @id @default(cuid())
     kelasId      String
     ruangId      String
-    kodeSesi     String
     tanggalWaktu DateTime
     // tanggalWaktu String @db.VarChar(19) // format: "YYYY-MM-DD HH:mm:ss"
 

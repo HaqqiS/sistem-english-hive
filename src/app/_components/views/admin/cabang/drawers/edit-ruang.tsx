@@ -1,21 +1,18 @@
 "use client";
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
-import { api } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { useRuangStore } from "@/store/useCabangStore";
 import {
   clientRuangSchema,
   type TypeClientRuangSchema,
 } from "@/types/ruang.type";
 import RuangForm from "../forms/ruang-form";
+import { useRuang } from "@/hooks/useRuang";
 
 export default function EditRuang() {
-  const apiUtils = api.useUtils();
-
   const { isDrawerOpen, selectedRuang, closeDrawer, clearSelected } =
     useRuangStore();
 
@@ -25,7 +22,6 @@ export default function EditRuang() {
     if (selectedRuang) {
       editRuangForm.reset({
         namaRuang: selectedRuang.namaRuang,
-        kodeRuang: selectedRuang.kodeRuang,
         cabangId: selectedRuang.cabangId,
         isAktif: selectedRuang.isAktif,
       });
@@ -38,30 +34,37 @@ export default function EditRuang() {
     resolver: zodResolver(clientRuangSchema),
     defaultValues: {
       namaRuang: selectedRuang?.namaRuang,
-      kodeRuang: selectedRuang?.kodeRuang,
       cabangId: selectedRuang?.cabangId,
       isAktif: selectedRuang?.isAktif,
     },
   });
 
-  const { mutateAsync: updateRuang, isPending: isUpdating } =
-    api.ruang.updateRuang.useMutation({
-      onSuccess: async () => {
-        await apiUtils.ruang.getRuangByCabangId.invalidate();
-        toast.success("Ruang berhasil diupdate");
-        closeDrawer();
-        clearSelected();
-        editRuangForm.reset();
-      },
-      onError: (error) => {
-        toast.error(`Gagal mengupdate ruang: ${error.message}`);
-      },
-    });
+  const { mutations } = useRuang({
+    onSuccessUpdate: () => {
+      closeDrawer();
+      clearSelected();
+      editRuangForm.reset();
+    },
+  });
+
+  // const { mutateAsync: updateRuang, isPending: isUpdating } =
+  //   api.ruang.updateRuang.useMutation({
+  //     onSuccess: async () => {
+  //       await apiUtils.ruang.getRuangByCabangId.invalidate();
+  //       toast.success("Ruang berhasil diupdate");
+  //       closeDrawer();
+  //       clearSelected();
+  //       editRuangForm.reset();
+  //     },
+  //     onError: (error) => {
+  //       toast.error(`Gagal mengupdate ruang: ${error.message}`);
+  //     },
+  //   });
 
   const handleSubmitEdit = async (data: TypeClientRuangSchema) => {
     if (!selectedRuang) return;
 
-    await updateRuang({
+    await mutations.update.mutateAsync({
       id: selectedRuang.id,
       ...data,
     });
@@ -74,7 +77,7 @@ export default function EditRuang() {
       title="Edit Ruang"
       description="Ubah informasi ruang yang sudah ada"
       onSubmit={editRuangForm.handleSubmit(handleSubmitEdit)}
-      isPending={isUpdating}
+      isPending={mutations.update.isPending}
       submitText="Simpan Perubahan"
       cancelText="Batal"
     >

@@ -11,6 +11,11 @@ const teacherNavItems: NavItem[] = [
     url: "/guru",
     icon: "Home",
   },
+  {
+    title: "Absensi Murid",
+    url: "/guru/absen",
+    icon: "Users",
+  },
 ];
 
 export default async function TeacherLayout({

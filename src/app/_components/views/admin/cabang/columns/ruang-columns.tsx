@@ -62,15 +62,6 @@ export const columns = ({
   },
 
   {
-    accessorKey: "kodeRuang",
-    header: "Kode Ruang",
-    cell: ({ row }) => (
-      <div className="max-w-[300px] truncate" title={row.original.kodeRuang}>
-        {row.original.kodeRuang}
-      </div>
-    ),
-  },
-  {
     accessorKey: "namaCabang",
     header: "Cabang",
     cell: ({ row }) => (

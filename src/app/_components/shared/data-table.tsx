@@ -51,8 +51,8 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  filterColumnId: string;
-  filterColumnPlaceholder: string;
+  filterColumnId?: string;
+  filterColumnPlaceholder?: string;
   toolbar?: (table: TableType<TData>) => React.ReactNode;
 }
 
@@ -90,16 +90,21 @@ export function DataTable<TData, TValue>({
   return (
     <div>
       <div className="flex items-center gap-4 py-4">
-        <Input
-          placeholder={filterColumnPlaceholder}
-          value={
-            (table.getColumn(filterColumnId)?.getFilterValue() as string) ?? ""
-          }
-          onChange={(event) =>
-            table.getColumn(filterColumnId)?.setFilterValue(event.target.value)
-          }
-          className="max-w-xs"
-        />
+        {filterColumnId ? (
+          <Input
+            placeholder={filterColumnPlaceholder}
+            value={
+              (table.getColumn(filterColumnId)?.getFilterValue() as string) ??
+              ""
+            }
+            onChange={(event) =>
+              table
+                .getColumn(filterColumnId)
+                ?.setFilterValue(event.target.value)
+            }
+            className="max-w-xs"
+          />
+        ) : null}
         <div>{toolbar ? toolbar(table) : null}</div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -128,9 +133,10 @@ export function DataTable<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
       <div className="overflow-hidden rounded-md border">
         <Table>
-          <TableHeader className="bg-muted sticky top-0 z-10">
+          <TableHeader className="bg-muted sticky top-0">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -178,6 +184,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
+
       <div className="flex items-center justify-between space-x-2 p-4">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}

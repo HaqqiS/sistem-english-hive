@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { api, type RouterOutputs } from "@/trpc/react";
+import { type RouterOutputs } from "@/trpc/react";
 import { DataTable } from "@/app/_components/shared/data-table";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { columns as createCabangColumns } from "./columns/cabang-columns";
@@ -21,7 +21,8 @@ import EditCabang from "./drawers/edit-cabang";
 import { useCabangStore, useRuangStore } from "@/store/useCabangStore";
 import type { RuangType } from "@/types/ruang.type";
 import EditRuang from "./drawers/edit-ruang";
-import { toast } from "sonner";
+import { useRuang } from "../../../../../hooks/useRuang";
+import { useCabang } from "../../../../../hooks/useCabang";
 
 interface CabangClientProps {
   initialDataCabang: RouterOutputs["cabang"]["getAll"];
@@ -32,7 +33,6 @@ export default function CabangClient({
   initialDataCabang,
   initialDataRuang,
 }: CabangClientProps) {
-  const apiUtils = api.useUtils();
   // State management
   const { openDrawer: openCabangDrawer } = useCabangStore();
   const { openDrawer: openRuangDrawer } = useRuangStore();
@@ -45,8 +45,6 @@ export default function CabangClient({
   const [selectedRuangToDelete, setSelectedRuangToDelete] =
     useState<RuangType | null>(null);
 
-  const [selectedCabangId, setSelectedCabangId] = useState<string>("all");
-
   // Form setup
 
   // API queries
@@ -54,42 +52,38 @@ export default function CabangClient({
   //   initialData: initialData,
   //   refetchOnWindowFocus: false,
   // });
-  const { data: dataCabang } = api.cabang.getAll.useQuery(undefined, {
+  // const { data: dataCabang } = api.cabang.getAll.useQuery(undefined, {
+  //   initialData: initialDataCabang,
+  //   placeholderData: keepPreviousData,
+  // });
+
+  // const { data: dataRuang } = api.ruang.getRuangByCabangId.useQuery(
+  //   { cabangId: selectedCabangId },
+  //   { initialData: initialDataRuang },
+  // );
+
+  const { data: dataCabang } = useCabang({
     initialData: initialDataCabang,
-    placeholderData: keepPreviousData,
+  });
+  const { data: dataRuang } = useRuang({
+    initialData: initialDataRuang,
   });
 
-  const { data: dataRuang } = api.ruang.getRuangByCabangId.useQuery(
-    { cabangId: selectedCabangId },
-    { initialData: initialDataRuang },
-  );
-
   // Mutation for delete
-  const { mutateAsync: deleteCabang, isPending: isDeletingCabang } =
-    api.cabang.deleteCabang.useMutation({
-      onSuccess: async () => {
-        await apiUtils.cabang.getAll.invalidate();
-        toast.success("Cabang berhasil dihapus");
-        setDeleteCabangDialogOpen(false);
-        setSelectedCabangToDelete(null);
-      },
-      onError: (error) => {
-        toast.error(`Gagal menghapus cabang: ${error.message}`);
-      },
-    });
 
-  const { mutateAsync: deleteRuang, isPending: isDeletingRuang } =
-    api.ruang.deleteRuang.useMutation({
-      onSuccess: async () => {
-        await apiUtils.ruang.getRuangByCabangId.invalidate();
-        toast.success("Ruang berhasil dihapus");
-        setDeleteRuangDialogOpen(false);
-        setSelectedRuangToDelete(null);
-      },
-      onError: (error) => {
-        toast.error(`Gagal menghapus ruang: ${error.message}`);
-      },
-    });
+  const { mutations: cabangMutations } = useCabang({
+    onSuccessDelete: () => {
+      setDeleteCabangDialogOpen(false);
+      setSelectedCabangToDelete(null);
+    },
+  });
+
+  const { mutations: ruangMutations } = useRuang({
+    onSuccessDelete: () => {
+      setDeleteRuangDialogOpen(false);
+      setSelectedRuangToDelete(null);
+    },
+  });
 
   // Event handlers
   const handleEditClickCabang = (item: CabangType) => {
@@ -119,12 +113,12 @@ export default function CabangClient({
   const handleConfirmDeleteCabang = async () => {
     if (!selectedCabangToDelete) return;
 
-    await deleteCabang({ id: selectedCabangToDelete.id });
+    await cabangMutations.delete.mutateAsync({ id: selectedCabangToDelete.id });
   };
   const handleConfirmDeleteRuang = async () => {
     if (!selectedRuangToDelete) return;
 
-    await deleteRuang({ id: selectedRuangToDelete.id });
+    await ruangMutations.delete.mutateAsync({ id: selectedRuangToDelete.id });
   };
 
   // Create columns with handlers
@@ -158,7 +152,7 @@ export default function CabangClient({
           </>
         }
         onConfirm={handleConfirmDeleteCabang}
-        isLoading={isDeletingCabang}
+        isLoading={cabangMutations.delete.isPending}
         confirmText="Hapus"
         cancelText="Batal"
       />
@@ -177,7 +171,7 @@ export default function CabangClient({
           </>
         }
         onConfirm={handleConfirmDeleteRuang}
-        isLoading={isDeletingRuang}
+        isLoading={ruangMutations.delete.isPending}
         confirmText="Hapus"
         cancelText="Batal"
       />
@@ -197,7 +191,7 @@ export default function CabangClient({
         data={dataRuang ?? []}
         toolbar={(table) => (
           <div className="flex items-center gap-2">
-            <Select
+            {/* <Select
               onValueChange={(value) =>
                 table.getColumn("cabangId")?.setFilterValue(value)
               }
@@ -215,7 +209,7 @@ export default function CabangClient({
                   );
                 })}
               </SelectContent>
-            </Select>
+            </Select> */}
           </div>
         )}
       />

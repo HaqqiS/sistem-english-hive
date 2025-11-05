@@ -1,7 +1,6 @@
 "use client";
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
-import { api } from "@/trpc/react";
 import {
   clientCabangSchema,
   type TypeClientCabangSchema,
@@ -9,13 +8,11 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import CabangForm from "../forms/cabang-form";
 import { useCabangStore } from "@/store/useCabangStore";
+import { useCabang } from "../../../../../../hooks/useCabang";
 
 export default function EditCabang() {
-  const apiUtils = api.useUtils();
-
   const { isDrawerOpen, selectedCabang, closeDrawer, clearSelected } =
     useCabangStore();
 
@@ -40,24 +37,18 @@ export default function EditCabang() {
     },
   });
 
-  const { mutateAsync: updateCabang, isPending: isUpdating } =
-    api.cabang.updateCabang.useMutation({
-      onSuccess: async () => {
-        await apiUtils.cabang.getAll.invalidate();
-        toast.success("Cabang berhasil diupdate");
-        closeDrawer();
-        clearSelected();
-        editCabangForm.reset();
-      },
-      onError: (error) => {
-        toast.error(`Gagal mengupdate cabang: ${error.message}`);
-      },
-    });
+  const { mutations } = useCabang({
+    onSuccessUpdate: () => {
+      closeDrawer();
+      clearSelected();
+      editCabangForm.reset();
+    },
+  });
 
   const handleSubmitEdit = async (data: TypeClientCabangSchema) => {
     if (!selectedCabang) return;
 
-    await updateCabang({
+    await mutations.update.mutateAsync({
       id: selectedCabang.id,
       ...data,
     });
@@ -70,7 +61,7 @@ export default function EditCabang() {
       title="Edit Cabang"
       description="Ubah informasi cabang yang sudah ada"
       onSubmit={editCabangForm.handleSubmit(handleSubmitEdit)}
-      isPending={isUpdating}
+      isPending={mutations.update.isPending}
       submitText="Simpan Perubahan"
       cancelText="Batal"
     >

@@ -31,7 +31,7 @@ export default async function CabangPage() {
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <header className="flex items-center justify-between pt-6">
         <div>
-          <h1 className="text-xl">Ruang & Cabang</h1>
+          <h1 className="text-xl">Kelola Ruang & Cabang</h1>
           <p className="text-muted-foreground text-sm">
             This is the cabang management page.
           </p>

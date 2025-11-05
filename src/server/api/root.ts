@@ -2,6 +2,13 @@ import { postRouter } from "@/server/api/routers/post.router";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { cabangRouter } from "./routers/cabang.router";
 import { ruangRouter } from "./routers/ruang.router";
+import { kelasRouter } from "./routers/kelas.router";
+import { absenGuruRouter } from "./routers/absenGuru.router";
+import { sesiPertemuanRouter } from "./routers/sesiPertemuan.router";
+import { muridRouter } from "./routers/murid.router";
+import { pendaftaranKelasRouter } from "./routers/pendaftaranKelas.router";
+import { userRouter } from "./routers/user.router";
+import { absenMuridRouter } from "./routers/absenMurid.router";
 
 /**
  * This is the primary router for your server.
@@ -10,8 +17,15 @@ import { ruangRouter } from "./routers/ruang.router";
  */
 export const appRouter = createTRPCRouter({
   post: postRouter,
+  user: userRouter,
+  absenGuru: absenGuruRouter,
   cabang: cabangRouter,
   ruang: ruangRouter,
+  kelas: kelasRouter,
+  sesiPertemuan: sesiPertemuanRouter,
+  murid: muridRouter,
+  pendaftaranKelas: pendaftaranKelasRouter,
+  absenMurid: absenMuridRouter,
 });
 
 // export type definition of API

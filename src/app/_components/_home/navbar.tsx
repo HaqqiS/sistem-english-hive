@@ -32,13 +32,15 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden items-center gap-4 md:flex">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.href}
                 href={link.href}
-                className="text-foreground hover:text-primary text-md font-sm transition-colors"
+                className="text-foreground hover:text-primary transition-colors"
               >
-                <Button variant="ghost">{link.label}</Button>
-              </Link>
+                <Button variant="ghost" className="text-base">
+                  {link.label}
+                </Button>
+              </a>
             ))}
           </div>
 

@@ -1,0 +1,73 @@
+"use client";
+
+import { AddDrawer } from "@/app/_components/shared/add-drawer";
+import { Form } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import {
+  clientPendaftaranKelasSchema,
+  type TypeClientPendaftaranKelasSchema,
+} from "@/types/pendaftaranKelas.type";
+import PendaftaranKelasForm from "../pendaftaran-kelas-form";
+import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
+import { formatToWITA } from "@/utils/dateUtils";
+
+export default function TambahPendaftaranKelas() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const form = useForm<TypeClientPendaftaranKelasSchema>({
+    resolver: zodResolver(clientPendaftaranKelasSchema),
+    defaultValues: {},
+  });
+
+  const { mutations } = usePendaftaranKelas({
+    onSuccessCreate: () => {
+      form.reset();
+      setIsOpen(false);
+    },
+  });
+
+  const onSubmit = (values: TypeClientPendaftaranKelasSchema) => {
+    const formatted = {
+      ...values,
+      tanggalMulai: formatToWITA(values.tanggalMulai as unknown as Date),
+      isAktif: true,
+    };
+    console.log("clicked");
+    mutations.create.mutate(formatted);
+  };
+
+  return (
+    <>
+      {/* <Button onClick={() => setIsOpen(true)}>
+        <Plus className="mr-2 h-4 w-4" />
+        Tambah Cabang
+      </Button> */}
+
+      <AddDrawer
+        title="Pendaftaran Kelas"
+        description="Tambahkan pendaftaran kelas baru ke sistem"
+        onSubmit={form.handleSubmit(onSubmit)}
+        isPending={mutations.create.isPending}
+        submitText="Tambah Pendaftaran Kelas"
+        cancelText="Batal"
+        trigger={
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            <p className="sr-only lg:not-sr-only">Tambahkan Murid ke Kelas</p>
+            <p className="not-sr-only lg:sr-only">Tambahkan Murid</p>
+          </Button>
+        }
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+      >
+        <Form {...form}>
+          <PendaftaranKelasForm onSubmit={onSubmit} />
+        </Form>
+      </AddDrawer>
+    </>
+  );
+}

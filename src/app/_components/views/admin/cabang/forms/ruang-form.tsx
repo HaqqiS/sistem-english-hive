@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import type { TypeClientRuangSchema } from "@/types/ruang.type";
 import { useFormContext } from "react-hook-form";
-import useCabangController from "../useCabangController";
+import { useCabang } from "../../../../../../hooks/useCabang";
 
 interface RuangFormProps {
   onSubmit: (data: TypeClientRuangSchema) => void;
@@ -25,7 +25,7 @@ interface RuangFormProps {
 
 export default function RuangForm({ onSubmit }: RuangFormProps) {
   const form = useFormContext<TypeClientRuangSchema>();
-  const { dataCabang } = useCabangController();
+  const { data: dataCabang, isLoading } = useCabang();
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -48,20 +48,6 @@ export default function RuangForm({ onSubmit }: RuangFormProps) {
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="kodeRuang"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Kode Ruang</FormLabel>
-            <FormControl>
-              <Input placeholder="Masukkan kode ruang" {...field} required />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       <div className="grid grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -71,10 +57,10 @@ export default function RuangForm({ onSubmit }: RuangFormProps) {
               <FormLabel>Pilih Status</FormLabel>
               <FormControl>
                 <Select
-                  onValueChange={(val) => field.onChange(val === "true")}
-                  value={field.value === true ? "true" : "false"}
+                  onValueChange={field.onChange}
+                  value={field.value?.toString()}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -93,20 +79,24 @@ export default function RuangForm({ onSubmit }: RuangFormProps) {
           name="cabangId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ID Cabang</FormLabel>
+              <FormLabel>Pilih Cabang</FormLabel>
               <FormControl>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Cabang" />
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={isLoading ? "Loading..." : "Pilih Cabang"}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {dataCabang?.map((items) => {
-                      return (
-                        <SelectItem key={items.id} value={items.id}>
-                          {items.namaCabang}
-                        </SelectItem>
-                      );
-                    })}
+                    {dataCabang?.map((items) => (
+                      <SelectItem key={items.id} value={items.id}>
+                        {items.namaCabang}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </FormControl>

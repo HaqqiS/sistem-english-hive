@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export default function CTA() {
   return (
-    <section className="from-primary to-secondary bg-gradient-to-r px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+    <section className="from-primary to-secondary bg-linear-to-r px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
       <div className="mx-auto max-w-4xl space-y-8 text-center">
         <h2 className="text-primary-foreground text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
           Siap Meningkatkan Kemampuan Bahasa Inggris Anda?

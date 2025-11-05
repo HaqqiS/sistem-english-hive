@@ -13,12 +13,11 @@ export default function About() {
   return (
     <section
       id="about"
-      className="bg-muted/30 px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      className="bg-muted/30 flex min-h-screen items-center px-4 py-12 sm:px-6 lg:px-8 lg:py-16"
     >
-      <div className="mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
-          {/* Left Image */}
-          <div className="relative h-96 min-h-96 lg:h-full">
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
+          <div className="relative h-64 lg:h-80">
             <Image
               src="/team-photo-classroom-environment-english-learning.jpg"
               alt="English Hive Team"
@@ -26,18 +25,17 @@ export default function About() {
               height={400}
               className="h-full w-full rounded-2xl object-cover shadow-lg"
             />
-            <div className="bg-primary text-primary-foreground absolute -right-4 -bottom-4 rounded-lg px-6 py-3 font-semibold shadow-lg">
+            <div className="bg-primary text-primary-foreground absolute -right-4 -bottom-4 rounded-lg px-4 py-2 text-sm font-semibold shadow-lg">
               5+ Tahun Berpengalaman
             </div>
           </div>
 
-          {/* Right Content */}
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
+          <div className="space-y-4">
+            <h2 className="text-3xl font-bold text-balance sm:text-4xl lg:text-4xl">
               Tentang English Hive
             </h2>
 
-            <div className="text-muted-foreground space-y-4">
+            <div className="text-muted-foreground space-y-3 text-sm">
               <p>
                 English Hive adalah lembaga kursus bahasa Inggris yang
                 berdedikasi untuk membantu siswa dari berbagai latar belakang
@@ -48,22 +46,17 @@ export default function About() {
                 berkualifikasi internasional, kami telah membantu ratusan siswa
                 meraih impian mereka dalam pendidikan dan karir global.
               </p>
-              <p>
-                Kami percaya bahwa setiap orang memiliki potensi untuk menguasai
-                bahasa Inggris dengan pendekatan yang tepat, lingkungan yang
-                mendukung, dan praktik yang konsisten.
-              </p>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 pt-6">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-3 pt-3">
               {stats.map((stat, index) => (
                 <Card key={index} className="bg-background">
-                  <CardContent className="pt-6">
-                    <div className="text-primary text-2xl font-bold">
+                  <CardContent className="pt-3">
+                    <div className="text-primary text-xl font-bold">
                       {stat.number}
                     </div>
-                    <div className="text-muted-foreground text-sm">
+                    <div className="text-muted-foreground text-xs">
                       {stat.label}
                     </div>
                   </CardContent>
@@ -71,7 +64,7 @@ export default function About() {
               ))}
             </div>
 
-            <Button size="lg" variant="outline" className="mt-6 bg-transparent">
+            <Button size="sm" variant="outline" className="mt-3 bg-transparent">
               Pelajari Lebih Lanjut
             </Button>
           </div>

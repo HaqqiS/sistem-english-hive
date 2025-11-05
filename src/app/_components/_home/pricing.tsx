@@ -59,19 +59,19 @@ export default function Pricing() {
   return (
     <section
       id="pricing"
-      className="bg-muted/30 px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      className="bg-muted/30 flex min-h-screen items-center px-4 py-12 sm:px-6 lg:px-8 lg:py-16"
     >
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-8 text-center">
+          <h2 className="mb-2 text-3xl font-bold text-balance sm:text-4xl lg:text-4xl">
             Paket Investasi Belajar
           </h2>
-          <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
+          <p className="text-muted-foreground mx-auto max-w-2xl text-base">
             Pilih paket yang sesuai dengan budget dan kebutuhan Anda
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           {pricingTiers.map((tier, index) => (
             <Card
               key={index}
@@ -82,33 +82,33 @@ export default function Pricing() {
               }`}
             >
               {tier.popular && (
-                <Badge className="bg-primary absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-primary absolute -top-3 left-1/2 -translate-x-1/2 text-xs">
                   Most Popular
                 </Badge>
               )}
 
-              <CardHeader>
-                <CardTitle className="text-2xl">{tier.name}</CardTitle>
-                <p className="text-muted-foreground mt-2 text-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-xl">{tier.name}</CardTitle>
+                <p className="text-muted-foreground mt-1 text-xs">
                   {tier.description}
                 </p>
               </CardHeader>
 
-              <CardContent className="flex-1 space-y-6">
+              <CardContent className="flex-1 space-y-3">
                 <div>
-                  <div className="text-primary text-4xl font-bold">
+                  <div className="text-primary text-3xl font-bold">
                     {tier.price}
                   </div>
-                  <div className="text-muted-foreground text-sm">
+                  <div className="text-muted-foreground text-xs">
                     {tier.period}
                   </div>
                 </div>
 
-                <ul className="space-y-3">
+                <ul className="space-y-2">
                   {tier.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
+                    <li key={i} className="flex items-start gap-2">
+                      <Check className="text-primary mt-0.5 h-4 w-4 flex-shrink-0" />
+                      <span className="text-xs">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -116,7 +116,7 @@ export default function Pricing() {
                 <Button
                   className="w-full"
                   variant={tier.popular ? "default" : "outline"}
-                  size="lg"
+                  size="sm"
                 >
                   Pilih Paket
                 </Button>
@@ -125,8 +125,8 @@ export default function Pricing() {
           ))}
         </div>
 
-        <div className="bg-background border-border mt-12 rounded-lg border p-6 text-center">
-          <p className="text-muted-foreground text-sm">
+        <div className="bg-background border-border rounded-lg border p-4 text-center">
+          <p className="text-muted-foreground text-xs">
             <span className="text-foreground font-semibold">
               Semua paket termasuk:
             </span>{" "}

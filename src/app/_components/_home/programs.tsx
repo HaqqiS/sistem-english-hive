@@ -68,18 +68,18 @@ const programs = [
 
 export default function Programs() {
   return (
-    <section className="bg-background px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
+    <section className="bg-background flex min-h-screen items-center px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-8 text-center">
+          <h2 className="mb-2 text-3xl font-bold text-balance sm:text-4xl lg:text-4xl">
             Program Kursus Kami
           </h2>
-          <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
+          <p className="text-muted-foreground mx-auto max-w-2xl text-base">
             Pilih program yang sesuai dengan kebutuhan dan level Anda
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {programs.map((program, index) => {
             const Icon = program.icon;
             return (
@@ -87,17 +87,21 @@ export default function Programs() {
                 key={index}
                 className="flex flex-col transition-all duration-300 hover:shadow-lg"
               >
-                <CardHeader>
-                  <div className="mb-4 flex items-start justify-between">
-                    <Icon className="text-primary h-8 w-8" />
-                    <Badge variant="secondary">{program.level}</Badge>
+                <CardHeader className="pb-3">
+                  <div className="mb-2 flex items-start justify-between">
+                    <Icon className="text-primary h-6 w-6" />
+                    <Badge variant="secondary" className="text-xs">
+                      {program.level}
+                    </Badge>
                   </div>
-                  <CardTitle className="text-2xl">{program.title}</CardTitle>
+                  <CardTitle className="text-lg">{program.title}</CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 space-y-4">
-                  <p className="text-muted-foreground">{program.description}</p>
+                <CardContent className="flex-1 space-y-3">
+                  <p className="text-muted-foreground text-sm">
+                    {program.description}
+                  </p>
 
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Durasi:</span>
                       <span className="font-semibold">{program.duration}</span>
@@ -108,24 +112,26 @@ export default function Programs() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-foreground text-sm font-semibold">
+                  <div className="space-y-1">
+                    <p className="text-foreground text-xs font-semibold">
                       Fitur:
                     </p>
-                    <ul className="space-y-1">
+                    <ul className="space-y-0.5">
                       {program.features.map((feature, i) => (
                         <li
                           key={i}
-                          className="text-muted-foreground flex items-center gap-2 text-sm"
+                          className="text-muted-foreground flex items-center gap-2 text-xs"
                         >
-                          <span className="bg-primary h-1.5 w-1.5 rounded-full" />
+                          <span className="bg-primary h-1 w-1 rounded-full" />
                           {feature}
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <Button className="mt-4 w-full">Pilih Program</Button>
+                  <Button className="mt-2 w-full" size="sm">
+                    Pilih Program
+                  </Button>
                 </CardContent>
               </Card>
             );

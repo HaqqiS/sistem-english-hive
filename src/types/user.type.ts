@@ -1,4 +1,7 @@
+import type { RouterOutputs } from "@/trpc/react";
 import { z } from "zod";
+
+export type TypeGuru = RouterOutputs["user"]["getAllGuru"][number];
 
 export const loginFormSchema = z.object({
   email: z.string().email("Email tidak valid"),

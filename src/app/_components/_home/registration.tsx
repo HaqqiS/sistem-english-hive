@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -23,63 +23,62 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-const registrationSchema = z.object({
-  fullName: z.string().min(3, "Nama minimal 3 karakter"),
-  email: z.string().email("Email tidak valid"),
-  phone: z.string().regex(/^08\d{8,}$/, "Nomor WhatsApp Indonesia tidak valid"),
-  program: z.string().min(1, "Pilih program"),
-  level: z.string().min(1, "Pilih level"),
-  schedule: z.string().min(1, "Pilih jadwal"),
-  message: z.string().optional(),
-});
-
-type RegistrationFormData = z.infer<typeof registrationSchema>;
+import {
+  RegisterMuridSchema,
+  type TypeClientRegisterMuridSchema,
+} from "@/types/murid.type";
+import { Gender } from "@prisma/client";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { useMurid } from "../../../hooks/useMurid";
+import { useCabang } from "../../../hooks/useCabang";
 
 export default function Registration() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const { mutations } = useMurid({
+    onSuccessCreate: () => {
+      form.reset();
+    },
+  });
+  const { data: dataCabang, isLoading: isLoadingCabang } = useCabang();
 
-  const form = useForm<RegistrationFormData>({
-    resolver: zodResolver(registrationSchema),
+  const form = useForm<TypeClientRegisterMuridSchema>({
+    resolver: zodResolver(RegisterMuridSchema),
     defaultValues: {
-      fullName: "",
+      namaLengkap: "",
       email: "",
-      phone: "",
-      program: "",
-      level: "",
-      schedule: "",
-      message: "",
+      alamat: "",
+      gender: undefined,
+      umur: undefined,
+      asalSekolah: "",
+      kelasSekolah: "",
+      jamPulang: "",
+      noWA: "",
+      cabangId: "",
+      pilihanProgram: "",
+      sumberInfo: "",
     },
   });
 
-  async function onSubmit(data: RegistrationFormData) {
-    setIsSubmitting(true);
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Form data:", data);
-      setSubmitSuccess(true);
-      form.reset();
-      setTimeout(() => setSubmitSuccess(false), 5000);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const [isOther, setIsOther] = useState(
+    form.getValues("sumberInfo") === "Other",
+  );
+  const [otherValue, setOtherValue] = useState("");
+
+  function onSubmit(data: TypeClientRegisterMuridSchema) {
+    mutations.create.mutate(data);
   }
 
   return (
     <section
       id="registration"
-      className="bg-muted/30 px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      className="bg-muted/30 flex min-h-screen items-center px-4 py-12 sm:px-6 lg:px-8 lg:py-16"
     >
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-6 text-center">
+          <h2 className="mb-2 text-3xl font-bold text-balance sm:text-4xl lg:text-4xl">
             Daftar Sekarang
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-sm">
             Isi form di bawah ini dan tim kami akan menghubungi Anda dalam 1x24
             jam
           </p>
@@ -87,201 +86,357 @@ export default function Registration() {
 
         <Card>
           <CardContent className="pt-6">
-            {submitSuccess && (
-              <div className="bg-primary/10 border-primary text-primary mb-6 rounded-lg border p-4">
+            {/* {submitSuccess && (
+              <div className="bg-primary/10 border-primary text-primary mb-4 rounded-lg border p-3 text-sm">
                 Terima kasih! Pendaftaran Anda telah kami terima. Tim kami akan
                 segera menghubungi Anda.
               </div>
-            )}
+            )} */}
 
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
+                className="space-y-4"
               >
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nama Lengkap</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Masukkan nama lengkap Anda"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="col-span-1 space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="namaLengkap"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">
+                            Nama Lengkap
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Masukkan nama lengkap Anda"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="email@example.com"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              placeholder="email@example.com"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>No. WhatsApp</FormLabel>
-                      <FormControl>
-                        <Input placeholder="08xxxxxxxxxx" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="alamat"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Alamat</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Masukkan alamat Anda"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="program"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Program yang Diminati</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih program" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="general">
-                            General English
-                          </SelectItem>
-                          <SelectItem value="business">
-                            Business English
-                          </SelectItem>
-                          <SelectItem value="toefl">
-                            TOEFL/IELTS Preparation
-                          </SelectItem>
-                          <SelectItem value="kids">Kids & Teens</SelectItem>
-                          <SelectItem value="konsultasi">
-                            Belum yakin, ingin konsultasi dulu
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">
+                            Jenis Kelamin
+                          </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Pilih jenis kelamin" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value={Gender.LAKI_LAKI}>
+                                Laki-laki
+                              </SelectItem>
+                              <SelectItem value={Gender.PEREMPUAN}>
+                                Perempuan
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="level"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Level Bahasa Inggris Saat Ini</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="beginner">
-                            Beginner (Pemula)
-                          </SelectItem>
-                          <SelectItem value="elementary">
-                            Elementary (Dasar)
-                          </SelectItem>
-                          <SelectItem value="intermediate">
-                            Intermediate (Menengah)
-                          </SelectItem>
-                          <SelectItem value="advanced">
-                            Advanced (Mahir)
-                          </SelectItem>
-                          <SelectItem value="unknown">Tidak tahu</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <div className="grid grid-cols-2 space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="umur"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Umur</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="Masukkan umur Anda"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                <FormField
-                  control={form.control}
-                  name="schedule"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preferensi Jadwal</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih jadwal" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="pagi">
-                            Pagi (08:00 - 12:00)
-                          </SelectItem>
-                          <SelectItem value="siang">
-                            Siang (12:00 - 16:00)
-                          </SelectItem>
-                          <SelectItem value="sore">
-                            Sore (16:00 - 19:00)
-                          </SelectItem>
-                          <SelectItem value="malam">
-                            Malam (19:00 - 21:00)
-                          </SelectItem>
-                          <SelectItem value="weekend">Weekend</SelectItem>
-                          <SelectItem value="fleksibel">Fleksibel</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <FormField
+                        control={form.control}
+                        name="noWA"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">No. WA</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="Masukkan No. WA Anda"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="pilihanProgram"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">
+                              Pilihan Program
+                            </FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Pilih program" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Reguler</SelectLabel>
+                                  <SelectItem value="regulerPG">
+                                    Program Reguler (PG)
+                                  </SelectItem>
+                                  <SelectItem value="regulerTK">
+                                    Program Reguler (TK)
+                                  </SelectItem>
+                                  <SelectItem value="regulerSD">
+                                    Program Reguler (SD)
+                                  </SelectItem>
+                                  <SelectItem value="regulerSMP">
+                                    Program Reguler (SMP)
+                                  </SelectItem>
+                                  <SelectItem value="regulerSMA">
+                                    Program Reguler (SMA)
+                                  </SelectItem>
+                                </SelectGroup>
+                                <SelectGroup>
+                                  <SelectLabel>Privat</SelectLabel>
+                                  <SelectItem value="privatSekolah">
+                                    Program Privat (Sekolah)
+                                  </SelectItem>
+                                  <SelectItem value="regulerDewasa">
+                                    Program Reguler (Dewasa/Kerja)
+                                  </SelectItem>
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="cabangId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Pilih Cabang</FormLabel>
+                            <FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                                disabled={isLoadingCabang}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue
+                                    placeholder={
+                                      isLoadingCabang
+                                        ? "Loading..."
+                                        : "Pilih Cabang"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {dataCabang?.map((items) => (
+                                    <SelectItem key={items.id} value={items.id}>
+                                      {items.namaCabang}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
 
-                <FormField
-                  control={form.control}
-                  name="message"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pesan / Pertanyaan (Opsional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Ada yang ingin Anda tanyakan?"
-                          rows={4}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <div className="col-span-1 space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="asalSekolah"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">
+                            Asal Sekolah
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              placeholder="Masukkan asal sekolah Anda"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="kelasSekolah"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Kelas </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              placeholder="Masukkan kelas Anda"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="jamPulang"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">
+                            Jam Pulang Sekolah
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="text"
+                              placeholder="Masukkan jam pulang sekolah Anda"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="sumberInfo"
+                      render={({ field }) => {
+                        return (
+                          <FormItem>
+                            <FormLabel className="text-sm">
+                              Sumber Informasi
+                            </FormLabel>
+                            <FormControl>
+                              <div className="space-y-2">
+                                <RadioGroup
+                                  value={field.value}
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    setIsOther(value === "Other");
+                                  }}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="Instagram" id="r1" />
+                                    <Label htmlFor="r1">Instagram</Label>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="WhatsApp" id="r2" />
+                                    <Label htmlFor="r2">WhatsApp</Label>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="Teman" id="r3" />
+                                    <Label htmlFor="r3">Teman</Label>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="Other" id="r4" />
+                                    <Label htmlFor="r4">Other</Label>
+                                  </div>
+                                </RadioGroup>
+
+                                {isOther && (
+                                  <Input
+                                    placeholder="Masukkan sumber informasi lain..."
+                                    value={otherValue}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setOtherValue(val);
+                                      field.onChange(val); // kirim ke React Hook Form
+                                    }}
+                                    className="mt-2"
+                                  />
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  </div>
+                </div>
 
                 <Button
                   type="submit"
-                  size="lg"
+                  size="sm"
                   className="w-full"
-                  disabled={isSubmitting}
+                  disabled={mutations.create.isPending}
                 >
-                  {isSubmitting ? "Mengirim..." : "Kirim Pendaftaran"}
+                  {mutations.create.isPending
+                    ? "Mengirim..."
+                    : "Kirim Pendaftaran"}
                 </Button>
               </form>
             </Form>

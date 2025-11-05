@@ -22,7 +22,6 @@ export const ruangRouter = createTRPCRouter({
           id: true,
           namaRuang: true,
           cabangId: true,
-          kodeRuang: true,
           isAktif: true,
           createdAt: true,
           updatedAt: true,
@@ -37,6 +36,26 @@ export const ruangRouter = createTRPCRouter({
       return ruang;
     }),
 
+  getAll: protectedProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+    const ruang = await db.ruang.findMany({
+      select: {
+        id: true,
+        namaRuang: true,
+        cabangId: true,
+        isAktif: true,
+        createdAt: true,
+        updatedAt: true,
+        cabang: {
+          select: {
+            namaCabang: true,
+          },
+        },
+      },
+    });
+    return ruang;
+  }),
+
   createRuang: protectedProcedure
     .input(serverRuangSchema)
     .mutation(async ({ ctx, input }) => {
@@ -45,7 +64,6 @@ export const ruangRouter = createTRPCRouter({
         data: {
           namaRuang: input.namaRuang,
           cabangId: input.cabangId,
-          kodeRuang: input.kodeRuang,
           isAktif: input.isAktif,
         },
       });
@@ -71,7 +89,6 @@ export const ruangRouter = createTRPCRouter({
         data: {
           namaRuang: input.namaRuang,
           cabangId: input.cabangId,
-          kodeRuang: input.kodeRuang,
           isAktif: input.isAktif,
         },
       });

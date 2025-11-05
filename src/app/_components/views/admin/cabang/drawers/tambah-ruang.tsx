@@ -2,10 +2,8 @@
 
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Form } from "@/components/ui/form";
-import { api } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -14,6 +12,7 @@ import {
   type TypeClientRuangSchema,
 } from "@/types/ruang.type";
 import RuangForm from "../forms/ruang-form";
+import { useRuang } from "../../../../../../hooks/useRuang";
 
 export default function TambahRuang() {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,25 +21,19 @@ export default function TambahRuang() {
     resolver: zodResolver(clientRuangSchema),
     defaultValues: {
       namaRuang: "",
-      kodeRuang: "",
       cabangId: "",
     },
   });
 
-  const { mutate: createRuang, isPending } = api.ruang.createRuang.useMutation({
-    onSuccess: () => {
-      toast.success("Ruang berhasil ditambahkan");
+  const { mutations } = useRuang({
+    onSuccessCreate: () => {
       form.reset();
       setIsOpen(false);
-    },
-    onError: (error) => {
-      toast.error(`Gagal membuat Ruang: ${error.message}`);
     },
   });
 
   const onSubmit = (values: TypeClientRuangSchema) => {
-    // console.log(values);
-    createRuang(values);
+    mutations.create.mutate(values);
   };
 
   return (
@@ -54,7 +47,7 @@ export default function TambahRuang() {
         title="Tambah Ruang"
         description="Tambahkan ruang baru ke sistem"
         onSubmit={form.handleSubmit(onSubmit)}
-        isPending={isPending}
+        isPending={mutations.create.isPending}
         submitText="Tambah Ruang"
         cancelText="Batal"
         trigger={

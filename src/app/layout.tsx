@@ -27,6 +27,7 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await auth();
+
   // console.log("Session in layout:", session);
 
   return (
@@ -37,15 +38,17 @@ export default async function RootLayout({
     >
       <body>
         <SessionProvider session={session}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Toaster />
-            <TRPCReactProvider>{children}</TRPCReactProvider>
-          </ThemeProvider>
+          <TRPCReactProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Toaster />
+              {children}
+            </ThemeProvider>
+          </TRPCReactProvider>
         </SessionProvider>
       </body>
     </html>

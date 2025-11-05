@@ -55,8 +55,8 @@ const features = [
 
 export default function Features() {
   return (
-    <section className="bg-background px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-      <div className="mx-auto max-w-7xl">
+    <section className="bg-background flex min-h-screen items-center px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div className="mx-auto w-full max-w-7xl">
         <div className="mb-12 text-center">
           <h2 className="mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
             Mengapa Memilih English Hive?

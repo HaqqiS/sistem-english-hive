@@ -13,11 +13,7 @@ import { NextResponse } from "next/server";
 import { protectedRoutes } from "@/constants/routes";
 // import { UserRole } from "@prisma/client";
 import type { Adapter } from "next-auth/adapters";
-
-export enum UserRole {
-  ADMIN = "ADMIN",
-  GURU = "GURU",
-}
+import { UserRole } from "./type";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -151,41 +147,82 @@ export const authConfig: NextAuthConfig = {
     /**
      * `authorized` hanya dipanggil di edge runtime (middleware)
      */
+    // authorized({ auth, request: { nextUrl } }) {
+    //   const isLoggedIn = !!auth?.user;
+    //   const role = auth?.user.role;
+    //   const pathname = nextUrl.pathname.replace(/\/+$/, ""); // hapus trailing slash
+
+    //   const sortedRoutes = [...protectedRoutes].sort(
+    //     (a, b) => b.path.length - a.path.length,
+    //   );
+
+    //   const routeRule = sortedRoutes.find(
+    //     (r) => pathname === r.path || pathname.startsWith(`${r.path}/`),
+    //   );
+
+    //   if (isLoggedIn && pathname === "/auth/login") {
+    //     return NextResponse.redirect(new URL("/", nextUrl));
+    //   }
+    //   if (!routeRule) return true;
+
+    //   if (!isLoggedIn) {
+    //     const loginUrl = new URL("/auth/login", nextUrl);
+    //     loginUrl.searchParams.set("callbackUrl", pathname + nextUrl.search);
+    //     return NextResponse.redirect(loginUrl);
+    //   }
+
+    //   if (role && routeRule.roles.includes(role)) return true;
+
+    //   if (role === UserRole.GURU)
+    //     return NextResponse.redirect(new URL("/guru", nextUrl));
+
+    //   return NextResponse.redirect(new URL("/auth/login", nextUrl));
+    // },
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      // console.log("isLogin: ", isLoggedIn);
-      const role = auth?.user.role;
-      // console.log("role: ", auth?.user.role);
-      const pathname = nextUrl.pathname.replace(/\/+$/, ""); // hapus trailing slash
-      // console.log("pathname", pathname);
+      const role = auth?.user?.role;
+      const pathname = nextUrl.pathname.replace(/\/+$/, "");
 
-      const sortedRoutes = [...protectedRoutes].sort(
-        (a, b) => b.path.length - a.path.length,
-      );
-      // console.log("sortedRoutes", sortedRoutes);
-
-      const routeRule = sortedRoutes.find(
-        (r) => pathname === r.path || pathname.startsWith(`${r.path}/`),
-      );
-      // console.log("routeRule", routeRule);
-
-      if (isLoggedIn && pathname === "/auth/login") {
-        return NextResponse.redirect(new URL("/", nextUrl));
+      // Guest restriction: /auth/*
+      if (pathname.startsWith("/auth")) {
+        if (isLoggedIn) {
+          const target =
+            role === UserRole.ADMIN
+              ? "/admin"
+              : role === UserRole.GURU
+                ? "/guru"
+                : "/";
+          return NextResponse.redirect(new URL(target, nextUrl));
+        }
+        return true;
       }
-      if (!routeRule) return true;
+
+      // Public routes
+      if (pathname === "/") return true;
+
+      // Proteksi route
+      const matched = protectedRoutes.find((r) => pathname.startsWith(r.path));
+      if (!matched) return true;
 
       if (!isLoggedIn) {
         const loginUrl = new URL("/auth/login", nextUrl);
-        loginUrl.searchParams.set("callbackUrl", pathname + nextUrl.search);
+        loginUrl.searchParams.set(
+          "callbackUrl",
+          nextUrl.pathname + nextUrl.search,
+        );
         return NextResponse.redirect(loginUrl);
       }
 
-      if (role && routeRule.roles.includes(role)) return true;
+      if (role && matched.roles.includes(role)) return true;
 
-      if (role === UserRole.GURU)
-        return NextResponse.redirect(new URL("/guru", nextUrl));
-
-      return NextResponse.redirect(new URL("/auth/login", nextUrl));
+      // Salah role → redirect ke dashboard role-nya
+      const redirectUrl =
+        role === UserRole.ADMIN
+          ? "/admin"
+          : role === UserRole.GURU
+            ? "/guru"
+            : "/";
+      return NextResponse.redirect(new URL(redirectUrl, nextUrl));
     },
   },
 };

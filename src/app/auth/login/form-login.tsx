@@ -22,7 +22,7 @@ import { useState } from "react";
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const [isPending, setIsPending] = useState(false);
 
   // HOOK FORMS
@@ -48,6 +48,7 @@ export default function LoginForm() {
         email: data.email,
         password: data.password,
         redirect: false,
+        callbackUrl,
       });
 
       if (result?.error) {
@@ -58,7 +59,15 @@ export default function LoginForm() {
         id: toastId,
         duration: 3000,
       });
-      router.push(callbackUrl ?? "/");
+
+      toast.success("Login berhasil! Mengarahkan ke dashboard...", {
+        id: toastId,
+        duration: 2000,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      router.replace(result?.url ?? callbackUrl);
     } catch (error) {
       if (toastId) {
         toast.dismiss(toastId);

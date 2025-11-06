@@ -24,6 +24,30 @@ export const sesiPertemuanRouter = createTRPCRouter({
     return sesiPertemuan;
   }),
 
+  getKelasAndCount: protectedProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+    const kelasWithCount = await db.kelas.findMany({
+      select: {
+        id: true,
+        sesiPertemuanKelases: {
+          orderBy: {
+            tanggalWaktu: "desc",
+          },
+          take: 1,
+          select: {
+            tanggalWaktu: true,
+          },
+        },
+        kodeKelas: true,
+        _count: {
+          select: { sesiPertemuanKelases: true },
+        },
+      },
+    });
+
+    return kelasWithCount;
+  }),
+
   createSesiPertemuan: protectedProcedure
     .input(serverSesiPertemuanSchema)
     .mutation(async ({ ctx, input }) => {

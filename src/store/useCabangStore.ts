@@ -42,7 +42,7 @@ export const useCabangStore = create<CabangStore>((set, get) => ({
       selectedCabang: cabang ?? null,
     }),
 
-  closeDrawer: () => set({ activeDrawer: "none" }),
+  closeDrawer: () => set({ activeDrawer: "none", selectedCabang: null }),
 
   isDrawerOpen: (drawer) => get().activeDrawer === drawer,
 
@@ -58,7 +58,7 @@ export const useRuangStore = create<RuangStore>((set, get) => ({
       activeDrawer: drawer,
       selectedRuang: ruang ?? null,
     }),
-  closeDrawer: () => set({ activeDrawer: "none" }),
+  closeDrawer: () => set({ activeDrawer: "none", selectedRuang: null }),
 
   isDrawerOpen: (drawer) => get().activeDrawer === drawer,
 

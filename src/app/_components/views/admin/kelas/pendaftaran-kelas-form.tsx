@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/select";
 import type { TypeClientPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
 import { useFormContext } from "react-hook-form";
-import PendaftaranKelasDatePicker from "./PendaftaranKelasDatePicker";
 import { useKelas } from "@/hooks/useKelas";
+import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 
 interface PendaftaranKelasFormProps {
   onSubmit: (data: TypeClientPendaftaranKelasSchema) => void;
@@ -92,10 +92,10 @@ export default function PendaftaranKelasForm({
         )}
       />
 
-      <FormField
+      <FormStringDatePicker
         control={form.control}
         name="tanggalMulai"
-        render={({ field }) => <PendaftaranKelasDatePicker field={field} />}
+        label="Tanggal Mulai"
       />
 
       {/* <FormField
@@ -106,8 +106,10 @@ export default function PendaftaranKelasForm({
             <FormLabel>Pilih Status</FormLabel>
             <FormControl>
               <Select
-                onValueChange={(val) => field.onChange(val === "true")}
-                value={field.value === true ? "true" : "false"}
+                // 'z.coerce.boolean()' akan menangani "true"/"false"
+                onValueChange={(val) => field.onChange(val)}
+                // Ambil nilai default dari skema (true)
+                value={field.value ? "true" : "false"}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Status" />

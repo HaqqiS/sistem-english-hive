@@ -20,7 +20,7 @@ dayjs.locale("id");
 export const TIMEZONE_BISNIS = "Asia/Makassar";
 
 /** Daftar jam mulai kelas yang sudah ditentukan */
-export const JAM_MULAI_KELAS = ["16:00", "17:30", "19:00"];
+export const JAM_MULAI_KELAS = ["14:30", "16:00", "17:30"];
 
 // -----------------------------------------------------------------------------
 // FUNGSI HELPER YANG DI-EKSPOR
@@ -78,6 +78,20 @@ export const convertWITAtoUTC = (localDateTimeString: string): Date => {
 export function isValidDate(date: unknown): date is Date {
   return date instanceof Date && !isNaN(date.getTime());
 }
+
+/**
+ * --- HELPER BARU ---
+ * Mengonversi Date object dari kalender (atau string)
+ * menjadi string "YYYY-MM-DD" yang aman untuk DB.
+ *
+ * @param date - Date object atau string
+ * @returns String "YYYY-MM-DD"
+ */
+export const formatDateToYYYYMMDD = (date: Date | string): string => {
+  // Gunakan dayjs untuk memformat, tidak perlu .tz()
+  // karena kita hanya ingin tanggal "lokal" dari kalender
+  return dayjs(date).format("YYYY-MM-DD");
+};
 
 /**
  * Helper untuk menambahkan leading zero

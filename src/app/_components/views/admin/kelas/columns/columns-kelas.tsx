@@ -15,12 +15,14 @@ import type { KelasType } from "@/types/kelas.type";
 import Link from "next/link";
 
 interface ColumnsConfig {
-  onEditClick: (item: KelasType) => void;
+  onEditKelasClick: (item: KelasType) => void;
+  onEditGuruKelasClick: (item: KelasType) => void;
   onDeleteClick: (programKelasId: string, programKelasName: string) => void;
 }
 
 export const columns = ({
-  onEditClick,
+  onEditKelasClick,
+  onEditGuruKelasClick,
   onDeleteClick,
 }: ColumnsConfig): ColumnDef<KelasType>[] => [
   // Checkbox selection
@@ -148,6 +150,19 @@ export const columns = ({
   },
 
   {
+    accessorKey: "guruKelas",
+    header: "Guru Kelas",
+    cell: ({ row }) => (
+      <div
+        className="max-w-[300px] truncate"
+        title={row.original.historyGuruKelases[0]?.guru.name ?? "-"}
+      >
+        {row.original.historyGuruKelases[0]?.guru.name ?? "-"}
+      </div>
+    ),
+  },
+
+  {
     id: "actions",
     header: "Aksi",
     cell: ({ row }) => {
@@ -164,8 +179,13 @@ export const columns = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem onClick={() => onEditClick(row.original)}>
-              Edit
+            <DropdownMenuItem onClick={() => onEditKelasClick(row.original)}>
+              Edit Kelas
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onEditGuruKelasClick(row.original)}
+            >
+              Edit Guru Kelas
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

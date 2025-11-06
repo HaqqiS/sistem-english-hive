@@ -41,9 +41,7 @@ const generateKodeKelas = (
   // Hanya buat kode jika semua field penting sudah diisi
   if (jenis && level && grup && tipe && bulanTahun) {
     // e.g., "TinyTods 1-A|REGULAR|03/2025"
-    return `${jenis} ${safeVal(level)}-${safeVal(grup)}|${safeVal(
-      tipe,
-    )}|${safeVal(bulanTahun)}`;
+    return `${jenis} ${safeVal(level)}-${safeVal(grup)} | ${safeVal(tipe)} | ${safeVal(bulanTahun)}`;
   }
   return ""; // Kembalikan string kosong jika belum lengkap
 };

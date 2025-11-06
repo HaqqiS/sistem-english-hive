@@ -11,26 +11,66 @@ import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
 import TambahPendaftaranKelas from "./drawers/tambah-pendaftaran-kelas";
 import { useKelas } from "@/hooks/useKelas";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
+import { useState } from "react";
+import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
+import EditKelas from "./drawers/edit-kelas";
+import EditGuruKelas from "./drawers/edit-guru-kelas";
+import type { HistoryGuruKelasType } from "@/types/historyGuruKelas.type";
 
 interface ProgramKelasClientProps {
   initialDataProgram: KelasType[];
   initialDataPendaftaran: PendaftaranKelasType[];
 }
 
-export default function ProgramKelasClient({
+export default function KelasClient({
   initialDataProgram,
   initialDataPendaftaran,
 }: ProgramKelasClientProps) {
   const { data: dataKelas } = useKelas({
     initialData: initialDataProgram,
   });
+  const { openDrawer: openKelasDrawer } = useKelasStore();
+  const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
+
+  const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
+  const [selectedKelasToDelete, setSelectedKelasToDelete] =
+    useState<KelasType | null>(null);
+
   const { data: dataPendaftaranKelas } = usePendaftaranKelas({
     initialData: initialDataPendaftaran,
   });
 
+  const handleEditClickKelas = (item: KelasType) => {
+    openKelasDrawer("edit", item);
+  };
+
+  const handleEditClickGuruKelas = (item: HistoryGuruKelasType) => {
+    openGuruKelasDrawer("edit", item);
+  };
+
+  const handleDeleteClickKelas = (id: string, nama: string) => {
+    // const kelas = dataKelas.find((c) => c.id === id);
+    const kelas = initialDataProgram.find((c) => c.id === id);
+    if (kelas) {
+      setSelectedKelasToDelete(kelas);
+      setDeleteKelasDialogOpen(true);
+    }
+  };
+
   const columnsKelas = kelas({
-    onEditClick: (item) => {
-      console.log("clicked");
+    onEditKelasClick: (item) => {
+      handleEditClickKelas(item);
+    },
+    onEditGuruKelasClick: (item) => {
+      const history = item.historyGuruKelases?.[0];
+      if (history) {
+        // assert to the expected type after guarding against undefined
+        // cast via unknown first to avoid incompatible structural typing error
+        handleEditClickGuruKelas(history as unknown as HistoryGuruKelasType);
+      } else {
+        // no history available for this kelas
+        console.warn("No historyGuruKelases entry found for this item");
+      }
     },
     onDeleteClick: (cabangId, cabangName) => {
       console.log("deleted");
@@ -47,19 +87,19 @@ export default function ProgramKelasClient({
   });
 
   return (
-    <Tabs defaultValue="programKelas">
+    <Tabs defaultValue="kelas">
       <TabsList>
-        <TabsTrigger value="programKelas">Program Kelas</TabsTrigger>
+        <TabsTrigger value="kelas">Kelola Kelas</TabsTrigger>
         <TabsTrigger value="pendaftaranKelas">
-          Pendaftaran Program Kelas
+          Pendaftaran Siswa ke Kelas
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="programKelas">
+      <TabsContent value="kelas">
         <div>
           <div className="flex items-center justify-between space-x-2 pt-4">
             <header className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl">Kelola Program Kelas</h1>
+                <h1 className="text-xl">Kelola Kelas</h1>
                 <p className="text-muted-foreground text-sm">
                   This is the kelas management page.
                 </p>
@@ -67,6 +107,10 @@ export default function ProgramKelasClient({
             </header>
             <TambahProgramKelas />
           </div>
+
+          <EditKelas />
+
+          <EditGuruKelas />
 
           {/* <DataTable
             filterColumnId="kodeKelas"
@@ -99,7 +143,7 @@ export default function ProgramKelasClient({
           <div className="flex items-center justify-between space-x-2 pt-4">
             <header className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl">Kelola Pendaftaran Kelas</h1>
+                <h1 className="text-xl">Kelola Pendaftaran Siswa ke Kelas</h1>
                 <p className="text-muted-foreground text-sm">
                   This is the kelas management page.
                 </p>

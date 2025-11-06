@@ -6,6 +6,36 @@ export const kelasRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const kelas = await ctx.db.kelas.findMany({
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        jenisKelas: true,
+        level: true,
+        grup: true,
+        tipe: true,
+        kodeKelas: true,
+        bulanTahunAjar: true,
+        deskripsi: true,
+        hargaKelas: true,
+        guruId: true,
+        historyGuruKelases: {
+          where: {
+            selesaiPada: null,
+          },
+          select: {
+            id: true,
+            kelasId: true,
+            guruId: true,
+            statusGuru: true,
+            mulaiPada: true,
+            selesaiPada: true,
+            guru: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
     return kelas;
   }),
@@ -24,6 +54,26 @@ export const kelasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
       const kelas = await db.kelas.create({
+        data: {
+          jenisKelas: input.jenisKelas,
+          level: input.level,
+          grup: input.grup,
+          tipe: input.tipe,
+          kodeKelas: input.kodeKelas,
+          bulanTahunAjar: input.bulanTahunAjar,
+          deskripsi: input.deskripsi,
+          hargaKelas: input.hargaKelas,
+        },
+      });
+      return kelas;
+    }),
+
+  updateKelas: protectedProcedure
+    .input(serverKelasSchema.extend({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const kelas = await db.kelas.update({
+        where: { id: input.id },
         data: {
           jenisKelas: input.jenisKelas,
           level: input.level,

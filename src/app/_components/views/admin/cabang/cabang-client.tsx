@@ -9,20 +9,13 @@ import { columns as createRuangColumns } from "./columns/ruang-columns";
 import TambahCabang from "./drawers/tambah-cabang";
 import { type CabangType } from "@/types/cabang.type";
 import { keepPreviousData } from "@tanstack/react-query";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import TambahRuang from "./drawers/tambah-ruang";
 import EditCabang from "./drawers/edit-cabang";
 import { useCabangStore, useRuangStore } from "@/store/useCabangStore";
 import type { RuangType } from "@/types/ruang.type";
 import EditRuang from "./drawers/edit-ruang";
-import { useRuang } from "../../../../../hooks/useRuang";
-import { useCabang } from "../../../../../hooks/useCabang";
+import { useCabang } from "@/hooks/useCabang";
+import { useRuang } from "@/hooks/useRuang";
 
 interface CabangClientProps {
   initialDataCabang: RouterOutputs["cabang"]["getAll"];

@@ -5,7 +5,7 @@ import DashboardLayout from "../_components/layouts/dashboard-layout";
 const adminNavItems: NavItem[] = [
   { title: "Dashboard", url: "/admin", icon: "Home" },
   { title: "Verifikasi Absen Guru", url: "/admin/absen", icon: "Users" },
-  { title: "Sesi Kelas", url: "/admin/sesi", icon: "Calendar" },
+  { title: "Sesi Pertemuan Kelas", url: "/admin/sesi", icon: "Calendar" },
   { title: "Program Kelas", url: "/admin/kelas", icon: "School" },
   { title: "Ruangan & Cabang", url: "/admin/cabang", icon: "Building" },
 ];

@@ -9,6 +9,7 @@ import { muridRouter } from "./routers/murid.router";
 import { pendaftaranKelasRouter } from "./routers/pendaftaranKelas.router";
 import { userRouter } from "./routers/user.router";
 import { absenMuridRouter } from "./routers/absenMurid.router";
+import { historyGuruKelasRouter } from "./routers/historyGuruKelas.router";
 
 /**
  * This is the primary router for your server.
@@ -26,6 +27,7 @@ export const appRouter = createTRPCRouter({
   murid: muridRouter,
   pendaftaranKelas: pendaftaranKelasRouter,
   absenMurid: absenMuridRouter,
+  historyGuruKelas: historyGuruKelasRouter,
 });
 
 // export type definition of API

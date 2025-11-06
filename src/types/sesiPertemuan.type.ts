@@ -4,6 +4,9 @@ import z from "zod";
 export type SesiPertemuanType =
   RouterOutputs["sesiPertemuan"]["getAll"][number];
 
+export type SesiPertemuanWithKelasCountType =
+  RouterOutputs["sesiPertemuan"]["getKelasAndCount"][number];
+
 const baseSesiPertemuanSchema = z.object({
   kelasId: z.string().min(1, "Kelas Program harus diisi"),
   ruangId: z.string().min(1, "Ruang harus diisi"),

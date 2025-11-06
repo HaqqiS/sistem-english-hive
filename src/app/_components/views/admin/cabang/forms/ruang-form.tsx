@@ -15,9 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCabang } from "@/hooks/useCabang";
 import type { TypeClientRuangSchema } from "@/types/ruang.type";
 import { useFormContext } from "react-hook-form";
-import { useCabang } from "../../../../../../hooks/useCabang";
 
 interface RuangFormProps {
   onSubmit: (data: TypeClientRuangSchema) => void;

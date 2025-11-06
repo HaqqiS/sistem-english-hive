@@ -75,18 +75,11 @@ export const columns = ({
   },
 
   {
-    accessorKey: "cabangId",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Cabang ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    accessorKey: "isAktif",
+    header: "Status Aktif",
+    cell: ({ row }) => (
+      <span>{row.original.isAktif ? "Aktif" : "Tidak Aktif"}</span>
+    ),
   },
 
   // Actions dropdown

@@ -6,8 +6,10 @@ export type PendaftaranKelasType =
 const basePendaftaranKelasSchema = z.object({
   muridId: z.string().min(1, "Murid harus dipilih"),
   kelasId: z.string().min(1, "Program Kelas harus dipilih"),
-  tanggalMulai: z.date().min(new Date(), "Tanggal Mulai harus diisi"),
-  isAktif: z.boolean(),
+  tanggalMulai: z
+    .string({ required_error: "Tanggal mulai harus diisi" })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),
+  isAktif: z.boolean().default(true),
 });
 
 export const clientPendaftaranKelasSchema = basePendaftaranKelasSchema.omit({

@@ -3,6 +3,7 @@ import { JenisKelas, TipeKelas } from "@prisma/client";
 import z from "zod";
 
 export type KelasType = RouterOutputs["kelas"]["getAll"][number];
+export type CreateKelasType = RouterOutputs["kelas"]["createKelas"];
 
 const baseKelasSchema = z.object({
   jenisKelas: z.nativeEnum(JenisKelas),

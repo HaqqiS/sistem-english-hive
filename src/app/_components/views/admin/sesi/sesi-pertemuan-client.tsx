@@ -1,13 +1,16 @@
 "use client";
 
 import { DataTable } from "@/app/_components/shared/data-table";
-import type { SesiPertemuanType } from "@/types/sesiPertemuan.type";
+import type {
+  SesiPertemuanType,
+  SesiPertemuanWithKelasCountType,
+} from "@/types/sesiPertemuan.type";
 import { columns as columnsSesi } from "./columns";
 import TambahSesiPertemuan from "./tambah-sesi-pertemuan";
 import { useSesiPertemuan } from "@/hooks/useSesiPertemuan";
 
 interface SesiPertemuanClientProps {
-  initialData: SesiPertemuanType[];
+  initialData: SesiPertemuanWithKelasCountType[];
 }
 
 export default function SesiPertemuanClient({
@@ -17,14 +20,14 @@ export default function SesiPertemuanClient({
     onEditClick: (item) => {
       console.log("clicked");
     },
-    onDeleteClick: (cabangId, cabangName) => {
-      console.log("deleted");
-    },
+    // onDeleteClick: (cabangId, cabangName) => {
+    //   console.log("deleted");
+    // },
   });
 
-  const { dataSesiPertemuan } = useSesiPertemuan({
-    initialData,
-  });
+  // const { dataSesiPertemuan } = useSesiPertemuan({
+  //   initialData,
+  // });
 
   return (
     <div>
@@ -36,7 +39,7 @@ export default function SesiPertemuanClient({
         filterColumnId="kodeKelas"
         filterColumnPlaceholder="Filter Nama Jadwal Sesi..."
         columns={columns}
-        data={dataSesiPertemuan.data ?? []}
+        data={initialData ?? []}
         toolbar={(table) => (
           <div className="flex items-center gap-2">
             {/* <Input

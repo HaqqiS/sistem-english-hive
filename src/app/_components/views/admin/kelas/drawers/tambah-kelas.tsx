@@ -11,8 +11,14 @@ import {
   clientKelasSchema,
   type TypeClientKelasSchema,
 } from "@/types/kelas.type";
-import ProgramKelasForm from "../kelas-form";
+import KelasForm from "../kelas-form";
 import { useKelas } from "@/hooks/useKelas";
+import GuruKelasForm from "../guru-kelas-form";
+import {
+  clientHistoryGuruKelasSchema,
+  type TypeClientHistoryGuruKelasSchema,
+} from "@/types/historyGuruKelas.type";
+import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 
 export default function TambahKelas() {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,16 +37,40 @@ export default function TambahKelas() {
     },
   });
 
-  const { mutations } = useKelas({
+  const guruKelasForm = useForm<TypeClientHistoryGuruKelasSchema>({
+    resolver: zodResolver(clientHistoryGuruKelasSchema),
+    defaultValues: {
+      guruId: "",
+      mulaiPada: "",
+      statusGuru: "ACTIVE",
+      kelasId: "",
+    },
+  });
+
+  const { mutations: kelasMutations } = useKelas({
+    onSuccessCreate: (newKelas) => {
+      const historyValues = guruKelasForm.getValues();
+      historyMutations.create.mutate({
+        ...historyValues,
+        kelasId: newKelas.id,
+      });
+    },
+  });
+
+  const { mutations: historyMutations } = UseHistoryGuruKelas({
     onSuccessCreate: () => {
-      form.reset();
       setIsOpen(false);
+      form.reset();
+      guruKelasForm.reset();
     },
   });
 
   const onSubmit = (values: TypeClientKelasSchema) => {
-    mutations.create.mutate(values);
+    kelasMutations.create.mutate(values);
   };
+
+  const isPending =
+    kelasMutations.create.isPending || historyMutations.create.isPending;
 
   return (
     <>
@@ -53,7 +83,7 @@ export default function TambahKelas() {
         title="Tambah Program Kelas"
         description="Tambahkan program kelas baru ke sistem"
         onSubmit={form.handleSubmit(onSubmit)}
-        isPending={mutations.create.isPending}
+        isPending={isPending}
         submitText="Tambah Program Kelas"
         cancelText="Batal"
         trigger={
@@ -66,7 +96,11 @@ export default function TambahKelas() {
         onOpenChange={setIsOpen}
       >
         <Form {...form}>
-          <ProgramKelasForm onSubmit={onSubmit} />
+          <KelasForm onSubmit={onSubmit} />
+        </Form>
+
+        <Form {...guruKelasForm}>
+          <GuruKelasForm isDisabled={isPending} />
         </Form>
       </AddDrawer>
     </>

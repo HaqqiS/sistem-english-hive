@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, EllipsisVertical } from "lucide-react";
+import { ArrowUpDown, EllipsisVertical, Router } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,18 +11,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { SesiPertemuanType } from "@/types/sesiPertemuan.type";
+import type { SesiPertemuanWithKelasCountType } from "@/types/sesiPertemuan.type";
 import { formatToWITA } from "@/utils/dateUtils";
+import Link from "next/link";
 
 interface ColumnsConfig {
-  onEditClick: (item: SesiPertemuanType) => void;
-  onDeleteClick: (jadwalSesiId: string, jadwalSesiName: string) => void;
+  onEditClick: (item: SesiPertemuanWithKelasCountType) => void;
+  // onDeleteClick: (sesiPertemuanId: string) => void;
 }
 
 export const columns = ({
   onEditClick,
-  onDeleteClick,
-}: ColumnsConfig): ColumnDef<SesiPertemuanType>[] => [
+  // onDeleteClick,
+}: ColumnsConfig): ColumnDef<SesiPertemuanWithKelasCountType>[] => [
   // Checkbox selection
   {
     id: "select",
@@ -51,38 +52,33 @@ export const columns = ({
     accessorKey: "kodeKelas",
     header: "Nama Kelas",
     cell: ({ row }) => (
-      <Button
-        variant="link"
-        className="text-foreground w-fit px-0 text-left text-base"
-        onClick={() => onEditClick(row.original)}
-      >
-        {row.original.kelas.kodeKelas}
-      </Button>
+      <Link href={`/admin/sesi/${row.original.id}`}>
+        <Button
+          variant="link"
+          className="text-foreground w-fit px-0 text-left text-base"
+          // onClick={() => onEditClick(row.original)}
+        >
+          {row.original.kodeKelas}
+        </Button>
+      </Link>
     ),
     enableHiding: false,
   },
 
   {
     accessorKey: "ruang.namaRuang",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Nama Ruang
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Total Sesi Pertemuan",
+    cell: ({ row }) => (
+      <span>{row.original._count.sesiPertemuanKelases} Pertemuan</span>
+    ),
   },
 
   {
     accessorKey: "tanggalWaktu",
-    header: "Tanggal & Waktu",
+    header: "Tanggal & Waktu terakhir",
 
     cell: ({ row }) => {
-      return formatToWITA(row.original.tanggalWaktu);
+      return formatToWITA(row.original.sesiPertemuanKelases[0]?.tanggalWaktu);
     },
   },
 
@@ -107,14 +103,12 @@ export const columns = ({
               Edit
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
+            {/* <DropdownMenuItem
               variant="destructive"
-              onClick={() =>
-                onDeleteClick(row.original.id, row.original.kelas.kodeKelas)
-              }
+              onClick={() => onDeleteClick(row.original.id)}
             >
               Delete
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       );

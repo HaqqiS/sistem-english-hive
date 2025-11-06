@@ -1,16 +1,16 @@
 "use client";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import type { CreateKelasType, KelasType } from "@/types/kelas.type";
+import type { HistoryGuruKelasType } from "@/types/historyGuruKelas.type";
 import { skipToken } from "@tanstack/react-query";
 
-interface UseKelasOptions {
+interface useHistoryGuruKelasOptions {
   // Query options
   enableQuery?: boolean;
-  initialData?: KelasType[];
+  initialData?: HistoryGuruKelasType[];
 
   // Mutation callbacks
-  onSuccessCreate?: (newKelas: CreateKelasType) => void;
+  onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
 
@@ -30,46 +30,44 @@ interface UseKelasOptions {
  *   onSuccessCreate: () => console.log("Created!")
  * });
  */
-export function useKelas(options?: UseKelasOptions) {
+export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   const apiUtils = api.useUtils();
 
   // ========== QUERIES ==========
   const kelasId = options?.kelasId;
-  const isGetAllEnabled = (options?.enableQuery ?? true) && !kelasId;
+  // const isGetAllEnabled = (options?.enableQuery ?? true) && !kelasId;
 
-  const kelasQuery = api.kelas.getAll.useQuery(undefined, {
-    enabled: isGetAllEnabled, // <-- Gunakan logika baru
-    initialData: options?.initialData,
-  });
-
-  const kelasByIdQuery = api.kelas.getKelasById.useQuery(
-    kelasId ? { id: kelasId } : skipToken,
-  );
+  const historyGuruKelasQuery =
+    api.historyGuruKelas.getHistoryGuruByKelasId.useQuery(
+      kelasId ? { kelasId: kelasId } : skipToken,
+    );
   // ========== MUTATIONS ==========
 
   // CREATE
-  const createMutation = api.kelas.createKelas.useMutation({
-    onSuccess: async (newKelas) => {
-      await apiUtils.kelas.getAll.invalidate();
-      toast.success("Kelas berhasil ditambahkan");
-      options?.onSuccessCreate?.(newKelas);
-    },
-    onError: (error) => {
-      toast.error(`Gagal membuat Kelas: ${error.message}`);
-    },
-  });
+  const createMutation =
+    api.historyGuruKelas.createHistoryGuruKelas.useMutation({
+      onSuccess: async () => {
+        await apiUtils.historyGuruKelas.getAll.invalidate();
+        toast.success("History Guru Kelas berhasil ditambahkan");
+        options?.onSuccessCreate?.();
+      },
+      onError: (error) => {
+        toast.error(`Gagal membuat History Guru Kelas: ${error.message}`);
+      },
+    });
 
   // UPDATE
-  const updateMutation = api.kelas.updateKelas.useMutation({
-    onSuccess: async () => {
-      await apiUtils.kelas.getAll.invalidate();
-      toast.success("Kelas berhasil diupdate");
-      options?.onSuccessUpdate?.();
-    },
-    onError: (error) => {
-      toast.error(`Gagal mengupdate kelas: ${error.message}`);
-    },
-  });
+  const updateMutation =
+    api.historyGuruKelas.updateHistoryGuruKelas.useMutation({
+      onSuccess: async () => {
+        await apiUtils.historyGuruKelas.getAll.invalidate();
+        toast.success("History Guru Kelas berhasil diupdate");
+        options?.onSuccessUpdate?.();
+      },
+      onError: (error) => {
+        toast.error(`Gagal mengupdate History Guru Kelas: ${error.message}`);
+      },
+    });
 
   // DELETE
   // const deleteMutation = api.cabang.deleteCabang.useMutation({
@@ -84,15 +82,15 @@ export function useKelas(options?: UseKelasOptions) {
   // });
 
   return {
-    data: kelasQuery.data,
-    isLoading: kelasQuery.isLoading,
-    isError: kelasQuery.isError,
-    error: kelasQuery.error,
+    // data: kelasQuery.data,
+    // isLoading: kelasQuery.isLoading,
+    // isError: kelasQuery.isError,
+    // error: kelasQuery.error,
 
-    dataById: kelasByIdQuery.data,
-    isLoadingById: kelasByIdQuery.isLoading,
-    isErrorById: kelasByIdQuery.isError,
-    errorById: kelasByIdQuery.error,
+    dataById: historyGuruKelasQuery.data,
+    isLoadingById: historyGuruKelasQuery.isLoading,
+    isErrorById: historyGuruKelasQuery.isError,
+    errorById: historyGuruKelasQuery.error,
 
     // Mutations
     mutations: {
@@ -114,8 +112,8 @@ export function useKelas(options?: UseKelasOptions) {
     },
 
     // Utils untuk manual invalidation jika perlu
-    refetch: kelasQuery.refetch,
-    refetchById: kelasByIdQuery.refetch,
+    // refetch: kelasQuery.refetch,
+    refetchById: historyGuruKelasQuery.refetch,
     invalidate: () => apiUtils.kelas.getAll.invalidate(),
   };
 }

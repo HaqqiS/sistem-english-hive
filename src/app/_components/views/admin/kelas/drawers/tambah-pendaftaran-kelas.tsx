@@ -31,13 +31,8 @@ export default function TambahPendaftaranKelas() {
   });
 
   const onSubmit = (values: TypeClientPendaftaranKelasSchema) => {
-    const formatted = {
-      ...values,
-      tanggalMulai: formatToWITA(values.tanggalMulai as unknown as Date),
-      isAktif: true,
-    };
-    console.log("clicked");
-    mutations.create.mutate(formatted);
+    // console.log("values:", values);
+    mutations.create.mutate(values);
   };
 
   return (

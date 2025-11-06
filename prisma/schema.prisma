@@ -79,11 +79,11 @@ model User {
     sessions Session[]
     posts    Post[]
 
-    kelases                 Kelas[]
     absensiGurus            AbsensiGuru[]      @relation("guruRelation")
     absenDiverifikasis      AbsensiGuru[]      @relation("verifiedByRelation")
     pembayaranDiverifikasis Pembayaran[]
     historyGuruKelases      HistoryGuruKelas[]
+    Kelas                   Kelas[]
 
     @@index([role])
 }
@@ -198,16 +198,12 @@ model Kelas {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // namaGuruUtama String?
-    // guruUtama   User   @relation(fields: [idGuruUtama], references: [id])
-
-    User   User?   @relation(fields: [guruId], references: [id])
-    guruId String?
-
     sesiPertemuanKelases SesiPertemuanKelas[]
     pendaftaranKelases   PendaftaranKelas[]
     pembayarans          Pembayaran[]
     historyGuruKelases   HistoryGuruKelas[]
+    User                 User?                @relation(fields: [userId], references: [id])
+    userId               String?
 
     @@index([kodeKelas])
     @@index([level])
@@ -223,8 +219,8 @@ model HistoryGuruKelas {
     id          String         @id @default(cuid())
     kelasId     String
     guruId      String
-    mulaiDari   DateTime
-    selesaiPada DateTime?
+    mulaiPada   String         @db.VarChar(10) // format: "YYYY-MM-DD"
+    selesaiPada String?        @db.VarChar(10) // format: "YYYY-MM-DD"
     statusGuru  EnumStatusGuru // "ACTIVE" atau "INACTIVE"
 
     createdAt DateTime @default(now())

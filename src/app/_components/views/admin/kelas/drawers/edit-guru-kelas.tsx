@@ -9,14 +9,12 @@ import {
   updateHistoryGuruKelasSchema,
   type TypeUpdateHistoryGuruKelasSchema,
 } from "@/types/historyGuruKelas.type";
-import EditGuruKelasForm from "../edit-guru-kelas-form";
+import EditGuruKelasForm from "../forms/edit-guru-kelas-form";
 import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 
 export default function EditGuruKelas() {
   const { isDrawerOpen, selectedHistoryGuruKelas, closeDrawer, clearSelected } =
     useGuruKelasStore();
-
-  console.table(selectedHistoryGuruKelas);
 
   const guruKelasForm = useForm<TypeUpdateHistoryGuruKelasSchema>({
     resolver: zodResolver(updateHistoryGuruKelasSchema),

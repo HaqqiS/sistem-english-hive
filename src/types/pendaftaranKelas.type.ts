@@ -5,7 +5,7 @@ export type PendaftaranKelasType =
 
 const basePendaftaranKelasSchema = z.object({
   muridId: z.string().min(1, "Murid harus dipilih"),
-  kelasId: z.string().min(1, "Program Kelas harus dipilih"),
+  kelasId: z.string().min(1, "Kelas harus dipilih"),
   tanggalMulai: z
     .string({ required_error: "Tanggal mulai harus diisi" })
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),

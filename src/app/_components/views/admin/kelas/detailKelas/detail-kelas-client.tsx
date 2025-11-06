@@ -2,17 +2,19 @@
 
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { useKelas } from "@/hooks/useKelas";
-import { api } from "@/trpc/react";
 import { useParams } from "next/navigation";
 import { columns } from "./columns";
+import TambahMuridDetailKelas from "./tambah-murid";
+import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 
 export default function DetailKelasClient() {
   const { kelasId } = useParams<{ kelasId: string }>();
   const { dataById } = useKelas({ kelasId });
-  const { data: dataKelas } =
-    api.pendaftaranKelas.getPendaftarByKelasId.useQuery({
-      kelasId,
-    });
+
+  const { dataByKelasId } = usePendaftaranKelas({
+    enableQuery: !!kelasId,
+    kelasId,
+  });
 
   const columnsDetailKelas = columns({
     onEditClick: (item) => {
@@ -36,10 +38,10 @@ export default function DetailKelasClient() {
             </p>
           </div>
         </header>
-        {/* <TambahProgramKelas /> */}
+        <TambahMuridDetailKelas kelasId={kelasId} />
       </div>
 
-      <DataTable data={dataKelas ?? []} columns={columnsDetailKelas} />
+      <DataTable data={dataByKelasId ?? []} columns={columnsDetailKelas} />
     </div>
   );
 }

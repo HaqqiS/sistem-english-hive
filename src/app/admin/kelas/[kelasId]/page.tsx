@@ -1,4 +1,4 @@
-import DetailKelasClient from "@/app/_components/views/admin/kelas/detailKelas/client";
+import DetailKelasClient from "@/app/_components/views/admin/kelas/detailKelas/detail-kelas-client";
 import { HydrateClient } from "@/trpc/server";
 
 export default function DetailKelasPage() {

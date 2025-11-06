@@ -2,11 +2,13 @@
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
+import { skipToken } from "@tanstack/react-query";
 
 interface UseProgramKelasOptions {
   // Query options
   enableQuery?: boolean;
   initialData?: PendaftaranKelasType[];
+  kelasId?: string;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -38,6 +40,14 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
     },
   );
 
+  const daftarMuridByKelasIdQuery =
+    api.pendaftaranKelas.getPendaftarByKelasId.useQuery(
+      options?.kelasId ? { kelasId: options.kelasId } : skipToken,
+      {
+        enabled: options?.enableQuery && !!options?.kelasId,
+      },
+    );
+
   // ========== MUTATIONS ==========
 
   // CREATE
@@ -45,6 +55,7 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
     api.pendaftaranKelas.createPendaftaranKelas.useMutation({
       onSuccess: async () => {
         await apiUtils.pendaftaranKelas.getAll.invalidate();
+        await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
         toast.success("Pendaftaran Kelas berhasil ditambahkan");
         options?.onSuccessCreate?.();
@@ -84,6 +95,11 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
     isLoading: pendaftaranKelasQuery.isLoading,
     isError: pendaftaranKelasQuery.isError,
     error: pendaftaranKelasQuery.error,
+
+    dataByKelasId: daftarMuridByKelasIdQuery.data,
+    isLoadingByKelasId: daftarMuridByKelasIdQuery.isLoading,
+    isErrorByKelasId: daftarMuridByKelasIdQuery.isError,
+    errorByKelasId: daftarMuridByKelasIdQuery.error,
 
     // Mutations
     mutations: {

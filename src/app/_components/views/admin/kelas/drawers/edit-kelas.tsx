@@ -10,7 +10,7 @@ import {
 } from "@/types/kelas.type";
 import { useKelasStore } from "@/store/useKelasStore";
 import { useKelas } from "@/hooks/useKelas";
-import KelasForm from "../kelas-form";
+import KelasForm from "../forms/kelas-form";
 
 export default function EditKelas() {
   const { isDrawerOpen, selectedKelas, closeDrawer, clearSelected } =

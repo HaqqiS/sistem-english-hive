@@ -11,7 +11,7 @@ import {
   clientPendaftaranKelasSchema,
   type TypeClientPendaftaranKelasSchema,
 } from "@/types/pendaftaranKelas.type";
-import PendaftaranKelasForm from "../pendaftaran-kelas-form";
+import PendaftaranKelasForm from "../forms/pendaftaran-kelas-form";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { formatToWITA } from "@/utils/dateUtils";
 
@@ -43,8 +43,8 @@ export default function TambahPendaftaranKelas() {
       </Button> */}
 
       <AddDrawer
-        title="Pendaftaran Kelas"
-        description="Tambahkan pendaftaran kelas baru ke sistem"
+        title="Daftarkan Murid ke Kelas"
+        description="Tambahkan data pendaftaran kelas baru dengan mengisi form di bawah ini."
         onSubmit={form.handleSubmit(onSubmit)}
         isPending={mutations.create.isPending}
         submitText="Tambah Pendaftaran Kelas"

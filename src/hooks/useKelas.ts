@@ -72,16 +72,16 @@ export function useKelas(options?: UseKelasOptions) {
   });
 
   // DELETE
-  // const deleteMutation = api.cabang.deleteCabang.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.cabang.getAll.invalidate();
-  //     toast.success("Cabang berhasil dihapus");
-  //     options?.onSuccessDelete?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal menghapus cabang: ${error.message}`);
-  //   },
-  // });
+  const deleteMutation = api.kelas.deleteKelas.useMutation({
+    onSuccess: async () => {
+      await apiUtils.kelas.getAll.invalidate();
+      toast.success("Kelas berhasil dihapus");
+      options?.onSuccessDelete?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal menghapus kelas: ${error.message}`);
+    },
+  });
 
   return {
     data: kelasQuery.data,
@@ -106,11 +106,11 @@ export function useKelas(options?: UseKelasOptions) {
         mutateAsync: updateMutation.mutateAsync,
         isPending: updateMutation.isPending,
       },
-      // delete: {
-      //   mutate: deleteMutation.mutate,
-      //   mutateAsync: deleteMutation.mutateAsync,
-      //   isPending: deleteMutation.isPending,
-      // },
+      delete: {
+        mutate: deleteMutation.mutate,
+        mutateAsync: deleteMutation.mutateAsync,
+        isPending: deleteMutation.isPending,
+      },
     },
 
     // Utils untuk manual invalidation jika perlu

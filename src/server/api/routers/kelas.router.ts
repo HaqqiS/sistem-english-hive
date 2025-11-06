@@ -86,4 +86,14 @@ export const kelasRouter = createTRPCRouter({
       });
       return kelas;
     }),
+
+  deleteKelas: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const kelas = await db.kelas.delete({
+        where: { id: input.id },
+      });
+      return kelas;
+    }),
 });

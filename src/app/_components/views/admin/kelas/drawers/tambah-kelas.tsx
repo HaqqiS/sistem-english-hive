@@ -11,9 +11,9 @@ import {
   clientKelasSchema,
   type TypeClientKelasSchema,
 } from "@/types/kelas.type";
-import KelasForm from "../kelas-form";
+import KelasForm from "../forms/kelas-form";
 import { useKelas } from "@/hooks/useKelas";
-import GuruKelasForm from "../guru-kelas-form";
+import GuruKelasForm from "../forms/guru-kelas-form";
 import {
   clientHistoryGuruKelasSchema,
   type TypeClientHistoryGuruKelasSchema,
@@ -50,10 +50,17 @@ export default function TambahKelas() {
   const { mutations: kelasMutations } = useKelas({
     onSuccessCreate: (newKelas) => {
       const historyValues = guruKelasForm.getValues();
-      historyMutations.create.mutate({
-        ...historyValues,
-        kelasId: newKelas.id,
-      });
+
+      if (historyValues.guruId) {
+        historyMutations.create.mutate({
+          ...historyValues,
+          kelasId: newKelas.id,
+        });
+      }
+
+      setIsOpen(false);
+      form.reset();
+      guruKelasForm.reset();
     },
   });
 

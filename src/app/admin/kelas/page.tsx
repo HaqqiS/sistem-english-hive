@@ -15,7 +15,7 @@ export default async function KelasPage() {
       <main className="flex flex-1 flex-col gap-4 pt-0">
         <HydrateClient>
           <KelasClient
-            initialDataProgram={dataKelas}
+            initialDataKelas={dataKelas}
             initialDataPendaftaran={dataPendaftaranKelas}
           />
         </HydrateClient>

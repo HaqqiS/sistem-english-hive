@@ -16,19 +16,18 @@ import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
 import EditKelas from "./drawers/edit-kelas";
 import EditGuruKelas from "./drawers/edit-guru-kelas";
 import type { HistoryGuruKelasType } from "@/types/historyGuruKelas.type";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { set } from "zod";
 
 interface ProgramKelasClientProps {
-  initialDataProgram: KelasType[];
+  initialDataKelas: KelasType[];
   initialDataPendaftaran: PendaftaranKelasType[];
 }
 
 export default function KelasClient({
-  initialDataProgram,
+  initialDataKelas,
   initialDataPendaftaran,
 }: ProgramKelasClientProps) {
-  const { data: dataKelas } = useKelas({
-    initialData: initialDataProgram,
-  });
   const { openDrawer: openKelasDrawer } = useKelasStore();
   const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
 
@@ -36,6 +35,13 @@ export default function KelasClient({
   const [selectedKelasToDelete, setSelectedKelasToDelete] =
     useState<KelasType | null>(null);
 
+  const { data: dataKelas, mutations: kelasMutations } = useKelas({
+    initialData: initialDataKelas,
+    onSuccessDelete: () => {
+      setDeleteKelasDialogOpen(false);
+      setSelectedKelasToDelete(null);
+    },
+  });
   const { data: dataPendaftaranKelas } = usePendaftaranKelas({
     initialData: initialDataPendaftaran,
   });
@@ -48,13 +54,18 @@ export default function KelasClient({
     openGuruKelasDrawer("edit", item);
   };
 
-  const handleDeleteClickKelas = (id: string, nama: string) => {
+  const handleDeleteClickKelas = (id: string, kodeKelas: string) => {
     // const kelas = dataKelas.find((c) => c.id === id);
-    const kelas = initialDataProgram.find((c) => c.id === id);
+    const kelas = initialDataKelas.find((c) => c.id === id);
     if (kelas) {
       setSelectedKelasToDelete(kelas);
       setDeleteKelasDialogOpen(true);
     }
+  };
+  const handleConfirmDeleteKelas = async () => {
+    if (!selectedKelasToDelete) return;
+
+    await kelasMutations.delete.mutateAsync({ id: selectedKelasToDelete.id });
   };
 
   const columnsKelas = kelas({
@@ -72,8 +83,9 @@ export default function KelasClient({
         console.warn("No historyGuruKelases entry found for this item");
       }
     },
-    onDeleteClick: (cabangId, cabangName) => {
-      console.log("deleted");
+    onDeleteClick: (kelasId, kodeKelas) => {
+      console.log("deleted: ", kelasId, kodeKelas);
+      handleDeleteClickKelas(kelasId, kodeKelas);
     },
   });
 
@@ -106,6 +118,25 @@ export default function KelasClient({
               </div>
             </header>
             <TambahProgramKelas />
+
+            <DeleteConfirmationDialog
+              isOpen={deleteKelasDialogOpen}
+              onOpenChange={setDeleteKelasDialogOpen}
+              title="Hapus Kelas"
+              description={
+                <>
+                  Yakin ingin menghapus Kelas{" "}
+                  <span className="text-accent font-bold">
+                    {selectedKelasToDelete?.kodeKelas}
+                  </span>
+                  ? Tindakan ini tidak dapat dibatalkan.
+                </>
+              }
+              onConfirm={handleConfirmDeleteKelas}
+              isLoading={kelasMutations.delete.isPending}
+              confirmText="Hapus"
+              cancelText="Batal"
+            />
           </div>
 
           <EditKelas />

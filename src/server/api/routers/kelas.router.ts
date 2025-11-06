@@ -16,7 +16,6 @@ export const kelasRouter = createTRPCRouter({
         bulanTahunAjar: true,
         deskripsi: true,
         hargaKelas: true,
-        guruId: true,
         historyGuruKelases: {
           where: {
             selesaiPada: null,

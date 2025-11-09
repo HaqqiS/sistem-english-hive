@@ -32,6 +32,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useMurid } from "../../../hooks/useMurid";
 import { useCabang } from "../../../hooks/useCabang";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Registration() {
   const { mutations } = useMurid({
@@ -359,9 +360,8 @@ export default function Registration() {
                             Jam Pulang Sekolah
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="text"
-                              placeholder="Masukkan jam pulang sekolah Anda"
+                            <Textarea
+                              placeholder="Senin-Jumat: 13.00, Sabtu: 12.00"
                               {...field}
                             />
                           </FormControl>

@@ -13,7 +13,7 @@ import {
 } from "@/types/pendaftaranKelas.type";
 import PendaftaranKelasForm from "../forms/pendaftaran-kelas-form";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
-import { formatToWITA } from "@/utils/dateUtils";
+import { useMurid } from "@/hooks/useMurid";
 
 export default function TambahPendaftaranKelas() {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,9 +30,15 @@ export default function TambahPendaftaranKelas() {
     },
   });
 
+  const { mutations: muridMutations } = useMurid();
+
   const onSubmit = (values: TypeClientPendaftaranKelasSchema) => {
     // console.log("values:", values);
     mutations.create.mutate(values);
+    muridMutations.update.mutate({
+      id: values.muridId,
+      statusMurid: "AKTIF",
+    });
   };
 
   return (
@@ -52,8 +58,8 @@ export default function TambahPendaftaranKelas() {
         trigger={
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            <p className="sr-only lg:not-sr-only">Tambahkan Murid ke Kelas</p>
-            <p className="not-sr-only lg:sr-only">Tambahkan Murid</p>
+            <p className="sr-only lg:not-sr-only">Daftarkan Murid ke Kelas</p>
+            <p className="not-sr-only lg:sr-only">Daftarkan Murid</p>
           </Button>
         }
         isOpen={isOpen}

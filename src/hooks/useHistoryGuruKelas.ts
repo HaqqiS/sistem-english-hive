@@ -1,13 +1,13 @@
 "use client";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import type { HistoryGuruKelasType } from "@/types/historyGuruKelas.type";
+import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
 import { skipToken } from "@tanstack/react-query";
 
 interface useHistoryGuruKelasOptions {
   // Query options
   enableQuery?: boolean;
-  initialData?: HistoryGuruKelasType[];
+  initialData?: TypeHistoryGuruKelas[];
 
   // Mutation callbacks
   onSuccessCreate?: () => void;

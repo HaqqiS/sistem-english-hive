@@ -11,17 +11,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { SesiPertemuanType } from "@/types/sesiPertemuan.type";
+import type { TypeKelasByGuruId } from "@/types/kelas.type";
+import Link from "next/link";
 
 interface ColumnsConfig {
-  onEditClick: (item: SesiPertemuanType) => void;
-  onDeleteClick: (jadwalSesiId: string, jadwalSesiName: string) => void;
+  onEditClick: (item: TypeKelasByGuruId) => void;
+  onDeleteClick: (programKelasId: string, programKelasName: string) => void;
 }
 
 export const columns = ({
   onEditClick,
   onDeleteClick,
-}: ColumnsConfig): ColumnDef<SesiPertemuanType>[] => [
+}: ColumnsConfig): ColumnDef<TypeKelasByGuruId>[] => [
   // Checkbox selection
   {
     id: "select",
@@ -48,28 +49,45 @@ export const columns = ({
 
   {
     accessorKey: "kodeKelas",
-    header: "Nama Kelas",
+    header: "Nama Program Kelas",
     cell: ({ row }) => (
-      <Button
-        variant="link"
-        className="text-foreground w-fit px-0 text-left text-base"
-        onClick={() => onEditClick(row.original)}
-      >
-        {row.original.kelas.kodeKelas}
-      </Button>
+      <Link href={`/guru/absen/${row.original.id}`}>
+        <Button
+          variant="link"
+          className="text-foreground w-fit px-0 text-left text-base"
+          // onClick={() => onEditClick(row.original)}
+        >
+          {row.original.kodeKelas}
+        </Button>
+      </Link>
     ),
     enableHiding: false,
   },
 
   {
-    accessorKey: "ruang.namaRuang",
+    accessorKey: "tipe",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Nama Ruang
+          Tipe
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+
+  {
+    accessorKey: "grup",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Grup
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -77,26 +95,16 @@ export const columns = ({
   },
 
   // {
-  //   accessorKey: "tanggalWaktu",
-  //   header: "Tahun Ajar",
+  //   accessorKey: "guruKelas",
+  //   header: "Guru Kelas",
   //   cell: ({ row }) => (
   //     <div
   //       className="max-w-[300px] truncate"
-  //       title={row.original.tanggalWaktu.toString()}
+  //       title={row.original.historyGuruKelases[0]?.guru.name ?? "-"}
   //     >
-  //       {row.original.tanggalWaktu as unknown as string}
+  //       {row.original.historyGuruKelases[0]?.guru.name ?? "-"}
   //     </div>
   //   ),
-  // },
-
-  // {
-  //   accessorKey: "tanggalWaktu",
-  //   header: "Tanggal & Waktu",
-
-  //   cell: ({ row }) => {
-  //     const formattedDate = convertTime(row.original.tanggalWaktu);
-  //     return formattedDate;
-  //   },
   // },
 
   {
@@ -117,13 +125,13 @@ export const columns = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32">
             <DropdownMenuItem onClick={() => onEditClick(row.original)}>
-              Edit
+              Edit Kelas
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               onClick={() =>
-                onDeleteClick(row.original.id, row.original.kelas.kodeKelas)
+                onDeleteClick(row.original.id, row.original.kodeKelas)
               }
             >
               Delete

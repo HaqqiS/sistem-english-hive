@@ -1,5 +1,7 @@
 import { RegisterMuridSchema } from "@/types/murid.type";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import z from "zod";
+import { StatusMurid } from "@prisma/client";
 
 export const muridRouter = createTRPCRouter({
   registerMurid: publicProcedure
@@ -39,9 +41,31 @@ export const muridRouter = createTRPCRouter({
       select: {
         id: true,
         namaLengkap: true,
+        pilihanProgram: true,
+        statusMurid: true,
+        noWA: true,
+        jamPulang: true,
       },
     });
 
     return unregisteredMurid;
   }),
+
+  updateStatusMurid: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().cuid(),
+        statusMurid: z.nativeEnum(StatusMurid),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { db } = ctx;
+      const updatedMurid = await db.murid.update({
+        where: { id: input.id },
+        data: {
+          statusMurid: input.statusMurid,
+        },
+      });
+      return updatedMurid;
+    }),
 });

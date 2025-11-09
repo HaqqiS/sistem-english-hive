@@ -8,7 +8,7 @@ export default async function KelasPage() {
 
   // const dataProgramKelas = await getData();
   const dataKelas = await api.kelas.getAll();
-  const dataPendaftaranKelas = await api.pendaftaranKelas.getAll();
+  const dataMuridNotRegistered = await api.murid.getMuridWhereNotRegistered();
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
@@ -16,7 +16,7 @@ export default async function KelasPage() {
         <HydrateClient>
           <KelasClient
             initialDataKelas={dataKelas}
-            initialDataPendaftaran={dataPendaftaranKelas}
+            initialDataMuridNotRegistered={dataMuridNotRegistered}
           />
         </HydrateClient>
       </main>

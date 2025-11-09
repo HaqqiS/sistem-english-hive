@@ -11,19 +11,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
 import { Badge } from "@/components/ui/badge";
-import { formatDateWITA } from "@/utils/dateUtils";
+import type { TypeMuridNotRegistered } from "@/types/murid.type";
 
 interface ColumnsConfig {
-  onEditClick: (item: PendaftaranKelasType) => void;
+  onEditClick: (item: TypeMuridNotRegistered) => void;
   onDeleteClick: (pendaftaranId: string) => void;
 }
 
 export const columns = ({
   onEditClick,
   onDeleteClick,
-}: ColumnsConfig): ColumnDef<PendaftaranKelasType>[] => [
+}: ColumnsConfig): ColumnDef<TypeMuridNotRegistered>[] => [
   // Checkbox selection
   {
     id: "select",
@@ -49,7 +48,7 @@ export const columns = ({
   },
 
   {
-    accessorFn: (row) => row.murid.namaLengkap, // Akses data nested
+    accessorFn: (row) => row.namaLengkap, // Akses data nested
     id: "namaMurid",
     header: ({ column }) => (
       <Button
@@ -66,7 +65,7 @@ export const columns = ({
         className="text-foreground w-fit px-0 text-left text-base"
         onClick={() => onEditClick(row.original)}
       >
-        {row.original.murid.namaLengkap}
+        {row.original.namaLengkap}
       </Button>
     ),
     enableHiding: false,
@@ -74,14 +73,14 @@ export const columns = ({
 
   // Kolom Program Kelas (dari relasi)
   {
-    accessorFn: (row) => row.Kelas.kodeKelas, // Akses data nested
+    accessorFn: (row) => row.pilihanProgram, // Akses data nested
     id: "programKelas",
     header: ({ column }) => (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Program Kelas
+        Pilihan Program Kelas
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -89,40 +88,40 @@ export const columns = ({
       return (
         <div
           className="max-w-[350px] truncate"
-          title={row.original.Kelas.kodeKelas}
+          title={row.original.pilihanProgram ?? ""}
         >
-          {row.original.Kelas.kodeKelas}
+          {row.original.pilihanProgram}
         </div>
       );
     },
   },
 
-  // Kolom Tanggal Mulai
   {
-    accessorKey: "tanggalMulai",
+    accessorKey: "jamPulang",
+    id: "jamPulang",
+    cell: ({ row }) => <div className="w-32">{row.original.jamPulang}</div>,
+  },
+
+  {
+    accessorKey: "noWA",
     header: ({ column }) => (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Tanggal Mulai
+        No WhatsApp
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
     cell: ({ row }) => {
       // Format tanggal ke format Indonesia
 
-      return (
-        <div className="min-w-[120px]">
-          {formatDateWITA(row.original.tanggalMulai)}
-        </div>
-      );
+      return <div className="min-w-[120px]">{row.original.noWA}</div>;
     },
   },
 
-  // Kolom Status (Aktif/Non-Aktif)
   {
-    accessorKey: "isAktif",
+    accessorKey: "statusMurid",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -133,10 +132,10 @@ export const columns = ({
       </Button>
     ),
     cell: ({ row }) => {
-      const isActive = row.original.isAktif;
+      const status = row.original.statusMurid;
       return (
-        <Badge variant={isActive ? "default" : "destructive"}>
-          {isActive ? "Aktif" : "Non-Aktif"}
+        <Badge variant={status === "AKTIF" ? "default" : "destructive"}>
+          {status}
         </Badge>
       );
     },

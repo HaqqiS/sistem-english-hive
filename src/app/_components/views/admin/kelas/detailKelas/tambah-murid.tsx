@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import type z from "zod";
 import { api } from "@/trpc/react";
+import { useMurid } from "@/hooks/useMurid";
 
 const clientTambahMuridSchema = clientPendaftaranKelasSchema.omit({
   kelasId: true,
@@ -41,12 +42,17 @@ export default function TambahMuridDetailKelas({
       setIsOpen(false);
     },
   });
+  const { mutations: muridMutations } = useMurid();
 
   const onSubmit = (values: TypeClientTambahMuridSchema) => {
     // console.log("values:", values);
     mutations.create.mutate({
       ...values,
       kelasId: kelasId ?? "",
+    });
+    muridMutations.update.mutate({
+      id: values.muridId,
+      statusMurid: "AKTIF",
     });
   };
 

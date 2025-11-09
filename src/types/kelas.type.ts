@@ -2,8 +2,13 @@ import type { RouterOutputs } from "@/trpc/react";
 import { JenisKelas, TipeKelas } from "@prisma/client";
 import z from "zod";
 
-export type KelasType = RouterOutputs["kelas"]["getAll"][number];
-export type CreateKelasType = RouterOutputs["kelas"]["createKelas"];
+export type TypeKelas = RouterOutputs["kelas"]["getAll"][number];
+export type TypeCreateKelas = RouterOutputs["kelas"]["createKelas"];
+export type TypeKelasWithSesi =
+  RouterOutputs["kelas"]["getKelasWithSesiForGuru"];
+export type TypeKelasByGuruId = TypeKelasWithSesi[number];
+export type TypeSesiPertemuanShort =
+  TypeKelasByGuruId["sesiPertemuanKelases"][number];
 
 const baseKelasSchema = z.object({
   jenisKelas: z.nativeEnum(JenisKelas),

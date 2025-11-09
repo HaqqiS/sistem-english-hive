@@ -42,17 +42,18 @@ export function useAbsenGuru(options?: UseGuruOptions) {
   // ========== MUTATIONS ==========
 
   // CREATE
-  // const createAbsensiMutation = api.absenGuru.createAbsensi.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.absenGuru.getAllAbsensi.invalidate();
-  //     await apiUtils.jadwalSesi.notUsedJadwalSesi.invalidate();
-  //     toast.success("Absensi berhasil ditambahkan");
-  //     options?.onSuccessCreate?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal membuat Absensi: ${error.message}`);
-  //   },
-  // });
+  const createSesiAbsensiMutation =
+    api.absenGuru.createSesiAndAbsensi.useMutation({
+      onSuccess: async () => {
+        await apiUtils.absenGuru.getAllAbsensi.invalidate();
+        // await apiUtils.sesiPertemuan..invalidate();
+        toast.success("Absensi berhasil ditambahkan");
+        options?.onSuccessCreate?.();
+      },
+      onError: (error) => {
+        toast.error(`Gagal membuat Absensi: ${error.message}`);
+      },
+    });
 
   // UPDATE
   const updateStatusMutation = api.absenGuru.verifyAbsensi.useMutation({
@@ -88,11 +89,11 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 
     // Mutations
     mutations: {
-      // create: {
-      //   mutate: createAbsensiMutation.mutate,
-      //   mutateAsync: createAbsensiMutation.mutateAsync,
-      //   isPending: createAbsensiMutation.isPending,
-      // },
+      create: {
+        mutate: createSesiAbsensiMutation.mutate,
+        mutateAsync: createSesiAbsensiMutation.mutateAsync,
+        isPending: createSesiAbsensiMutation.isPending,
+      },
       updateStatus: {
         mutate: updateStatusMutation.mutate,
         mutateAsync: updateStatusMutation.mutateAsync,

@@ -1,5 +1,9 @@
+import type { RouterOutputs } from "@/trpc/react";
 import { Gender } from "@prisma/client";
 import z from "zod";
+
+export type TypeMuridNotRegistered =
+  RouterOutputs["murid"]["getMuridWhereNotRegistered"][number];
 
 export const RegisterMuridSchema = z.object({
   namaLengkap: z.string().min(1, "Nama lengkap harus diisi").max(200),
@@ -9,7 +13,7 @@ export const RegisterMuridSchema = z.object({
   umur: z.coerce.number().min(1, "Umur harus diisi").max(100),
   asalSekolah: z.string().min(1, "Asal sekolah harus diisi").max(200),
   kelasSekolah: z.string().min(1, "Kelas harus diisi").max(20),
-  jamPulang: z.string().min(1, "Jam pulang harus diisi").max(10),
+  jamPulang: z.string().min(1, "Jam pulang harus diisi").max(225),
   noWA: z
     .string()
     .min(1, "No Telepon harus diisi")

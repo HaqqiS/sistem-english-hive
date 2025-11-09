@@ -7,27 +7,29 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import AbsensiGuruForm from "./absensi-guru-form";
+import AbsensiGuruForm from "./absensi-guru-form"; // Ini adalah child form
 import {
-  clientAbsensiArraySchema,
-  type TypeClientAbsensiArraySchema,
+  formSesiAbsensiGuruSchema,
+  type TypeFormSesiAbsensiGuru,
 } from "@/types/absenGuru.type";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
+import { StatusAbsenGuru } from "@prisma/client";
 
 export default function TambahAbsensi() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const form = useForm<TypeClientAbsensiArraySchema>({
-    resolver: zodResolver(clientAbsensiArraySchema),
+  // 1. useForm dan useFieldArray sekarang ada di parent
+  const form = useForm<TypeFormSesiAbsensiGuru>({
+    resolver: zodResolver(formSesiAbsensiGuruSchema),
     defaultValues: {
-      absensi: [{ jadwalSesiId: "", status: "HADIR" }],
-    },
-  });
-
-  const { mutations } = useAbsenGuru({
-    onSuccessCreate: () => {
-      form.reset();
-      setIsOpen(false);
+      absensi: [
+        {
+          kelasId: "",
+          ruangId: "",
+          tanggalWaktu: new Date(),
+          status: StatusAbsenGuru.HADIR,
+        },
+      ],
     },
   });
 
@@ -36,69 +38,74 @@ export default function TambahAbsensi() {
     name: "absensi",
   });
 
-  const onSubmit = (values: TypeClientAbsensiArraySchema) => {
-    // 'values' akan berbentuk: { absensi: [...] }
-    // Mutation Anda (createAbsensi) hanya butuh array-nya saja
-    // createAbsensi(values.absensi);
-    console.log("value :", values);
-    // mutations.create.mutate(values.absensi);
+  // 2. Gunakan hook yang benar
+  const { mutations } = useAbsenGuru({
+    onSuccessCreate: () => {
+      form.reset();
+      setIsOpen(false);
+    },
+  });
+
+  // 3. onSubmit sekarang menerima tipe form yang benar
+  const onSubmit = (values: TypeFormSesiAbsensiGuru) => {
+    // Kirim array 'absensi' ke mutasi, sesuai input di backend
+    mutations.create.mutate(values.absensi);
   };
 
   const handleAddForm = () => {
-    // Batasi hingga 5 form sesuai skema
     if (fields.length < 5) {
-      append({ jadwalSesiId: "", status: "HADIR" });
+      append({
+        kelasId: "",
+        ruangId: "",
+        tanggalWaktu: new Date(),
+        status: StatusAbsenGuru.HADIR,
+      });
     }
   };
 
   return (
-    <>
-      {/* <Button onClick={() => setIsOpen(true)}>
-        <Plus className="mr-2 h-4 w-4" />
-        Tambah Cabang
-      </Button> */}
+    <AddDrawer
+      title="Buat Absensi"
+      description="Tambahkan absensi baru. Ini akan membuat Sesi Pertemuan dan Absensi Anda sekaligus."
+      onSubmit={form.handleSubmit(onSubmit)} // 4. Hubungkan ke form submit
+      isPending={mutations.create.isPending}
+      submitText="Buat Absensi"
+      cancelText="Batal"
+      trigger={
+        <Button onClick={() => setIsOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Buat Absensi
+        </Button>
+      }
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+    >
+      {/* 5. Bungkus form di dalam Drawer */}
+      <Form {...form}>
+        <form
+          id="absensi-guru-form"
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-6"
+        >
+          {fields.map((field, index) => (
+            <AbsensiGuruForm
+              key={field.id}
+              control={form.control} // Pass control
+              index={index}
+              onRemove={remove} // Pass remove
+            />
+          ))}
 
-      <AddDrawer
-        title="Buat Absensi"
-        description="Tambahkan absensi baru ke sistem"
-        onSubmit={form.handleSubmit(onSubmit)}
-        // isPending={mutations.create.isPending}
-        submitText="Buat Absensi"
-        cancelText="Batal"
-        trigger={
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Buat Absensi
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={fields.length >= 5}
+            onClick={handleAddForm}
+          >
+            Tambah Absensi
           </Button>
-        }
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-      >
-        <Form {...form}>
-          {/* <AbsensiGuruForm onSubmit={onSubmit} /> */}
-          <div className="space-y-4">
-            {/* Loop 'fields' dari useFieldArray */}
-            {fields.map((field, index) => (
-              <AbsensiGuruForm
-                key={field.id} // 'key' wajib dari 'field.id'
-                index={index}
-                onRemove={remove} // Teruskan fungsi 'remove'
-              />
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleAddForm}
-              disabled={fields.length >= 5} // Nonaktifkan jika sudah 5
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Sesi Lain
-            </Button>
-          </div>
-        </Form>
-      </AddDrawer>
-    </>
+        </form>
+      </Form>
+    </AddDrawer>
   );
 }

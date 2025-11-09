@@ -1,12 +1,13 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import type { TypeMuridNotRegistered } from "@/types/murid.type";
 import { toast } from "sonner";
 
 interface useMuridOptions {
   // Query options
   enableQuery?: boolean;
-  // initialData?: MuridType[];
+  initialData?: TypeMuridNotRegistered[];
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -34,7 +35,7 @@ export function useMurid(options?: useMuridOptions) {
     undefined,
     {
       enabled: options?.enableQuery ?? true,
-      // initialData: options?.initialData,
+      initialData: options?.initialData,
     },
   );
 
@@ -58,6 +59,17 @@ export function useMurid(options?: useMuridOptions) {
   });
 
   // UPDATE
+
+  const updateStatusMuridMutation = api.murid.updateStatusMurid.useMutation({
+    onSuccess: async () => {
+      await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+      toast.success("Status Murid berhasil diupdate");
+      options?.onSuccessUpdate?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal mengupdate Status Murid: ${error.message}`);
+    },
+  });
   // const updateMutation = api.ruang.updateRuang.useMutation({
   //   onSuccess: async () => {
   //     await apiUtils.ruang.getAll.invalidate();
@@ -95,11 +107,11 @@ export function useMurid(options?: useMuridOptions) {
         mutateAsync: createMutation.mutateAsync,
         isPending: createMutation.isPending,
       },
-      // update: {
-      //   mutate: updateMutation.mutate,
-      //   mutateAsync: updateMutation.mutateAsync,
-      //   isPending: updateMutation.isPending,
-      // },
+      update: {
+        mutate: updateStatusMuridMutation.mutate,
+        mutateAsync: updateStatusMuridMutation.mutateAsync,
+        isPending: updateStatusMuridMutation.isPending,
+      },
       // delete: {
       //   mutate: deleteMutation.mutate,
       //   mutateAsync: deleteMutation.mutateAsync,

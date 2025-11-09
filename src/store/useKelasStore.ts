@@ -1,5 +1,5 @@
-import type { HistoryGuruKelasType } from "@/types/historyGuruKelas.type";
-import type { KelasType } from "@/types/kelas.type";
+import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
+import type { TypeKelas } from "@/types/kelas.type";
 import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
 import { create } from "zustand";
 
@@ -8,10 +8,10 @@ type DrawerType = "none" | "edit" | "tambah";
 interface KelasStore {
   // Drawer management
   activeDrawer: DrawerType;
-  selectedKelas: KelasType | null;
+  selectedKelas: TypeKelas | null;
 
   // Action methods
-  openDrawer: (drawer: DrawerType, kelas?: KelasType) => void;
+  openDrawer: (drawer: DrawerType, kelas?: TypeKelas) => void;
   closeDrawer: () => void;
 
   // Helpers
@@ -22,10 +22,10 @@ interface KelasStore {
 interface GuruKelasStore {
   // Drawer management
   activeDrawer: DrawerType;
-  selectedHistoryGuruKelas: HistoryGuruKelasType | null;
+  selectedHistoryGuruKelas: TypeHistoryGuruKelas | null;
 
   // Action methods
-  openDrawer: (drawer: DrawerType, kelas?: HistoryGuruKelasType) => void;
+  openDrawer: (drawer: DrawerType, kelas?: TypeHistoryGuruKelas) => void;
   closeDrawer: () => void;
 
   // Helpers

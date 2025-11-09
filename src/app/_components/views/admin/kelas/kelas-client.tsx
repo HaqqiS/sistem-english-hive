@@ -3,37 +3,36 @@
 // import { DataTable } from "@/app/_components/shared/data-table";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as kelas } from "./columns/columns-kelas";
-import { columns as columnsPendaftaranKelas } from "./columns/columns-pendaftaran-kelas";
-import type { KelasType } from "@/types/kelas.type";
+import { columns as columnsPendaftaranKelas } from "./columns/columns-murid";
+import type { TypeKelas } from "@/types/kelas.type";
 import TambahProgramKelas from "./drawers/tambah-kelas";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
 import TambahPendaftaranKelas from "./drawers/tambah-pendaftaran-kelas";
 import { useKelas } from "@/hooks/useKelas";
-import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { useState } from "react";
 import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
 import EditKelas from "./drawers/edit-kelas";
 import EditGuruKelas from "./drawers/edit-guru-kelas";
-import type { HistoryGuruKelasType } from "@/types/historyGuruKelas.type";
+import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { set } from "zod";
+import type { TypeMuridNotRegistered } from "@/types/murid.type";
+import { useMurid } from "@/hooks/useMurid";
 
 interface ProgramKelasClientProps {
-  initialDataKelas: KelasType[];
-  initialDataPendaftaran: PendaftaranKelasType[];
+  initialDataKelas: TypeKelas[];
+  initialDataMuridNotRegistered: TypeMuridNotRegistered[];
 }
 
 export default function KelasClient({
   initialDataKelas,
-  initialDataPendaftaran,
+  initialDataMuridNotRegistered,
 }: ProgramKelasClientProps) {
   const { openDrawer: openKelasDrawer } = useKelasStore();
   const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
 
   const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
   const [selectedKelasToDelete, setSelectedKelasToDelete] =
-    useState<KelasType | null>(null);
+    useState<TypeKelas | null>(null);
 
   const { data: dataKelas, mutations: kelasMutations } = useKelas({
     initialData: initialDataKelas,
@@ -42,20 +41,19 @@ export default function KelasClient({
       setSelectedKelasToDelete(null);
     },
   });
-  const { data: dataPendaftaranKelas } = usePendaftaranKelas({
-    initialData: initialDataPendaftaran,
+  const { dataMuridNotRegistered } = useMurid({
+    initialData: initialDataMuridNotRegistered,
   });
 
-  const handleEditClickKelas = (item: KelasType) => {
+  const handleEditClickKelas = (item: TypeKelas) => {
     openKelasDrawer("edit", item);
   };
 
-  const handleEditClickGuruKelas = (item: HistoryGuruKelasType) => {
+  const handleEditClickGuruKelas = (item: TypeHistoryGuruKelas) => {
     openGuruKelasDrawer("edit", item);
   };
 
   const handleDeleteClickKelas = (id: string, kodeKelas: string) => {
-    // const kelas = dataKelas.find((c) => c.id === id);
     const kelas = initialDataKelas.find((c) => c.id === id);
     if (kelas) {
       setSelectedKelasToDelete(kelas);
@@ -77,7 +75,7 @@ export default function KelasClient({
       if (history) {
         // assert to the expected type after guarding against undefined
         // cast via unknown first to avoid incompatible structural typing error
-        handleEditClickGuruKelas(history as unknown as HistoryGuruKelasType);
+        handleEditClickGuruKelas(history as unknown as TypeHistoryGuruKelas);
       } else {
         // no history available for this kelas
         console.warn("No historyGuruKelases entry found for this item");
@@ -102,7 +100,7 @@ export default function KelasClient({
     <Tabs defaultValue="kelas">
       <TabsList>
         <TabsTrigger value="kelas">Kelola Kelas</TabsTrigger>
-        <TabsTrigger value="pendaftaranKelas">
+        <TabsTrigger value="daftarMurid">
           Pendaftaran Siswa ke Kelas
         </TabsTrigger>
       </TabsList>
@@ -111,9 +109,9 @@ export default function KelasClient({
           <div className="flex items-center justify-between space-x-2 pt-4">
             <header className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl">Kelola Kelas</h1>
+                <h1 className="text-xl">Daftar Kelas</h1>
                 <p className="text-muted-foreground text-sm">
-                  This is the kelas management page.
+                  halaman ini mengatur data kelas dan penugasan guru.
                 </p>
               </div>
             </header>
@@ -143,40 +141,20 @@ export default function KelasClient({
 
           <EditGuruKelas />
 
-          {/* <DataTable
-            filterColumnId="kodeKelas"
-            filterColumnPlaceholder="Filter Kode Kelas..."
-            columns={columnsKelas}
-            data={dataKelas ?? []}
-            toolbar={(table) => (
-              <div className="flex items-center gap-2">
-                <Input
-                    placeholder="Cari nama cabang..."
-                    value={
-                      (table.getColumn("namaCabang")?.getFilterValue() as string) ??
-                      ""
-                    }
-                    onChange={(event) =>
-                      table
-                        .getColumn("namaCabang")
-                        ?.setFilterValue(event.target.value)
-                    }
-                    className="max-w-sm"
-                  />
-              </div>
-            )}
-          /> */}
           <DataTable columns={columnsKelas} data={dataKelas ?? []} />
         </div>
       </TabsContent>
-      <TabsContent value="pendaftaranKelas">
+      <TabsContent value="daftarMurid">
         <div>
           <div className="flex items-center justify-between space-x-2 pt-4">
             <header className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl">Kelola Pendaftaran Siswa ke Kelas</h1>
+                <h1 className="text-xl">
+                  Daftar Murid Belum Terdaftar ke Kelas
+                </h1>
                 <p className="text-muted-foreground text-sm">
-                  This is the kelas management page.
+                  Halaman ini menampilkan daftar murid yang belum terdaftar ke
+                  kelas.
                 </p>
               </div>
             </header>
@@ -185,7 +163,7 @@ export default function KelasClient({
 
           <DataTable
             columns={columnsPendaftaran}
-            data={dataPendaftaranKelas ?? []}
+            data={dataMuridNotRegistered ?? []}
           />
 
           {/* <DataTable

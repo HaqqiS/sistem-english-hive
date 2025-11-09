@@ -48,6 +48,52 @@ export const kelasRouter = createTRPCRouter({
       return kelas;
     }),
 
+  /**
+   * Query ini dirancang untuk halaman absensi guru.
+   * Mengambil semua kelas, dan untuk setiap kelas, mengambil daftar sesi pertemuannya.
+   *
+   * @todo (Nanti) Tambahkan filter 'where' untuk hanya mengambil kelas
+   * yang diajar oleh guru yang sedang login (ctx.session.user.id).
+   */
+  getKelasWithSesiForGuru: protectedProcedure.query(async ({ ctx }) => {
+    const { db /*, session*/ } = ctx;
+    // const guruId = session.user.id; // <-- Buka komentar ini saat siap implementasi filter
+
+    const kelasWithSesi = await db.kelas.findMany({
+      // where: {
+      //   // Filter kelas yang diajar oleh guru yang login & masih aktif
+      //   historyGuruKelases: {
+      //     some: {
+      //       guruId: guruId,
+      //       statusGuru: "ACTIVE",
+      //     },
+      //   },
+      // },
+      orderBy: {
+        kodeKelas: "asc", // Urutkan daftar kelas berdasarkan nama
+      },
+      select: {
+        id: true,
+        kodeKelas: true,
+        // Ambil semua sesi pertemuan yang terkait dengan kelas ini
+        sesiPertemuanKelases: {
+          orderBy: {
+            tanggalWaktu: "desc", // Tampilkan sesi terbaru di paling atas
+          },
+          select: {
+            id: true,
+            tanggalWaktu: true,
+          },
+        },
+      },
+    });
+
+    // Filter kelas yang tidak memiliki sesi pertemuan
+    return kelasWithSesi.filter(
+      (kelas) => kelas.sesiPertemuanKelases.length > 0,
+    );
+  }),
+
   createKelas: protectedProcedure
     .input(serverKelasSchema)
     .mutation(async ({ ctx, input }) => {

@@ -20,6 +20,9 @@ export const historyGuruKelasRouter = createTRPCRouter({
         where: {
           kelasId: input.kelasId,
         },
+        include: {
+          guru: true,
+        },
       });
       return historyGuruKelas;
     }),
@@ -28,6 +31,17 @@ export const historyGuruKelasRouter = createTRPCRouter({
     .input(serverHistoryGuruKelasSchema)
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+      const existingGuruRecord = await db.historyGuruKelas.findFirst({
+        where: {
+          statusGuru: "ACTIVE",
+        },
+      });
+
+      if (existingGuruRecord) {
+        throw new Error(
+          "Sudah ada guru yang ditugaskan pada kelas ini dan masih aktif.",
+        );
+      }
       const newHistoryGuruKelas = await db.historyGuruKelas.create({
         data: {
           kelasId: input.kelasId,

@@ -11,12 +11,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { KelasType } from "@/types/kelas.type";
+import type { TypeKelas } from "@/types/kelas.type";
 import Link from "next/link";
 
 interface ColumnsConfig {
-  onEditKelasClick: (item: KelasType) => void;
-  onEditGuruKelasClick: (item: KelasType) => void;
+  onEditKelasClick: (item: TypeKelas) => void;
+  onEditGuruKelasClick: (item: TypeKelas) => void;
   onDeleteClick: (programKelasId: string, programKelasName: string) => void;
 }
 
@@ -24,7 +24,7 @@ export const columns = ({
   onEditKelasClick,
   onEditGuruKelasClick,
   onDeleteClick,
-}: ColumnsConfig): ColumnDef<KelasType>[] => [
+}: ColumnsConfig): ColumnDef<TypeKelas>[] => [
   // Checkbox selection
   {
     id: "select",

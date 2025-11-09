@@ -1,6 +1,9 @@
 import { UserRole } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { serverCreateManyAbsensiGuruSchema } from "@/types/absenGuru.type";
+import {
+  serverCreateManyAbsensiGuruSchema,
+  serverCreateSesiAbsensiGuruSchema,
+} from "@/types/absenGuru.type";
 import z from "zod";
 
 export const absenGuruRouter = createTRPCRouter({
@@ -42,27 +45,45 @@ export const absenGuruRouter = createTRPCRouter({
     return result;
   }),
 
-  // createAbsensi: protectedProcedure
-  //   .input(serverCreateManyAbsensiGuruSchema)
-  //   .mutation(async ({ ctx, input }) => {
-  //     const { db, session } = ctx;
-  //     const guruId = session.user.id;
+  createSesiAndAbsensi: protectedProcedure
+    .input(serverCreateSesiAbsensiGuruSchema) // Menggunakan skema array
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const guruId = session.user.id;
 
-  //     const dataToCreate = input.map((absensi) => {
-  //       return {
-  //         guruId,
-  //         jadwalSesiId: absensi.jadwalSesiId,
-  //         status: absensi.status,
+      // Gunakan $transaction untuk memastikan keduanya berhasil atau gagal bersamaan
+      const result = await db.$transaction(async (tx) => {
+        const createdItems = [];
 
-  //         isVerified: false,
-  //         verifiedById: null,
-  //       };
-  //     });
+        for (const item of input) {
+          // 1. Buat SesiPertemuanKelas
+          const newSesi = await tx.sesiPertemuanKelas.create({
+            data: {
+              kelasId: item.kelasId,
+              ruangId: item.ruangId,
+              tanggalWaktu: item.tanggalWaktu,
+            },
+            select: { id: true }, // Hanya ambil ID yang dibutuhkan
+          });
 
-  //     await db.absensiGuru.createMany({
-  //       data: dataToCreate,
-  //     });
-  //   }),
+          // 2. Buat AbsensiGuru menggunakan ID sesi yang baru
+          const newAbsensi = await tx.absensiGuru.create({
+            data: {
+              guruId: guruId,
+              sesiPertemuanKelasId: newSesi.id,
+              status: item.status,
+              isVerified: false, // Selalu false saat dibuat
+            },
+          });
+
+          createdItems.push({ sesiId: newSesi.id, absensiId: newAbsensi.id });
+        }
+
+        return createdItems;
+      });
+
+      return result;
+    }),
 
   verifyAbsensi: protectedProcedure
     .input(

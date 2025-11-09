@@ -1,16 +1,21 @@
 "use client";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import type { CreateKelasType, KelasType } from "@/types/kelas.type";
+import type {
+  TypeCreateKelas,
+  TypeKelas,
+  TypeKelasByGuruId,
+} from "@/types/kelas.type";
 import { skipToken } from "@tanstack/react-query";
 
 interface UseKelasOptions {
   // Query options
   enableQuery?: boolean;
-  initialData?: KelasType[];
+  initialData?: TypeKelas[];
+  initialDataKelasWithSesi?: TypeKelasByGuruId[];
 
   // Mutation callbacks
-  onSuccessCreate?: (newKelas: CreateKelasType) => void;
+  onSuccessCreate?: (newKelas: TypeCreateKelas) => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
 
@@ -44,6 +49,13 @@ export function useKelas(options?: UseKelasOptions) {
 
   const kelasByIdQuery = api.kelas.getKelasById.useQuery(
     kelasId ? { id: kelasId } : skipToken,
+  );
+
+  const kelasWithSesiQuery = api.kelas.getKelasWithSesiForGuru.useQuery(
+    undefined,
+    {
+      initialData: options?.initialDataKelasWithSesi,
+    },
   );
   // ========== MUTATIONS ==========
 
@@ -93,6 +105,11 @@ export function useKelas(options?: UseKelasOptions) {
     isLoadingById: kelasByIdQuery.isLoading,
     isErrorById: kelasByIdQuery.isError,
     errorById: kelasByIdQuery.error,
+
+    dataWithSesi: kelasWithSesiQuery.data,
+    isLoadingWithSesi: kelasWithSesiQuery.isLoading,
+    isErrorWithSesi: kelasWithSesiQuery.isError,
+    errorWithSesi: kelasWithSesiQuery.error,
 
     // Mutations
     mutations: {

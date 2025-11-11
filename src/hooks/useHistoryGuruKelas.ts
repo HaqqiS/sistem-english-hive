@@ -48,6 +48,7 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
     api.historyGuruKelas.createHistoryGuruKelas.useMutation({
       onSuccess: async () => {
         await apiUtils.historyGuruKelas.getAll.invalidate();
+        await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate();
         toast.success("History Guru Kelas berhasil ditambahkan");
         options?.onSuccessCreate?.();
       },

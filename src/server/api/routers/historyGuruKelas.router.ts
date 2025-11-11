@@ -33,6 +33,7 @@ export const historyGuruKelasRouter = createTRPCRouter({
       const { db } = ctx;
       const existingGuruRecord = await db.historyGuruKelas.findFirst({
         where: {
+          kelasId: input.kelasId,
           statusGuru: "ACTIVE",
         },
       });

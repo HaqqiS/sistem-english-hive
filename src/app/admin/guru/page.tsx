@@ -1,4 +1,4 @@
-import AbsenClient from "@/app/_components/views/admin/absenGuru/absen-guru-client";
+import AbsenClient from "@/app/_components/views/admin/guru/absenGuru/absen-guru-client";
 import { api, HydrateClient } from "@/trpc/server";
 
 export default async function VerifikasiAbsenPage() {
@@ -8,9 +8,9 @@ export default async function VerifikasiAbsenPage() {
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <header className="flex items-center justify-between pt-6">
         <div>
-          <h1 className="text-xl">Kelola Absensi Guru</h1>
+          <h1 className="text-xl">Kelola Guru</h1>
           <p className="text-muted-foreground text-sm">
-            This is the absensi guru management page.
+            This is the guru management page.
           </p>
         </div>
       </header>

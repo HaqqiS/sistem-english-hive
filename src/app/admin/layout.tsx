@@ -4,10 +4,16 @@ import DashboardLayout from "../_components/layouts/dashboard-layout";
 // Tentukan navigasi khusus untuk ADMIN
 const adminNavItems: NavItem[] = [
   { title: "Dashboard", url: "/admin", icon: "Home" },
-  { title: "Verifikasi Absen Guru", url: "/admin/absen", icon: "Users" },
-  { title: "Sesi Pertemuan Kelas", url: "/admin/sesi", icon: "Calendar" },
-  { title: "Program Kelas", url: "/admin/kelas", icon: "School" },
-  { title: "Ruangan & Cabang", url: "/admin/cabang", icon: "Building" },
+  { title: "Guru", url: "/admin/guru", icon: "Users" },
+  { title: "Murid", url: "/admin/murid", icon: "GraduationCap" },
+  { title: "Kelas", url: "/admin/kelas", icon: "School" },
+  { title: "Pertemuan Kelas", url: "/admin/sesi", icon: "Calendar" },
+  {
+    title: "Ruangan",
+    url: "/admin/ruang",
+    icon: "Building",
+  },
+  { title: "Pembayaran", url: "/admin/pembayaran", icon: "Banknote" },
 ];
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

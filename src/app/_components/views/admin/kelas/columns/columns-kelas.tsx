@@ -66,48 +66,48 @@ export const columns = ({
     enableHiding: false,
   },
 
-  {
-    accessorKey: "level",
-    header: "Level",
-    cell: ({ row }) => (
-      <div
-        className="max-w-[300px] truncate"
-        title={row.original.level.toString()}
-      >
-        {row.original.level}
-      </div>
-    ),
-  },
+  // {
+  //   accessorKey: "level",
+  //   header: "Level",
+  //   cell: ({ row }) => (
+  //     <div
+  //       className="max-w-[300px] truncate"
+  //       title={row.original.level.toString()}
+  //     >
+  //       {row.original.level}
+  //     </div>
+  //   ),
+  // },
 
-  {
-    accessorKey: "tipe",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Tipe
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
+  // {
+  //   accessorKey: "tipe",
+  //   header: ({ column }) => {
+  //     return (
+  //       <Button
+  //         variant="ghost"
+  //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+  //       >
+  //         Tipe
+  //         <ArrowUpDown className="ml-2 h-4 w-4" />
+  //       </Button>
+  //     );
+  //   },
+  // },
 
-  {
-    accessorKey: "grup",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Grup
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
+  // {
+  //   accessorKey: "grup",
+  //   header: ({ column }) => {
+  //     return (
+  //       <Button
+  //         variant="ghost"
+  //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+  //       >
+  //         Grup
+  //         <ArrowUpDown className="ml-2 h-4 w-4" />
+  //       </Button>
+  //     );
+  //   },
+  // },
 
   {
     accessorKey: "bulanTahunAjar",

@@ -59,6 +59,7 @@ model Session {
 enum UserRole {
     GURU
     ADMIN
+    MANAGER // super admin
 }
 
 model User {
@@ -104,9 +105,10 @@ model Cabang {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    staffs User[]
-    murids Murid[]
-    ruangs Ruang[]
+    staffs        User[]
+    murids        Murid[]
+    ruangs        Ruang[]
+    jamSlotTetaps JamSlotTetap[]
 }
 
 model Ruang {
@@ -120,11 +122,56 @@ model Ruang {
     cabangId String
     cabang   Cabang @relation(fields: [cabangId], references: [id])
 
-    jadwalSesis SesiPertemuanKelas[]
+    jadwalSesis   SesiPertemuanKelas[]
+    jadwalKelases JadwalKelas[]
 
     @@unique([cabangId, namaRuang])
     @@index([cabangId])
     @@index([namaRuang])
+}
+
+model JamSlotTetap {
+    id         String @id @default(cuid())
+    cabangId   String
+    namaSlot   String // e.g., "Sesi 1 (14:30 - 16:00)"
+    jamMulai   String @db.VarChar(5) // format "14:30"
+    jamSelesai String @db.VarChar(5) // format "16:00"
+
+    cabang Cabang @relation(fields: [cabangId], references: [id], onDelete: Cascade)
+
+    @@index([cabangId])
+}
+
+// --- AKHIR MODEL BARU ---
+
+// ... (model Kelas, HistoryGuruKelas)
+
+enum Hari {
+    SENIN
+    SELASA
+    RABU
+    KAMIS
+    JUMAT
+    SABTU
+    MINGGU
+}
+
+model JadwalKelas {
+    id         String @id @default(cuid())
+    kelasId    String
+    ruangId    String // Ruang yang *dijadwalkan* / default
+    hari       Hari // e.g., SENIN
+    jamMulai   String @db.VarChar(5) // format "16:00"
+    jamSelesai String @db.VarChar(5) // format "17:30"
+
+    kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+    ruang Ruang @relation(fields: [ruangId], references: [id], onDelete: Restrict)
+
+    sesiPertemuanKelases SesiPertemuanKelas[] // Relasi ke sesi yang terealisasi
+
+    @@index([kelasId])
+    @@index([ruangId])
+    @@index([hari])
 }
 
 enum Gender {
@@ -160,7 +207,6 @@ model Murid {
 
     absensiMurids      AbsensiMurid[]
     pendaftaranKelases PendaftaranKelas[]
-    pembayarans        Pembayaran[]
 
     @@index([cabangId])
     @@index([namaLengkap])
@@ -199,8 +245,8 @@ model Kelas {
 
     sesiPertemuanKelases SesiPertemuanKelas[]
     pendaftaranKelases   PendaftaranKelas[]
-    pembayarans          Pembayaran[]
     historyGuruKelases   HistoryGuruKelas[]
+    jadwalKelas          JadwalKelas[]
 
     @@index([kodeKelas])
     @@index([level])
@@ -231,17 +277,19 @@ model HistoryGuruKelas {
 }
 
 model SesiPertemuanKelas {
-    id           String   @id @default(cuid())
-    kelasId      String
-    ruangId      String
-    tanggalWaktu DateTime
+    id            String   @id @default(cuid())
+    kelasId       String
+    ruangId       String
+    tanggalWaktu  DateTime
+    jadwalKelasId String?
     // tanggalWaktu String @db.VarChar(19) // format: "YYYY-MM-DD HH:mm:ss"
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-    ruang Ruang @relation(fields: [ruangId], references: [id], onDelete: Restrict)
+    kelas       Kelas        @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+    ruang       Ruang        @relation(fields: [ruangId], references: [id], onDelete: Restrict)
+    jadwalKelas JadwalKelas? @relation(fields: [jadwalKelasId], references: [id])
 
     absensiMurids AbsensiMurid[]
     absensiGurus  AbsensiGuru[]
@@ -317,6 +365,8 @@ model PendaftaranKelas {
     murid Murid @relation(fields: [muridId], references: [id], onDelete: Cascade)
     Kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
 
+    pembayarans Pembayaran[]
+
     @@index([muridId])
     @@index([kelasId])
     @@index([isAktif])
@@ -329,15 +379,15 @@ enum StatusPembayaran {
 }
 
 model Pembayaran {
-    id           String           @id @default(cuid())
-    muridId      String
-    kelasId      String
-    pembayaranKe Int
-    jumlahBayar  Int
-    tanggalBayar DateTime?
-    imageUrl     String?
-    statusBayar  StatusPembayaran @default(BELUM_LUNAS)
-    note         String?
+    id                 String           @id @default(cuid())
+    pendaftaranKelasId String
+    pembayaranKe       Int
+    tanggalJatuhTempo  DateTime
+    jumlahBayar        Int
+    tanggalBayar       DateTime?
+    imageUrl           String?
+    statusBayar        StatusPembayaran @default(BELUM_LUNAS)
+    note               String?
 
     verifiedById String? // ID Admin yang memverifikasi
     verifiedBy   User?   @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
@@ -345,11 +395,10 @@ model Pembayaran {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    murid Murid @relation(fields: [muridId], references: [id], onDelete: Cascade)
-    Kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Restrict)
+    pendaftaranKelas PendaftaranKelas @relation(fields: [pendaftaranKelasId], references: [id], onDelete: Cascade)
 
-    @@index([muridId])
-    @@index([kelasId])
+    @@index([pendaftaranKelasId]) // <-- Index baru
+    @@index([tanggalJatuhTempo]) // <-- Index baru untuk reminder
     @@index([statusBayar])
     @@index([verifiedById])
 }

@@ -7,6 +7,13 @@ export type SesiPertemuanType =
 export type SesiPertemuanWithKelasCountType =
   RouterOutputs["sesiPertemuan"]["getKelasAndCount"][number];
 
+export type TypeSesiSummary =
+  RouterOutputs["sesiPertemuan"]["getSesiSummaryByKelasId"];
+
+export type TypeSesiSummaryColumnData = TypeSesiSummary["columnData"][number];
+
+export type TypeSesiSummaryRowData = TypeSesiSummary["rowData"][number];
+
 const baseSesiPertemuanSchema = z.object({
   kelasId: z.string().min(1, "Kelas Program harus diisi"),
   ruangId: z.string().min(1, "Ruang harus diisi"),

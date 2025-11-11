@@ -3,7 +3,7 @@
 // import { DataTable } from "@/app/_components/shared/data-table";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as kelas } from "./columns/columns-kelas";
-import { columns as columnsPendaftaranKelas } from "./columns/columns-murid";
+import { columns as columnsMurid } from "./columns/columns-murid";
 import type { TypeKelas } from "@/types/kelas.type";
 import TambahProgramKelas from "./drawers/tambah-kelas";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +17,7 @@ import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import type { TypeMuridNotRegistered } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
+import { toast } from "sonner";
 
 interface ProgramKelasClientProps {
   initialDataKelas: TypeKelas[];
@@ -78,7 +79,9 @@ export default function KelasClient({
         handleEditClickGuruKelas(history as unknown as TypeHistoryGuruKelas);
       } else {
         // no history available for this kelas
-        console.warn("No historyGuruKelases entry found for this item");
+        toast.error("Tidak ada data guru untuk kelas ini.", {
+          richColors: true,
+        });
       }
     },
     onDeleteClick: (kelasId, kodeKelas) => {
@@ -87,7 +90,7 @@ export default function KelasClient({
     },
   });
 
-  const columnsPendaftaran = columnsPendaftaranKelas({
+  const columnsPendaftaran = columnsMurid({
     onEditClick: (item) => {
       console.log("clicked");
     },

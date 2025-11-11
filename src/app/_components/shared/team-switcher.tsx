@@ -1,14 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronsUpDown, LayoutDashboard, Plus, Square } from "lucide-react";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -18,6 +17,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { useCabang } from "@/hooks/useCabang";
 
 export function TeamSwitcher({
   teams,
@@ -29,11 +30,18 @@ export function TeamSwitcher({
   }[];
 }) {
   const { isMobile } = useSidebar();
+  const { activeCabangId, setActiveCabangId } = useGlobalCabangStore();
+  const { data: dataCabang } = useCabang();
   const [activeTeam, setActiveTeam] = React.useState(teams[0]);
 
   if (!activeTeam) {
     return null;
   }
+  if (!activeCabangId) {
+    return null;
+  }
+
+  // console.log("Active Cabang ID: ", activeCabangId);
 
   return (
     <SidebarMenu>
@@ -48,8 +56,8 @@ export function TeamSwitcher({
                 <activeTeam.logo className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{activeTeam.name}</span>
-                <span className="truncate text-xs">{activeTeam.plan}</span>
+                <span className="truncate font-medium">{activeCabangId}</span>
+                <span className="truncate text-xs">{}</span>
               </div>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
@@ -61,9 +69,10 @@ export function TeamSwitcher({
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Teams
+              Switch Branch
             </DropdownMenuLabel>
-            {teams.map((team, index) => (
+
+            {/* {teams.map((team, index) => (
               <DropdownMenuItem
                 key={team.name}
                 onClick={() => setActiveTeam(team)}
@@ -75,14 +84,30 @@ export function TeamSwitcher({
                 {team.name}
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
-              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                <Plus className="size-4" />
+            ))} */}
+            <DropdownMenuItem
+              onClick={() => setActiveCabangId("ALL")}
+              className="gap-2 p-2"
+            >
+              <div className="flex size-6 items-center justify-center rounded-md border">
+                <Square className="size-3.5 shrink-0" />
               </div>
-              <div className="text-muted-foreground font-medium">Add team</div>
+              All Branches
+              {/* <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut> */}
             </DropdownMenuItem>
+            {dataCabang?.map((cabang, index) => (
+              <DropdownMenuItem
+                key={cabang.id}
+                onClick={() => setActiveCabangId(cabang.id)}
+                className="gap-2 p-2"
+              >
+                <div className="flex size-6 items-center justify-center rounded-md border">
+                  <LayoutDashboard className="size-3.5 shrink-0" />
+                </div>
+                {cabang.namaCabang}
+                {/* <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut> */}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

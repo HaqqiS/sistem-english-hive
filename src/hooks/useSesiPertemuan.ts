@@ -1,17 +1,24 @@
 "use client";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import type { SesiPertemuanType } from "@/types/sesiPertemuan.type";
+import type {
+  SesiPertemuanType,
+  TypeSesiSummary,
+} from "@/types/sesiPertemuan.type";
+import { skipToken } from "@tanstack/react-query";
 
 interface UseSesiPertemuanOptions {
   // Query options
   enableQuery?: boolean;
   initialData?: SesiPertemuanType[];
+  initialDataSummary?: TypeSesiSummary;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
+
+  kelasId?: string;
 }
 
 /**
@@ -28,12 +35,22 @@ interface UseSesiPertemuanOptions {
  */
 export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
   const apiUtils = api.useUtils();
+  const kelasId = options?.kelasId;
 
   // ========== QUERIES ==========
   const sesiPertemuanQuery = api.sesiPertemuan.getAll.useQuery(undefined, {
     enabled: options?.enableQuery ?? true,
     initialData: options?.initialData,
   });
+
+  const sesiSummaryQuery = api.sesiPertemuan.getSesiSummaryByKelasId.useQuery(
+    kelasId ? { kelasId: kelasId } : skipToken, // Gunakan skipToken jika kelasId belum siap
+    {
+      enabled: options?.enableQuery ?? !!kelasId, // Aktifkan hanya jika kelasId ada
+      initialData: options?.initialDataSummary,
+      refetchOnWindowFocus: false,
+    },
+  );
 
   // ========== MUTATIONS ==========
 
@@ -81,6 +98,11 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
       isError: sesiPertemuanQuery.isError,
       error: sesiPertemuanQuery.error,
     },
+
+    dataSummary: sesiSummaryQuery.data,
+    isLoadingSummary: sesiSummaryQuery.isLoading,
+    isErrorSummary: sesiSummaryQuery.isError,
+    errorSummary: sesiSummaryQuery.error,
     // dataNotUsed: {
     //   data: notUsedJadwalSesiQuery.data,
     //   isLoading: notUsedJadwalSesiQuery.isLoading,
@@ -109,6 +131,11 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
 
     // Utils untuk manual invalidation jika perlu
     refetch: sesiPertemuanQuery.refetch,
+    refetchSummary: sesiSummaryQuery.refetch,
     invalidate: () => apiUtils.sesiPertemuan.getAll.invalidate(),
+    invalidateSummary: () =>
+      kelasId
+        ? apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate({ kelasId })
+        : undefined,
   };
 }

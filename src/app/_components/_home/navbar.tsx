@@ -74,7 +74,7 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Button className="mt-4 w-full" size="sm">
+            <Button className="mt-4 w-full" size="sm" onClick={() => signIn()}>
               Log In
             </Button>
           </div>

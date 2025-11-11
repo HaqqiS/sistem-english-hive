@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { type CabangType } from "@/types/cabang.type";
 import type { RuangType } from "@/types/ruang.type";
+import type { TypeJam } from "@/types/jam.type";
 
 type DrawerType = "none" | "edit" | "tambah";
 
@@ -25,6 +26,20 @@ interface RuangStore {
 
   // Action methods
   openDrawer: (drawer: DrawerType, ruang?: RuangType) => void;
+  closeDrawer: () => void;
+
+  // Helpers
+  isDrawerOpen: (drawer: DrawerType) => boolean;
+  clearSelected: () => void;
+}
+
+interface JamStore {
+  // Drawer management
+  activeDrawer: DrawerType;
+  selectedJam: TypeJam | null;
+
+  // Action methods
+  openDrawer: (drawer: DrawerType, jam?: TypeJam) => void;
   closeDrawer: () => void;
 
   // Helpers
@@ -63,4 +78,20 @@ export const useRuangStore = create<RuangStore>((set, get) => ({
   isDrawerOpen: (drawer) => get().activeDrawer === drawer,
 
   clearSelected: () => set({ selectedRuang: null }),
+}));
+
+export const useJamStore = create<JamStore>((set, get) => ({
+  activeDrawer: "none",
+  selectedJam: null,
+
+  openDrawer: (drawer, jam) =>
+    set({
+      activeDrawer: drawer,
+      selectedJam: jam ?? null,
+    }),
+  closeDrawer: () => set({ activeDrawer: "none", selectedJam: null }),
+
+  isDrawerOpen: (drawer) => get().activeDrawer === drawer,
+
+  clearSelected: () => set({ selectedJam: null }),
 }));

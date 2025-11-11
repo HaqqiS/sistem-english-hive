@@ -11,10 +11,16 @@ import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 import TambahGuruKelas from "./tambah-guru";
 import EditGuruKelas from "../drawers/edit-guru-kelas";
 import { useGuruKelasStore } from "@/store/useKelasStore";
+import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Edit } from "lucide-react";
 
 export default function DetailKelasClient() {
   const { kelasId } = useParams<{ kelasId: string }>();
   const { dataById } = useKelas({ kelasId });
+
+  const { openDrawer: openGuruDrawer } = useGuruKelasStore();
 
   const { dataByKelasId } = usePendaftaranKelas({
     enableQuery: !!kelasId,
@@ -26,7 +32,17 @@ export default function DetailKelasClient() {
       kelasId,
       enableQuery: !!kelasId,
     });
-  console.log("History Guru Kelas Data:", dataGuruByKelasId);
+
+  const activeGuruHistory = useMemo(
+    () => dataGuruByKelasId?.find((h) => h.statusGuru === "ACTIVE"),
+    [dataGuruByKelasId],
+  );
+
+  const handleOpenEditDrawer = () => {
+    if (activeGuruHistory) {
+      openGuruDrawer("edit", activeGuruHistory);
+    }
+  };
 
   const columnsMurid = murid({
     onEditClick: (item) => {
@@ -41,7 +57,7 @@ export default function DetailKelasClient() {
 
   const columnsGuru = guru({
     onEditClick: (item) => {
-      console.log("Edit clicked for:", item);
+      openGuruDrawer("edit", item);
     },
     onDeleteClick: (id) => {
       console.log(`Delete clicked for ID: ${id}, Name: `);
@@ -78,11 +94,19 @@ export default function DetailKelasClient() {
           </div>
         </header>
 
-        {!loadingGuru && Array.isArray(dataGuruByKelasId) ? (
-          // <TambahGuruKelas kelasId={kelasId} />
-          <EditGuruKelas />
+        <EditGuruKelas />
+        {loadingGuru ? (
+          // Tampilkan skeleton saat loading
+          <Skeleton className="h-9 w-32 rounded-md" />
+        ) : activeGuruHistory ? (
+          // Jika ADA guru aktif, tampilkan tombol Edit
+          <Button variant="outline" onClick={handleOpenEditDrawer}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Guru Aktif
+          </Button>
         ) : (
-          <>edit</>
+          // Jika TIDAK ADA guru aktif, tampilkan komponen Tambah
+          <TambahGuruKelas kelasId={kelasId} />
         )}
       </div>
 

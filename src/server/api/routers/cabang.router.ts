@@ -1,9 +1,9 @@
 import { serverCabangSchema } from "@/types/cabang.type";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
 
 export const cabangRouter = createTRPCRouter({
-  getAll: protectedProcedure
+  getAll: publicProcedure
     // .input(
     //   z.object({
     //     pageSize: z.number(),

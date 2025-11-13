@@ -12,6 +12,7 @@ import { absenMuridRouter } from "./routers/absenMurid.router";
 import { historyGuruKelasRouter } from "./routers/historyGuruKelas.router";
 import { pembayaranRouter } from "./routers/pembayaran.router";
 import { jamRouter } from "./routers/jam.router";
+import { jadwalKelasRouter } from "./routers/jadwalKelas.router";
 
 /**
  * This is the primary router for your server.
@@ -32,6 +33,7 @@ export const appRouter = createTRPCRouter({
   historyGuruKelas: historyGuruKelasRouter,
   pembayaran: pembayaranRouter,
   jam: jamRouter,
+  jadwalKelas: jadwalKelasRouter,
 });
 
 // export type definition of API

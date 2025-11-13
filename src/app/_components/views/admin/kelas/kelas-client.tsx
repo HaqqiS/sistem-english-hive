@@ -18,6 +18,7 @@ import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confir
 import type { TypeMuridNotRegistered } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
 import { toast } from "sonner";
+import TambahJadwalKelas from "../jadwal/tambah-jadwal";
 
 interface ProgramKelasClientProps {
   initialDataKelas: TypeKelas[];
@@ -119,6 +120,8 @@ export default function KelasClient({
               </div>
             </header>
             <TambahProgramKelas />
+
+            <TambahJadwalKelas />
 
             <DeleteConfirmationDialog
               isOpen={deleteKelasDialogOpen}

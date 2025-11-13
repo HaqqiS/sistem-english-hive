@@ -288,7 +288,7 @@ model HistoryGuruKelas {
 model SesiPertemuanKelas {
     id            String   @id @default(cuid())
     kelasId       String
-    // ruangId       String
+    ruangId       String
     tanggalWaktu  DateTime
     jadwalKelasId String?
     // tanggalWaktu String @db.VarChar(19) // format: "YYYY-MM-DD HH:mm:ss"

@@ -1,13 +1,14 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import type { TypeJam } from "@/types/jam.type";
+import type { TypeJamTetap, TypeJamCustom } from "@/types/jam.type";
 import { toast } from "sonner";
 
 interface useJamOptions {
   // Query options
   enableQuery?: boolean;
-  initialData?: TypeJam[];
+  initialDataJamTetap?: TypeJamTetap[];
+  initialDataJamCustom?: TypeJamCustom[];
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -32,17 +33,33 @@ export function useJam(options?: useJamOptions) {
 
   // ========== QUERIES ==========
 
-  const JamQuery = api.jam.getAll.useQuery(undefined, {
+  const JamTetapQuery = api.jam.getAllJamTetap.useQuery(undefined, {
     enabled: options?.enableQuery ?? true,
-    initialData: options?.initialData,
+    initialData: options?.initialDataJamTetap,
+  });
+
+  const JamCustomQuery = api.jam.getAllJamCustom.useQuery(undefined, {
+    enabled: options?.enableQuery ?? true,
+    initialData: options?.initialDataJamCustom,
   });
 
   // ========== MUTATIONS ==========
 
   // CREATE
-  const createMutation = api.jam.createJam.useMutation({
+  const createMutationTetap = api.jam.createJamTetap.useMutation({
     onSuccess: async () => {
-      await apiUtils.jam.getAll.invalidate();
+      await apiUtils.jam.getAllJamTetap.invalidate();
+      toast.success("Jam berhasil dibuat");
+      options?.onSuccessCreate?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal membuat Jam: ${error.message}`);
+    },
+  });
+
+  const createMutationCustom = api.jam.createJamCustom.useMutation({
+    onSuccess: async () => {
+      await apiUtils.jam.getAllJamCustom.invalidate();
       toast.success("Jam berhasil dibuat");
       options?.onSuccessCreate?.();
     },
@@ -53,19 +70,20 @@ export function useJam(options?: useJamOptions) {
 
   // UPDATE
 
-  // const updateStatusMuridMutation = api.murid.updateStatusMurid.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
-  //     toast.success("Status Murid berhasil diupdate");
-  //     options?.onSuccessUpdate?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal mengupdate Status Murid: ${error.message}`);
-  //   },
-  // });
-  const updateMutation = api.jam.updateJam.useMutation({
+  const updateMutationTetap = api.jam.updateJamTetap.useMutation({
     onSuccess: async () => {
-      await apiUtils.jam.getAll.invalidate();
+      await apiUtils.jam.getAllJamTetap.invalidate();
+      toast.success("Jam berhasil diupdate");
+      options?.onSuccessUpdate?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal mengupdate Jam: ${error.message}`);
+    },
+  });
+
+  const updateMutationCustom = api.jam.updateJamCustom.useMutation({
+    onSuccess: async () => {
+      await apiUtils.jam.getAllJamCustom.invalidate();
       toast.success("Jam berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -75,9 +93,19 @@ export function useJam(options?: useJamOptions) {
   });
 
   // DELETE
-  const deleteMutation = api.jam.deleteJam.useMutation({
+  const deleteMutationTetap = api.jam.deleteJamTetap.useMutation({
     onSuccess: async () => {
-      await apiUtils.jam.getAll.invalidate();
+      await apiUtils.jam.getAllJamTetap.invalidate();
+      toast.success("Jam berhasil dihapus");
+      options?.onSuccessDelete?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal menghapus Jam: ${error.message}`);
+    },
+  });
+  const deleteMutationCustom = api.jam.deleteJamCustom.useMutation({
+    onSuccess: async () => {
+      await apiUtils.jam.getAllJamCustom.invalidate();
       toast.success("Jam berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -88,32 +116,57 @@ export function useJam(options?: useJamOptions) {
 
   return {
     // Query results
-    dataJam: JamQuery.data,
-    isLoadingJam: JamQuery.isLoading,
-    isErrorJam: JamQuery.isError,
-    errorJam: JamQuery.error,
+    dataJamTetap: JamTetapQuery.data,
+    isLoadingJamTetap: JamTetapQuery.isLoading,
+    isErrorJamTetap: JamTetapQuery.isError,
+    errorJamTetap: JamTetapQuery.error,
+
+    dataJamCustom: JamCustomQuery.data,
+    isLoadingJamCustom: JamCustomQuery.isLoading,
+    isErrorJamCustom: JamCustomQuery.isError,
+    errorJamCustom: JamCustomQuery.error,
 
     // Mutations
-    mutations: {
+    tetapMutations: {
       create: {
-        mutate: createMutation.mutate,
-        mutateAsync: createMutation.mutateAsync,
-        isPending: createMutation.isPending,
+        mutate: createMutationTetap.mutate,
+        mutateAsync: createMutationTetap.mutateAsync,
+        isPending: createMutationTetap.isPending,
       },
       update: {
-        mutate: updateMutation.mutate,
-        mutateAsync: updateMutation.mutateAsync,
-        isPending: updateMutation.isPending,
+        mutate: updateMutationTetap.mutate,
+        mutateAsync: updateMutationTetap.mutateAsync,
+        isPending: updateMutationTetap.isPending,
       },
       delete: {
-        mutate: deleteMutation.mutate,
-        mutateAsync: deleteMutation.mutateAsync,
-        isPending: deleteMutation.isPending,
+        mutate: deleteMutationTetap.mutate,
+        mutateAsync: deleteMutationTetap.mutateAsync,
+        isPending: deleteMutationTetap.isPending,
+      },
+    },
+
+    customMutations: {
+      create: {
+        mutate: createMutationCustom.mutate,
+        mutateAsync: createMutationCustom.mutateAsync,
+        isPending: createMutationCustom.isPending,
+      },
+      update: {
+        mutate: updateMutationCustom.mutate,
+        mutateAsync: updateMutationCustom.mutateAsync,
+        isPending: updateMutationCustom.isPending,
+      },
+      delete: {
+        mutate: deleteMutationCustom.mutate,
+        mutateAsync: deleteMutationCustom.mutateAsync,
+        isPending: deleteMutationCustom.isPending,
       },
     },
 
     // Utils untuk manual invalidation jika perlu
-    refetch: JamQuery.refetch,
-    invalidate: () => apiUtils.jam.getAll.invalidate(),
+    refetchTetap: JamTetapQuery.refetch,
+    refetchCustom: JamCustomQuery.refetch,
+    invalidateTetap: () => apiUtils.jam.getAllJamTetap.invalidate(),
+    invalidateCustom: () => apiUtils.jam.getAllJamCustom.invalidate(),
   };
 }

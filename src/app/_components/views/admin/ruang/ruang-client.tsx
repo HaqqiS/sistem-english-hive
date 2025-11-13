@@ -6,15 +6,16 @@ import { DataTable } from "@/app/_components/shared/data-table";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { columns as createCabangColumns } from "./columns/cabang-columns";
 import { columns as createRuangColumns } from "./columns/ruang-columns";
-import { columns as createJamColumns } from "./columns/jam-columns";
+import { columns as createJamTetapColumns } from "./columns/jam-tetap-columns";
+import { columns as createJamCustomColumns } from "./columns/jam-custom-columns";
 import TambahCabang from "./drawers/tambah-cabang";
 import { type CabangType } from "@/types/cabang.type";
-import { keepPreviousData } from "@tanstack/react-query";
 import TambahRuang from "./drawers/tambah-ruang";
 import EditCabang from "./drawers/edit-cabang";
 import {
   useCabangStore,
-  useJamStore,
+  useJamCustomStore,
+  useJamTetapStore,
   useRuangStore,
 } from "@/store/useCabangStore";
 import type { RuangType } from "@/types/ruang.type";
@@ -22,26 +23,31 @@ import EditRuang from "./drawers/edit-ruang";
 import { useCabang } from "@/hooks/useCabang";
 import { useRuang } from "@/hooks/useRuang";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TambahJam from "./drawers/tambah-jam";
-import type { TypeJam } from "@/types/jam.type";
+import type { TypeJamTetap, TypeJamCustom } from "@/types/jam.type";
 import { useJam } from "@/hooks/useJam";
-import EditJam from "./drawers/edit-jam";
+import TambahJamTetap from "./drawers/tambah-jam-tetap";
+import EditJamTetap from "./drawers/edit-jam-tetap";
+import TambahJamCustom from "./drawers/tambah-jam-custom";
+import EditJamCustom from "./drawers/edit-jam-custom";
 
 interface RuangClientProps {
   initialDataCabang: RouterOutputs["cabang"]["getAll"];
   initialDataRuang: RouterOutputs["ruang"]["getRuangByCabangId"];
-  initialDataJam: TypeJam[];
+  initialDataJamTetap: TypeJamTetap[];
+  initialDataJamCustom: TypeJamCustom[];
 }
 
 export default function RuangClient({
   initialDataCabang,
   initialDataRuang,
-  initialDataJam,
+  initialDataJamTetap,
+  initialDataJamCustom,
 }: RuangClientProps) {
   // State management
   const { openDrawer: openCabangDrawer } = useCabangStore();
   const { openDrawer: openRuangDrawer } = useRuangStore();
-  const { openDrawer: openJamDrawer } = useJamStore();
+  const { openDrawer: openJamTetapDrawer } = useJamTetapStore();
+  const { openDrawer: openJamCustomDrawer } = useJamCustomStore();
 
   const [deleteCabangDialogOpen, setDeleteCabangDialogOpen] = useState(false);
   const [selectedCabangToDelete, setSelectedCabangToDelete] =
@@ -51,26 +57,15 @@ export default function RuangClient({
   const [selectedRuangToDelete, setSelectedRuangToDelete] =
     useState<RuangType | null>(null);
 
-  const [deleteJamDialogOpen, setDeleteJamDialogOpen] = useState(false);
-  const [selectedJamToDelete, setSelectedJamToDelete] =
-    useState<TypeJam | null>(null);
+  const [deleteJamTetapDialogOpen, setDeleteJamTetapDialogOpen] =
+    useState(false);
+  const [selectedJamTetapToDelete, setSelectedJamTetapToDelete] =
+    useState<TypeJamTetap | null>(null);
 
-  // Form setup
-
-  // API queries
-  // const { data: dataCabang } = api.cabang.getAll.useQuery(undefined, {
-  //   initialData: initialData,
-  //   refetchOnWindowFocus: false,
-  // });
-  // const { data: dataCabang } = api.cabang.getAll.useQuery(undefined, {
-  //   initialData: initialDataCabang,
-  //   placeholderData: keepPreviousData,
-  // });
-
-  // const { data: dataRuang } = api.ruang.getRuangByCabangId.useQuery(
-  //   { cabangId: selectedCabangId },
-  //   { initialData: initialDataRuang },
-  // );
+  const [deleteJamCustomDialogOpen, setDeleteJamCustomDialogOpen] =
+    useState(false);
+  const [selectedJamCustomToDelete, setSelectedJamCustomToDelete] =
+    useState<TypeJamCustom | null>(null);
 
   const { data: dataCabang, mutations: cabangMutations } = useCabang({
     initialData: initialDataCabang,
@@ -86,11 +81,19 @@ export default function RuangClient({
       setSelectedRuangToDelete(null);
     },
   });
-  const { dataJam, mutations: jamMutations } = useJam({
-    initialData: initialDataJam,
+  const { dataJamTetap, tetapMutations } = useJam({
+    initialDataJamTetap,
     onSuccessDelete: () => {
-      setDeleteJamDialogOpen(false);
-      setSelectedJamToDelete(null);
+      setDeleteJamTetapDialogOpen(false);
+      setSelectedJamTetapToDelete(null);
+    },
+  });
+
+  const { dataJamCustom, customMutations } = useJam({
+    initialDataJamCustom,
+    onSuccessDelete: () => {
+      setDeleteJamCustomDialogOpen(false);
+      setSelectedJamCustomToDelete(null);
     },
   });
 
@@ -103,8 +106,13 @@ export default function RuangClient({
     openRuangDrawer("edit", item);
   };
 
-  const handleEditClickJam = (item: TypeJam) => {
-    openJamDrawer("edit", item);
+  const handleEditClickJamTetap = (item: TypeJamTetap) => {
+    openJamTetapDrawer("edit", item);
+    console.log(item);
+  };
+
+  const handleEditClickJamCustom = (item: TypeJamCustom) => {
+    openJamCustomDrawer("edit", item);
     console.log(item);
   };
 
@@ -124,11 +132,19 @@ export default function RuangClient({
     }
   };
 
-  const handleDeleteClickJam = (id: string, nama: string) => {
-    const jam = initialDataJam.find((j) => j.id === id);
+  const handleDeleteClickJamTetap = (id: string, nama: string) => {
+    const jam = initialDataJamTetap.find((j) => j.id === id);
     if (jam) {
-      setSelectedJamToDelete(jam);
-      setDeleteJamDialogOpen(true);
+      setSelectedJamTetapToDelete(jam);
+      setDeleteJamTetapDialogOpen(true);
+    }
+  };
+
+  const handleDeleteClickJamCustom = (id: string) => {
+    const jam = initialDataJamCustom.find((j) => j.id === id);
+    if (jam) {
+      setSelectedJamCustomToDelete(jam);
+      setDeleteJamCustomDialogOpen(true);
     }
   };
 
@@ -142,10 +158,19 @@ export default function RuangClient({
 
     await ruangMutations.delete.mutateAsync({ id: selectedRuangToDelete.id });
   };
-  const handleConfirmDeleteJam = async () => {
-    if (!selectedJamToDelete) return;
+  const handleConfirmDeleteJamTetap = async () => {
+    if (!selectedJamTetapToDelete) return;
 
-    await jamMutations.delete.mutateAsync({ id: selectedJamToDelete.id });
+    await tetapMutations.delete.mutateAsync({
+      id: selectedJamTetapToDelete.id,
+    });
+  };
+  const handleConfirmDeleteJamCustom = async () => {
+    if (!selectedJamCustomToDelete) return;
+
+    await customMutations.delete.mutateAsync({
+      id: selectedJamCustomToDelete.id,
+    });
   };
 
   // Create columns with handlers
@@ -158,9 +183,14 @@ export default function RuangClient({
     onEditClick: handleEditClickRuang,
     onDeleteClick: handleDeleteClickRuang,
   });
-  const columnsJam = createJamColumns({
-    onEditClick: handleEditClickJam,
-    onDeleteClick: handleDeleteClickJam,
+  const columnsJamTetap = createJamTetapColumns({
+    onEditClick: handleEditClickJamTetap,
+    onDeleteClick: handleDeleteClickJamTetap,
+  });
+
+  const columnsJamCustom = createJamCustomColumns({
+    onEditClick: handleEditClickJamCustom,
+    onDeleteClick: handleDeleteClickJamCustom,
   });
 
   return (
@@ -168,7 +198,8 @@ export default function RuangClient({
       <TabsList>
         <TabsTrigger value="ruang">Kelola Ruang</TabsTrigger>
         <TabsTrigger value="cabang">Kelola Cabang</TabsTrigger>
-        <TabsTrigger value="jam">Kelola Jam Pertemuan</TabsTrigger>
+        <TabsTrigger value="jamReg">Kelola Jam Reguler</TabsTrigger>
+        <TabsTrigger value="jamPriv">Kelola Jam Private</TabsTrigger>
       </TabsList>
       <TabsContent value="ruang">
         <div>
@@ -297,41 +328,77 @@ export default function RuangClient({
           />
         </div>
       </TabsContent>
-      <TabsContent value="jam">
+      <TabsContent value="jamReg">
         <div>
           <div className="flex items-center justify-between space-x-2 pt-4">
             <header className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl">List Jam Pertemuan</h1>
+                <h1 className="text-xl">List Jam Pertemuan Reguler</h1>
                 <p className="text-muted-foreground text-sm">
                   halaman ini mengatur data waktu pertemuan.
                 </p>
               </div>
             </header>
 
-            <TambahJam />
-            <EditJam />
+            <TambahJamTetap />
+            <EditJamTetap />
             <DeleteConfirmationDialog
-              isOpen={deleteJamDialogOpen}
-              onOpenChange={setDeleteJamDialogOpen}
+              isOpen={deleteJamTetapDialogOpen}
+              onOpenChange={setDeleteJamTetapDialogOpen}
               title="Hapus Jam"
               description={
                 <>
                   Yakin ingin menghapus{" "}
                   <span className="text-accent font-bold">
-                    {selectedJamToDelete?.namaSlot}
+                    {selectedJamTetapToDelete?.namaSlot}
                   </span>
                   ? Tindakan ini tidak dapat dibatalkan.
                 </>
               }
-              onConfirm={handleConfirmDeleteJam}
-              isLoading={jamMutations.delete.isPending}
+              onConfirm={handleConfirmDeleteJamTetap}
+              isLoading={tetapMutations.delete.isPending}
               confirmText="Hapus"
               cancelText="Batal"
             />
           </div>
 
-          <DataTable data={dataJam ?? []} columns={columnsJam} />
+          <DataTable data={dataJamTetap ?? []} columns={columnsJamTetap} />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="jamPriv">
+        <div>
+          <div className="flex items-center justify-between space-x-2 pt-4">
+            <header className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl">List Jam Pertemuan Private</h1>
+                <p className="text-muted-foreground text-sm">
+                  halaman ini mengatur data waktu pertemuan.
+                </p>
+              </div>
+            </header>
+
+            <TambahJamCustom />
+            <EditJamCustom />
+            <DeleteConfirmationDialog
+              isOpen={deleteJamCustomDialogOpen}
+              onOpenChange={setDeleteJamCustomDialogOpen}
+              title="Hapus Jam"
+              description={
+                <>
+                  Yakin ingin menghapus
+                  <span className="text-accent font-bold"></span>? Tindakan ini
+                  tidak dapat dibatalkan.
+                </>
+              }
+              onConfirm={handleConfirmDeleteJamCustom}
+              isLoading={customMutations.delete.isPending}
+              confirmText="Hapus"
+              cancelText="Batal"
+            />
+          </div>
+
+          <DataTable data={dataJamCustom ?? []} columns={columnsJamCustom} />
         </div>
       </TabsContent>
     </Tabs>

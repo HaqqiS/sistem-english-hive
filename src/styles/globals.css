@@ -9,6 +9,10 @@
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+.rdp-month-picker .rdp-table {
+  display: none;
+}
+
 :root {
   --background: oklch(0.9848 0 0);
   --foreground: oklch(0.2044 0 0);

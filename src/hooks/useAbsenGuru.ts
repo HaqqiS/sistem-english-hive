@@ -1,17 +1,25 @@
 "use client";
 import { api } from "@/trpc/react";
-import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
+import type {
+  TypeAbsensiGuru,
+  TypeAbsensiGuruHistory,
+} from "@/types/absenGuru.type";
+import { skipToken } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface UseGuruOptions {
   // Query options
   enableQuery?: boolean;
   initialDataAbsensi?: TypeAbsensiGuru[];
+  initialDataHistory?: TypeAbsensiGuruHistory;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
+
+  guruId?: string;
+  month?: string;
 }
 
 /**
@@ -28,6 +36,8 @@ interface UseGuruOptions {
  */
 export function useAbsenGuru(options?: UseGuruOptions) {
   const apiUtils = api.useUtils();
+  const guruId = options?.guruId;
+  const month = options?.month;
 
   // ========== QUERIES ==========
 
@@ -36,6 +46,15 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     {
       enabled: options?.enableQuery ?? true,
       initialData: options?.initialDataAbsensi,
+    },
+  );
+
+  const getHistoryQuery = api.absenGuru.getHistoryByGuruId.useQuery(
+    guruId && month ? { guruId, month } : skipToken, // Hanya jalan jika guruId & month ada
+    {
+      enabled: !!guruId && !!month,
+      initialData: options?.initialDataHistory,
+      refetchOnWindowFocus: false,
     },
   );
 
@@ -87,6 +106,11 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     isError: getAllAbsensiGuruQuery.isError,
     error: getAllAbsensiGuruQuery.error,
 
+    dataHistory: getHistoryQuery.data,
+    isLoadingHistory: getHistoryQuery.isLoading,
+    isErrorHistory: getHistoryQuery.isError,
+    errorHistory: getHistoryQuery.error,
+
     // Mutations
     mutations: {
       create: {
@@ -108,6 +132,11 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 
     // Utils untuk manual invalidation jika perlu
     refetch: getAllAbsensiGuruQuery.refetch,
+    refetchHistory: getHistoryQuery.refetch,
     invalidate: () => apiUtils.absenGuru.getAllAbsensi.invalidate(),
+    invalidateHistory: () =>
+      guruId && month
+        ? apiUtils.absenGuru.getHistoryByGuruId.invalidate({ guruId, month })
+        : undefined,
   };
 }

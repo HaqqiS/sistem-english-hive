@@ -5,6 +5,10 @@ import z from "zod";
 export type TypeAbsensiGuru =
   RouterOutputs["absenGuru"]["getAllAbsensi"][number];
 
+export type TypeAbsensiGuruHistory =
+  RouterOutputs["absenGuru"]["getHistoryByGuruId"];
+export type TypeAbsensiGuruHistoryItem = TypeAbsensiGuruHistory[number];
+
 export const singleAbsensiGuruSchema = z.object({
   jadwalSesiId: z.string(),
   status: z.nativeEnum(StatusAbsenGuru),

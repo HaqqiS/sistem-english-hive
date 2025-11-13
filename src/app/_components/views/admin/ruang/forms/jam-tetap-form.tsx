@@ -16,15 +16,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCabang } from "@/hooks/useCabang";
-import type { TypeClientJamSchema } from "@/types/jam.type";
+import type { TypeClientJamTetapSchema } from "@/types/jam.type";
 import { useFormContext } from "react-hook-form";
 
 interface JamFormProps {
-  onSubmit: (data: TypeClientJamSchema) => void;
+  onSubmit: (data: TypeClientJamTetapSchema) => void;
 }
 
 export default function JamForm({ onSubmit }: JamFormProps) {
-  const form = useFormContext<TypeClientJamSchema>();
+  const form = useFormContext<TypeClientJamTetapSchema>();
   const { data: dataCabang, isLoading } = useCabang();
 
   return (

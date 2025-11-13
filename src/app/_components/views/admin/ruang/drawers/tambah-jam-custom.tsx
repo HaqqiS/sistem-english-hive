@@ -7,32 +7,33 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import JamForm from "../forms/jam-form";
-import { clientJamSchema, type TypeClientJamSchema } from "@/types/jam.type";
+import JamForm from "../forms/jam-custom-form";
+import {
+  clientJamCustomSchema,
+  type TypeClientJamCustomSchema,
+} from "@/types/jam.type";
 import { useJam } from "@/hooks/useJam";
 
 export default function TambahJam() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const form = useForm<TypeClientJamSchema>({
-    resolver: zodResolver(clientJamSchema),
+  const form = useForm<TypeClientJamCustomSchema>({
+    resolver: zodResolver(clientJamCustomSchema),
     defaultValues: {
-      cabangId: "",
-      namaSlot: "",
       jamMulai: "",
       jamSelesai: "",
     },
   });
 
-  const { mutations } = useJam({
+  const { customMutations } = useJam({
     onSuccessCreate: () => {
       setIsOpen(false);
       form.reset();
     },
   });
 
-  const onSubmit = (values: TypeClientJamSchema) => {
-    mutations.create.mutate(values);
+  const onSubmit = (values: TypeClientJamCustomSchema) => {
+    customMutations.create.mutate(values);
   };
 
   return (
@@ -40,7 +41,7 @@ export default function TambahJam() {
       title="Tambah Jam Pertemuan"
       description="Tambahkan jam pertemuan baru."
       onSubmit={form.handleSubmit(onSubmit)}
-      isPending={mutations.create.isPending}
+      isPending={customMutations.create.isPending}
       submitText="Tambah Jam"
       cancelText="Batal"
       trigger={

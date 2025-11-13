@@ -8,10 +8,11 @@ export default async function RuangPage() {
 
   // const data = await getData();
   // const dataCabang = await api.cabang.getAll();
-  const [cabang, ruang, jam] = await Promise.all([
+  const [cabang, ruang, jamTetap, jamCustom] = await Promise.all([
     api.cabang.getAll(),
     api.ruang.getRuangByCabangId({ cabangId: "all" }),
-    api.jam.getAll(),
+    api.jam.getAllJamTetap(),
+    api.jam.getAllJamCustom(),
   ]);
 
   return (
@@ -21,7 +22,8 @@ export default async function RuangPage() {
           <RuangClient
             initialDataCabang={cabang}
             initialDataRuang={ruang}
-            initialDataJam={jam}
+            initialDataJamTetap={jamTetap}
+            initialDataJamCustom={jamCustom}
           />
         </HydrateClient>
       </main>

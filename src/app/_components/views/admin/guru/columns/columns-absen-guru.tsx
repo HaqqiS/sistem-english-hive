@@ -61,6 +61,7 @@ export const columns = ({
   },
 
   {
+    id: "guru.name",
     accessorKey: "guru.name",
     header: "Nama Guru",
     cell: ({ row }) => (
@@ -77,12 +78,14 @@ export const columns = ({
 
   {
     accessorKey: "kelas",
-    header: "Program Kelas",
+    header: "Kelas",
     cell: ({ row }) => (
       <div
         className="max-w-[300px] truncate"
         title={row.original.sesiPertemuanKelas.kelas.kodeKelas}
-      ></div>
+      >
+        {row.original.sesiPertemuanKelas.kelas.kodeKelas}
+      </div>
     ),
   },
 

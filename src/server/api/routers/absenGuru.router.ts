@@ -1,9 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import {
-  serverCreateManyAbsensiGuruSchema,
-  serverCreateSesiAbsensiGuruSchema,
-} from "@/types/absenGuru.type";
+import { serverCreateSesiAbsensiGuruSchema } from "@/types/absenGuru.type";
+import dayjs from "dayjs";
 import z from "zod";
 
 export const absenGuruRouter = createTRPCRouter({
@@ -108,5 +106,58 @@ export const absenGuruRouter = createTRPCRouter({
           isVerified: input.isVerified,
         },
       });
+    }),
+
+  getHistoryByGuruId: protectedProcedure
+    .input(
+      z.object({
+        guruId: z.string().cuid(),
+        /** Input bulan dalam format "YYYY-MM" (contoh: "2025-11") */
+        month: z.string().regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM"),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { guruId, month } = input;
+
+      // 1. Tentukan rentang tanggal (satu bulan)
+      const startDate = dayjs(month).startOf("month").toDate();
+      const endDate = dayjs(month).endOf("month").toDate();
+
+      // 2. Query absensi guru
+      const history = await db.absensiGuru.findMany({
+        where: {
+          guruId: guruId,
+          isVerified: true, // <-- PENTING: Hanya ambil yang sudah diverifikasi
+          sesiPertemuanKelas: {
+            tanggalWaktu: {
+              gte: startDate, // >= 1 November 2025
+              lte: endDate, // <= 30 November 2025
+            },
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+          isVerified: true,
+          sesiPertemuanKelas: {
+            select: {
+              tanggalWaktu: true,
+              kelas: {
+                select: {
+                  kodeKelas: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          sesiPertemuanKelas: {
+            tanggalWaktu: "asc", // Urutkan dari awal bulan
+          },
+        },
+      });
+
+      return history;
     }),
 });

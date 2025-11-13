@@ -4,41 +4,38 @@ import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useJamStore } from "@/store/useCabangStore";
-import JamForm from "../forms/jam-form";
-import { clientJamSchema, type TypeClientJamSchema } from "@/types/jam.type";
+import { useJamCustomStore } from "@/store/useCabangStore";
+import JamForm from "../forms/jam-custom-form";
+import {
+  clientJamCustomSchema,
+  type TypeClientJamCustomSchema,
+} from "@/types/jam.type";
 import { useJam } from "@/hooks/useJam";
 
 export default function EditJam() {
   const { isDrawerOpen, selectedJam, closeDrawer, clearSelected } =
-    useJamStore();
-
-  console.log(selectedJam);
+    useJamCustomStore();
 
   useEffect(() => {
     if (selectedJam) {
       editJamForm.reset({
-        cabangId: selectedJam.cabangId,
-        jamMulai: selectedJam.jamMulai,
         jamSelesai: selectedJam.jamSelesai,
-        namaSlot: selectedJam.namaSlot,
+        jamMulai: selectedJam.jamMulai,
       });
     }
   }, [selectedJam]);
 
   const isOpen = isDrawerOpen("edit");
 
-  const editJamForm = useForm<TypeClientJamSchema>({
-    resolver: zodResolver(clientJamSchema),
+  const editJamForm = useForm<TypeClientJamCustomSchema>({
+    resolver: zodResolver(clientJamCustomSchema),
     defaultValues: {
-      cabangId: selectedJam?.cabangId,
       jamMulai: selectedJam?.jamMulai,
       jamSelesai: selectedJam?.jamSelesai,
-      namaSlot: selectedJam?.namaSlot,
     },
   });
 
-  const { mutations } = useJam({
+  const { customMutations } = useJam({
     onSuccessUpdate: () => {
       closeDrawer();
       clearSelected();
@@ -60,10 +57,10 @@ export default function EditJam() {
   //     },
   //   });
 
-  const handleSubmitEdit = async (data: TypeClientJamSchema) => {
+  const handleSubmitEdit = async (data: TypeClientJamCustomSchema) => {
     if (!selectedJam) return;
 
-    await mutations.update.mutateAsync({
+    await customMutations.update.mutateAsync({
       id: selectedJam.id,
       ...data,
     });
@@ -73,10 +70,10 @@ export default function EditJam() {
     <EditDrawer
       isOpen={isOpen}
       onOpenChange={(open) => !open && closeDrawer()}
-      title="Edit Ruang"
-      description="Ubah informasi ruang yang sudah ada"
+      title="Edit Jam Custom"
+      description="Ubah informasi jam custom yang sudah ada"
       onSubmit={editJamForm.handleSubmit(handleSubmitEdit)}
-      isPending={mutations.update.isPending}
+      isPending={customMutations.update.isPending}
       submitText="Simpan Perubahan"
       cancelText="Batal"
     >

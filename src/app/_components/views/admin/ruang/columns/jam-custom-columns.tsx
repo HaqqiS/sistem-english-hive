@@ -12,20 +12,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 // Ambil tipe untuk satu item, bukan seluruh array
-import type { TypeJam } from "@/types/jam.type";
+import type { TypeJamCustom } from "@/types/jam.type";
 import { Badge } from "@/components/ui/badge";
 
 // Tipe untuk satu baris data
 
 interface ColumnsConfig {
-  onEditClick: (item: TypeJam) => void;
-  onDeleteClick: (jamId: string, jamSlotJam: string) => void;
+  onEditClick: (item: TypeJamCustom) => void;
+  onDeleteClick: (jamId: string) => void;
 }
 
 export const columns = ({
   onEditClick,
   onDeleteClick,
-}: ColumnsConfig): ColumnDef<TypeJam>[] => [
+}: ColumnsConfig): ColumnDef<TypeJamCustom>[] => [
   // Checkbox selection
   {
     id: "select",
@@ -48,46 +48,6 @@ export const columns = ({
     ),
     enableSorting: false,
     enableHiding: false,
-  },
-
-  // Kolom Nama Slot (Utama)
-  {
-    accessorKey: "namaSlot",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Nama Slot
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <Button
-        variant="link"
-        className="text-foreground w-fit px-0 text-left text-base"
-        onClick={() => onEditClick(row.original)}
-      >
-        {row.original.namaSlot}
-      </Button>
-    ),
-    enableHiding: false,
-  },
-
-  // Kolom Cabang
-  {
-    accessorFn: (row) => row.cabang.namaCabang, // <-- Akses relasi
-    id: "namaCabang",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Cabang
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => <div>{row.original.cabang.namaCabang}</div>,
   },
 
   // Kolom Jam Mulai & Selesai
@@ -117,7 +77,6 @@ export const columns = ({
     header: "Aksi",
     cell: ({ row }) => {
       // Buat string yang deskriptif untuk dialog konfirmasi
-      const jamSlotJam = `${row.original.namaSlot} (${row.original.jamMulai} - ${row.original.jamSelesai})`;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -137,7 +96,7 @@ export const columns = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => onDeleteClick(row.original.id, jamSlotJam)}
+              onClick={() => onDeleteClick(row.original.id)}
             >
               Delete
             </DropdownMenuItem>

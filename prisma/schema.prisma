@@ -122,7 +122,6 @@ model Ruang {
     cabangId String
     cabang   Cabang @relation(fields: [cabangId], references: [id])
 
-    jadwalSesis   SesiPertemuanKelas[]
     jadwalKelases JadwalKelas[]
 
     @@unique([cabangId, namaRuang])
@@ -133,18 +132,25 @@ model Ruang {
 model JamSlotTetap {
     id         String @id @default(cuid())
     cabangId   String
-    namaSlot   String // e.g., "Sesi 1 (14:30 - 16:00)"
+    namaSlot   String // e.g., "Sesi 1"
     jamMulai   String @db.VarChar(5) // format "14:30"
     jamSelesai String @db.VarChar(5) // format "16:00"
 
     cabang Cabang @relation(fields: [cabangId], references: [id], onDelete: Cascade)
 
+    jadwalKelases JadwalKelas[]
+
     @@index([cabangId])
 }
 
-// --- AKHIR MODEL BARU ---
+model JamSlotCustom {
+    id         String @id @default(cuid())
+    jamMulai   String @db.VarChar(5) // format "10:15"
+    jamSelesai String @db.VarChar(5) // format "11:45"
 
-// ... (model Kelas, HistoryGuruKelas)
+    // Relasi balik ke jadwal yang menggunakannya
+    jadwalKelases JadwalKelas[]
+}
 
 enum Hari {
     SENIN
@@ -157,17 +163,20 @@ enum Hari {
 }
 
 model JadwalKelas {
-    id         String @id @default(cuid())
-    kelasId    String
-    ruangId    String // Ruang yang *dijadwalkan* / default
-    hari       Hari // e.g., SENIN
-    jamMulai   String @db.VarChar(5) // format "16:00"
-    jamSelesai String @db.VarChar(5) // format "17:30"
+    id      String @id @default(cuid())
+    kelasId String
+    ruangId String // Ruang yang direncanakan
+    hari    Hari // e.g., SENIN
 
-    kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-    ruang Ruang @relation(fields: [ruangId], references: [id], onDelete: Restrict)
+    jamSlotTetapId  String? // Diisi jika kelas REGULAR
+    jamSlotCustomId String? // Diisi jika kelas PRIVATE
 
-    sesiPertemuanKelases SesiPertemuanKelas[] // Relasi ke sesi yang terealisasi
+    kelas         Kelas          @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+    ruang         Ruang          @relation(fields: [ruangId], references: [id], onDelete: Restrict)
+    jamSlotTetap  JamSlotTetap?  @relation(fields: [jamSlotTetapId], references: [id], onDelete: Restrict)
+    jamSlotCustom JamSlotCustom? @relation(fields: [jamSlotCustomId], references: [id], onDelete: Cascade)
+
+    sesiPertemuanKelases SesiPertemuanKelas[]
 
     @@index([kelasId])
     @@index([ruangId])
@@ -279,7 +288,7 @@ model HistoryGuruKelas {
 model SesiPertemuanKelas {
     id            String   @id @default(cuid())
     kelasId       String
-    ruangId       String
+    // ruangId       String
     tanggalWaktu  DateTime
     jadwalKelasId String?
     // tanggalWaktu String @db.VarChar(19) // format: "YYYY-MM-DD HH:mm:ss"
@@ -288,14 +297,12 @@ model SesiPertemuanKelas {
     updatedAt DateTime @updatedAt
 
     kelas       Kelas        @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-    ruang       Ruang        @relation(fields: [ruangId], references: [id], onDelete: Restrict)
     jadwalKelas JadwalKelas? @relation(fields: [jadwalKelasId], references: [id])
 
     absensiMurids AbsensiMurid[]
     absensiGurus  AbsensiGuru[]
 
     @@index([kelasId])
-    @@index([ruangId])
     @@index([tanggalWaktu])
 }
 

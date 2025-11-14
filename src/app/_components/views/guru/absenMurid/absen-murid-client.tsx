@@ -63,7 +63,7 @@ export default function AbsenMuridClient({ initialData }: AbsenClientProps) {
           <Card className="py-0" key={kelas.id}>
             <CardContent className="p-0">
               <AccordionItem value={`item-${index}`} className="border-none">
-                <AccordionTrigger className="p-6">
+                <AccordionTrigger className="p-6 hover:no-underline">
                   {kelas.kodeKelas}
                 </AccordionTrigger>
                 <AccordionContent className="flex flex-col gap-0 text-balance">
@@ -100,35 +100,6 @@ export default function AbsenMuridClient({ initialData }: AbsenClientProps) {
             </CardContent>
           </Card>
         ))}
-
-        <Card className="py-0">
-          <CardContent>
-            <AccordionItem value="item-2">
-              <AccordionTrigger>Nama Kode Kelas</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-4 text-balance">
-                <p>SesiPertemuan 1 tgl waktu</p>
-                <Separator />
-                <p>SesiPertemuan 2 tgl waktu</p>
-                <Separator />
-                <p>SesiPertemuan n tgl waktu</p>
-              </AccordionContent>
-            </AccordionItem>
-          </CardContent>
-        </Card>
-        <Card className="py-0">
-          <CardContent>
-            <AccordionItem value="item-3">
-              <AccordionTrigger>Nama Kode Kelas</AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-4 text-balance">
-                <p>SesiPertemuan 1 tgl waktu</p>
-                <Separator />
-                <p>SesiPertemuan 2 tgl waktu</p>
-                <Separator />
-                <p>SesiPertemuan n tgl waktu</p>
-              </AccordionContent>
-            </AccordionItem>
-          </CardContent>
-        </Card>
       </Accordion>
 
       {/* <DataTable

@@ -3,7 +3,7 @@
 // import { DataTable } from "@/app/_components/shared/data-table";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as kelas } from "./columns/columns-kelas";
-import { columns as columnsMurid } from "./columns/columns-murid";
+import { columns as columnsMurid } from "../siswa/columns-murid-not-registered";
 import type { TypeKelas } from "@/types/kelas.type";
 import TambahProgramKelas from "./drawers/tambah-kelas";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +19,7 @@ import type { TypeMuridNotRegistered } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
 import { toast } from "sonner";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
+import RangkumanSesiTab from "./tabs/rangkuman-sesi-tab";
 
 interface ProgramKelasClientProps {
   initialDataKelas: TypeKelas[];
@@ -104,9 +105,7 @@ export default function KelasClient({
     <Tabs defaultValue="kelas">
       <TabsList>
         <TabsTrigger value="kelas">Kelola Kelas</TabsTrigger>
-        <TabsTrigger value="daftarMurid">
-          Pendaftaran Siswa ke Kelas
-        </TabsTrigger>
+        <TabsTrigger value="rangkumanSesi">Rangkuman Sesi</TabsTrigger>
       </TabsList>
       <TabsContent value="kelas">
         <div>
@@ -150,53 +149,9 @@ export default function KelasClient({
           <DataTable columns={columnsKelas} data={dataKelas ?? []} />
         </div>
       </TabsContent>
-      <TabsContent value="daftarMurid">
-        <div>
-          <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl">
-                  Daftar Murid Belum Terdaftar ke Kelas
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  Halaman ini menampilkan daftar murid yang belum terdaftar ke
-                  kelas.
-                </p>
-              </div>
-            </header>
-            <TambahPendaftaranKelas />
-          </div>
 
-          <DataTable
-            columns={columnsPendaftaran}
-            data={dataMuridNotRegistered ?? []}
-          />
-
-          {/* <DataTable
-            filterColumnId="programKelas"
-            filterColumnPlaceholder="Filter Nama Program Kelas..."
-            columns={columnsPendaftaran}
-            data={dataPendaftaranKelas ?? []}
-            toolbar={(table) => (
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Cari nama cabang..."
-                  value={
-                    (table
-                      .getColumn("namaCabang")
-                      ?.getFilterValue() as string) ?? ""
-                  }
-                  onChange={(event) =>
-                    table
-                      .getColumn("namaCabang")
-                      ?.setFilterValue(event.target.value)
-                  }
-                  className="max-w-sm"
-                />
-              </div>
-            )}
-          /> */}
-        </div>
+      <TabsContent value="rangkumanSesi">
+        <RangkumanSesiTab />
       </TabsContent>
     </Tabs>
   );

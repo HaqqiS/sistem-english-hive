@@ -1,32 +1,62 @@
 import { RegisterMuridSchema } from "@/types/murid.type";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
-import { StatusMurid } from "@prisma/client";
+import { Prisma, StatusMurid } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 
 export const muridRouter = createTRPCRouter({
   registerMurid: publicProcedure
     .input(RegisterMuridSchema)
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
-      const murid = await db.murid.create({
-        data: {
-          namaLengkap: input.namaLengkap,
-          email: input.email,
-          alamat: input.alamat,
-          gender: input.gender,
-          umur: input.umur,
-          asalSekolah: input.asalSekolah,
-          kelasSekolah: input.kelasSekolah,
-          jamPulang: input.jamPulang,
-          noWA: input.noWA,
-          pilihanProgram: input.pilihanProgram,
-          sumberInfo: input.sumberInfo,
-          cabangId: input.cabangId,
-        },
-      });
 
-      return murid;
+      try {
+        // Coba buat murid baru
+        const murid = await db.murid.create({
+          data: {
+            ...input,
+          },
+        });
+        return murid;
+      } catch (error) {
+        // --- INI ADALAH PENANGANAN ERROR YANG BARU ---
+
+        // 1. Cek apakah ini error yang diketahui dari Prisma
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          // 2. Cek apakah kodenya adalah 'P2002' (Unique constraint failed)
+          if (error.code === "P2002") {
+            // 3. Cari tahu field mana yang duplikat
+            const target = error.meta?.target as string[];
+
+            if (target.includes("email")) {
+              throw new TRPCError({
+                code: "CONFLICT", // 'CONFLICT' (409) adalah kode yang tepat
+                message:
+                  "Email ini sudah terdaftar. Silakan gunakan email lain.",
+              });
+            }
+            if (target.includes("noWA")) {
+              throw new TRPCError({
+                code: "CONFLICT",
+                message:
+                  "Nomor WhatsApp ini sudah terdaftar. Silakan gunakan nomor lain.",
+              });
+            }
+          }
+        }
+
+        // 4. Jika error lain, lempar error server internal
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Gagal mendaftarkan murid. Silakan coba lagi nanti.",
+        });
+      }
     }),
+
+  getAllMurid: protectedProcedure.query(async ({ ctx }) => {
+    const allMurid = await ctx.db.murid.findMany();
+    return allMurid;
+  }),
 
   getMuridWhereNotRegistered: protectedProcedure.query(async ({ ctx }) => {
     // Cukup satu kueri ini

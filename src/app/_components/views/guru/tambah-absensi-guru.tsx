@@ -49,7 +49,7 @@ export default function TambahAbsensi() {
   // 3. onSubmit sekarang menerima tipe form yang benar
   const onSubmit = (values: TypeFormSesiAbsensiGuru) => {
     // Kirim array 'absensi' ke mutasi, sesuai input di backend
-    mutations.create.mutate(values.absensi);
+    // mutations.create.mutate(values.absensi);
   };
 
   const handleAddForm = () => {

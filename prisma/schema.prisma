@@ -122,7 +122,8 @@ model Ruang {
     cabangId String
     cabang   Cabang @relation(fields: [cabangId], references: [id])
 
-    jadwalKelases JadwalKelas[]
+    jadwalKelases      JadwalKelas[]
+    sesiPertemuanKelas SesiPertemuanKelas[]
 
     @@unique([cabangId, namaRuang])
     @@index([cabangId])
@@ -298,6 +299,7 @@ model SesiPertemuanKelas {
 
     kelas       Kelas        @relation(fields: [kelasId], references: [id], onDelete: Cascade)
     jadwalKelas JadwalKelas? @relation(fields: [jadwalKelasId], references: [id])
+    ruang       Ruang        @relation(fields: [ruangId], references: [id], onDelete: Restrict)
 
     absensiMurids AbsensiMurid[]
     absensiGurus  AbsensiGuru[]

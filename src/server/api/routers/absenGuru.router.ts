@@ -1,11 +1,17 @@
 import { UserRole } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { serverCreateSesiAbsensiGuruSchema } from "@/types/absenGuru.type";
+import {
+  serverCreateSesiAbsensiGuruSchema,
+  serverStartSesiSchema,
+} from "@/types/absenGuru.type";
 import dayjs from "dayjs";
 import z from "zod";
+import { TRPCError } from "@trpc/server";
+import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 
 export const absenGuruRouter = createTRPCRouter({
   getAllAbsensi: protectedProcedure.query(async ({ ctx }) => {
+    // ... (kode getAllAbsensi Anda yang sudah ada)
     const { db } = ctx;
     const result = await db.absensiGuru.findMany({
       select: {
@@ -23,6 +29,12 @@ export const absenGuruRouter = createTRPCRouter({
             kelas: {
               select: {
                 kodeKelas: true,
+              },
+            },
+            ruang: {
+              // <-- Pastikan Anda juga menyertakan ruang di sini
+              select: {
+                namaRuang: true,
               },
             },
           },
@@ -43,41 +55,67 @@ export const absenGuruRouter = createTRPCRouter({
     return result;
   }),
 
+  /**
+   * Dipanggil saat guru mengklik "Mulai Sesi".
+   * Membuat SesiPertemuanKelas (realisasi) DAN AbsensiGuru (catatan hadir guru).
+   * Mengembalikan ID SesiPertemuanKelas yang baru dibuat untuk redirect.
+   */
   createSesiAndAbsensi: protectedProcedure
-    .input(serverCreateSesiAbsensiGuruSchema) // Menggunakan skema array
+    .input(serverStartSesiSchema) // <-- Gunakan skema baru
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
       const guruId = session.user.id;
+      const { jadwalKelasId, status, overrideRuangId } = input;
 
-      // Gunakan $transaction untuk memastikan keduanya berhasil atau gagal bersamaan
+      // 1. Dapatkan data jadwal (rencana)
+      const jadwal = await db.jadwalKelas.findUnique({
+        where: { id: jadwalKelasId },
+        select: { kelasId: true, ruangId: true }, // Ambil data default
+      });
+
+      if (!jadwal) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Jadwal kelas tidak ditemukan.",
+        });
+      }
+
+      // 2. Tentukan ruangId yang akan dipakai
+      // Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
+      const finalRuangId = overrideRuangId ?? jadwal.ruangId;
+
+      // 3. Tentukan tanggalWaktu (REALITA)
+      // Gunakan Waktu WITA saat ini
+      const tanggalWaktuSesi = dayjs().tz(TIMEZONE_BISNIS).toDate();
+
+      // 4. Gunakan $transaction
       const result = await db.$transaction(async (tx) => {
-        const createdItems = [];
+        // 4a. Buat SesiPertemuanKelas (Realisasi)
+        const newSesi = await tx.sesiPertemuanKelas.create({
+          data: {
+            kelasId: jadwal.kelasId,
+            ruangId: finalRuangId, // <-- Gunakan ruangId final
+            tanggalWaktu: tanggalWaktuSesi, // <-- Gunakan waktu server
+            jadwalKelasId: jadwalKelasId, // <-- Link ke rencana
+          },
+          select: { id: true },
+        });
 
-        for (const item of input) {
-          // 1. Buat SesiPertemuanKelas
-          const newSesi = await tx.sesiPertemuanKelas.create({
-            data: {
-              kelasId: item.kelasId,
-              ruangId: item.ruangId,
-              tanggalWaktu: item.tanggalWaktu,
-            },
-            select: { id: true }, // Hanya ambil ID yang dibutuhkan
-          });
+        // 4b. Buat AbsensiGuru
+        const newAbsensi = await tx.absensiGuru.create({
+          data: {
+            guruId: guruId,
+            sesiPertemuanKelasId: newSesi.id,
+            status: status,
+            isVerified: false,
+          },
+        });
 
-          // 2. Buat AbsensiGuru menggunakan ID sesi yang baru
-          const newAbsensi = await tx.absensiGuru.create({
-            data: {
-              guruId: guruId,
-              sesiPertemuanKelasId: newSesi.id,
-              status: item.status,
-              isVerified: false, // Selalu false saat dibuat
-            },
-          });
-
-          createdItems.push({ sesiId: newSesi.id, absensiId: newAbsensi.id });
-        }
-
-        return createdItems;
+        // Kembalikan ID sesi yang baru dibuat
+        return {
+          newSesiId: newSesi.id,
+          absensiId: newAbsensi.id,
+        };
       });
 
       return result;
@@ -146,6 +184,11 @@ export const absenGuruRouter = createTRPCRouter({
               kelas: {
                 select: {
                   kodeKelas: true,
+                },
+              },
+              ruang: {
+                select: {
+                  namaRuang: true,
                 },
               },
             },

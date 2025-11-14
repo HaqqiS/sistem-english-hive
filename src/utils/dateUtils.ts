@@ -1,5 +1,5 @@
 /**
- * File konfigurasi terpusat untuk Dayjs dan semua helper tanggal.
+ * File konfigurasi terpusat untuk Dayjs dan semua helper tanggal.x
  * Impor 'dayjs' dan fungsi helper dari file ini di seluruh aplikasi Anda.
  */
 import dayjs from "dayjs";

@@ -7,14 +7,12 @@ const adminNavItems: NavItem[] = [
   { title: "Guru", url: "/admin/guru", icon: "Users" },
   { title: "Murid", url: "/admin/murid", icon: "GraduationCap" },
   { title: "Kelas", url: "/admin/kelas", icon: "School" },
-  { title: "Pertemuan Kelas", url: "/admin/sesi", icon: "Calendar" },
-  { title: "Jadwal Kelas", url: "/admin/jadwal", icon: "Calendar" },
+  { title: "Pembayaran", url: "/admin/pembayaran", icon: "Banknote" },
   {
     title: "Ruangan",
     url: "/admin/ruang",
     icon: "Building",
   },
-  { title: "Pembayaran", url: "/admin/pembayaran", icon: "Banknote" },
 ];
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

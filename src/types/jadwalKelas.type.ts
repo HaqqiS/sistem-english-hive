@@ -4,9 +4,14 @@ import { z } from "zod";
 import { Hari } from "@prisma/client"; // Pastikan untuk mengimpor Enum 'Hari'
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import type { RouterOutputs } from "@/trpc/react";
 
 // Aktifkan plugin untuk mem-parsing string "HH:mm"
 dayjs.extend(customParseFormat);
+
+export type TypeJadwalHariIni =
+  RouterOutputs["jadwalKelas"]["getJadwalHariIniForGuru"];
+export type TypeJadwalHariIniItem = TypeJadwalHariIni[number];
 
 /**
  * Skema dasar yang dibutuhkan oleh kedua tipe jadwal.

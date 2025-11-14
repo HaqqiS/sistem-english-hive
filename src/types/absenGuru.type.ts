@@ -9,11 +9,28 @@ export type TypeAbsensiGuruHistory =
   RouterOutputs["absenGuru"]["getHistoryByGuruId"];
 export type TypeAbsensiGuruHistoryItem = TypeAbsensiGuruHistory[number];
 
+export const serverStartSesiSchema = z.object({
+  /**
+   * ID dari JadwalKelas (rencana jadwal) yang dipilih guru.
+   */
+  jadwalKelasId: z.string().cuid("ID Jadwal tidak valid"),
+  /**
+   * Status kehadiran guru itu sendiri (misal: "HADIR").
+   */
+  status: z.nativeEnum(StatusAbsenGuru, {
+    errorMap: () => ({ message: "Status absen guru tidak valid" }),
+  }),
+  /**
+   * ID Ruang baru JIKA guru pindah ruang.
+   * Jika null/undefined, kita akan pakai ruangId dari JadwalKelas.
+   */
+  overrideRuangId: z.string().cuid("ID Ruang tidak valid").optional(),
+});
+
 export const singleAbsensiGuruSchema = z.object({
   jadwalSesiId: z.string(),
   status: z.nativeEnum(StatusAbsenGuru),
 });
-
 export const serverCreateManyAbsensiGuruSchema = z
   .array(singleAbsensiGuruSchema)
   .min(1, "Data absensi tidak boleh kosong")
@@ -24,9 +41,7 @@ type TypeAbsensiGuruSchema = z.infer<typeof singleAbsensiGuruSchema>;
 export type TypeClientAbsensiGuruSchema = Omit<TypeAbsensiGuruSchema, "guruId">;
 
 export const clientAbsensiArraySchema = z.object({
-  // Kita bungkus array-nya dalam properti 'absensi'
-  // Ini adalah nama yang akan digunakan oleh useFieldArray
-  absensi: serverCreateManyAbsensiGuruSchema, // Menggunakan lagi skema array Anda
+  absensi: serverCreateManyAbsensiGuruSchema,
 });
 
 export type TypeClientAbsensiArraySchema = z.infer<
@@ -40,7 +55,6 @@ export const createSesiAbsensiGuruSchema = z.object({
   status: z.nativeEnum(StatusAbsenGuru),
 });
 
-// Skema untuk keseluruhan form (array dari item)
 export const formSesiAbsensiGuruSchema = z.object({
   absensi: z
     .array(createSesiAbsensiGuruSchema)
@@ -51,8 +65,6 @@ export const formSesiAbsensiGuruSchema = z.object({
 // Tipe untuk Form (Client-side)
 export type TypeFormSesiAbsensiGuru = z.infer<typeof formSesiAbsensiGuruSchema>;
 
-// Skema ini akan digunakan oleh endpoint tRPC (Backend)
-// Backend akan menerima ARRAY langsung, bukan objek { absensi: [...] }
 export const serverCreateSesiAbsensiGuruSchema = z.array(
   createSesiAbsensiGuruSchema,
 );

@@ -5,13 +5,11 @@ import dayjs from "dayjs";
 // Tambahkan revalidate = 0 agar data selalu baru saat admin me-refresh halaman
 export const revalidate = 0;
 
-interface PageProps {
-  params: {
-    guruId: string;
-  };
-}
-
-export default async function DetailGuruPage({ params }: PageProps) {
+export default async function DetailGuruPage({
+  params,
+}: {
+  params: { guruId: string };
+}) {
   const { guruId } = params;
   const currentMonth = dayjs().format("YYYY-MM");
 

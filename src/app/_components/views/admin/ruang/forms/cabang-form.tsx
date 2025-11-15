@@ -24,7 +24,7 @@ export default function CabangForm({ onSubmit }: CabangFormProps) {
       {/* Nama Cabang */}
       <FormField
         control={form.control}
-        name="nama"
+        name="namaCabang"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Nama Cabang</FormLabel>

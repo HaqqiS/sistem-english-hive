@@ -12,6 +12,8 @@ import {
   getFilteredRowModel,
   type VisibilityState,
   type Table as TableType,
+  type PaginationState,
+  type OnChangeFn,
 } from "@tanstack/react-table";
 
 import {
@@ -42,10 +44,12 @@ import {
 import { Label } from "@/components/ui/label";
 // import type { Payment } from "./columns";
 import {
+  ChevronDown,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsLeftIcon,
   ChevronsRightIcon,
+  LayoutIcon,
 } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
@@ -54,6 +58,9 @@ interface DataTableProps<TData, TValue> {
   filterColumnId?: string;
   filterColumnPlaceholder?: string;
   toolbar?: (table: TableType<TData>) => React.ReactNode;
+  pageCount: number;
+  pagination: PaginationState;
+  onPaginationChange: OnChangeFn<PaginationState>;
 }
 
 export function DataTable<TData, TValue>({
@@ -62,6 +69,9 @@ export function DataTable<TData, TValue>({
   filterColumnId,
   filterColumnPlaceholder,
   toolbar,
+  pageCount,
+  pagination,
+  onPaginationChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -71,6 +81,7 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data,
     columns,
+    pageCount: pageCount ?? -1,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -79,11 +90,14 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: onPaginationChange,
+    manualPagination: true,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      pagination,
     },
   });
 
@@ -106,7 +120,7 @@ export function DataTable<TData, TValue>({
           />
         ) : null}
         <div>{toolbar ? toolbar(table) : null}</div>
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
               Columns
@@ -116,6 +130,39 @@ export function DataTable<TData, TValue>({
             {table
               .getAllColumns()
               .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu> */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="ml-auto">
+              <LayoutIcon />
+              <span className="hidden lg:inline">Customize Columns</span>
+              <span className="lg:hidden">Columns</span>
+              <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-32 lg:w-48">
+            {table
+              .getAllColumns()
+              .filter(
+                (column) =>
+                  typeof column.accessorFn !== "undefined" &&
+                  column.getCanHide(),
+              )
               .map((column) => {
                 return (
                   <DropdownMenuCheckboxItem
@@ -207,7 +254,7 @@ export function DataTable<TData, TValue>({
                 />
               </SelectTrigger>
               <SelectContent side="top">
-                {[5, 10, 20, 30, 40, 50].map((pageSize) => (
+                {[1, 5, 10, 20, 30, 40, 50].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`}>
                     {pageSize}
                   </SelectItem>

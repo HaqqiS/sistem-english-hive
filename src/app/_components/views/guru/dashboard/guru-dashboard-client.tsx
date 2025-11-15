@@ -74,6 +74,8 @@ export default function GuruDashboardClient() {
     error,
   } = api.jadwalKelas.getJadwalHariIniForGuru.useQuery();
 
+  console.table(jadwalHariIni);
+
   // 2. Ambil semua data ruang (untuk <Select> di dialog)
   const { data: semuaRuangan, isLoading: isLoadingRuangan } =
     api.ruang.getAll.useQuery();
@@ -172,7 +174,10 @@ export default function GuruDashboardClient() {
           return (
             <Card key={jadwal.jadwalId}>
               <CardHeader>
-                <CardTitle>{`${jadwal.jamMulai} - ${jadwal.jamSelesai}`}</CardTitle>
+                <CardTitle>
+                  {`${jadwal.jamMulai} - ${jadwal.jamSelesai}`}
+                  {jadwal.guru ? ` - ${jadwal.guru.name}` : ""}
+                </CardTitle>
                 <CardDescription>{jadwal.kodeKelas}</CardDescription>
               </CardHeader>
               <CardContent>

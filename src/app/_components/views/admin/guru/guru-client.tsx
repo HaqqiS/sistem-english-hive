@@ -1,6 +1,6 @@
 "use client";
 
-import { DataTable } from "@/app/_components/shared/data-table";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as columnsAbsen } from "./columns/columns-absen-guru";
 import { columns as columnsGuru } from "./columns/columns-guru";
 import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
@@ -68,29 +68,7 @@ export default function GuruClient({ initialData }: GuruClientProps) {
           </div>
         </div>
 
-        <DataTable
-          filterColumnId="guru.name"
-          filterColumnPlaceholder="Filter nama guru..."
-          columns={columnsAbsensiGuru}
-          data={dataAbsensiGuru ?? []}
-          toolbar={(table) => (
-            <div className="flex items-center gap-2">
-              {/* <Input
-                placeholder="Cari nama cabang..."
-                value={
-                  (table.getColumn("namaCabang")?.getFilterValue() as string) ??
-                  ""
-                }
-                onChange={(event) =>
-                table
-                .getColumn("namaCabang")
-                ?.setFilterValue(event.target.value)
-                }
-                className="max-w-sm"
-              /> */}
-            </div>
-          )}
-        />
+        <DataTable columns={columnsAbsensiGuru} data={dataAbsensiGuru ?? []} />
       </TabsContent>
 
       <TabsContent value="guru">
@@ -107,29 +85,7 @@ export default function GuruClient({ initialData }: GuruClientProps) {
           </div>
         </div>
 
-        <DataTable
-          filterColumnId="guru.name"
-          filterColumnPlaceholder="Filter nama guru..."
-          columns={columnsListGuru}
-          data={dataGuru ?? []}
-          toolbar={(table) => (
-            <div className="flex items-center gap-2">
-              {/* <Input
-                placeholder="Cari nama cabang..."
-                value={
-                  (table.getColumn("namaCabang")?.getFilterValue() as string) ??
-                  ""
-                }
-                onChange={(event) =>
-                table
-                .getColumn("namaCabang")
-                ?.setFilterValue(event.target.value)
-                }
-                className="max-w-sm"
-              /> */}
-            </div>
-          )}
-        />
+        <DataTable columns={columnsListGuru} data={dataGuru ?? []} />
       </TabsContent>
     </Tabs>
   );

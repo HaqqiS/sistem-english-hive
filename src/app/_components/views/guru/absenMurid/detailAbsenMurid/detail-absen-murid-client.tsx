@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { DataTable } from "@/app/_components/shared/data-table"; //
+import { DataTable } from "@/app/_components/shared/data-table-generic"; //
 import { createDetailAbsenMuridColumns } from "./columns-detail-absen";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatToWITA } from "@/utils/dateUtils";

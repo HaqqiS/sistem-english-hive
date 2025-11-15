@@ -49,7 +49,7 @@ export const columns = ({
 
   // Nama Cabang (clickable)
   {
-    accessorKey: "namaCabang",
+    accessorFn: (row) => row.namaCabang,
     header: "Nama Cabang",
     cell: ({ row }) => (
       <Button

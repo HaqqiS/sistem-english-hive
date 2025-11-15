@@ -20,7 +20,7 @@ export default function TambahCabang() {
   const form = useForm<TypeClientCabangSchema>({
     resolver: zodResolver(clientCabangSchema),
     defaultValues: {
-      nama: "",
+      namaCabang: "",
       alamat: "",
       noTelp: "",
     },

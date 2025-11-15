@@ -1,10 +1,11 @@
 import type { RouterOutputs } from "@/trpc/react";
 import z from "zod";
 
-export type CabangType = RouterOutputs["cabang"]["getAll"][number];
+export type CabangType =
+  RouterOutputs["cabang"]["getAllPaginated"]["data"][number]; // Disesuaikan dengan output paginasi
 
 const baseCabangSchema = z.object({
-  nama: z.string().min(1, "Nama harus diisi").max(100),
+  namaCabang: z.string().trim().min(1, "Nama cabang harus diisi").max(100),
   alamat: z.string().min(1, "Alamat harus diisi").max(255),
   noTelp: z
     .string()

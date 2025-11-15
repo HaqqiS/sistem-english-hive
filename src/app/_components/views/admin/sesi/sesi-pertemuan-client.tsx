@@ -1,6 +1,6 @@
 "use client";
 
-import { DataTable } from "@/app/_components/shared/data-table";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
 import type {
   SesiPertemuanType,
   SesiPertemuanWithKelasCountType,
@@ -36,27 +36,27 @@ export default function SesiPertemuanClient({
       </div>
 
       <DataTable
-        filterColumnId="kodeKelas"
-        filterColumnPlaceholder="Filter Nama Jadwal Sesi..."
+        // filterColumnId="kodeKelas"
+        // filterColumnPlaceholder="Filter Nama Jadwal Sesi..."
         columns={columns}
         data={initialData ?? []}
-        toolbar={(table) => (
-          <div className="flex items-center gap-2">
-            {/* <Input
-                    placeholder="Cari nama cabang..."
-                    value={
-                      (table.getColumn("namaCabang")?.getFilterValue() as string) ??
-                      ""
-                    }
-                    onChange={(event) =>
-                      table
-                        .getColumn("namaCabang")
-                        ?.setFilterValue(event.target.value)
-                    }
-                    className="max-w-sm"
-                  /> */}
-          </div>
-        )}
+        // toolbar={(table) => (
+        //   <div className="flex items-center gap-2">
+        //     {/* <Input
+        //             placeholder="Cari nama cabang..."
+        //             value={
+        //               (table.getColumn("namaCabang")?.getFilterValue() as string) ??
+        //               ""
+        //             }
+        //             onChange={(event) =>
+        //               table
+        //                 .getColumn("namaCabang")
+        //                 ?.setFilterValue(event.target.value)
+        //             }
+        //             className="max-w-sm"
+        //           /> */}
+        //   </div>
+        // )}
       />
     </div>
   );

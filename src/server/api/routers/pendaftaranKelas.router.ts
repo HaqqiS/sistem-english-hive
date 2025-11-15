@@ -68,6 +68,22 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         });
       }
 
+      const existingActiveRegistration = await db.pendaftaranKelas.findFirst({
+        where: {
+          muridId: input.muridId,
+          isAktif: true, // Cek apakah ada pendaftaran LAIN yang masih aktif
+        },
+      });
+
+      if (existingActiveRegistration) {
+        // Gunakan TRPCError dan pesan yang benar
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "Murid ini sudah terdaftar di kelas lain yang masih aktif. Nonaktifkan pendaftaran lama terlebih dahulu.",
+        });
+      }
+
       // 2. Gunakan $transaction
       const newPendaftaranKelas = await db.$transaction(async (tx) => {
         // 2a. Buat Pendaftaran

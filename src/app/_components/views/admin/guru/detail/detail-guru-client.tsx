@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import { useUser } from "@/hooks/useUser"; // Untuk mengambil nama guru
-import { DataTable } from "@/app/_components/shared/data-table"; // Ganti ke data-table.tsx
+import { DataTable } from "@/app/_components/shared/data-table-generic"; // Ganti ke data-table.tsx
 import { columns } from "../columns/columns-detail-absen-guru";
 import {
   Card,

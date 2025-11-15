@@ -1,10 +1,23 @@
 "use client";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import { columns } from "@/app/_components/views/admin/pembayaran/columns-pembayaran";
 
 export default function DashboardClientPage() {
+  const { data: dataPembayaranJatuhTempo } =
+    api.pembayaran.getTagihanJatuhTempo.useQuery();
+
+  const pembayaranColumns = columns({
+    onDeleteClick: (id: string) => {
+      console.log("Delete clicked for pembayaran with id:", id);
+    },
+    onEditClick: (item) => {
+      console.log("Edit clicked for pembayaran:", item);
+    },
+  });
+
   return (
     <div>
       <h1>DashboardClientPage</h1>
@@ -74,6 +87,11 @@ export default function DashboardClientPage() {
           Promise
         </Button>
       </div>
+
+      <DataTable
+        data={dataPembayaranJatuhTempo ?? []}
+        columns={pembayaranColumns}
+      />
     </div>
   );
 }

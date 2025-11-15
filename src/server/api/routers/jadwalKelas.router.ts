@@ -107,6 +107,20 @@ export const jadwalKelasRouter = createTRPCRouter({
         kelas: {
           select: {
             kodeKelas: true,
+            historyGuruKelases: {
+              where: {
+                statusGuru: "ACTIVE",
+              },
+              select: {
+                guru: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+              take: 1,
+            },
           },
         },
         ruang: {
@@ -162,6 +176,7 @@ export const jadwalKelasRouter = createTRPCRouter({
     const hasil = jadwalHariIni.map((jadwal) => {
       const jam = jadwal.jamSlotTetap ?? jadwal.jamSlotCustom;
       const sesiId = sesiMap.get(jadwal.id) ?? null;
+      const guruAktif = jadwal.kelas.historyGuruKelases[0]?.guru;
 
       return {
         jadwalId: jadwal.id,
@@ -171,7 +186,7 @@ export const jadwalKelasRouter = createTRPCRouter({
         namaRuang: jadwal.ruang.namaRuang,
         jamMulai: jam?.jamMulai ?? "N/A",
         jamSelesai: jam?.jamSelesai ?? "N/A",
-        /** ID SesiPertemuanKelas jika sudah dibuat, jika belum: null */
+        guru: guruAktif ? { id: guruAktif.id, name: guruAktif.name } : null,
         sesiIdSudahDibuat: sesiId,
       };
     });

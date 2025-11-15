@@ -10,7 +10,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import CabangForm from "../forms/cabang-form";
 import { useCabangStore } from "@/store/useCabangStore";
-import { useCabang } from "../../../../../../hooks/useCabang";
+import { useCabang } from "@/hooks/useCabang";
 
 export default function EditCabang() {
   const { isDrawerOpen, selectedCabang, closeDrawer, clearSelected } =
@@ -19,7 +19,7 @@ export default function EditCabang() {
   useEffect(() => {
     if (selectedCabang) {
       editCabangForm.reset({
-        nama: selectedCabang.namaCabang,
+        namaCabang: selectedCabang.namaCabang,
         alamat: selectedCabang.alamat,
         noTelp: selectedCabang.noTelp,
       });
@@ -31,7 +31,7 @@ export default function EditCabang() {
   const editCabangForm = useForm<TypeClientCabangSchema>({
     resolver: zodResolver(clientCabangSchema),
     defaultValues: {
-      nama: selectedCabang?.namaCabang,
+      namaCabang: selectedCabang?.namaCabang,
       alamat: selectedCabang?.alamat,
       noTelp: selectedCabang?.noTelp,
     },

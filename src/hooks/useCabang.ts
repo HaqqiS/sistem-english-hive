@@ -3,11 +3,15 @@
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type { CabangType } from "@/types/cabang.type";
+import type { PaginationState } from "@tanstack/react-table";
+import { keepPreviousData } from "@tanstack/react-query";
 
 interface UseCabangOptions {
   // Query options
   enableQuery?: boolean;
-  initialData?: CabangType[];
+  initialDataPaginated?: { data: CabangType[]; pageCount: number };
+  initialDataList?: CabangType[];
+  pagination?: PaginationState;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -30,18 +34,34 @@ interface UseCabangOptions {
 export function useCabang(options?: UseCabangOptions) {
   const apiUtils = api.useUtils();
 
-  // ========== QUERIES ==========
-  const cabangQuery = api.cabang.getAll.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
-    initialData: options?.initialData,
-  });
+  const pageIndex = options?.pagination?.pageIndex ?? 0;
+  const pageSize = options?.pagination?.pageSize ?? 10;
 
+  // ========== QUERIES ==========
+  const paginatedQuery = api.cabang.getAllPaginated.useQuery(
+    { pageIndex, pageSize },
+    {
+      enabled: (options?.enableQuery ?? true) && !!options?.pagination, // Aktif HANYA jika pagination diberikan
+      initialData: options?.initialDataPaginated,
+      placeholderData: keepPreviousData,
+    },
+  );
+
+  const listQuery = api.cabang.getAllList.useQuery(undefined, {
+    enabled: (options?.enableQuery ?? true) && !options?.pagination, // Aktif HANYA jika pagination TIDAK diberikan
+    initialData: options?.initialDataList,
+    refetchOnWindowFocus: false,
+  });
   // ========== MUTATIONS ==========
+  const invalidateAll = async () => {
+    await apiUtils.cabang.getAllPaginated.invalidate();
+    await apiUtils.cabang.getAllList.invalidate();
+  };
 
   // CREATE
   const createMutation = api.cabang.createCabang.useMutation({
     onSuccess: async () => {
-      await apiUtils.cabang.getAll.invalidate();
+      await apiUtils.cabang.getAllPaginated.invalidate();
       toast.success("Cabang berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -53,7 +73,7 @@ export function useCabang(options?: UseCabangOptions) {
   // UPDATE
   const updateMutation = api.cabang.updateCabang.useMutation({
     onSuccess: async () => {
-      await apiUtils.cabang.getAll.invalidate();
+      await apiUtils.cabang.getAllPaginated.invalidate();
       toast.success("Cabang berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -65,7 +85,7 @@ export function useCabang(options?: UseCabangOptions) {
   // DELETE
   const deleteMutation = api.cabang.deleteCabang.useMutation({
     onSuccess: async () => {
-      await apiUtils.cabang.getAll.invalidate();
+      await apiUtils.cabang.getAllPaginated.invalidate();
       toast.success("Cabang berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -74,13 +94,17 @@ export function useCabang(options?: UseCabangOptions) {
     },
   });
 
+  const isPaginated = !!options?.pagination;
+
   return {
     // Query results
-    data: cabangQuery.data,
-    isLoading: cabangQuery.isLoading,
-    isError: cabangQuery.isError,
-    error: cabangQuery.error,
-
+    data: isPaginated
+      ? (paginatedQuery.data?.data ?? [])
+      : (listQuery.data ?? []),
+    pageCount: isPaginated ? (paginatedQuery.data?.pageCount ?? 0) : 0, // <-- Kembalikan pageCount
+    isLoading: isPaginated ? paginatedQuery.isLoading : listQuery.isLoading,
+    isError: isPaginated ? paginatedQuery.isError : listQuery.isError,
+    error: isPaginated ? paginatedQuery.error : listQuery.error,
     // Mutations
     mutations: {
       create: {
@@ -101,7 +125,7 @@ export function useCabang(options?: UseCabangOptions) {
     },
 
     // Utils untuk manual invalidation jika perlu
-    refetch: cabangQuery.refetch,
-    invalidate: () => apiUtils.cabang.getAll.invalidate(),
+    refetch: isPaginated ? paginatedQuery.refetch : listQuery.refetch,
+    invalidate: invalidateAll,
   };
 }

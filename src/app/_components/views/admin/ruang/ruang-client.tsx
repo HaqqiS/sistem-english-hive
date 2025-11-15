@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { type RouterOutputs } from "@/trpc/react";
 import { DataTable } from "@/app/_components/shared/data-table";
+import { DataTable as DataTableGeneric } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { columns as createCabangColumns } from "./columns/cabang-columns";
 import { columns as createRuangColumns } from "./columns/ruang-columns";
@@ -29,9 +30,10 @@ import TambahJamTetap from "./drawers/tambah-jam-tetap";
 import EditJamTetap from "./drawers/edit-jam-tetap";
 import TambahJamCustom from "./drawers/tambah-jam-custom";
 import EditJamCustom from "./drawers/edit-jam-custom";
+import type { PaginationState } from "@tanstack/react-table";
 
 interface RuangClientProps {
-  initialDataCabang: RouterOutputs["cabang"]["getAll"];
+  initialDataCabang: { data: CabangType[]; pageCount: number };
   initialDataRuang: RouterOutputs["ruang"]["getRuangByCabangId"];
   initialDataJamTetap: TypeJamTetap[];
   initialDataJamCustom: TypeJamCustom[];
@@ -44,6 +46,11 @@ export default function RuangClient({
   initialDataJamCustom,
 }: RuangClientProps) {
   // State management
+  const [cabangPagination, setCabangPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 5,
+  });
+
   const { openDrawer: openCabangDrawer } = useCabangStore();
   const { openDrawer: openRuangDrawer } = useRuangStore();
   const { openDrawer: openJamTetapDrawer } = useJamTetapStore();
@@ -67,8 +74,13 @@ export default function RuangClient({
   const [selectedJamCustomToDelete, setSelectedJamCustomToDelete] =
     useState<TypeJamCustom | null>(null);
 
-  const { data: dataCabang, mutations: cabangMutations } = useCabang({
-    initialData: initialDataCabang,
+  const {
+    data: dataCabang,
+    pageCount: cabangPageCount,
+    mutations: cabangMutations,
+  } = useCabang({
+    initialDataPaginated: initialDataCabang,
+    pagination: cabangPagination,
     onSuccessDelete: () => {
       setDeleteCabangDialogOpen(false);
       setSelectedCabangToDelete(null);
@@ -118,7 +130,7 @@ export default function RuangClient({
 
   const handleDeleteClickCabang = (id: string, nama: string) => {
     // const cabang = dataCabang.find((c) => c.id === id);
-    const cabang = initialDataCabang.find((c) => c.id === id);
+    const cabang = initialDataCabang.data.find((c) => c.id === id);
     if (cabang) {
       setSelectedCabangToDelete(cabang);
       setDeleteCabangDialogOpen(true);
@@ -235,34 +247,34 @@ export default function RuangClient({
             />
           </div>
 
-          <DataTable
-            filterColumnId="namaRuang"
-            filterColumnPlaceholder="Filter Nama Ruang..."
+          <DataTableGeneric
+            // filterColumnId="namaRuang"
+            // filterColumnPlaceholder="Filter Nama Ruang..."
             columns={columnsRuang}
             data={dataRuang ?? []}
-            toolbar={(table) => (
-              <div className="flex items-center gap-2">
-                {/* <Select
-              onValueChange={(value) =>
-                table.getColumn("cabangId")?.setFilterValue(value)
-              }
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by Cabang" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                {dataCabang?.map((cabang) => {
-                  return (
-                    <SelectItem key={cabang.id} value={cabang.id}>
-                      {cabang.namaCabang}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select> */}
-              </div>
-            )}
+            // toolbar={(table) => (
+            //   <div className="flex items-center gap-2">
+            //     {/* <Select
+            //   onValueChange={(value) =>
+            //     table.getColumn("cabangId")?.setFilterValue(value)
+            //   }
+            // >
+            //   <SelectTrigger className="w-[180px]">
+            //     <SelectValue placeholder="Filter by Cabang" />
+            //   </SelectTrigger>
+            //   <SelectContent>
+            //     <SelectItem value="all">All</SelectItem>
+            //     {dataCabang?.map((cabang) => {
+            //       return (
+            //         <SelectItem key={cabang.id} value={cabang.id}>
+            //           {cabang.namaCabang}
+            //         </SelectItem>
+            //       );
+            //     })}
+            //   </SelectContent>
+            // </Select> */}
+            //   </div>
+            // )}
           />
         </div>
       </TabsContent>
@@ -308,6 +320,9 @@ export default function RuangClient({
             filterColumnPlaceholder="Filter Nama Cabang..."
             columns={columnsCabang}
             data={dataCabang ?? []}
+            pagination={cabangPagination}
+            onPaginationChange={setCabangPagination}
+            pageCount={cabangPageCount}
             toolbar={(table) => (
               <div className="flex items-center gap-2">
                 {/* <Input
@@ -362,7 +377,10 @@ export default function RuangClient({
             />
           </div>
 
-          <DataTable data={dataJamTetap ?? []} columns={columnsJamTetap} />
+          <DataTableGeneric
+            data={dataJamTetap ?? []}
+            columns={columnsJamTetap}
+          />
         </div>
       </TabsContent>
 
@@ -398,7 +416,10 @@ export default function RuangClient({
             />
           </div>
 
-          <DataTable data={dataJamCustom ?? []} columns={columnsJamCustom} />
+          <DataTableGeneric
+            data={dataJamCustom ?? []}
+            columns={columnsJamCustom}
+          />
         </div>
       </TabsContent>
     </Tabs>

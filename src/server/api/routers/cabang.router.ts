@@ -1,20 +1,33 @@
 import { serverCabangSchema } from "@/types/cabang.type";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
+import { paginationSchema } from "@/types/pagination.type";
 
 export const cabangRouter = createTRPCRouter({
-  getAll: publicProcedure
-    // .input(
-    //   z.object({
-    //     pageSize: z.number(),
-    //     pageIndex: z.number(),
-    //   }),
-    // )
-    .query(async ({ ctx }) => {
+  getAllPaginated: protectedProcedure
+    .input(paginationSchema)
+    .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const cabang = await db.cabang.findMany();
-      return cabang;
+      const { pageIndex, pageSize } = input;
+
+      const total = await db.cabang.count();
+      const cabang = await db.cabang.findMany({
+        skip: pageIndex * pageSize,
+        take: pageSize,
+      });
+      const pageCount = Math.ceil(total / pageSize);
+
+      return {
+        data: cabang,
+        pageCount,
+      };
     }),
+
+  getAllList: publicProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+    const cabang = await db.cabang.findMany();
+    return cabang;
+  }),
 
   createCabang: protectedProcedure
     .input(serverCabangSchema)
@@ -22,7 +35,7 @@ export const cabangRouter = createTRPCRouter({
       const { db } = ctx;
       const cabang = await db.cabang.create({
         data: {
-          namaCabang: input.nama,
+          namaCabang: input.namaCabang,
           alamat: input.alamat,
           noTelp: input.noTelp,
         },
@@ -37,7 +50,7 @@ export const cabangRouter = createTRPCRouter({
       const cabang = await db.cabang.update({
         where: { id: input.id },
         data: {
-          namaCabang: input.nama,
+          namaCabang: input.namaCabang,
           alamat: input.alamat,
           noTelp: input.noTelp,
         },

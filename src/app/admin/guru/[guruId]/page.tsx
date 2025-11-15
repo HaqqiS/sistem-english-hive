@@ -8,9 +8,9 @@ export const revalidate = 0;
 export default async function DetailGuruPage({
   params,
 }: {
-  params: { guruId: string };
+  params: Promise<{ guruId: string }>;
 }) {
-  const { guruId } = params;
+  const { guruId } = await params;
   const currentMonth = dayjs().format("YYYY-MM");
 
   // Prefetch data guru dan history bulan ini di server

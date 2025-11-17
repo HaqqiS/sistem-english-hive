@@ -4,6 +4,7 @@ import z from "zod";
 
 export type TypeMuridNotRegistered =
   RouterOutputs["murid"]["getMuridWhereNotRegistered"][number];
+export type TypeAllMurid = RouterOutputs["murid"]["getAllMurid"][number];
 
 export const RegisterMuridSchema = z.object({
   namaLengkap: z.string().trim().min(1, "Nama lengkap harus diisi").max(200),

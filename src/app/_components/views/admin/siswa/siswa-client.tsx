@@ -4,26 +4,43 @@ import { DataTable } from "@/app/_components/shared/data-table-generic";
 import type { TypeKelas } from "@/types/kelas.type";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import type { TypeMuridNotRegistered } from "@/types/murid.type";
+import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
-import { columns as columnsMuridNotRegistered } from "./columns-murid-not-registered";
+import { columns as createColumnsMuridNotRegistered } from "./columns-murid-not-registered";
+import { columns as createColumnsAllMurid } from "./columsn-murid";
+import TambahPendaftaranKelas from "./tambah-pendaftaran-kelas";
 
 interface ProgramSiswaClientProps {
   initialDataMuridNotRegistered: TypeMuridNotRegistered[];
+  initialDataAllMurid: TypeAllMurid[];
 }
 
 export default function SiswaClient({
   initialDataMuridNotRegistered,
+  initialDataAllMurid,
 }: ProgramSiswaClientProps) {
   const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
   const [selectedKelasToDelete, setSelectedKelasToDelete] =
     useState<TypeKelas | null>(null);
 
   const { dataMuridNotRegistered } = useMurid({
-    initialData: initialDataMuridNotRegistered,
+    initialDataNotRegistered: initialDataMuridNotRegistered,
   });
 
-  const columnsPendaftaran = columnsMuridNotRegistered({
+  const { dataAllMurid } = useMurid({
+    initialDataAllMurid: [],
+  });
+
+  const columnsMuridNotRegistered = createColumnsMuridNotRegistered({
+    onEditClick: (item) => {
+      console.log("clicked");
+    },
+    onDeleteClick: (pendaftaranId) => {
+      console.log("deleted");
+    },
+  });
+
+  const columnsAllMurid = createColumnsAllMurid({
     onEditClick: (item) => {
       console.log("clicked");
     },
@@ -58,7 +75,7 @@ export default function SiswaClient({
           </div>
 
           <DataTable
-            columns={columnsPendaftaran}
+            columns={columnsMuridNotRegistered}
             data={dataMuridNotRegistered ?? []}
           />
         </div>
@@ -75,13 +92,10 @@ export default function SiswaClient({
                 </p>
               </div>
             </header>
-            {/* <TambahPendaftaranKelas /> */}
+            <TambahPendaftaranKelas />
           </div>
 
-          {/* <DataTable
-            columns={columnsPendaftaran}
-            data={dataMuridNotRegistered ?? []}
-          /> */}
+          <DataTable columns={columnsAllMurid} data={dataAllMurid ?? []} />
         </div>
       </TabsContent>
     </Tabs>

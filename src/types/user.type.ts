@@ -1,7 +1,9 @@
 import type { RouterOutputs } from "@/trpc/react";
 import { z } from "zod";
 
-export type TypeGuru = RouterOutputs["user"]["getAllGuru"][number];
+export type TypeGuruSimple = RouterOutputs["user"]["getAllGuruSimple"][number];
+export type TypeGuruComplete =
+  RouterOutputs["user"]["getAllGuruComplete"][number];
 
 export const loginFormSchema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -9,11 +11,11 @@ export const loginFormSchema = z.object({
   root: z.string().optional(),
 });
 
-export const registerFormSchema = loginFormSchema.extend({
+export const registerGuruFormSchema = loginFormSchema.extend({
   name: z.string().min(1, "Nama tidak boleh kosong"),
 });
 
-export const updateProfileFormSchema = registerFormSchema.pick({
+export const updateProfileFormSchema = registerGuruFormSchema.pick({
   name: true,
   email: true,
 });
@@ -39,7 +41,7 @@ export const updatePasswordFormSchema = z
   });
 export type LoginFormSchema = z.infer<typeof loginFormSchema>;
 
-export type RegisterFormSchema = z.infer<typeof registerFormSchema>;
+export type RegisterGuruFormSchema = z.infer<typeof registerGuruFormSchema>;
 
 export type UpdateProfileFormSchema = z.infer<typeof updateProfileFormSchema>;
 

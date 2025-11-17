@@ -35,11 +35,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertCircle,
   CheckCircle2,
@@ -144,23 +140,23 @@ export default function GuruDashboardClient() {
 
   if (isError) {
     return (
-      <AlertDialog>
+      <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertDialogTitle>Gagal Memuat Jadwal</AlertDialogTitle>
-        <AlertDialogDescription>{error?.message}</AlertDialogDescription>
-      </AlertDialog>
+        <AlertTitle>Gagal Memuat Jadwal</AlertTitle>
+        <AlertDescription>{error?.message}</AlertDescription>
+      </Alert>
     );
   }
 
   if (!jadwalHariIni || jadwalHariIni.length === 0) {
     return (
-      <AlertDialog>
+      <Alert variant="destructive">
         <CheckCircle2 className="h-4 w-4" />
-        <AlertDialogTitle>Jadwal Kosong</AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertTitle>Jadwal Kosong</AlertTitle>
+        <AlertDescription>
           Anda tidak memiliki jadwal mengajar hari ini. Selamat beristirahat!
-        </AlertDialogDescription>
-      </AlertDialog>
+        </AlertDescription>
+      </Alert>
     );
   }
 

@@ -46,9 +46,11 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   // CREATE
   const createMutation =
     api.historyGuruKelas.createHistoryGuruKelas.useMutation({
-      onSuccess: async () => {
+      onSuccess: async (data, variables) => {
         await apiUtils.historyGuruKelas.getAll.invalidate();
-        await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate();
+        await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
+          kelasId: variables.kelasId,
+        });
         toast.success("History Guru Kelas berhasil ditambahkan");
         options?.onSuccessCreate?.();
       },
@@ -60,8 +62,11 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   // UPDATE
   const updateMutation =
     api.historyGuruKelas.updateHistoryGuruKelas.useMutation({
-      onSuccess: async () => {
+      onSuccess: async (data, variables) => {
         await apiUtils.historyGuruKelas.getAll.invalidate();
+        await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
+          kelasId: variables.kelasId,
+        });
         toast.success("History Guru Kelas berhasil diupdate");
         options?.onSuccessUpdate?.();
       },

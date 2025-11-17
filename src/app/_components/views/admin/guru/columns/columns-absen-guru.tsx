@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Check, EllipsisVertical } from "lucide-react";
+import { Check, EllipsisVertical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,16 +25,16 @@ import { formatToWITA } from "@/utils/dateUtils";
 
 interface ColumnsConfig {
   onEditClick: (item: TypeAbsensiGuru) => void;
-  onDeleteClick: (id: string) => void;
+  onDeleteClick: (id: string, kodeKelasTanggalWaktu: string) => void;
   onStatusChange: (item: TypeAbsensiGuru, status: boolean) => void;
-  isPendingStatusChange: boolean;
+  pendingId: string | null;
 }
 
 export const columns = ({
   onEditClick,
   onDeleteClick,
   onStatusChange,
-  isPendingStatusChange,
+  pendingId,
 }: ColumnsConfig): ColumnDef<TypeAbsensiGuru>[] => [
   // Checkbox selection
   {
@@ -107,18 +107,18 @@ export const columns = ({
     header: "Status Verifikasi",
     cell: ({ row }) => {
       const isVerified = row.original.isVerified;
+      // Cek apakah ID baris ini sama dengan ID yang sedang diproses di parent
+      const isLoading = pendingId === row.original.id;
 
       // 1. JIKA SUDAH TERVERIFIKASI (isVerified === true)
-      // Tampilkan Badge "Terverifikasi" berwarna hijau.
       if (isVerified) {
         return (
-          <div className="w-32">
+          <div className="w-[180px]">
             <Badge
               variant="outline"
-              // Langsung gunakan class untuk status "terverifikasi"
-              className="text-accent text-sm"
+              className="text-accent flex w-fit items-center gap-1 text-sm"
             >
-              <Check />
+              <Check className="h-3 w-3" />
               <span>Terverifikasi</span>
             </Badge>
           </div>
@@ -126,37 +126,45 @@ export const columns = ({
       }
 
       // 2. JIKA BELUM TERVERIFIKASI (isVerified === false)
-      // Tampilkan <Select> untuk mengubah status.
       return (
-        <>
+        <div className="w-[180px]">
           <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
             Reviewer
           </Label>
           <Select
-            // Karena isVerified === false, nilai default-nya adalah "REJECTED"
+            // Disable input saat loading
+            disabled={isLoading}
             defaultValue={"REJECTED"}
-            // Asumsi Anda punya fungsi onStatusChange yang di-pass ke tabel
             onValueChange={(value) => {
-              onStatusChange(row.original, value === "APPROVED" ? true : false);
+              // Trigger perubahan status
+              onStatusChange(row.original, value === "APPROVED");
             }}
           >
             <SelectTrigger
-              className="w-42" // Class **:data... aneh, saya hapus
+              className="w-full"
               size="sm"
               id={`${row.original.id}-reviewer`}
             >
-              {/* SelectValue akan otomatis menampilkan "Belum di Verifikasi" dari defaultValue */}
-              <SelectValue />
+              {/* Tampilkan Loader jika sedang loading */}
+              {isLoading ? (
+                <div className="text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span className="text-xs">Menyimpan...</span>
+                </div>
+              ) : (
+                <SelectValue />
+              )}
             </SelectTrigger>
             <SelectContent align="end">
               <SelectItem value={"APPROVED"}>Terverifikasi</SelectItem>
               <SelectItem value={"REJECTED"}>Tidak Terverifikasi</SelectItem>
             </SelectContent>
           </Select>
-        </>
+        </div>
       );
     },
   },
+
   {
     accessorKey: "verifiedBy.name",
     header: "Verified By",
@@ -172,6 +180,7 @@ export const columns = ({
     id: "actions",
     header: "Aksi",
     cell: ({ row }) => {
+      const kodeKelasTanggalWaktu = `${row.original.sesiPertemuanKelas.kelas.kodeKelas} - ${formatToWITA(row.original.sesiPertemuanKelas.tanggalWaktu)}`;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -191,7 +200,9 @@ export const columns = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => onDeleteClick(row.original.id)}
+              onClick={() =>
+                onDeleteClick(row.original.id, kodeKelasTanggalWaktu)
+              }
             >
               Delete
             </DropdownMenuItem>

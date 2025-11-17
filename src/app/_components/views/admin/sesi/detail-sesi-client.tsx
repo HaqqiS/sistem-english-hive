@@ -19,11 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
@@ -80,11 +76,11 @@ export default function DetailSesiClient() {
   // 3. Error State
   if (isErrorSummary) {
     return (
-      <AlertDialog>
+      <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertDialogTitle>Gagal Memuat Data</AlertDialogTitle>
-        <AlertDialogDescription>{errorSummary?.message}</AlertDialogDescription>
-      </AlertDialog>
+        <AlertTitle>Gagal Memuat Data</AlertTitle>
+        <AlertDescription>{errorSummary?.message}</AlertDescription>
+      </Alert>
     );
   }
 

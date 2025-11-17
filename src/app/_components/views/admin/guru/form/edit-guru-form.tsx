@@ -1,7 +1,5 @@
 "use client";
-import { Button } from "@/components/ui/button";
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -9,18 +7,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import InputPassword from "@/app/_components/shared/input-password";
-import Link from "next/link";
 import { useFormContext } from "react-hook-form";
-import type { RegisterGuruFormSchema } from "@/types/user.type";
+import type { UpdateProfileFormSchema } from "@/types/user.type";
 
-interface RegisterFormProps {
-  onSubmit: (data: RegisterGuruFormSchema) => void;
+interface EditGuruFormProps {
+  onSubmit: (data: UpdateProfileFormSchema) => void;
 }
 
-export default function RegisterForm({ onSubmit }: RegisterFormProps) {
+export default function EditGuruForm({ onSubmit }: EditGuruFormProps) {
   // HOOK FORMS
-  const form = useFormContext<RegisterGuruFormSchema>();
+  const form = useFormContext<UpdateProfileFormSchema>();
 
   const { setError } = form;
 
@@ -69,29 +65,15 @@ export default function RegisterForm({ onSubmit }: RegisterFormProps) {
             )}
           />
         </div>
-        <div className="grid gap-3">
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <InputPassword {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+
         <div className="flex flex-col gap-3">
-          <FormField
+          {/* <FormField
             control={form.control}
             name="root"
             render={({ fieldState }) => (
               <FormMessage>{fieldState.error?.message}</FormMessage>
             )}
-          />
+          /> */}
           {/* <Button
             type="submit"
             className="w-full"

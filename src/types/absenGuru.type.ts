@@ -2,72 +2,69 @@ import type { RouterOutputs } from "@/trpc/react";
 import { StatusAbsenGuru } from "@prisma/client";
 import z from "zod";
 
+// ==========================================
+// 1. READ TYPES (Output dari Router)
+// ==========================================
+
+/** Tipe tunggal absensi guru (biasanya untuk list/table) */
 export type TypeAbsensiGuru =
   RouterOutputs["absenGuru"]["getAllAbsensi"][number];
 
+/** Tipe history gaji/absensi guru */
 export type TypeAbsensiGuruHistory =
   RouterOutputs["absenGuru"]["getHistoryByGuruId"];
+
+/** Tipe item tunggal dalam history */
 export type TypeAbsensiGuruHistoryItem = TypeAbsensiGuruHistory[number];
 
+// ==========================================
+// 2. WRITE SCHEMAS (Input untuk Mutasi)
+// ==========================================
+
+/**
+ * SCHEMA: CREATE (Mulai Sesi)
+ * Digunakan saat guru menekan tombol "Mulai Sesi" dari jadwal.
+ */
 export const serverStartSesiSchema = z.object({
-  /**
-   * ID dari JadwalKelas (rencana jadwal) yang dipilih guru.
-   */
+  /** ID dari JadwalKelas (rencana) */
   jadwalKelasId: z.string().cuid("ID Jadwal tidak valid"),
-  /**
-   * Status kehadiran guru itu sendiri (misal: "HADIR").
-   */
+  /** Status kehadiran saat memulai (default: HADIR) */
   status: z.nativeEnum(StatusAbsenGuru, {
     errorMap: () => ({ message: "Status absen guru tidak valid" }),
   }),
-  /**
-   * ID Ruang baru JIKA guru pindah ruang.
-   * Jika null/undefined, kita akan pakai ruangId dari JadwalKelas.
-   */
+  /** ID Ruang override (opsional, jika pindah ruang) */
   overrideRuangId: z.string().cuid("ID Ruang tidak valid").optional(),
 });
 
-export const singleAbsensiGuruSchema = z.object({
-  jadwalSesiId: z.string(),
-  status: z.nativeEnum(StatusAbsenGuru),
+/**
+ * SCHEMA: UPDATE (Edit Absensi Lengkap)
+ * Mengizinkan admin mengubah status, verifikasi, bahkan mengganti guru.
+ */
+export const updateAbsensiGuruSchema = z.object({
+  status: z.nativeEnum(StatusAbsenGuru, {
+    required_error: "Status harus dipilih",
+  }),
+
+  isVerified: z.coerce.boolean({
+    required_error: "Status verifikasi harus ditentukan",
+  }),
+
+  /**
+   * Opsional: Jika ingin memindahkan absensi ini ke guru lain.
+   * (Misal: Admin salah input nama guru)
+   */
+  guruId: z.string().cuid("ID Guru tidak valid").optional(),
 });
-export const serverCreateManyAbsensiGuruSchema = z
-  .array(singleAbsensiGuruSchema)
-  .min(1, "Data absensi tidak boleh kosong")
-  .max(5, "Maksimal 5 data absensi dalam satu kali input");
 
-type TypeAbsensiGuruSchema = z.infer<typeof singleAbsensiGuruSchema>;
-
-export type TypeClientAbsensiGuruSchema = Omit<TypeAbsensiGuruSchema, "guruId">;
-
-export const clientAbsensiArraySchema = z.object({
-  absensi: serverCreateManyAbsensiGuruSchema,
-});
-
-export type TypeClientAbsensiArraySchema = z.infer<
-  typeof clientAbsensiArraySchema
+export type TypeUpdateAbsensiGuruSchema = z.infer<
+  typeof updateAbsensiGuruSchema
 >;
 
-export const createSesiAbsensiGuruSchema = z.object({
-  kelasId: z.string().min(1, "Kelas wajib diisi"),
-  ruangId: z.string().min(1, "Ruang wajib diisi"),
-  tanggalWaktu: z.date({ required_error: "Tanggal wajib diisi" }),
-  status: z.nativeEnum(StatusAbsenGuru),
+/**
+ * SCHEMA: VERIFY (Verifikasi Admin)
+ * Digunakan di halaman verifikasi.
+ */
+export const verifyAbsensiSchema = z.object({
+  absensiId: z.string().cuid(),
+  isVerified: z.boolean(),
 });
-
-export const formSesiAbsensiGuruSchema = z.object({
-  absensi: z
-    .array(createSesiAbsensiGuruSchema)
-    .min(1, "Minimal satu absensi harus diisi")
-    .max(5, "Maksimal 5 absensi per input"),
-});
-
-// Tipe untuk Form (Client-side)
-export type TypeFormSesiAbsensiGuru = z.infer<typeof formSesiAbsensiGuruSchema>;
-
-export const serverCreateSesiAbsensiGuruSchema = z.array(
-  createSesiAbsensiGuruSchema,
-);
-export type TypeServerCreateSesiAbsensiGuru = z.infer<
-  typeof serverCreateSesiAbsensiGuruSchema
->;

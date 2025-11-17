@@ -11,28 +11,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { formatToWITA } from "@/utils/dateUtils";
-import type { TypeGuru } from "@/types/user.type";
+import type { TypeGuruComplete } from "@/types/user.type";
 import Link from "next/link";
 
 interface ColumnsConfig {
-  onEditClick: (item: TypeGuru) => void;
-  onDeleteClick: (id: string) => void;
+  onEditClick: (item: TypeGuruComplete) => void;
+  onDeleteClick: (id: string, namaGuru: string) => void;
+  onResetPasswordClick: (id: string, namaGuru: string) => void;
 }
 
 export const columns = ({
   onEditClick,
   onDeleteClick,
-}: ColumnsConfig): ColumnDef<TypeGuru>[] => [
+  onResetPasswordClick,
+}: ColumnsConfig): ColumnDef<TypeGuruComplete>[] => [
   // Checkbox selection
   {
     id: "select",
@@ -75,6 +67,16 @@ export const columns = ({
   },
 
   {
+    id: "guru.email",
+    accessorKey: "guru.email",
+    header: "Email Guru",
+    cell: ({ row }) => (
+      <span className="text-foreground/80">{row.original.email}</span>
+    ),
+    enableHiding: false,
+  },
+
+  {
     id: "actions",
     header: "Aksi",
     cell: ({ row }) => {
@@ -97,7 +99,17 @@ export const columns = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => onDeleteClick(row.original.id)}
+              onClick={() =>
+                onResetPasswordClick(row.original.id, row.original.name ?? "")
+              }
+            >
+              Reset Password
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() =>
+                onDeleteClick(row.original.id, row.original.name ?? "")
+              }
             >
               Delete
             </DropdownMenuItem>

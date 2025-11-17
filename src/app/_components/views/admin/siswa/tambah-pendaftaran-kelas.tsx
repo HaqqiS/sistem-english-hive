@@ -11,7 +11,7 @@ import {
   clientPendaftaranKelasSchema,
   type TypeClientPendaftaranKelasSchema,
 } from "@/types/pendaftaranKelas.type";
-import PendaftaranKelasForm from "../forms/pendaftaran-kelas-form";
+import PendaftaranKelasForm from "./pendaftaran-kelas-form";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { useMurid } from "@/hooks/useMurid";
 

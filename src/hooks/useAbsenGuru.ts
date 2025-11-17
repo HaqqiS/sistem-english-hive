@@ -16,6 +16,7 @@ interface UseGuruOptions {
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
+  onSuccessUpdateStatus?: () => void;
   onSuccessDelete?: () => void;
 
   guruId?: string;
@@ -79,6 +80,17 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     onSuccess: async () => {
       await apiUtils.absenGuru.getAllAbsensi.invalidate();
       toast.success("Absensi berhasil diupdate");
+      options?.onSuccessUpdateStatus?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal mengupdate absensi: ${error.message}`);
+    },
+  });
+
+  const updateAbsensiMutation = api.absenGuru.updateAbsenGuru.useMutation({
+    onSuccess: async () => {
+      await apiUtils.absenGuru.getAllAbsensi.invalidate();
+      toast.success("Absensi berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
     onError: (error) => {
@@ -87,16 +99,16 @@ export function useAbsenGuru(options?: UseGuruOptions) {
   });
 
   // DELETE
-  // const deleteMutation = api.cabang.deleteCabang.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.cabang.getAll.invalidate();
-  //     toast.success("Cabang berhasil dihapus");
-  //     options?.onSuccessDelete?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal menghapus cabang: ${error.message}`);
-  //   },
-  // });
+  const deleteMutation = api.absenGuru.deleteAbsenGuru.useMutation({
+    onSuccess: async () => {
+      await apiUtils.absenGuru.getAllAbsensi.invalidate();
+      toast.success("Absensi berhasil dihapus");
+      options?.onSuccessDelete?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal menghapus absensi: ${error.message}`);
+    },
+  });
 
   return {
     // Query results
@@ -123,11 +135,17 @@ export function useAbsenGuru(options?: UseGuruOptions) {
         mutateAsync: updateStatusMutation.mutateAsync,
         isPending: updateStatusMutation.isPending,
       },
-      // delete: {
-      //   mutate: deleteMutation.mutate,
-      //   mutateAsync: deleteMutation.mutateAsync,
-      //   isPending: deleteMutation.isPending,
-      // },
+
+      update: {
+        mutate: updateAbsensiMutation.mutate,
+        mutateAsync: updateAbsensiMutation.mutateAsync,
+        isPending: updateAbsensiMutation.isPending,
+      },
+      delete: {
+        mutate: deleteMutation.mutate,
+        mutateAsync: deleteMutation.mutateAsync,
+        isPending: deleteMutation.isPending,
+      },
     },
 
     // Utils untuk manual invalidation jika perlu

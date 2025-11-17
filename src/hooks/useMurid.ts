@@ -1,13 +1,14 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import type { TypeMuridNotRegistered } from "@/types/murid.type";
+import type { TypeMuridNotRegistered, TypeAllMurid } from "@/types/murid.type";
 import { toast } from "sonner";
 
 interface useMuridOptions {
   // Query options
   enableQuery?: boolean;
-  initialData?: TypeMuridNotRegistered[];
+  initialDataNotRegistered?: TypeMuridNotRegistered[];
+  initialDataAllMurid?: TypeAllMurid[];
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -35,14 +36,14 @@ export function useMurid(options?: useMuridOptions) {
     undefined,
     {
       enabled: options?.enableQuery ?? true,
-      initialData: options?.initialData,
+      initialData: options?.initialDataNotRegistered,
     },
   );
 
-  // const MuridQuery = api.murid.getAll.useQuery(undefined, {
-  //   enabled: options?.enableQuery ?? true,
-  //   initialData: options?.initialData,
-  // });
+  const MuridQuery = api.murid.getAllMurid.useQuery(undefined, {
+    enabled: options?.enableQuery ?? true,
+    initialData: options?.initialDataAllMurid,
+  });
 
   // ========== MUTATIONS ==========
 
@@ -99,6 +100,11 @@ export function useMurid(options?: useMuridOptions) {
     isLoadingMuridNotRegistered: MuridNotRegisteredQuery.isLoading,
     isErrorMuridNotRegistered: MuridNotRegisteredQuery.isError,
     errorMuridNotRegistered: MuridNotRegisteredQuery.error,
+
+    dataAllMurid: MuridQuery.data,
+    isLoadingAllMurid: MuridQuery.isLoading,
+    isErrorAllMurid: MuridQuery.isError,
+    errorAllMurid: MuridQuery.error,
 
     // Mutations
     mutations: {

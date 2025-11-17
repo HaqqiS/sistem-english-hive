@@ -1,8 +1,8 @@
 import { UserRole } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import {
-  serverCreateSesiAbsensiGuruSchema,
   serverStartSesiSchema,
+  updateAbsensiGuruSchema,
 } from "@/types/absenGuru.type";
 import dayjs from "dayjs";
 import z from "zod";
@@ -14,6 +14,9 @@ export const absenGuruRouter = createTRPCRouter({
     // ... (kode getAllAbsensi Anda yang sudah ada)
     const { db } = ctx;
     const result = await db.absensiGuru.findMany({
+      orderBy: {
+        updatedAt: "desc",
+      },
       select: {
         id: true,
         guruId: true,
@@ -202,5 +205,77 @@ export const absenGuruRouter = createTRPCRouter({
       });
 
       return history;
+    }),
+
+  updateAbsenGuru: protectedProcedure
+    .input(
+      updateAbsensiGuruSchema.extend({
+        absensiId: z.string().cuid("ID absensi tidak valid"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const { status, isVerified, guruId, absensiId } = input;
+
+      if (isVerified && (session.user.role as UserRole) !== UserRole.ADMIN) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Hanya admin yang dapat memverifikasi absensi.",
+        });
+      }
+
+      // 2. Ambil data lama untuk pengecekan
+      const oldAbsensi = await db.absensiGuru.findUnique({
+        where: { id: absensiId },
+        select: { guruId: true, sesiPertemuanKelasId: true },
+      });
+
+      if (!oldAbsensi)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Data tidak ditemukan",
+        });
+
+      // 3. --- PERBAIKAN: Cek Duplikat jika Guru Diganti ---
+      if (guruId && guruId !== oldAbsensi.guruId) {
+        const exists = await db.absensiGuru.findUnique({
+          where: {
+            guruId_sesiPertemuanKelasId: {
+              guruId: guruId,
+              sesiPertemuanKelasId: oldAbsensi.sesiPertemuanKelasId,
+            },
+          },
+        });
+
+        if (exists) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Guru yang dipilih sudah memiliki absensi di sesi ini.",
+          });
+        }
+      }
+
+      const updatedAbsensi = await db.absensiGuru.update({
+        where: { id: input.absensiId },
+        data: {
+          status: status,
+          isVerified: isVerified,
+          guruId: guruId,
+          verifiedById: isVerified ? session.user.id : null,
+        },
+      });
+
+      return updatedAbsensi;
+    }),
+
+  deleteAbsenGuru: protectedProcedure
+    .input(z.object({ id: z.string().cuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { id } = input;
+
+      await db.absensiGuru.delete({
+        where: { id },
+      });
     }),
 });

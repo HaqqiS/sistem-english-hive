@@ -20,10 +20,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
 import { useKelas } from "@/hooks/useKelas";
@@ -182,12 +179,12 @@ export default function JadwalKelasForm({ onSubmit }: JadwalKelasFormProps) {
       <FormItem>
         <FormLabel>Pilih Jam</FormLabel>
         {!selectedRuangId ? (
-          <AlertDialog>
+          <Alert variant="destructive">
             <Info className="h-4 w-4" />
-            <AlertDialogDescription>
+            <AlertDescription>
               Pilih Ruang terlebih dahulu untuk melihat slot jam.
-            </AlertDialogDescription>
-          </AlertDialog>
+            </AlertDescription>
+          </Alert>
         ) : isLoadingJamSlot ? (
           <Skeleton className="h-20 w-full" />
         ) : (

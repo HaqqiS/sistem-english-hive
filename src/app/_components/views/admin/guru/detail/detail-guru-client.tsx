@@ -21,11 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  AlertDialog,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toRupiah } from "@/utils/toRupiah";
 import dayjs from "@/utils/dateUtils";
@@ -89,11 +85,11 @@ export default function DetailGuruClient() {
   // Tampilan Error
   if (isErrorHistory) {
     return (
-      <AlertDialog>
+      <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertDialogTitle>Gagal Memuat Data</AlertDialogTitle>
-        <AlertDialogDescription>{errorHistory?.message}</AlertDialogDescription>
-      </AlertDialog>
+        <AlertTitle>Gagal Memuat Data</AlertTitle>
+        <AlertDescription>{errorHistory?.message}</AlertDescription>
+      </Alert>
     );
   }
 

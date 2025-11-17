@@ -7,7 +7,7 @@ import { columns as columnsMurid } from "../siswa/columns-murid-not-registered";
 import type { TypeKelas } from "@/types/kelas.type";
 import TambahProgramKelas from "./drawers/tambah-kelas";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TambahPendaftaranKelas from "./drawers/tambah-pendaftaran-kelas";
+import TambahPendaftaranKelas from "../siswa/tambah-pendaftaran-kelas";
 import { useKelas } from "@/hooks/useKelas";
 import { useState } from "react";
 import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
@@ -45,7 +45,7 @@ export default function KelasClient({
     },
   });
   const { dataMuridNotRegistered } = useMurid({
-    initialData: initialDataMuridNotRegistered,
+    initialDataNotRegistered: initialDataMuridNotRegistered,
   });
 
   const handleEditClickKelas = (item: TypeKelas) => {

@@ -5,13 +5,8 @@ import { DataTable } from "@/app/_components/shared/data-table-generic"; //
 import { createDetailAbsenMuridColumns } from "./columns-detail-absen";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatToWITA } from "@/utils/dateUtils";
-import {
-  AlertDialog,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAbsenMurid } from "@/hooks/useAbsenMurid";
 import { useMemo } from "react";
@@ -52,13 +47,13 @@ export default function DetailAbsenMuridClient() {
   // 4. Tampilkan error state
   if (isError) {
     return (
-      <AlertDialog>
+      <Alert variant="destructive">
         <Terminal className="h-4 w-4" />
-        <AlertDialogTitle>Error</AlertDialogTitle>
-        <AlertDialogDescription>
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
           Gagal memuat data absensi: {error?.message}
-        </AlertDialogDescription>
-      </AlertDialog>
+        </AlertDescription>
+      </Alert>
     );
   }
 

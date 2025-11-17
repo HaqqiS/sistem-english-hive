@@ -15,7 +15,7 @@ export default async function DetailGuruPage({
 
   // Prefetch data guru dan history bulan ini di server
   await Promise.all([
-    api.user.getAllGuru.prefetch(),
+    api.user.getAllGuruSimple.prefetch(),
     api.absenGuru.getHistoryByGuruId.prefetch({
       guruId: guruId,
       month: currentMonth,

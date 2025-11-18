@@ -3,7 +3,6 @@
 import * as React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,18 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, EllipsisVertical } from "lucide-react";
+import { EllipsisVertical } from "lucide-react";
 import { formatDateWITA } from "@/utils/dateUtils";
 import type { TypeHistoryGuruKelasByKelasId } from "@/types/historyGuruKelas.type";
 
-// export const columns: ColumnDef<z.infer<typeof schema>>[] = [
-// export const columns: ColumnDef<PemasukanType>[] = [
 export const columns = ({
   onEditClick,
   onDeleteClick,
 }: {
   onEditClick: (item: TypeHistoryGuruKelasByKelasId) => void;
-  onDeleteClick: (id: string) => void;
+  onDeleteClick: (id: string, namaGuru: string) => void;
 }): ColumnDef<TypeHistoryGuruKelasByKelasId>[] => [
   {
     id: "number",
@@ -124,7 +121,9 @@ export const columns = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => onDeleteClick(row.original.id)}
+              onClick={() =>
+                onDeleteClick(row.original.id, row.original.guru.name ?? "")
+              }
             >
               Delete
             </DropdownMenuItem>

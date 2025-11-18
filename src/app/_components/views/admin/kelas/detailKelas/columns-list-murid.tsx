@@ -25,7 +25,7 @@ export const columns = ({
   onDeleteClick,
 }: {
   onEditClick: (item: DaftarMuridType) => void;
-  onDeleteClick: (pemasukanId: string, pemasukanName: string) => void;
+  onDeleteClick: (id: string, namaLengkap: string) => void;
 }): ColumnDef<DaftarMuridType>[] => [
   {
     id: "number",

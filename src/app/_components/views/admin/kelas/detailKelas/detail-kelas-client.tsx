@@ -10,48 +10,105 @@ import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 import TambahGuruKelas from "./tambah-guru";
 import EditGuruKelas from "../drawers/edit-guru-kelas";
-import { useGuruKelasStore } from "@/store/useKelasStore";
-import { useMemo } from "react";
+import {
+  useGuruKelasStore,
+  usePendaftaranKelasStore,
+} from "@/store/useKelasStore";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit } from "lucide-react";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import EditMuridDetailKelas from "./edit-murid";
 
 export default function DetailKelasClient() {
-  const { kelasId } = useParams<{ kelasId: string }>();
-  const { dataById } = useKelas({ kelasId });
+  // STATE
+  const [
+    deletePendaftaranKelasDialogOpen,
+    setDeletePendaftaranKelasDialogOpen,
+  ] = useState(false);
+  const [
+    selectedPendaftaranKelasToDelete,
+    setSelectedPendaftaranKelasToDelete,
+  ] = useState<{ id: string; namaMurid: string } | null>(null);
+
+  const [
+    deleteHistoryGuruKelasDialogOpen,
+    setDeleteHistoryGuruKelasDialogOpen,
+  ] = useState(false);
+  const [
+    selectedHistoryGuruKelasToDelete,
+    setSelectedHistoryGuruKelasToDelete,
+  ] = useState<{ id: string; namaGuru: string } | null>(null);
 
   const { openDrawer: openGuruDrawer } = useGuruKelasStore();
+  const { openDrawer: openPendaftaranDrawer } = usePendaftaranKelasStore();
 
-  const { dataByKelasId } = usePendaftaranKelas({
-    enableQuery: !!kelasId,
-    kelasId,
-  });
+  const { kelasId } = useParams<{ kelasId: string }>();
 
-  const { dataById: dataGuruByKelasId, isLoadingById: loadingGuru } =
-    UseHistoryGuruKelas({
-      kelasId,
+  //HOOKS/QUERIES&MUTATIONS
+  const { dataById } = useKelas({ kelasId });
+
+  const { dataByKelasId, mutations: pendaftaranKelasMutations } =
+    usePendaftaranKelas({
       enableQuery: !!kelasId,
+      kelasId,
+      onSuccessDelete() {
+        setDeletePendaftaranKelasDialogOpen(false);
+        setSelectedPendaftaranKelasToDelete(null);
+      },
     });
+
+  const {
+    dataById: dataGuruByKelasId,
+    isLoadingById: loadingGuru,
+    mutations: historyGuruKelasMutations,
+  } = UseHistoryGuruKelas({
+    kelasId,
+    enableQuery: !!kelasId,
+    onSuccessDelete() {
+      setDeleteHistoryGuruKelasDialogOpen(false);
+      setSelectedHistoryGuruKelasToDelete(null);
+    },
+  });
 
   const activeGuruHistory = useMemo(
     () => dataGuruByKelasId?.find((h) => h.statusGuru === "ACTIVE"),
     [dataGuruByKelasId],
   );
 
+  // HANDLERS
   const handleOpenEditDrawer = () => {
     if (activeGuruHistory) {
       openGuruDrawer("edit", activeGuruHistory);
     }
   };
 
+  const handleConfirmDeletePendaftaranKelas = () => {
+    if (!selectedPendaftaranKelasToDelete) return;
+    pendaftaranKelasMutations.delete.mutate({
+      id: selectedPendaftaranKelasToDelete.id,
+    });
+  };
+
+  const handleConfirmDeleteGuruKelas = () => {
+    if (!selectedHistoryGuruKelasToDelete) return;
+    historyGuruKelasMutations.delete.mutate({
+      id: selectedHistoryGuruKelasToDelete.id,
+      kelasId: kelasId,
+    });
+  };
+
+  // COLUMNS
   const columnsMurid = murid({
     onEditClick: (item) => {
       console.log("Edit clicked for:", item);
+      openPendaftaranDrawer("edit", item);
     },
-    onDeleteClick: (pendaftaranId, namaLengkap) => {
-      console.log(
-        `Delete clicked for ID: ${pendaftaranId}, Name: ${namaLengkap}`,
-      );
+    onDeleteClick: (id, namaLengkap) => {
+      // console.log(`Delete clicked for ID: ${id}, Name: ${namaLengkap}`);
+      setSelectedPendaftaranKelasToDelete({ id, namaMurid: namaLengkap });
+      setDeletePendaftaranKelasDialogOpen(true);
     },
   });
 
@@ -59,8 +116,10 @@ export default function DetailKelasClient() {
     onEditClick: (item) => {
       openGuruDrawer("edit", item);
     },
-    onDeleteClick: (id) => {
-      console.log(`Delete clicked for ID: ${id}, Name: `);
+    onDeleteClick: (id, namaGuru) => {
+      // console.log(`Delete clicked for ID: ${id}, Name: ${namaGuru}`);
+      setSelectedHistoryGuruKelasToDelete({ id, namaGuru });
+      setDeleteHistoryGuruKelasDialogOpen(true);
     },
   });
 
@@ -78,6 +137,26 @@ export default function DetailKelasClient() {
           </div>
         </header>
         <TambahMuridDetailKelas kelasId={kelasId} />
+        <EditMuridDetailKelas />
+
+        <DeleteConfirmationDialog
+          isOpen={deletePendaftaranKelasDialogOpen}
+          onOpenChange={setDeletePendaftaranKelasDialogOpen}
+          title="Hapus Murid dari Kelas"
+          description={
+            <>
+              Yakin ingin menghapus murid{" "}
+              <span className="text-accent font-bold">
+                {selectedPendaftaranKelasToDelete?.namaMurid}
+              </span>{" "}
+              dari kelas ? Tindakan ini tidak dapat dibatalkan.
+            </>
+          }
+          onConfirm={handleConfirmDeletePendaftaranKelas}
+          isLoading={pendaftaranKelasMutations.delete.isPending}
+          confirmText="Hapus"
+          cancelText="Batal"
+        />
       </div>
 
       <DataTable data={dataByKelasId ?? []} columns={columnsMurid} />
@@ -108,6 +187,24 @@ export default function DetailKelasClient() {
           // Jika TIDAK ADA guru aktif, tampilkan komponen Tambah
           <TambahGuruKelas kelasId={kelasId} />
         )}
+        <DeleteConfirmationDialog
+          isOpen={deleteHistoryGuruKelasDialogOpen}
+          onOpenChange={setDeleteHistoryGuruKelasDialogOpen}
+          title="Hapus History Guru Kelas"
+          description={
+            <>
+              Yakin ingin menghapus History Guru{" "}
+              <span className="text-accent font-bold">
+                {selectedHistoryGuruKelasToDelete?.namaGuru}
+              </span>{" "}
+              dari kelas ? Tindakan ini tidak dapat dibatalkan.
+            </>
+          }
+          onConfirm={handleConfirmDeleteGuruKelas}
+          isLoading={historyGuruKelasMutations.delete.isPending}
+          confirmText="Hapus"
+          cancelText="Batal"
+        />
       </div>
 
       <DataTable data={dataGuruByKelasId ?? []} columns={columnsGuru} />

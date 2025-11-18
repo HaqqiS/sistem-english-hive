@@ -99,4 +99,19 @@ export const historyGuruKelasRouter = createTRPCRouter({
         return newRecord;
       }
     }),
+
+  deleteHistoryGuruKelas: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().cuid("Id Tidak Valid"),
+        kelasId: z.string().min(1, "Kelas ID harus diisi"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const deleted = await db.historyGuruKelas.delete({
+        where: { id: input.id },
+      });
+      return deleted;
+    }),
 });

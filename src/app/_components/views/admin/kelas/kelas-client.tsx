@@ -106,6 +106,7 @@ export default function KelasClient({
       <TabsList>
         <TabsTrigger value="kelas">Kelola Kelas</TabsTrigger>
         <TabsTrigger value="rangkumanSesi">Rangkuman Sesi</TabsTrigger>
+        <TabsTrigger value="penjadwalanKelas">Penjadwalan Kelas</TabsTrigger>
       </TabsList>
       <TabsContent value="kelas">
         <div>
@@ -119,8 +120,6 @@ export default function KelasClient({
               </div>
             </header>
             <TambahProgramKelas />
-
-            <TambahJadwalKelas />
 
             <DeleteConfirmationDialog
               isOpen={deleteKelasDialogOpen}
@@ -152,6 +151,22 @@ export default function KelasClient({
 
       <TabsContent value="rangkumanSesi">
         <RangkumanSesiTab />
+      </TabsContent>
+      <TabsContent value="penjadwalanKelas">
+        <div>
+          <div className="flex items-center justify-between space-x-2 pt-4">
+            <header className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl">Daftar jadwal Kelas</h1>
+                <p className="text-muted-foreground text-sm">
+                  halaman ini mengatur data jadwal kelas.
+                </p>
+              </div>
+            </header>
+
+            <TambahJadwalKelas />
+          </div>
+        </div>
       </TabsContent>
     </Tabs>
   );

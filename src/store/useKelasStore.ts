@@ -36,10 +36,10 @@ interface GuruKelasStore {
 interface PendaftaranKelasStore {
   // Drawer management
   activeDrawer: DrawerType;
-  selectedRuang: PendaftaranKelasType | null;
+  selectedPendaftaran: PendaftaranKelasType | null;
 
   // Action methods
-  openDrawer: (drawer: DrawerType, ruang?: PendaftaranKelasType) => void;
+  openDrawer: (drawer: DrawerType, pendaftaran?: PendaftaranKelasType) => void;
   closeDrawer: () => void;
 
   // Helpers
@@ -85,17 +85,17 @@ export const useGuruKelasStore = create<GuruKelasStore>((set, get) => ({
 export const usePendaftaranKelasStore = create<PendaftaranKelasStore>(
   (set, get) => ({
     activeDrawer: "none",
-    selectedRuang: null,
+    selectedPendaftaran: null,
 
-    openDrawer: (drawer, ruang) =>
+    openDrawer: (drawer, pendaftaran) =>
       set({
         activeDrawer: drawer,
-        selectedRuang: ruang ?? null,
+        selectedPendaftaran: pendaftaran ?? null,
       }),
     closeDrawer: () => set({ activeDrawer: "none" }),
 
     isDrawerOpen: (drawer) => get().activeDrawer === drawer,
 
-    clearSelected: () => set({ selectedRuang: null }),
+    clearSelected: () => set({ selectedPendaftaran: null }),
   }),
 );

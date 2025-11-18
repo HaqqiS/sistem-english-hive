@@ -9,7 +9,6 @@ import { clientPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import type z from "zod";
-import { api } from "@/trpc/react";
 import { useMurid } from "@/hooks/useMurid";
 
 const clientTambahMuridSchema = clientPendaftaranKelasSchema.omit({

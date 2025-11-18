@@ -57,8 +57,8 @@ export default function EditGuru() {
     <EditDrawer
       isOpen={isOpen}
       onOpenChange={(open) => !open && closeDrawer()}
-      title="Edit Ruang"
-      description="Ubah informasi ruang yang sudah ada"
+      title="Edit Guru"
+      description="Ubah informasi guru yang sudah ada"
       onSubmit={editGuruForm.handleSubmit(handleSubmitEdit)}
       isPending={mutations.update.isPending}
       submitText="Simpan Perubahan"

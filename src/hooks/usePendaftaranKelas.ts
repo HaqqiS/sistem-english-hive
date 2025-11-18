@@ -66,28 +66,34 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
     });
 
   // UPDATE
-  // const updateMutation = api.cabang.updateCabang.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.cabang.getAll.invalidate();
-  //     toast.success("Cabang berhasil diupdate");
-  //     options?.onSuccessUpdate?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal mengupdate cabang: ${error.message}`);
-  //   },
-  // });
+  const updateMutation =
+    api.pendaftaranKelas.updatePendaftaranKelas.useMutation({
+      onSuccess: async () => {
+        await apiUtils.pendaftaranKelas.getAll.invalidate();
+        await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
+        await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+        toast.success("Pendaftaran Kelas berhasil diupdate");
+        options?.onSuccessUpdate?.();
+      },
+      onError: (error) => {
+        toast.error(`Gagal mengupdate Pendaftaran Kelas: ${error.message}`);
+      },
+    });
 
   // DELETE
-  // const deleteMutation = api.cabang.deleteCabang.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.cabang.getAll.invalidate();
-  //     toast.success("Cabang berhasil dihapus");
-  //     options?.onSuccessDelete?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal menghapus cabang: ${error.message}`);
-  //   },
-  // });
+  const deleteMutation =
+    api.pendaftaranKelas.deletePendaftaranKelas.useMutation({
+      onSuccess: async () => {
+        await apiUtils.pendaftaranKelas.getAll.invalidate();
+        await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
+        await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+        toast.success("Murid berhasil dihapus dari Kelas");
+        options?.onSuccessDelete?.();
+      },
+      onError: (error) => {
+        toast.error(`Gagal menghapus Murid dari Kelas: ${error.message}`);
+      },
+    });
 
   return {
     // Query results
@@ -108,16 +114,16 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
         mutateAsync: createMutation.mutateAsync,
         isPending: createMutation.isPending,
       },
-      // update: {
-      //   mutate: updateMutation.mutate,
-      //   mutateAsync: updateMutation.mutateAsync,
-      //   isPending: updateMutation.isPending,
-      // },
-      // delete: {
-      //   mutate: deleteMutation.mutate,
-      //   mutateAsync: deleteMutation.mutateAsync,
-      //   isPending: deleteMutation.isPending,
-      // },
+      update: {
+        mutate: updateMutation.mutate,
+        mutateAsync: updateMutation.mutateAsync,
+        isPending: updateMutation.isPending,
+      },
+      delete: {
+        mutate: deleteMutation.mutate,
+        mutateAsync: deleteMutation.mutateAsync,
+        isPending: deleteMutation.isPending,
+      },
     },
 
     // Utils untuk manual invalidation jika perlu

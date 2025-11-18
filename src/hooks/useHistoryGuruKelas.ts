@@ -76,16 +76,20 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
     });
 
   // DELETE
-  // const deleteMutation = api.cabang.deleteCabang.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.cabang.getAll.invalidate();
-  //     toast.success("Cabang berhasil dihapus");
-  //     options?.onSuccessDelete?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal menghapus cabang: ${error.message}`);
-  //   },
-  // });
+  const deleteMutation =
+    api.historyGuruKelas.deleteHistoryGuruKelas.useMutation({
+      onSuccess: async (data, variables) => {
+        await apiUtils.historyGuruKelas.getAll.invalidate();
+        await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
+          kelasId: variables.kelasId,
+        });
+        toast.success("History Guru Kelas berhasil dihapus");
+        options?.onSuccessDelete?.();
+      },
+      onError: (error) => {
+        toast.error(`Gagal menghapus History Guru Kelas: ${error.message}`);
+      },
+    });
 
   return {
     // data: kelasQuery.data,
@@ -110,11 +114,11 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
         mutateAsync: updateMutation.mutateAsync,
         isPending: updateMutation.isPending,
       },
-      // delete: {
-      //   mutate: deleteMutation.mutate,
-      //   mutateAsync: deleteMutation.mutateAsync,
-      //   isPending: deleteMutation.isPending,
-      // },
+      delete: {
+        mutate: deleteMutation.mutate,
+        mutateAsync: deleteMutation.mutateAsync,
+        isPending: deleteMutation.isPending,
+      },
     },
 
     // Utils untuk manual invalidation jika perlu

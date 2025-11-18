@@ -15,9 +15,16 @@ const basePendaftaranKelasSchema = z.object({
 export const clientPendaftaranKelasSchema = basePendaftaranKelasSchema.omit({
   isAktif: true,
 });
-
 export type TypeClientPendaftaranKelasSchema = z.infer<
   typeof clientPendaftaranKelasSchema
+>;
+
+export const clientUpdatePendaftaranKelasSchema =
+  basePendaftaranKelasSchema.extend({
+    isAktif: z.boolean(),
+  });
+export type TypeClientUpdatePendaftaranKelasSchema = z.infer<
+  typeof clientUpdatePendaftaranKelasSchema
 >;
 
 export const serverPendaftaranKelasSchema = basePendaftaranKelasSchema
@@ -26,4 +33,9 @@ export const serverPendaftaranKelasSchema = basePendaftaranKelasSchema
     tanggalMulai: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal tidak valid"),
+  });
+
+export const serverUpdatePendaftaranKelasSchema =
+  basePendaftaranKelasSchema.extend({
+    id: z.string().cuid(),
   });

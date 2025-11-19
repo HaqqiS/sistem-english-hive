@@ -33,3 +33,19 @@ export const clientKelasSchema = baseKelasSchema.extend({});
 export type TypeClientKelasSchema = z.infer<typeof clientKelasSchema>;
 
 export const serverKelasSchema = baseKelasSchema;
+
+export const upLevelKelasSchema = z.object({
+  oldKelasId: z.string().cuid(),
+  newLevel: z.coerce.number().min(1, "Level baru harus diisi"),
+  newBulanTahunAjar: z
+    .string()
+    .min(7, "Bulan/Tahun Ajar baru harus diisi (MM/YYYY)")
+    .max(7),
+  newKodeKelas: z.string().min(1, "Kode Kelas baru harus diisi"),
+  // Tanggal mulai ini penting untuk mencatat kapan pendaftaran & tagihan baru dimulai
+  newTanggalMulai: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),
+});
+
+export type TypeUpLevelKelasSchema = z.infer<typeof upLevelKelasSchema>;

@@ -1,0 +1,1 @@
+export const JUMLAH_PERTEMUAN_PER_BLOK = 8;

@@ -98,4 +98,34 @@ export const muridRouter = createTRPCRouter({
       });
       return updatedMurid;
     }),
+
+  updateMurid: protectedProcedure
+    .input(
+      RegisterMuridSchema.extend({
+        id: z.string().cuid(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { db } = ctx;
+      const { id, ...data } = input;
+      const updatedMurid = await db.murid.update({
+        where: { id },
+        data,
+      });
+      return updatedMurid;
+    }),
+
+  deleteMurid: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().cuid(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { db } = ctx;
+      const deletedMurid = await db.murid.delete({
+        where: { id: input.id },
+      });
+      return deletedMurid;
+    }),
 });

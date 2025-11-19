@@ -3,11 +3,10 @@
 // import { DataTable } from "@/app/_components/shared/data-table";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as kelas } from "./columns/columns-kelas";
-import { columns as columnsMurid } from "../siswa/columns-murid-not-registered";
+import { columns as columnsMurid } from "../murid/columns/columns-murid-not-registered";
 import type { TypeKelas } from "@/types/kelas.type";
 import TambahProgramKelas from "./drawers/tambah-kelas";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TambahPendaftaranKelas from "../siswa/tambah-pendaftaran-kelas";
 import { useKelas } from "@/hooks/useKelas";
 import { useState } from "react";
 import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
@@ -20,6 +19,7 @@ import { useMurid } from "@/hooks/useMurid";
 import { toast } from "sonner";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
 import RangkumanSesiTab from "./tabs/rangkuman-sesi-tab";
+import UpLevelKelas from "./drawers/up-level-kelas";
 
 interface ProgramKelasClientProps {
   initialDataKelas: TypeKelas[];
@@ -86,18 +86,13 @@ export default function KelasClient({
         });
       }
     },
+    onUpLevelClick: (item) => {
+      // console.log("up level: ", item);
+      openKelasDrawer("upLevel", item);
+    },
     onDeleteClick: (kelasId, kodeKelas) => {
       console.log("deleted: ", kelasId, kodeKelas);
       handleDeleteClickKelas(kelasId, kodeKelas);
-    },
-  });
-
-  const columnsPendaftaran = columnsMurid({
-    onEditClick: (item) => {
-      console.log("clicked");
-    },
-    onDeleteClick: (pendaftaranId) => {
-      console.log("deleted");
     },
   });
 
@@ -142,8 +137,8 @@ export default function KelasClient({
           </div>
 
           <EditKelas />
-
           <EditGuruKelas />
+          <UpLevelKelas />
 
           <DataTable columns={columnsKelas} data={dataKelas ?? []} />
         </div>

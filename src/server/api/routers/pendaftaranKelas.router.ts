@@ -7,8 +7,7 @@ import dayjs from "dayjs";
 import { TRPCError } from "@trpc/server";
 import { StatusPembayaran } from "@prisma/client";
 import z from "zod";
-
-const JUMLAH_PERTEMUAN_PER_BLOK = 8;
+import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 
 export const pendaftaranKelasRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {

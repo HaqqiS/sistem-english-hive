@@ -18,6 +18,7 @@ interface UseKelasOptions {
   onSuccessCreate?: (newKelas: TypeCreateKelas) => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
+  onSuccessUpLevel?: () => void;
 
   // ID untuk query by ID
   kelasId?: string;
@@ -95,6 +96,22 @@ export function useKelas(options?: UseKelasOptions) {
     },
   });
 
+  // UP LEVEL KELAS
+  const upLevelMutation = api.kelas.upLevelKelas.useMutation({
+    onSuccess: async () => {
+      // Invalidate relevant queries
+      await apiUtils.kelas.getAll.invalidate(); // Update list kelas
+      await apiUtils.pendaftaranKelas.getAll.invalidate(); // Update status siswa di kelas lama
+      // await apiUtils.pembayaran.getAll.invalidate(); // Update data pembayaran (jika ada list pembayaran global)
+
+      toast.success("Kelas berhasil di-uplevel");
+      options?.onSuccessUpLevel?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal menguplevel Kelas: ${error.message}`);
+    },
+  });
+
   return {
     data: kelasQuery.data,
     isLoading: kelasQuery.isLoading,
@@ -127,6 +144,11 @@ export function useKelas(options?: UseKelasOptions) {
         mutate: deleteMutation.mutate,
         mutateAsync: deleteMutation.mutateAsync,
         isPending: deleteMutation.isPending,
+      },
+      upLevel: {
+        mutate: upLevelMutation.mutate,
+        mutateAsync: upLevelMutation.mutateAsync,
+        isPending: upLevelMutation.isPending,
       },
     },
 

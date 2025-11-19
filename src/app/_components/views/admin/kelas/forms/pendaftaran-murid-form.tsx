@@ -17,11 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { TypeClientPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
+import type { TypeClientTambahMuridSchema } from "@/types/pendaftaranKelas.type";
 import { useFormContext } from "react-hook-form";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
-import { Input } from "@/components/ui/input";
-import type { TypeClientTambahMuridSchema } from "./tambah-murid";
 
 interface PendaftaranMuridFormProps {
   onSubmit: (data: TypeClientTambahMuridSchema) => void;

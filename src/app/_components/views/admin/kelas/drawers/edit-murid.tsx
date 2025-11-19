@@ -10,7 +10,7 @@ import {
   type TypeClientUpdatePendaftaranKelasSchema,
 } from "@/types/pendaftaranKelas.type";
 import { usePendaftaranKelasStore } from "@/store/useKelasStore";
-import EditPendaftaranKelasForm from "./edit-pendaftaran-kelas-form";
+import EditPendaftaranKelasForm from "../forms/edit-pendaftaran-kelas-form";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 
 export default function EditMuridDetailKelas() {

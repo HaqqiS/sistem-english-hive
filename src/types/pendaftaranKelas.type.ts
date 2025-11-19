@@ -19,6 +19,14 @@ export type TypeClientPendaftaranKelasSchema = z.infer<
   typeof clientPendaftaranKelasSchema
 >;
 
+export const clientTambahMuridSchema = clientPendaftaranKelasSchema.omit({
+  kelasId: true,
+});
+
+export type TypeClientTambahMuridSchema = z.infer<
+  typeof clientTambahMuridSchema
+>;
+
 export const clientUpdatePendaftaranKelasSchema =
   basePendaftaranKelasSchema.extend({
     isAktif: z.boolean(),

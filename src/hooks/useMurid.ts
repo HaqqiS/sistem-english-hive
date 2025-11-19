@@ -50,7 +50,8 @@ export function useMurid(options?: useMuridOptions) {
   // CREATE
   const createMutation = api.murid.registerMurid.useMutation({
     onSuccess: async () => {
-      await apiUtils.ruang.getRuangByCabangId.invalidate();
+      await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+      await apiUtils.murid.getAllMurid.invalidate();
       toast.success("Murid berhasil didaftarkan");
       options?.onSuccessCreate?.();
     },
@@ -71,28 +72,29 @@ export function useMurid(options?: useMuridOptions) {
       toast.error(`Gagal mengupdate Status Murid: ${error.message}`);
     },
   });
-  // const updateMutation = api.ruang.updateRuang.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.ruang.getAll.invalidate();
-  //     toast.success("Ruang berhasil diupdate");
-  //     options?.onSuccessUpdate?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal mengupdate Ruang: ${error.message}`);
-  //   },
-  // });
+  const updateMutation = api.murid.updateMurid.useMutation({
+    onSuccess: async () => {
+      await apiUtils.murid.getAllMurid.invalidate();
+      toast.success("Murid berhasil diupdate");
+      options?.onSuccessUpdate?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal mengupdate Murid: ${error.message}`);
+    },
+  });
 
   // DELETE
-  // const deleteMutation = api.ruang.deleteRuang.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.ruang.getAll.invalidate();
-  //     toast.success("Ruang berhasil dihapus");
-  //     options?.onSuccessDelete?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal menghapus Ruang: ${error.message}`);
-  //   },
-  // });
+  const deleteMutation = api.murid.deleteMurid.useMutation({
+    onSuccess: async () => {
+      await apiUtils.murid.getAllMurid.invalidate();
+      await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+      toast.success("Murid berhasil dihapus");
+      options?.onSuccessDelete?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal menghapus Murid: ${error.message}`);
+    },
+  });
 
   return {
     // Query results
@@ -113,16 +115,21 @@ export function useMurid(options?: useMuridOptions) {
         mutateAsync: createMutation.mutateAsync,
         isPending: createMutation.isPending,
       },
-      update: {
+      updateStatus: {
         mutate: updateStatusMuridMutation.mutate,
         mutateAsync: updateStatusMuridMutation.mutateAsync,
         isPending: updateStatusMuridMutation.isPending,
       },
-      // delete: {
-      //   mutate: deleteMutation.mutate,
-      //   mutateAsync: deleteMutation.mutateAsync,
-      //   isPending: deleteMutation.isPending,
-      // },
+      update: {
+        mutate: updateMutation.mutate,
+        mutateAsync: updateMutation.mutateAsync,
+        isPending: updateMutation.isPending,
+      },
+      delete: {
+        mutate: deleteMutation.mutate,
+        mutateAsync: deleteMutation.mutateAsync,
+        isPending: deleteMutation.isPending,
+      },
     },
 
     // Utils untuk manual invalidation jika perlu

@@ -11,7 +11,7 @@ import {
   clientPendaftaranKelasSchema,
   type TypeClientPendaftaranKelasSchema,
 } from "@/types/pendaftaranKelas.type";
-import PendaftaranKelasForm from "./pendaftaran-kelas-form";
+import PendaftaranKelasForm from "../form/pendaftaran-kelas-form";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { useMurid } from "@/hooks/useMurid";
 
@@ -35,7 +35,7 @@ export default function TambahPendaftaranKelas() {
   const onSubmit = (values: TypeClientPendaftaranKelasSchema) => {
     // console.log("values:", values);
     mutations.create.mutate(values);
-    muridMutations.update.mutate({
+    muridMutations.updateStatus.mutate({
       id: values.muridId,
       statusMurid: "AKTIF",
     });

@@ -3,7 +3,7 @@ import type { TypeKelas } from "@/types/kelas.type";
 import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
 import { create } from "zustand";
 
-type DrawerType = "none" | "edit" | "tambah";
+type DrawerType = "none" | "edit" | "tambah" | "upLevel";
 
 interface KelasStore {
   // Drawer management

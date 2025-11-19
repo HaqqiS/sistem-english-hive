@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, EllipsisVertical } from "lucide-react";
+import { Edit2, EllipsisVertical, Trash, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,12 +18,14 @@ interface ColumnsConfig {
   onEditKelasClick: (item: TypeKelas) => void;
   onEditGuruKelasClick: (item: TypeKelas) => void;
   onDeleteClick: (programKelasId: string, programKelasName: string) => void;
+  onUpLevelClick: (item: TypeKelas) => void;
 }
 
 export const columns = ({
   onEditKelasClick,
   onEditGuruKelasClick,
   onDeleteClick,
+  onUpLevelClick,
 }: ColumnsConfig): ColumnDef<TypeKelas>[] => [
   // Checkbox selection
   {
@@ -138,7 +140,7 @@ export const columns = ({
 
   {
     accessorKey: "hargaKelas",
-    header: "Harga Kelas",
+    header: "Harga Kelas Per Sesi",
     cell: ({ row }) => (
       <div
         className="max-w-[300px] truncate"
@@ -180,12 +182,19 @@ export const columns = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32">
             <DropdownMenuItem onClick={() => onEditKelasClick(row.original)}>
+              <Edit2 className="mr-2 h-4 w-4" />
               Edit Kelas
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onEditGuruKelasClick(row.original)}
             >
+              <Edit2 className="mr-2 h-4 w-4" />
               Edit Guru Kelas
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onUpLevelClick(row.original)}>
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Naik Kelas (Up Level)
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -194,6 +203,7 @@ export const columns = ({
                 onDeleteClick(row.original.id, row.original.kodeKelas)
               }
             >
+              <Trash className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -16,7 +16,7 @@ import type { TypeAllMurid } from "@/types/murid.type";
 
 interface ColumnsConfig {
   onEditClick: (item: TypeAllMurid) => void;
-  onDeleteClick: (pendaftaranId: string) => void;
+  onDeleteClick: (id: string, namaLengkap: string) => void;
 }
 
 export const columns = ({
@@ -172,7 +172,9 @@ export const columns = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              onClick={() => onDeleteClick(row.original.id)}
+              onClick={() =>
+                onDeleteClick(row.original.id, row.original.namaLengkap)
+              }
             >
               Delete
             </DropdownMenuItem>

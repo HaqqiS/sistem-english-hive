@@ -3,12 +3,12 @@
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { useKelas } from "@/hooks/useKelas";
 import { useParams } from "next/navigation";
-import { columns as murid } from "./columns-list-murid";
-import { columns as guru } from "./columns-list-guru";
-import TambahMuridDetailKelas from "./tambah-murid";
+import { columns as murid } from "../columns/columns-list-murid";
+import { columns as guru } from "../columns/columns-list-guru";
+import TambahMuridDetailKelas from "../drawers/tambah-murid";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
-import TambahGuruKelas from "./tambah-guru";
+import TambahGuruKelas from "../drawers/tambah-guru-kelas";
 import EditGuruKelas from "../drawers/edit-guru-kelas";
 import {
   useGuruKelasStore,
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import EditMuridDetailKelas from "./edit-murid";
+import EditMuridDetailKelas from "../drawers/edit-murid";
 
 export default function DetailKelasClient() {
   // STATE

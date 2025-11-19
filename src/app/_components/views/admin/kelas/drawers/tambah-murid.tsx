@@ -1,23 +1,19 @@
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Form } from "@/components/ui/form";
-import PendaftaranMuridForm from "./pendaftaran-murid-form";
+import PendaftaranMuridForm from "../forms/pendaftaran-murid-form";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
-import { clientPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
+import {
+  clientPendaftaranKelasSchema,
+  clientTambahMuridSchema,
+  type TypeClientTambahMuridSchema,
+} from "@/types/pendaftaranKelas.type";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import type z from "zod";
 import { useMurid } from "@/hooks/useMurid";
-
-const clientTambahMuridSchema = clientPendaftaranKelasSchema.omit({
-  kelasId: true,
-});
-
-export type TypeClientTambahMuridSchema = z.infer<
-  typeof clientTambahMuridSchema
->;
 
 interface TambahMuridDetailKelasProps {
   kelasId?: string;
@@ -49,7 +45,7 @@ export default function TambahMuridDetailKelas({
       ...values,
       kelasId: kelasId ?? "",
     });
-    muridMutations.update.mutate({
+    muridMutations.updateStatus.mutate({
       id: values.muridId,
       statusMurid: "AKTIF",
     });

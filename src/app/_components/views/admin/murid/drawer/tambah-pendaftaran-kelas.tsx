@@ -43,11 +43,6 @@ export default function TambahPendaftaranKelas() {
 
   return (
     <>
-      {/* <Button onClick={() => setIsOpen(true)}>
-        <Plus className="mr-2 h-4 w-4" />
-        Tambah Cabang
-      </Button> */}
-
       <AddDrawer
         title="Daftarkan Murid ke Kelas"
         description="Tambahkan data pendaftaran kelas baru dengan mengisi form di bawah ini."

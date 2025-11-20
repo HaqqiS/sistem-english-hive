@@ -1,7 +1,13 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, EllipsisVertical, MessageCircle } from "lucide-react";
+import {
+  ArrowUpDown,
+  CheckCircle,
+  EllipsisVertical,
+  MessageCircle,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,18 +18,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import type { TypePembayaranJatuhTempo } from "@/types/pembayaran.type";
+import type { RouterOutputs } from "@/trpc/react";
 import { StatusPembayaran } from "@prisma/client";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import Link from "next/link";
 
+// Kita gunakan tipe data dari router getAll yang baru
+type PembayaranData = RouterOutputs["pembayaran"]["getAll"][number];
+
 interface ColumnsConfig {
-  onEditClick: (item: TypePembayaranJatuhTempo) => void;
-  onDeleteClick: (pembayaranId: string) => void;
+  onEditClick: (item: PembayaranData) => void;
+  onDeleteClick: (item: PembayaranData) => void;
+  onVerifyClick: (item: PembayaranData) => void;
 }
 
-// Helper untuk styling badge status
 const getStatusBadgeVariant = (
   status: StatusPembayaran,
 ): "default" | "destructive" | "secondary" | "outline" => {
@@ -41,6 +50,7 @@ const getStatusBadgeVariant = (
 
 // Helper untuk format No. WA
 const formatWhatsAppLink = (noWA: string) => {
+  if (!noWA) return "#";
   let formatted = noWA.trim();
   if (formatted.startsWith("0")) {
     formatted = "62" + formatted.substring(1);
@@ -53,7 +63,8 @@ const formatWhatsAppLink = (noWA: string) => {
 export const columns = ({
   onEditClick,
   onDeleteClick,
-}: ColumnsConfig): ColumnDef<TypePembayaranJatuhTempo>[] => [
+  onVerifyClick,
+}: ColumnsConfig): ColumnDef<PembayaranData>[] => [
   // Checkbox selection
   {
     id: "select",
@@ -92,33 +103,13 @@ export const columns = ({
       </Button>
     ),
     cell: ({ row }) => (
-      <Button
-        variant="link"
-        className="text-foreground w-fit px-0 text-left text-base"
-        onClick={() => onEditClick(row.original)}
-      >
-        {row.original.pendaftaranKelas.murid.namaLengkap}
-      </Button>
-    ),
-    enableHiding: false,
-  },
-
-  // Program Kelas
-  {
-    accessorFn: (row) => row.pendaftaranKelas.Kelas.kodeKelas,
-    id: "programKelas",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Program Kelas
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="max-w-[300px] truncate">
-        {row.original.pendaftaranKelas.Kelas.kodeKelas}
+      <div className="flex flex-col">
+        <span className="font-medium">
+          {row.original.pendaftaranKelas.murid.namaLengkap}
+        </span>
+        <span className="text-muted-foreground text-xs">
+          {row.original.pendaftaranKelas.Kelas.kodeKelas}
+        </span>
       </div>
     ),
   },
@@ -131,12 +122,12 @@ export const columns = ({
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Bulan Ke-
+        Ke-
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
     cell: ({ row }) => (
-      <div className="text-center">{row.original.pembayaranKe}</div>
+      <div className="text-center font-medium">{row.original.pembayaranKe}</div>
     ),
   },
 
@@ -148,32 +139,40 @@ export const columns = ({
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Jumlah
+        Nominal
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
     cell: ({ row }) => (
-      <div className="min-w-[120px] font-medium">
+      <div className="min-w-[100px] font-medium">
         {toRupiah(row.original.jumlahBayar)}
       </div>
     ),
   },
 
-  // Tanggal Jatuh Tempo
+  // Tanggal Jatuh Tempo & Bayar
   {
-    accessorKey: "tanggalJatuhTempo",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Jatuh Tempo
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    id: "tanggal",
+    header: "Jatuh Tempo / Bayar",
     cell: ({ row }) => (
-      <div className="min-w-[150px]">
-        {formatDateWITA(row.original.tanggalJatuhTempo)}
+      <div className="flex flex-col gap-1 text-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground w-16 text-xs">Tempo:</span>
+          <span>{formatDateWITA(row.original.tanggalJatuhTempo)}</span>
+        </div>
+        {row.original.tanggalBayar ? (
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground w-16 text-xs">Bayar:</span>
+            <span className="font-medium text-green-600">
+              {formatDateWITA(row.original.tanggalBayar)}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground w-16 text-xs">Bayar:</span>
+            <span className="text-muted-foreground italic">-</span>
+          </div>
+        )}
       </div>
     ),
   },
@@ -192,67 +191,96 @@ export const columns = ({
     ),
     cell: ({ row }) => {
       const status = row.original.statusBayar;
-      return <Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>;
+      return (
+        <div className="flex flex-col items-start gap-1">
+          <Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>
+          {row.original.verifiedBy && (
+            <span className="text-muted-foreground text-[10px]">
+              Verif: {row.original.verifiedBy.name}
+            </span>
+          )}
+        </div>
+      );
     },
     filterFn: (row, id, value) => {
-      // Normalize both the filter value(s) and the cell value to strings,
-      // and ensure .includes is called on a proper string array to avoid any `any` issues.
       const cellValue = String(row.getValue(id) ?? "");
       const values = Array.isArray(value) ? value.map(String) : [String(value)];
       return values.includes(cellValue);
     },
   },
 
-  // No WhatsApp
+  // Catatan
   {
-    accessorFn: (row) => row.pendaftaranKelas.murid.noWA,
-    id: "noWA",
-    header: "No WhatsApp",
-    cell: ({ row }) => {
-      const noWA = row.original.pendaftaranKelas.murid.noWA;
-      return (
-        <div className="flex min-w-[150px] items-center gap-2">
-          {noWA}
-          <Button asChild variant="outline" size="icon-sm" className="h-7 w-7">
-            <Link href={formatWhatsAppLink(noWA)} target="_blank">
-              <MessageCircle className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      );
-    },
+    accessorKey: "note",
+    header: "Catatan",
+    cell: ({ row }) => (
+      <div
+        className="text-muted-foreground max-w-[150px] truncate text-sm"
+        title={row.original.note ?? ""}
+      >
+        {row.original.note ?? "-"}
+      </div>
+    ),
   },
 
-  // Aksi
+  // Aksi (WA & Menu)
   {
     id: "actions",
     header: "Aksi",
     cell: ({ row }) => {
+      const noWA = row.original.pendaftaranKelas.murid.noWA;
+      const isLunas = row.original.statusBayar === StatusPembayaran.LUNAS;
+
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="text-muted-foreground data-[state=open]:bg-muted flex size-8"
-              size="icon"
-            >
-              <EllipsisVertical />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem onClick={() => onEditClick(row.original)}>
-              Update Bayar
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => onDeleteClick(row.original.id)}
-            >
-              Hapus Tagihan
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          {/* Tombol WA Cepat */}
+          <Button
+            asChild
+            variant="outline"
+            size="icon-sm"
+            className="h-8 w-8 border-green-200 text-green-600 hover:bg-green-50"
+            title="Hubungi via WhatsApp"
+          >
+            <Link href={formatWhatsAppLink(noWA)} target="_blank">
+              <MessageCircle className="h-4 w-4" />
+            </Link>
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <EllipsisVertical className="h-4 w-4" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {/* Aksi Cepat Verifikasi */}
+              {!isLunas && (
+                <DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                  Tandai Lunas
+                </DropdownMenuItem>
+              )}
+              {isLunas && (
+                <DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
+                  <XCircle className="mr-2 h-4 w-4 text-red-600" />
+                  Batalkan Lunas
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuItem onClick={() => onEditClick(row.original)}>
+                Edit Detail
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => onDeleteClick(row.original)}
+              >
+                Hapus Tagihan
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },

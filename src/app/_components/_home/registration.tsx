@@ -1,37 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import {
   RegisterMuridSchema,
   type TypeClientRegisterMuridSchema,
 } from "@/types/murid.type";
-import { Gender } from "@prisma/client";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useCabang } from "@/hooks/useCabang";
 import { useMurid } from "@/hooks/useMurid";
 import MuridForm from "../views/admin/murid/form/murid-form";
 
@@ -41,7 +18,6 @@ export default function Registration() {
       form.reset();
     },
   });
-  const { data: dataCabang, isLoading: isLoadingCabang } = useCabang();
 
   const form = useForm<TypeClientRegisterMuridSchema>({
     resolver: zodResolver(RegisterMuridSchema),
@@ -60,11 +36,6 @@ export default function Registration() {
       sumberInfo: "",
     },
   });
-
-  const [isOther, setIsOther] = useState(
-    form.getValues("sumberInfo") === "Other",
-  );
-  const [otherValue, setOtherValue] = useState("");
 
   function onSubmit(data: TypeClientRegisterMuridSchema) {
     mutations.create.mutate(data);

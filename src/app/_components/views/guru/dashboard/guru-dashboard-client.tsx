@@ -47,22 +47,37 @@ import {
 import { StatusAbsenGuru } from "@prisma/client";
 import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
 import { toast } from "sonner";
+import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 
 export default function GuruDashboardClient() {
   const router = useRouter();
 
   // --- State untuk Dialog Ganti Ruang ---
   const [isGantiRuangOpen, setIsGantiRuangOpen] = useState(false);
-  // Menyimpan jadwal yang sedang dipilih untuk diganti ruang
   const [selectedJadwal, setSelectedJadwal] =
     useState<TypeJadwalHariIniItem | null>(null);
-  // Menyimpan ID ruang yang dipilih di dialog
   const [overrideRuangId, setOverrideRuangId] = useState<string | undefined>(
     undefined,
   );
 
+  // --- Hooks & Mutations ---
+  // Menggunakan custom hook yang sudah direfactor
+  const { mutations } = useAbsenGuru({
+    onSuccessStartSesi: (newSesiId) => {
+      setIsGantiRuangOpen(false);
+      // Redirect ke halaman absensi
+      router.push(`/guru/absen/${newSesiId}`);
+    },
+  });
+
+  // Ambil mutation object
+  const {
+    mutate: mulaiSesi,
+    isPending: isStartingSesi,
+    variables: startingVars,
+  } = mutations.startSesi;
+
   // --- Data Queries ---
-  // 1. Ambil jadwal hari ini (sudah di-prefetch di server)
   const {
     data: jadwalHariIni,
     isLoading,
@@ -70,62 +85,33 @@ export default function GuruDashboardClient() {
     error,
   } = api.jadwalKelas.getJadwalHariIniForGuru.useQuery();
 
-  console.table(jadwalHariIni);
-
-  // 2. Ambil semua data ruang (untuk <Select> di dialog)
   const { data: semuaRuangan, isLoading: isLoadingRuangan } =
     api.ruang.getAll.useQuery();
 
-  // --- Mutation ---
-  // 3. Ambil mutasi createSesiAndAbsensi
-  const { mutate: mulaiSesi, isPending: isStartingSesi } =
-    api.absenGuru.createSesiAndAbsensi.useMutation({
-      onSuccess: (data) => {
-        // 'data.newSesiId' adalah ID dari SesiPertemuanKelas yang baru
-        toast.success("Sesi berhasil dimulai!");
-        // Arahkan guru ke halaman absensi murid
-        router.push(`/guru/absen/${data.newSesiId}`);
-      },
-      onError: (err) => {
-        toast.error(`Gagal memulai sesi: ${err.message}`);
-      },
-    });
-
   // --- Handlers ---
-  /**
-   * Dipanggil baik oleh tombol "Mulai Sesi" atau "Mulai Sesi di Ruang Baru"
-   */
   const handleMulaiSesi = (
     jadwal: TypeJadwalHariIniItem,
-    ruangId: string | undefined, // undefined jika pakai ruang default
+    ruangId: string | undefined,
   ) => {
-    // Pastikan sesi tidak sedang diproses
     if (isStartingSesi) return;
 
     mulaiSesi({
       jadwalKelasId: jadwal.jadwalId,
-      status: StatusAbsenGuru.HADIR, // Asumsi guru selalu HADIR saat memulai
+      status: StatusAbsenGuru.HADIR,
       overrideRuangId: ruangId,
     });
   };
 
-  /**
-   * Dipanggil saat mengklik "Ganti Ruang" dari DropdownMenu
-   */
   const openGantiRuangDialog = (jadwal: TypeJadwalHariIniItem) => {
     setSelectedJadwal(jadwal);
-    setOverrideRuangId(jadwal.ruangId); // Set default value ke ruang asli
+    setOverrideRuangId(jadwal.ruangId);
     setIsGantiRuangOpen(true);
   };
 
-  /**
-   * Dipanggil saat tombol "Mulai Sesi" di dalam dialog diklik
-   */
   const handleGantiRuangSubmit = () => {
     if (selectedJadwal) {
       handleMulaiSesi(selectedJadwal, overrideRuangId);
     }
-    setIsGantiRuangOpen(false); // Tutup dialog
   };
 
   // --- Render States ---
@@ -150,8 +136,11 @@ export default function GuruDashboardClient() {
 
   if (!jadwalHariIni || jadwalHariIni.length === 0) {
     return (
-      <Alert variant="destructive">
-        <CheckCircle2 className="h-4 w-4" />
+      <Alert
+        variant="default"
+        className="bg-muted/50 border-muted-foreground/20"
+      >
+        <CheckCircle2 className="h-4 w-4 text-green-600" />
         <AlertTitle>Jadwal Kosong</AlertTitle>
         <AlertDescription>
           Anda tidak memiliki jadwal mengajar hari ini. Selamat beristirahat!
@@ -166,61 +155,73 @@ export default function GuruDashboardClient() {
         {jadwalHariIni.map((jadwal) => {
           // Cek apakah sesi untuk jadwal ini sudah dibuat
           const sudahDimulai = !!jadwal.sesiIdSudahDibuat;
+          const isThisItemLoading =
+            isStartingSesi && startingVars?.jadwalKelasId === jadwal.jadwalId;
 
           return (
-            <Card key={jadwal.jadwalId}>
+            <Card
+              key={jadwal.jadwalId}
+              className={isThisItemLoading ? "border-primary/50 shadow-md" : ""}
+            >
               <CardHeader>
-                <CardTitle>
-                  {`${jadwal.jamMulai} - ${jadwal.jamSelesai}`}
-                  {jadwal.guru ? ` - ${jadwal.guru.name}` : ""}
+                <CardTitle className="flex items-start justify-between">
+                  <span>{`${jadwal.jamMulai} - ${jadwal.jamSelesai}`}</span>
                 </CardTitle>
-                <CardDescription>{jadwal.kodeKelas}</CardDescription>
+                <CardDescription className="text-primary font-medium">
+                  {jadwal.kodeKelas}
+                </CardDescription>
+                {jadwal.guru && (
+                  <p className="text-muted-foreground text-sm">
+                    Pengajar:{" "}
+                    <span className="text-foreground font-medium">
+                      {jadwal.guru.name}
+                    </span>
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-sm">
-                  Ruang:{" "}
-                  <span className="text-foreground font-medium">
-                    {jadwal.namaRuang}
-                  </span>
+                <p className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Ruang:</span>
+                  <span className="font-medium">{jadwal.namaRuang}</span>
                 </p>
               </CardContent>
-              <CardFooter className="flex items-center gap-2">
+              <CardFooter className="flex items-center gap-2 pt-0">
                 {sudahDimulai ? (
-                  // --- KASUS 1: SESI SUDAH DIMULAI ---
                   <Button
                     variant="outline"
                     className="w-full"
                     onClick={() =>
                       router.push(`/guru/absen/${jadwal.sesiIdSudahDibuat}`)
                     }
+                    disabled={isStartingSesi}
                   >
                     <Play className="mr-2 h-4 w-4 text-green-500" />
                     Lanjutkan Sesi
                   </Button>
                 ) : (
-                  // --- KASUS 2: SESI BELUM DIMULAI ---
-                  <div className="flex w-full items-center justify-between">
+                  <div className="flex w-full items-center gap-2">
                     <Button
                       className="flex-1"
                       onClick={() => handleMulaiSesi(jadwal, undefined)}
-                      disabled={isStartingSesi}
+                      disabled={isStartingSesi} // Disable semua tombol agar tidak spam klik
                     >
-                      {isStartingSesi ? (
+                      {isThisItemLoading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
                         <Play className="mr-2 h-4 w-4" />
                       )}
                       Mulai Sesi
                     </Button>
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="outline"
                           size="icon"
-                          className="ml-2 shrink-0"
+                          className="shrink-0"
                           disabled={isStartingSesi}
                         >
-                          <Ellipsis />
+                          <Ellipsis className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -228,7 +229,7 @@ export default function GuruDashboardClient() {
                           onClick={() => openGantiRuangDialog(jadwal)}
                         >
                           <Replace className="mr-2 h-4 w-4" />
-                          Ganti Ruang
+                          Ganti Ruang & Mulai
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

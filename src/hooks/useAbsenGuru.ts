@@ -15,6 +15,7 @@ interface UseGuruOptions {
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
+  onSuccessStartSesi?: (newSesiId: string) => void;
   onSuccessUpdate?: () => void;
   onSuccessUpdateStatus?: () => void;
   onSuccessDelete?: () => void;
@@ -23,18 +24,6 @@ interface UseGuruOptions {
   month?: string;
 }
 
-/**
- * Custom hook untuk mengelola Cabang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data cabang
- * const { data: cabangList } = useCabang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useCabang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
- */
 export function useAbsenGuru(options?: UseGuruOptions) {
   const apiUtils = api.useUtils();
   const guruId = options?.guruId;
@@ -75,15 +64,34 @@ export function useAbsenGuru(options?: UseGuruOptions) {
       },
     });
 
+  const startSesiMutation = api.absenGuru.createSesiAndAbsensi.useMutation({
+    onSuccess: async (data) => {
+      // Penting: Refresh jadwal di dashboard agar tombol berubah jadi "Lanjut Sesi"
+      await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
+      await apiUtils.absenGuru.getAllAbsensi.invalidate();
+
+      toast.success("Sesi berhasil dimulai!");
+
+      // Panggil callback navigasi jika ada
+      if (options?.onSuccessStartSesi) {
+        options.onSuccessStartSesi(data.newSesiId);
+      }
+      options?.onSuccessCreate?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal memulai sesi: ${error.message}`);
+    },
+  });
+
   // UPDATE
   const updateStatusMutation = api.absenGuru.verifyAbsensi.useMutation({
     onSuccess: async () => {
       await apiUtils.absenGuru.getAllAbsensi.invalidate();
-      toast.success("Absensi berhasil diupdate");
+      toast.success("Status verifikasi berhasil diupdate");
       options?.onSuccessUpdateStatus?.();
     },
     onError: (error) => {
-      toast.error(`Gagal mengupdate absensi: ${error.message}`);
+      toast.error(`Gagal verifikasi absensi: ${error.message}`);
     },
   });
 
@@ -130,22 +138,10 @@ export function useAbsenGuru(options?: UseGuruOptions) {
         mutateAsync: createSesiAbsensiMutation.mutateAsync,
         isPending: createSesiAbsensiMutation.isPending,
       },
-      updateStatus: {
-        mutate: updateStatusMutation.mutate,
-        mutateAsync: updateStatusMutation.mutateAsync,
-        isPending: updateStatusMutation.isPending,
-      },
-
-      update: {
-        mutate: updateAbsensiMutation.mutate,
-        mutateAsync: updateAbsensiMutation.mutateAsync,
-        isPending: updateAbsensiMutation.isPending,
-      },
-      delete: {
-        mutate: deleteMutation.mutate,
-        mutateAsync: deleteMutation.mutateAsync,
-        isPending: deleteMutation.isPending,
-      },
+      startSesi: startSesiMutation,
+      updateStatus: updateStatusMutation,
+      update: updateAbsensiMutation,
+      delete: deleteMutation,
     },
 
     // Utils untuk manual invalidation jika perlu

@@ -1,8 +1,10 @@
 import { getAbsensiByJadwalSesiIdSchema } from "@/types/absenMurid.type";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
-import { StatusAbsenMurid } from "@prisma/client";
+import { StatusAbsenMurid, StatusPembayaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
+import dayjs from "@/utils/dateUtils";
 
 export const absenMuridRouter = createTRPCRouter({
   getAbsensiByJadwalSesiId: protectedProcedure
@@ -59,6 +61,7 @@ export const absenMuridRouter = createTRPCRouter({
           isAktif: true,
         },
         select: {
+          id: true,
           murid: {
             select: {
               id: true,
@@ -89,13 +92,14 @@ export const absenMuridRouter = createTRPCRouter({
       );
 
       // 5. Gabungkan data
-      const muridList = pendaftar.map(({ murid }) => {
-        const absensi = absensiMap.get(murid.id);
+      const muridList = pendaftar.map((p) => {
+        const absensi = absensiMap.get(p.murid.id);
         return {
-          muridId: murid.id,
-          namaLengkap: murid.namaLengkap,
+          muridId: p.murid.id,
+          pendaftaranId: p.id, // Kirim ID pendaftaran ke FE jika perlu, atau pakai di backend
+          namaLengkap: p.murid.namaLengkap,
           absensiId: absensi?.id ?? null,
-          status: absensi?.status ?? null, // Status default jika belum ada
+          status: absensi?.status ?? null,
         };
       });
 
@@ -120,8 +124,7 @@ export const absenMuridRouter = createTRPCRouter({
       const { db } = ctx;
       const { sesiId, muridId, status } = input;
 
-      // Gunakan upsert: update jika ada, buat baru jika tidak ada.
-      // Ini memerlukan @@unique([muridId, sesiPertemuanKelasId]) di schema.prisma
+      // 1. Lakukan Update Absensi Terlebih Dahulu
       const absensi = await db.absensiMurid.upsert({
         where: {
           muridId_sesiPertemuanKelasId: {
@@ -138,6 +141,57 @@ export const absenMuridRouter = createTRPCRouter({
           status: status,
         },
       });
+
+      // 2. Logic Kalkulasi Tagihan (On-the-Fly)
+      // Kita perlu mencari ID Pendaftaran Kelas yang aktif untuk murid & kelas ini
+      // Ambil kelasId dari sesi dulu
+      const sesi = await db.sesiPertemuanKelas.findUnique({
+        where: { id: sesiId },
+        select: { kelasId: true, tanggalWaktu: true },
+      });
+
+      if (sesi) {
+        const pendaftaran = await db.pendaftaranKelas.findFirst({
+          where: {
+            muridId: muridId,
+            kelasId: sesi.kelasId,
+            isAktif: true,
+          },
+        });
+
+        if (pendaftaran) {
+          // Panggil Service Helper
+          const billingStatus = await calculateSisaPertemuan(
+            db,
+            pendaftaran.id,
+          );
+
+          // Jika perlu buat tagihan baru
+          if (billingStatus.needNewBill) {
+            // -- PERBAIKAN: Pastikan nilainya number --
+            const harga = billingStatus.hargaPerSesi ?? 0;
+            const paket = billingStatus.paketPertemuan ?? 8;
+
+            const totalTagihan = harga * paket;
+
+            // Jatuh tempo = Hari ini (saat kuota habis) atau besok
+            const jatuhTempo = dayjs().add(1, "day").toDate();
+
+            await db.pembayaran.create({
+              data: {
+                pendaftaranKelasId: pendaftaran.id,
+                pembayaranKe: billingStatus.nextBillPembayaranKe,
+                jumlahBayar: totalTagihan,
+                tanggalJatuhTempo: jatuhTempo,
+                statusBayar: StatusPembayaran.BELUM_LUNAS,
+                note: `Auto-Generate: Kuota sisa ${billingStatus.sisaPertemuan}. Paket ${paket} Sesi berikutnya.`,
+              },
+            });
+
+            console.log(`Tagihan baru dibuat untuk ${billingStatus.muridName}`);
+          }
+        }
+      }
 
       return absensi;
     }),

@@ -4,7 +4,7 @@ import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import dayjs from "@/utils/dateUtils";
-import { StatusPembayaran } from "@prisma/client";
+import { StatusMurid, StatusPembayaran } from "@prisma/client";
 
 export const kelasRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -141,6 +141,21 @@ export const kelasRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+
+      const existingMuridKelas = await db.pendaftaranKelas.findFirst({
+        where: { kelasId: input.id },
+        select: { muridId: true },
+      });
+
+      if (existingMuridKelas) {
+        await db.$transaction(async (tx) => {
+          // update status murid yang terkait menjadi 'NON-AKTIF'
+          await tx.murid.update({
+            where: { id: existingMuridKelas.muridId },
+            data: { statusMurid: StatusMurid.NON_AKTIF },
+          });
+        });
+      }
       const kelas = await db.kelas.delete({
         where: { id: input.id },
       });

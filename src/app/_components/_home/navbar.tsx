@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, Beef as Bee } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { UserRole } from "@/server/auth/type";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session } = useSession();
 
   const navLinks = [
     { label: "Daftar", href: "#registration" },
@@ -46,9 +48,20 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden items-center gap-4 md:flex">
-            <Button variant="outline" size="sm" onClick={() => signIn()}>
-              Log In
-            </Button>
+            {!session?.user && (
+              <Button variant="outline" size="sm" onClick={() => signIn()}>
+                Log In
+              </Button>
+            )}
+            {session?.user.role === UserRole.ADMIN ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/admin">Dashboard</Link>
+              </Button>
+            ) : session?.user.role === UserRole.GURU ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/guru">Dashboard</Link>
+              </Button>
+            ) : null}
           </div>
 
           {/* Mobile Menu Button */}

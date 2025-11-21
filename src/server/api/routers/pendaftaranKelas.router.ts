@@ -5,7 +5,7 @@ import {
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import dayjs from "dayjs";
 import { TRPCError } from "@trpc/server";
-import { StatusPembayaran } from "@prisma/client";
+import { StatusMurid, StatusPembayaran } from "@prisma/client";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 
@@ -228,6 +228,20 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Data pendaftaran tidak ditemukan",
+        });
+      }
+
+      const existingMuridKelas = await db.pendaftaranKelas.findFirst({
+        where: { id: input.id },
+        select: { muridId: true },
+      });
+      if (existingMuridKelas) {
+        await db.$transaction(async (tx) => {
+          // update status murid yang terkait menjadi 'NON-AKTIF'
+          await tx.murid.update({
+            where: { id: existingMuridKelas.muridId },
+            data: { statusMurid: StatusMurid.NON_AKTIF },
+          });
         });
       }
 

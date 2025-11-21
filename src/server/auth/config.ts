@@ -178,51 +178,51 @@ export const authConfig: NextAuthConfig = {
 
     //   return NextResponse.redirect(new URL("/auth/login", nextUrl));
     // },
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const role = auth?.user?.role;
-      const pathname = nextUrl.pathname.replace(/\/+$/, "");
+    // authorized({ auth, request: { nextUrl } }) {
+    //   const isLoggedIn = !!auth?.user;
+    //   const role = auth?.user?.role;
+    //   const pathname = nextUrl.pathname.replace(/\/+$/, "");
 
-      // Guest restriction: /auth/*
-      if (pathname.startsWith("/auth")) {
-        if (isLoggedIn) {
-          const target =
-            role === UserRole.ADMIN
-              ? "/admin"
-              : role === UserRole.GURU
-                ? "/guru"
-                : "/";
-          return NextResponse.redirect(new URL(target, nextUrl));
-        }
-        return true;
-      }
+    //   // Guest restriction: /auth/*
+    //   if (pathname.startsWith("/auth")) {
+    //     if (isLoggedIn) {
+    //       const target =
+    //         role === UserRole.ADMIN
+    //           ? "/admin"
+    //           : role === UserRole.GURU
+    //             ? "/guru"
+    //             : "/";
+    //       return NextResponse.redirect(new URL(target, nextUrl));
+    //     }
+    //     return true;
+    //   }
 
-      // Public routes
-      if (pathname === "/") return true;
+    //   // Public routes
+    //   if (pathname === "/") return true;
 
-      // Proteksi route
-      const matched = protectedRoutes.find((r) => pathname.startsWith(r.path));
-      if (!matched) return true;
+    //   // Proteksi route
+    //   const matched = protectedRoutes.find((r) => pathname.startsWith(r.path));
+    //   if (!matched) return true;
 
-      if (!isLoggedIn) {
-        const loginUrl = new URL("/auth/login", nextUrl);
-        loginUrl.searchParams.set(
-          "callbackUrl",
-          nextUrl.pathname + nextUrl.search,
-        );
-        return NextResponse.redirect(loginUrl);
-      }
+    //   if (!isLoggedIn) {
+    //     const loginUrl = new URL("/auth/login", nextUrl);
+    //     loginUrl.searchParams.set(
+    //       "callbackUrl",
+    //       nextUrl.pathname + nextUrl.search,
+    //     );
+    //     return NextResponse.redirect(loginUrl);
+    //   }
 
-      if (role && matched.roles.includes(role)) return true;
+    //   if (role && matched.roles.includes(role)) return true;
 
-      // Salah role → redirect ke dashboard role-nya
-      const redirectUrl =
-        role === UserRole.ADMIN
-          ? "/admin"
-          : role === UserRole.GURU
-            ? "/guru"
-            : "/";
-      return NextResponse.redirect(new URL(redirectUrl, nextUrl));
-    },
+    //   // Salah role → redirect ke dashboard role-nya
+    //   const redirectUrl =
+    //     role === UserRole.ADMIN
+    //       ? "/admin"
+    //       : role === UserRole.GURU
+    //         ? "/guru"
+    //         : "/";
+    //   return NextResponse.redirect(new URL(redirectUrl, nextUrl));
+    // },
   },
 };

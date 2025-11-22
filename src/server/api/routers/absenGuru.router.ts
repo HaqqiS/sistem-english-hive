@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
+import { getPeriodeGaji } from "@/server/services/gaji.service";
 
 export const absenGuruRouter = createTRPCRouter({
   getAllAbsensi: protectedProcedure.query(async ({ ctx }) => {
@@ -153,7 +154,7 @@ export const absenGuruRouter = createTRPCRouter({
     .input(
       z.object({
         guruId: z.string().cuid(),
-        /** Input bulan dalam format "YYYY-MM" (contoh: "2025-11") */
+        /** Input bulan pembayaran (Gaji Bulan X) dalam format "YYYY-MM" */
         month: z.string().regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM"),
       }),
     )
@@ -161,19 +162,18 @@ export const absenGuruRouter = createTRPCRouter({
       const { db } = ctx;
       const { guruId, month } = input;
 
-      // 1. Tentukan rentang tanggal (satu bulan)
-      const startDate = dayjs(month).startOf("month").toDate();
-      const endDate = dayjs(month).endOf("month").toDate();
+      // 1. Gunakan Service untuk mendapatkan range tanggal (26 prev - 25 curr)
+      const { startDate, endDate } = getPeriodeGaji(month);
 
-      // 2. Query absensi guru
+      // 2. Query absensi guru berdasarkan range tanggal tersebut
       const history = await db.absensiGuru.findMany({
         where: {
           guruId: guruId,
-          isVerified: true, // <-- PENTING: Hanya ambil yang sudah diverifikasi
+          isVerified: true,
           sesiPertemuanKelas: {
             tanggalWaktu: {
-              gte: startDate, // >= 1 November 2025
-              lte: endDate, // <= 30 November 2025
+              gte: startDate,
+              lte: endDate,
             },
           },
         },
@@ -199,7 +199,7 @@ export const absenGuruRouter = createTRPCRouter({
         },
         orderBy: {
           sesiPertemuanKelas: {
-            tanggalWaktu: "asc", // Urutkan dari awal bulan
+            tanggalWaktu: "asc",
           },
         },
       });

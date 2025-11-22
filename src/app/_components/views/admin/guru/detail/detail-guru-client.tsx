@@ -3,8 +3,8 @@
 import React, { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
-import { useUser } from "@/hooks/useUser"; // Untuk mengambil nama guru
-import { DataTable } from "@/app/_components/shared/data-table-generic"; // Ganti ke data-table.tsx
+import { useUser } from "@/hooks/useUser";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns } from "../columns/columns-detail-absen-guru";
 import {
   Card,
@@ -25,24 +25,33 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toRupiah } from "@/utils/toRupiah";
 import dayjs from "@/utils/dateUtils";
-import { AlertCircle, CalendarIcon, Check, Users } from "lucide-react";
-import { StatusAbsenGuru } from "@prisma/client";
-
-// --- Gaji per absensi ---
-const GAJI_PER_SESI = 50000;
+import { AlertCircle, CalendarIcon, Users, CalendarDays } from "lucide-react";
+import {
+  calculateTotalGaji,
+  getPeriodeGaji,
+  GAJI_PER_SESI,
+} from "@/server/services/gaji.service";
 
 export default function DetailGuruClient() {
   const { guruId } = useParams<{ guruId: string }>();
   const [open, setOpen] = useState(false);
 
-  // State untuk menyimpan bulan terpilih (format YYYY-MM)
+  // State untuk menyimpan bulan gaji yang dipilih (misal: November 2025)
   const [month, setMonth] = useState<Date | undefined>(new Date());
   const selectedMonthYYYYMM = dayjs(month).format("YYYY-MM");
+
+  // Helper untuk menampilkan text periode (Tgl 26 Prev - 25 Curr) di UI
+  const periodeText = useMemo(() => {
+    const { startDate, endDate } = getPeriodeGaji(selectedMonthYYYYMM);
+    return `${dayjs(startDate).format("D MMM")} - ${dayjs(endDate).format(
+      "D MMM YYYY",
+    )}`;
+  }, [selectedMonthYYYYMM]);
 
   // 1. Query untuk mendapatkan nama guru
   const { data: dataGuru, isLoading: isLoadingGuru } = useUser();
 
-  // 2. Query untuk mendapatkan history absensi
+  // 2. Query history (Backend sudah handle filter tgl 26-25)
   const {
     dataHistory,
     isLoadingHistory,
@@ -55,24 +64,20 @@ export default function DetailGuruClient() {
     enableQuery: !!guruId && !!month,
   });
 
-  // Cari nama guru dari data cache useUser
   const guruName = useMemo(() => {
     return dataGuru?.find((g) => g.id === guruId)?.name ?? "Guru";
   }, [dataGuru, guruId]);
 
-  // 3. Hitung total absensi (HANYA YANG HADIR) dan gaji
+  // 3. Hitung total gaji menggunakan logic yang sama dengan service (atau panggil logic service jika perlu)
   const { totalAbsen, totalGaji } = useMemo(() => {
     if (!dataHistory) return { totalAbsen: 0, totalGaji: 0 };
 
-    const totalAbsen = dataHistory.filter(
-      (absen) => absen.status === StatusAbsenGuru.HADIR,
-    ).length;
+    // Kita bisa pakai helper dari service agar logic tetap 1 sumber
+    const { totalHadir, totalGaji } = calculateTotalGaji(dataHistory);
 
-    const totalGaji = totalAbsen * GAJI_PER_SESI;
-    return { totalAbsen, totalGaji };
+    return { totalAbsen: totalHadir, totalGaji };
   }, [dataHistory]);
 
-  // Tampilan Loading
   if (isLoadingGuru || isLoadingHistory) {
     return (
       <div className="space-y-4">
@@ -82,7 +87,6 @@ export default function DetailGuruClient() {
     );
   }
 
-  // Tampilan Error
   if (isErrorHistory) {
     return (
       <Alert variant="destructive">
@@ -93,88 +97,104 @@ export default function DetailGuruClient() {
     );
   }
 
-  // Tampilan Utama
   return (
     <div className="space-y-4">
       <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-xl">History Gaji Guru: {guruName}</h1>
-          <p className="text-muted-foreground text-sm">
-            Lihat history absensi terverifikasi untuk perhitungan gaji.
+          <h1 className="text-xl font-bold">Gaji Guru: {guruName}</h1>
+          <p className="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
+            <CalendarDays className="h-3 w-3" />
+            Periode:{" "}
+            <span className="text-foreground font-medium">{periodeText}</span>
           </p>
         </div>
 
-        {/* Filter Bulan */}
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-start text-left font-normal md:w-[240px]"
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dayjs(month).format("MMMM YYYY")}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="single" // <-- Ganti dari "month"
-              month={month}
-              onMonthChange={(newMonth) => {
-                setMonth(newMonth);
-                setOpen(false); // Tutup popover setelah memilih
-              }}
-              captionLayout="dropdown" // <-- Ganti dari "dropdown-buttons"
-              fromYear={2024}
-              toYear={dayjs().year()}
-              className="rdp-month-picker"
-            />
-          </PopoverContent>
-        </Popover>
+        {/* Filter Bulan Gaji */}
+        <div className="flex flex-col gap-1">
+          <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            Pilih Bulan Gaji
+          </span>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal md:w-60"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dayjs(month).format("MMMM YYYY")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="end">
+              <Calendar
+                mode="single"
+                month={month}
+                onMonthChange={(newMonth) => {
+                  if (newMonth) {
+                    setMonth(newMonth);
+                    setOpen(false);
+                  }
+                }}
+                captionLayout="dropdown"
+                startMonth={new Date(2024, 0)}
+                endMonth={new Date(dayjs().year() + 1, 11)}
+                classNames={{
+                  month: "space-y-0 space-x-5 h-8",
+                  caption: "relative flex justify-center items-center pt-1",
+                  day: "hidden",
+                  weekdays: "hidden",
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </header>
 
       {/* Kartu Rangkuman Gaji */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            Rangkuman Gaji - {dayjs(month).format("MMMM YYYY")}
+            Slip Gaji Bulan {dayjs(month).format("MMMM")}
           </CardTitle>
-          <span className="text-muted-foreground text-xs">
-            Rate: {toRupiah(GAJI_PER_SESI)} / Sesi (Hadir)
+          <span className="text-muted-foreground bg-muted rounded px-2 py-1 text-xs">
+            Rate: {toRupiah(GAJI_PER_SESI)} / Sesi
           </span>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <CardContent className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2">
           {/* Total Sesi */}
-          <div className="rounded-lg border p-4">
+          <div className="bg-background/50 rounded-lg border p-4">
             <div className="flex items-center justify-between">
               <p className="text-muted-foreground text-sm font-medium">
-                Total Sesi (Hadir)
+                Total Kehadiran
               </p>
-              <Users className="text-muted-foreground h-4 w-4" />
+              <Users className="text-primary h-4 w-4" />
             </div>
             <div className="mt-2 text-2xl font-bold">{totalAbsen} Sesi</div>
-            <p className="text-muted-foreground text-xs">
-              Total sesi yang terverifikasi hadir bulan ini
+            <p className="text-muted-foreground mt-1 text-xs">
+              Jumlah sesi status &quot;HADIR&quot; dalam periode {periodeText}
             </p>
           </div>
+
           {/* Total Gaji */}
-          <div className="rounded-lg border p-4">
+          <div className="border-primary/20 bg-primary/5 rounded-lg border p-4">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm font-medium">
-                Total Gaji
+              <p className="text-primary text-sm font-medium">
+                Total Gaji Diterima
               </p>
-              <span className="text-lg font-bold text-green-600">Rp</span>
+              <span className="text-primary text-lg font-bold">Rp</span>
             </div>
-            <div className="mt-2 text-2xl font-bold text-green-600">
+            <div className="text-primary mt-2 text-2xl font-bold">
               {toRupiah(totalGaji)}
             </div>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground mt-1 text-xs">
               {totalAbsen} Sesi x {toRupiah(GAJI_PER_SESI)}
             </p>
           </div>
         </CardContent>
         <CardFooter>
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground ml-auto text-xs"
             onClick={() => refetchHistory()}
             disabled={isLoadingHistory}
           >
@@ -186,10 +206,9 @@ export default function DetailGuruClient() {
       {/* Tabel History Absensi */}
       <Card>
         <CardHeader>
-          <CardTitle>Detail Absensi</CardTitle>
+          <CardTitle>Rincian Absensi</CardTitle>
           <CardDescription>
-            Daftar absensi terverifikasi yang masuk dalam perhitungan gaji bulan{" "}
-            {dayjs(month).format("MMMM YYYY")}.
+            Data detail pertemuan yang masuk dalam periode {periodeText}.
           </CardDescription>
         </CardHeader>
         <CardContent>

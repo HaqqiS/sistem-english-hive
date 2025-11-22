@@ -15,8 +15,8 @@ type BillingStatus = {
   needNewBill: boolean;
   nextBillPembayaranKe: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pendaftaranData: any; // Bisa diperjelas dengan tipe PendaftaranKelas Prisma jika perlu
-  hargaPerSesi: number; // Pastikan ini number, bukan number | undefined
+  pendaftaranData: any;
+  hargaPerSesi: number;
   paketPertemuan: number;
 };
 
@@ -98,21 +98,31 @@ export const calculateSisaPertemuan = async (
   let needNewBill = false;
   let nextBillPembayaranKe = 0;
 
+  // Jika sisa pertemuan sudah sedikit (<= BATAS)
   if (sisaPertemuan <= BATAS_SISA_UNTUK_TAGIHAN) {
-    const existingPendingBill = await db.pembayaran.findFirst({
-      where: {
-        pendaftaranKelasId: pendaftaranKelasId,
-        statusBayar: {
-          in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
-        },
-      },
+    // --- LOGIKA BARU: CEK BERDASARKAN JUMLAH TAGIHAN YANG ADA ---
+
+    // Hitung total tagihan yang SUDAH dibuat (baik Lunas maupun Belum)
+    const totalTagihanDibuat = await db.pembayaran.count({
+      where: { pendaftaranKelasId: pendaftaranKelasId },
     });
 
-    if (!existingPendingBill) {
+    // Hitung berapa paket yang SEHARUSNYA sudah ditagih agar bisa mengcover pemakaian saat ini + buffer 1 paket ke depan
+    // Rumus: Jika pemakaian 6, butuh 1 paket (cover 1-8). Jika pemakaian 8, butuh 2 paket (biar ada sisa 8 lagi).
+    // Tapi kita ingin mentrigger tagihan BARU (paket ke-N+1) saat sisa menipis.
+
+    // Logika: "Apakah jumlah paket yang sudah ditagih CUKUP untuk menutupi pemakaian + 1 paket ke depan?"
+    // Total kapasitas yang seharusnya dimiliki = totalTagihanDibuat * 8
+    // Kita ingin men-trigger tagihan baru JIKA:
+    // (Kapasitas yg dimiliki - Pemakaian) <= Batas
+    // Tapi kapasitas yg dimiliki disini adalah berdasarkan TAGIHAN YANG ADA (bukan cuma yg lunas)
+
+    const totalKapasitasTagihan = totalTagihanDibuat * paketPertemuan;
+    const potensiSisa = totalKapasitasTagihan - totalTerpakai;
+
+    // Jika potensi sisa (berdasarkan semua tagihan yg ada) sudah <= Batas, buat tagihan baru
+    if (potensiSisa <= BATAS_SISA_UNTUK_TAGIHAN) {
       needNewBill = true;
-      const totalTagihanDibuat = await db.pembayaran.count({
-        where: { pendaftaranKelasId: pendaftaranKelasId },
-      });
       nextBillPembayaranKe = totalTagihanDibuat + 1;
     }
   }

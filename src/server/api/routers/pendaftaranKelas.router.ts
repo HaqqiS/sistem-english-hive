@@ -1,4 +1,5 @@
 import {
+  serverBulkPendaftaranKelasSchema,
   serverPendaftaranKelasSchema,
   serverUpdatePendaftaranKelasSchema,
 } from "@/types/pendaftaranKelas.type";
@@ -120,6 +121,76 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       });
 
       return newPendaftaranKelas;
+    }),
+
+  createBulkPendaftaranKelas: protectedProcedure
+    .input(serverBulkPendaftaranKelasSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { muridIds, kelasId, tanggalMulai } = input;
+
+      // 1. Ambil info harga kelas
+      const kelas = await db.kelas.findUnique({
+        where: { id: kelasId },
+        select: { hargaKelas: true, kodeKelas: true },
+      });
+
+      if (!kelas) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Kelas yang dipilih tidak ditemukan.",
+        });
+      }
+
+      // 2. Validasi: Cek apakah ada murid yang sudah terdaftar aktif di kelas manapun
+      // Kita cek satu per satu atau pakai `in` query
+      const existingActive = await db.pendaftaranKelas.findMany({
+        where: {
+          muridId: { in: muridIds },
+          isAktif: true,
+        },
+        include: { murid: true },
+      });
+
+      if (existingActive.length > 0) {
+        const names = existingActive.map((p) => p.murid.namaLengkap).join(", ");
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Beberapa murid sudah terdaftar aktif: ${names}. Harap nonaktifkan dulu atau hapus dari seleksi.`,
+        });
+      }
+
+      // 3. Transaction: Loop create pendaftaran & invoice
+      await db.$transaction(async (tx) => {
+        const totalTagihan = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+        const tglMulaiDate = dayjs(tanggalMulai).toDate();
+
+        for (const muridId of muridIds) {
+          // 3a. Buat Pendaftaran
+          const pendaftaran = await tx.pendaftaranKelas.create({
+            data: {
+              muridId: muridId,
+              kelasId: kelasId,
+              tanggalMulai: tanggalMulai,
+              isAktif: true,
+            },
+          });
+
+          // 3b. Buat Tagihan Awal
+          await tx.pembayaran.create({
+            data: {
+              pendaftaranKelasId: pendaftaran.id,
+              pembayaranKe: 1,
+              jumlahBayar: totalTagihan,
+              tanggalJatuhTempo: tglMulaiDate,
+              statusBayar: StatusPembayaran.BELUM_LUNAS,
+              note: `Tagihan Awal (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
+            },
+          });
+        }
+      });
+
+      return { success: true, count: muridIds.length };
     }),
 
   updatePendaftaranKelas: protectedProcedure

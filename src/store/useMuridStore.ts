@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { TypeAllMurid } from "@/types/murid.type";
 
-type DrawerType = "none" | "edit" | "tambah";
+type DrawerType = "none" | "edit" | "tambah" | "edit-status";
 
 interface MuridStore {
   // Drawer management

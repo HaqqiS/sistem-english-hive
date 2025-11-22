@@ -5,6 +5,7 @@ import type {
   TypeCreateKelas,
   TypeKelas,
   TypeKelasByGuruId,
+  TypeKelasHistory,
 } from "@/types/kelas.type";
 import { skipToken } from "@tanstack/react-query";
 
@@ -13,6 +14,7 @@ interface UseKelasOptions {
   enableQuery?: boolean;
   initialData?: TypeKelas[];
   initialDataKelasWithSesi?: TypeKelasByGuruId[];
+  initialDataHistory?: TypeKelasHistory[];
 
   // Mutation callbacks
   onSuccessCreate?: (newKelas: TypeCreateKelas) => void;
@@ -22,6 +24,7 @@ interface UseKelasOptions {
 
   // ID untuk query by ID
   kelasId?: string;
+  cohortId?: string;
 }
 
 /**
@@ -41,6 +44,8 @@ export function useKelas(options?: UseKelasOptions) {
 
   // ========== QUERIES ==========
   const kelasId = options?.kelasId;
+  const cohortId = options?.cohortId;
+
   const isGetAllEnabled = (options?.enableQuery ?? true) && !kelasId;
 
   const kelasQuery = api.kelas.getAll.useQuery(undefined, {
@@ -56,6 +61,14 @@ export function useKelas(options?: UseKelasOptions) {
     undefined,
     {
       initialData: options?.initialDataKelasWithSesi,
+    },
+  );
+
+  const kelasHistoryQuery = api.kelas.getKelasHistory.useQuery(
+    cohortId ? { cohortId: cohortId } : skipToken,
+    {
+      enabled: !!cohortId,
+      initialData: options?.initialDataHistory,
     },
   );
   // ========== MUTATIONS ==========
@@ -128,6 +141,11 @@ export function useKelas(options?: UseKelasOptions) {
     isErrorWithSesi: kelasWithSesiQuery.isError,
     errorWithSesi: kelasWithSesiQuery.error,
 
+    dataHistory: kelasHistoryQuery.data,
+    isLoadingHistory: kelasHistoryQuery.isLoading,
+    isErrorHistory: kelasHistoryQuery.isError,
+    errorHistory: kelasHistoryQuery.error,
+
     // Mutations
     mutations: {
       create: {
@@ -155,6 +173,7 @@ export function useKelas(options?: UseKelasOptions) {
     // Utils untuk manual invalidation jika perlu
     refetch: kelasQuery.refetch,
     refetchById: kelasByIdQuery.refetch,
+    refetchHistory: kelasHistoryQuery.refetch,
     invalidate: () => apiUtils.kelas.getAll.invalidate(),
   };
 }

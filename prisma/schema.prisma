@@ -192,19 +192,20 @@ enum Gender {
 enum StatusMurid {
     AKTIF //masih aktif
     NON_AKTIF // sudah tidak aktif(tidak kursus lagi)
+    // LULUS // sudah lulus semua kelas
 }
 
 model Murid {
     id             String      @id @default(cuid())
     namaLengkap    String
-    email          String      @unique
+    email          String
     alamat         String
     gender         Gender
     umur           Int
     asalSekolah    String
     kelasSekolah   String
     jamPulang      String //textarea
-    noWA           String      @unique
+    noWA           String
     pilihanProgram String?
     sumberInfo     String
     statusMurid    StatusMurid @default(NON_AKTIF)
@@ -248,7 +249,8 @@ model Kelas {
     deskripsi      String?
     hargaKelas     Int
     kodeKelas      String // e.g., "TinyTods 1-A|reguler|03/2025"
-    // historyGuru    String? // catatan pergantian guru untuk kelas ini
+
+    cohortId String @default(cuid())
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

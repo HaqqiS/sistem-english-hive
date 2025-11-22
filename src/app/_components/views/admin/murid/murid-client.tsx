@@ -7,12 +7,13 @@ import { useState } from "react";
 import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
 import { columns as createColumnsMuridNotRegistered } from "./columns/columns-murid-not-registered";
-import { columns as createColumnsAllMurid } from "./columns/columsn-murid";
+import { columns as createColumnsAllMurid } from "./columns/columns-murid";
 import TambahPendaftaranKelas from "./drawer/tambah-pendaftaran-kelas";
 import RegistrasiMurid from "./drawer/registrasi-murid";
 import EditMurid from "./drawer/edit-murid";
 import { useMuridStore } from "@/store/useMuridStore";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
 
 interface ProgramMuridClientProps {
   initialDataMuridNotRegistered: TypeMuridNotRegistered[];
@@ -52,9 +53,14 @@ export default function MuridClient({
     setSelectedMuridToDelete(null);
   };
 
+  const handleEditNotRegistered = (item: TypeMuridNotRegistered) => {
+    // Cast to TypeAllMurid to satisfy store type, as they share base fields
+    openDrawer("edit-status", item as unknown as TypeAllMurid);
+  };
+
   const columnsMuridNotRegistered = createColumnsMuridNotRegistered({
-    onEditClick: (item) => {
-      console.log("clicked");
+    onEditStatusClick: (item) => {
+      handleEditNotRegistered(item);
     },
     onDeleteClick: (pendaftaranId) => {
       console.log("deleted");
@@ -64,6 +70,9 @@ export default function MuridClient({
   const columnsAllMurid = createColumnsAllMurid({
     onEditClick: (item) => {
       openDrawer("edit", item);
+    },
+    onEditStatusClick: (item) => {
+      handleEditNotRegistered(item);
     },
     onDeleteClick: (id, namaLengkap) => {
       setSelectedMuridToDelete({ id, namaLengkap });
@@ -140,6 +149,7 @@ export default function MuridClient({
           <DataTable columns={columnsAllMurid} data={dataAllMurid ?? []} />
         </div>
       </TabsContent>
+      <EditMuridNotRegistered />
     </Tabs>
   );
 }

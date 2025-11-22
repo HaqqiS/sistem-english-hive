@@ -47,3 +47,21 @@ export const serverUpdatePendaftaranKelasSchema =
   basePendaftaranKelasSchema.extend({
     id: z.string().cuid(),
   });
+
+export const clientBulkPendaftaranKelasSchema = z.object({
+  muridIds: z
+    .array(z.string())
+    .min(1, "Pilih minimal 1 murid")
+    .max(10, "Maksimal 10 murid sekaligus"),
+  kelasId: z.string().min(1, "Kelas harus dipilih"),
+  tanggalMulai: z
+    .string({ required_error: "Tanggal mulai harus diisi" })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),
+});
+
+export type TypeClientBulkPendaftaranKelasSchema = z.infer<
+  typeof clientBulkPendaftaranKelasSchema
+>;
+
+export const serverBulkPendaftaranKelasSchema =
+  clientBulkPendaftaranKelasSchema;

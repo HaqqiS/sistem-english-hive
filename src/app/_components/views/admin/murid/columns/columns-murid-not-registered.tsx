@@ -15,12 +15,12 @@ import { Badge } from "@/components/ui/badge";
 import type { TypeMuridNotRegistered } from "@/types/murid.type";
 
 interface ColumnsConfig {
-  onEditClick: (item: TypeMuridNotRegistered) => void;
+  onEditStatusClick: (item: TypeMuridNotRegistered) => void;
   onDeleteClick: (pendaftaranId: string) => void;
 }
 
 export const columns = ({
-  onEditClick,
+  onEditStatusClick,
   onDeleteClick,
 }: ColumnsConfig): ColumnDef<TypeMuridNotRegistered>[] => [
   // Checkbox selection
@@ -48,7 +48,7 @@ export const columns = ({
   },
 
   {
-    accessorFn: (row) => row.namaLengkap, // Akses data nested
+    accessorFn: (row) => row.namaLengkap,
     id: "namaMurid",
     header: ({ column }) => (
       <Button
@@ -63,7 +63,7 @@ export const columns = ({
       <Button
         variant="link"
         className="text-foreground w-fit px-0 text-left text-base"
-        onClick={() => onEditClick(row.original)}
+        onClick={() => onEditStatusClick(row.original)}
       >
         {row.original.namaLengkap}
       </Button>
@@ -71,23 +71,23 @@ export const columns = ({
     enableHiding: false,
   },
 
-  // Kolom Program Kelas (dari relasi)
+  // Kolom Program Kelas
   {
-    accessorFn: (row) => row.pilihanProgram, // Akses data nested
+    accessorFn: (row) => row.pilihanProgram,
     id: "programKelas",
     header: ({ column }) => (
       <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
-        Pilihan Program Kelas
+        Pilihan Program
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
     cell: ({ row }) => {
       return (
         <div
-          className="max-w-[350px] truncate"
+          className="max-w-[200px] truncate"
           title={row.original.pilihanProgram ?? ""}
         >
           {row.original.pilihanProgram}
@@ -98,25 +98,20 @@ export const columns = ({
 
   {
     accessorKey: "jamPulang",
+    header: "Jam Pulang",
     id: "jamPulang",
-    cell: ({ row }) => <div className="w-32">{row.original.jamPulang}</div>,
+    cell: ({ row }) => (
+      <div className="w-32 truncate text-sm" title={row.original.jamPulang}>
+        {row.original.jamPulang}
+      </div>
+    ),
   },
 
   {
     accessorKey: "noWA",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        No WhatsApp
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: "No WA",
     cell: ({ row }) => {
-      // Format tanggal ke format Indonesia
-
-      return <div className="min-w-[120px]">{row.original.noWA}</div>;
+      return <div className="min-w-[100px] text-sm">{row.original.noWA}</div>;
     },
   },
 
@@ -139,14 +134,6 @@ export const columns = ({
         </Badge>
       );
     },
-    filterFn: (row, id, value: unknown) => {
-      const cell = row.getValue(id);
-      if (Array.isArray(value)) {
-        const stringValues = value.map((v) => String(v));
-        return stringValues.includes(String(cell));
-      }
-      return String(cell) === String(value);
-    },
   },
 
   {
@@ -166,16 +153,16 @@ export const columns = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem onClick={() => onEditClick(row.original)}>
-              Edit
+            <DropdownMenuItem onClick={() => onEditStatusClick(row.original)}>
+              Edit Status
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {/* <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               onClick={() => onDeleteClick(row.original.id)}
             >
               Delete
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       );

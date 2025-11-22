@@ -1,4 +1,7 @@
-import { RegisterMuridSchema } from "@/types/murid.type";
+import {
+  RegisterMuridSchema,
+  updateStatusMuridSchema,
+} from "@/types/murid.type";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
 import { Prisma, StatusMurid } from "@prisma/client";
@@ -62,11 +65,22 @@ export const muridRouter = createTRPCRouter({
     // Cukup satu kueri ini
     const unregisteredMurid = await ctx.db.murid.findMany({
       where: {
-        // Temukan Murid yang tidak memiliki ('none')
-        // relasi 'pendaftaranKelas' sama sekali.
-        pendaftaranKelases: {
-          none: {},
-        },
+        OR: [
+          // Tidak punya pendaftaran sama sekali
+          {
+            pendaftaranKelases: {
+              none: {},
+            },
+          },
+          // Punya pendaftaran, tapi semuanya isAktif: false
+          {
+            pendaftaranKelases: {
+              every: {
+                isAktif: false,
+              },
+            },
+          },
+        ],
       },
       select: {
         id: true,
@@ -82,12 +96,7 @@ export const muridRouter = createTRPCRouter({
   }),
 
   updateStatusMurid: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().cuid(),
-        statusMurid: z.nativeEnum(StatusMurid),
-      }),
-    )
+    .input(updateStatusMuridSchema)
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
       const updatedMurid = await db.murid.update({

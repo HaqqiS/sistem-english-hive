@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "@/trpc/react";
-import { Gender } from "@prisma/client";
+import { Gender, StatusMurid } from "@prisma/client";
 import z from "zod";
 
 export type TypeMuridNotRegistered =
@@ -49,5 +49,14 @@ export const RegisterMuridSchema = z.object({
   pilihanProgram: z.string().min(1, "Pilihan program harus diisi").max(100),
   sumberInfo: z.string().min(1, "Sumber informasi harus diisi").max(100),
 });
+
+export const updateStatusMuridSchema = z.object({
+  id: z.string().cuid(),
+  statusMurid: z.nativeEnum(StatusMurid),
+});
+
+export type TypeUpdateStatusMuridSchema = z.infer<
+  typeof updateStatusMuridSchema
+>;
 
 export type TypeClientRegisterMuridSchema = z.infer<typeof RegisterMuridSchema>;

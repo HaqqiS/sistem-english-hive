@@ -20,6 +20,7 @@ export const kelasRouter = createTRPCRouter({
         bulanTahunAjar: true,
         deskripsi: true,
         hargaKelas: true,
+        cohortId: true,
         historyGuruKelases: {
           where: {
             selesaiPada: null,
@@ -50,6 +51,25 @@ export const kelasRouter = createTRPCRouter({
         where: { id: input.id },
       });
       return kelas;
+    }),
+
+  getKelasHistory: protectedProcedure
+    .input(z.object({ cohortId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const history = await ctx.db.kelas.findMany({
+        where: { cohortId: input.cohortId },
+        orderBy: { level: "asc" }, // Urutkan dari level terendah
+        select: {
+          id: true,
+          kodeKelas: true,
+          level: true,
+          bulanTahunAjar: true,
+          _count: {
+            select: { pendaftaranKelases: true }, // Hitung jumlah murid historis
+          },
+        },
+      });
+      return history;
     }),
 
   /**
@@ -209,8 +229,9 @@ export const kelasRouter = createTRPCRouter({
             jenisKelas: oldKelas.jenisKelas,
             tipe: oldKelas.tipe,
             grup: oldKelas.grup,
-            hargaKelas: oldKelas.hargaKelas, // Asumsi harga sama sesuai request
+            hargaKelas: oldKelas.hargaKelas,
             deskripsi: oldKelas.deskripsi,
+            cohortId: oldKelas.cohortId,
             // Override dengan input baru
             level: newLevel,
             bulanTahunAjar: newBulanTahunAjar,

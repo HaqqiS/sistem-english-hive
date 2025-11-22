@@ -65,6 +65,20 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
       },
     });
 
+  const createBulkMutation =
+    api.pendaftaranKelas.createBulkPendaftaranKelas.useMutation({
+      onSuccess: async (data) => {
+        await apiUtils.pendaftaranKelas.getAll.invalidate();
+        await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
+        await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+        toast.success(`Berhasil mendaftarkan ${data.count} murid ke kelas.`);
+        options?.onSuccessCreate?.();
+      },
+      onError: (error) => {
+        toast.error(`Gagal pendaftaran massal: ${error.message}`);
+      },
+    });
+
   // UPDATE
   const updateMutation =
     api.pendaftaranKelas.updatePendaftaranKelas.useMutation({
@@ -113,6 +127,11 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
         mutate: createMutation.mutate,
         mutateAsync: createMutation.mutateAsync,
         isPending: createMutation.isPending,
+      },
+      createBulk: {
+        mutate: createBulkMutation.mutate,
+        mutateAsync: createBulkMutation.mutateAsync,
+        isPending: createBulkMutation.isPending,
       },
       update: {
         mutate: updateMutation.mutate,

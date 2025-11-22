@@ -9,6 +9,8 @@ export type TypeKelasWithSesi =
 export type TypeKelasByGuruId = TypeKelasWithSesi[number];
 export type TypeSesiPertemuanShort =
   TypeKelasByGuruId["sesiPertemuanKelases"][number];
+export type TypeKelasHistory =
+  RouterOutputs["kelas"]["getKelasHistory"][number];
 
 const baseKelasSchema = z.object({
   jenisKelas: z.nativeEnum(JenisKelas),

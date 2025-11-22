@@ -210,8 +210,8 @@ export default function MuridForm({
                         <SelectItem value="privatSekolah">
                           Program Privat (Sekolah)
                         </SelectItem>
-                        <SelectItem value="regulerDewasa">
-                          Program Reguler (Dewasa/Kerja)
+                        <SelectItem value="privatDewasa">
+                          Program Privat (Dewasa/Kerja)
                         </SelectItem>
                       </SelectGroup>
                     </SelectContent>

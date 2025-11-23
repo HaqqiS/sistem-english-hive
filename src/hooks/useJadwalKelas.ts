@@ -1,12 +1,19 @@
 "use client";
 
 import { api } from "@/trpc/react";
+import type {
+  TypeJadwalHariIni,
+  TypeJadwalKelas,
+} from "@/types/jadwalKelas.type";
 import { toast } from "sonner";
 
 interface useJadwalKelasOptions {
   // Query options
   enableQuery?: boolean;
-  // initialData?: [];
+  initialData?: TypeJadwalKelas[];
+  initialDataJadwalHariIni?: TypeJadwalHariIni;
+
+  guruId?: string;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -31,10 +38,19 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 
   // ========== QUERIES ==========
 
-  // const JamCustomQuery = api.jam.getAllJamCustom.useQuery(undefined, {
-  //   enabled: options?.enableQuery ?? true,
-  //   initialData: options?.initialDataJamCustom,
-  // });
+  const jadwalHariIniQuery = api.jadwalKelas.getJadwalHariIniForGuru.useQuery(
+    { guruId: options?.guruId }, // Kirim guruId ke backend (bisa undefined)
+    {
+      enabled: options?.enableQuery ?? true,
+      initialData: options?.initialDataJadwalHariIni,
+      refetchOnWindowFocus: true, // Agar realtime jika ada perubahan
+    },
+  );
+
+  const getAllJadwal = api.jadwalKelas.getAll.useQuery(undefined, {
+    enabled: options?.enableQuery ?? true,
+    initialData: options?.initialData,
+  });
 
   // ========== MUTATIONS ==========
 
@@ -65,23 +81,29 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
   // });
 
   // DELETE
-  // const deleteMutationCustom = api.jam.deleteJamCustom.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.jam.getAllJamCustom.invalidate();
-  //     toast.success("Jam berhasil dihapus");
-  //     options?.onSuccessDelete?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal menghapus Jam: ${error.message}`);
-  //   },
-  // });
+  const deleteMutationCustom = api.jadwalKelas.delete.useMutation({
+    onSuccess: async () => {
+      await apiUtils.jadwalKelas.getAll.invalidate();
+      toast.success("Jadwal berhasil dihapus");
+      options?.onSuccessDelete?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal menghapus Jadwal: ${error.message}`);
+    },
+  });
 
   return {
     // Query results
-    // dataJamTetap: JamTetapQuery.data,
-    // isLoadingJamTetap: JamTetapQuery.isLoading,
-    // isErrorJamTetap: JamTetapQuery.isError,
-    // errorJamTetap: JamTetapQuery.error,
+    dataJadwalHariIni: jadwalHariIniQuery.data,
+    isLoadingJadwalHariIni: jadwalHariIniQuery.isLoading,
+    isErrorJadwalHariIni: jadwalHariIniQuery.isError,
+    errorJadwalHariIni: jadwalHariIniQuery.error,
+    refetchJadwalHariIni: jadwalHariIniQuery.refetch,
+
+    dataJadwal: getAllJadwal.data,
+    isLoadingDataJadwal: getAllJadwal.isLoading,
+    isErrorDataJadwal: getAllJadwal.isError,
+    errorDataJadwal: getAllJadwal.error,
 
     // Mutations
     mutations: {
@@ -95,11 +117,11 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
       //   mutateAsync: updateMutationCustom.mutateAsync,
       //   isPending: updateMutationCustom.isPending,
       // },
-      // delete: {
-      //   mutate: deleteMutationCustom.mutate,
-      //   mutateAsync: deleteMutationCustom.mutateAsync,
-      //   isPending: deleteMutationCustom.isPending,
-      // },
+      delete: {
+        mutate: deleteMutationCustom.mutate,
+        mutateAsync: deleteMutationCustom.mutateAsync,
+        isPending: deleteMutationCustom.isPending,
+      },
     },
 
     // Utils untuk manual invalidation jika perlu

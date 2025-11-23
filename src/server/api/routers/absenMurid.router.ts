@@ -5,6 +5,7 @@ import { StatusAbsenMurid, StatusPembayaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
 import dayjs from "@/utils/dateUtils";
+import { BATAS_SISA_UNTUK_TAGIHAN } from "@/constants/pembayaran";
 
 export const absenMuridRouter = createTRPCRouter({
   getAbsensiByJadwalSesiId: protectedProcedure
@@ -58,7 +59,7 @@ export const absenMuridRouter = createTRPCRouter({
       const pendaftar = await db.pendaftaranKelas.findMany({
         where: {
           kelasId: sesi.kelasId,
-          isAktif: true,
+          // isAktif: true,
         },
         select: {
           id: true,
@@ -168,7 +169,15 @@ export const absenMuridRouter = createTRPCRouter({
 
           // Jika perlu buat tagihan baru
           if (billingStatus.needNewBill) {
-            // -- PERBAIKAN: Pastikan nilainya number --
+            if (billingStatus.nextBillPembayaranKe > 3) {
+              // Jika tagihan berikutnya adalah ke-4 atau lebih, JANGAN buat tagihan.
+              // Karena tagihan selanjutnya akan dihandle oleh sistem Up Level (Pendaftaran Baru).
+              console.log(
+                `Tagihan ke-${billingStatus.nextBillPembayaranKe} ditahan. Maksimal 3 tagihan per level.`,
+              );
+              return absensi;
+            }
+
             const harga = billingStatus.hargaPerSesi ?? 0;
             const paket = billingStatus.paketPertemuan ?? 8;
 
@@ -189,6 +198,40 @@ export const absenMuridRouter = createTRPCRouter({
             });
 
             console.log(`Tagihan baru dibuat untuk ${billingStatus.muridName}`);
+          } else {
+            // Cek jika kuota ternyata masih aman (lebih dari batas)
+            // Ini terjadi jika guru merevisi absen dari HADIR -> OFF/SAKIT
+            if (billingStatus.sisaPertemuan > BATAS_SISA_UNTUK_TAGIHAN) {
+              // Cari tagihan terakhir yang BELUM LUNAS dan dibuat oleh SISTEM
+              const autoBillToDelete = await db.pembayaran.findFirst({
+                where: {
+                  pendaftaranKelasId: pendaftaran.id,
+                  statusBayar: {
+                    in: [
+                      StatusPembayaran.BELUM_LUNAS,
+                      StatusPembayaran.PENDING,
+                    ],
+                  },
+                  // Filter penting: Hanya hapus tagihan yang dibuat otomatis
+                  // Kita cek apakah 'note' mengandung kata kunci 'Auto-Generate'
+                  note: {
+                    contains: "Auto-Generate",
+                  },
+                },
+                orderBy: {
+                  createdAt: "desc", // Ambil yang paling baru dibuat
+                },
+              });
+
+              if (autoBillToDelete) {
+                await db.pembayaran.delete({
+                  where: { id: autoBillToDelete.id },
+                });
+                console.log(
+                  `[CLEANUP] Tagihan ID ${autoBillToDelete.id} dihapus karena revisi absen (Sisa Kuota: ${billingStatus.sisaPertemuan})`,
+                );
+              }
+            }
           }
         }
       }

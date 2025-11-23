@@ -79,9 +79,12 @@ export const sesiPertemuanRouter = createTRPCRouter({
         });
       }
 
-      // 2. Dapatkan Daftar Siswa Aktif (Baris)
+      // 2. Dapatkan Daftar Siswa yg pernah terdaftar di kelas ini
       const students = await db.pendaftaranKelas.findMany({
-        where: { kelasId: kelasId, isAktif: true },
+        where: {
+          kelasId: kelasId,
+          //  isAktif: true
+        },
         select: {
           murid: {
             select: { id: true, namaLengkap: true },

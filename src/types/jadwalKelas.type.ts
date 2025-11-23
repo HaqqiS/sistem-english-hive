@@ -12,6 +12,7 @@ dayjs.extend(customParseFormat);
 export type TypeJadwalHariIni =
   RouterOutputs["jadwalKelas"]["getJadwalHariIniForGuru"];
 export type TypeJadwalHariIniItem = TypeJadwalHariIni[number];
+export type TypeJadwalKelas = RouterOutputs["jadwalKelas"]["getAll"][number];
 
 /**
  * Skema dasar yang dibutuhkan oleh kedua tipe jadwal.

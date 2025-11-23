@@ -3,6 +3,7 @@ import { serverCreateJadwalSchema } from "@/types/jadwalKelas.type";
 import { TRPCError } from "@trpc/server";
 import type { Hari } from "@prisma/client";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
+import z from "zod";
 
 export const jadwalKelasRouter = createTRPCRouter({
   /**
@@ -74,123 +75,184 @@ export const jadwalKelasRouter = createTRPCRouter({
       return newJadwal;
     }),
 
-  getJadwalHariIniForGuru: protectedProcedure.query(async ({ ctx }) => {
-    const { db, session } = ctx;
-    const guruId = session.user.id;
-
-    // 1. Dapatkan hari ini dalam zona waktu bisnis (WITA)
-    // format 'dddd' (lowercase, locale 'id') -> 'kamis', lalu toUpperCase() -> "KAMIS"
-    const hariIni = dayjs()
-      .tz(TIMEZONE_BISNIS)
-      .format("dddd")
-      .toUpperCase() as Hari;
-
-    // 2. Cari semua JadwalKelas untuk guru ini yang aktif hari ini
-    const jadwalHariIni = await db.jadwalKelas.findMany({
-      where: {
-        // Filter berdasarkan hari
-        hari: hariIni,
-        // Filter berdasarkan guru yang login & aktif mengajar kelas tsb
-        // kelas: {
-        //   historyGuruKelases: {
-        //     some: {
-        //       guruId: guruId,
-        //       statusGuru: "ACTIVE",
-        //     },
-        //   },
-        // },
+  getAll: protectedProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+    // TODO: Tambahkan pagination nanti
+    return db.jadwalKelas.findMany({
+      orderBy: {
+        hari: "asc", // Urutkan Senin -> Minggu (perlu mapping enum jika ingin akurat)
       },
-      select: {
-        id: true, // ID JadwalKelas (untuk "Mulai Sesi")
-        kelasId: true,
-        ruangId: true,
-        kelas: {
-          select: {
-            kodeKelas: true,
+      include: {
+        kelas: { select: { kodeKelas: true, jenisKelas: true } },
+        ruang: {
+          select: { namaRuang: true, cabang: { select: { namaCabang: true } } },
+        },
+        jamSlotTetap: true,
+        jamSlotCustom: true,
+      },
+    });
+  }),
+
+  getByKelasId: protectedProcedure
+    .input(z.object({ kelasId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.jadwalKelas.findMany({
+        where: { kelasId: input.kelasId },
+        include: {
+          ruang: true,
+          jamSlotTetap: true,
+          jamSlotCustom: true,
+        },
+      });
+    }),
+
+  getJadwalHariIniForGuru: protectedProcedure
+    .input(
+      z
+        .object({
+          guruId: z.string().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const targetGuruId = input?.guruId ?? session.user.id;
+
+      const hariIni = dayjs()
+        .tz(TIMEZONE_BISNIS)
+        .format("dddd")
+        .toUpperCase() as Hari;
+
+      // 2. Cari semua JadwalKelas untuk guru ini yang aktif hari ini
+      const jadwalHariIni = await db.jadwalKelas.findMany({
+        where: {
+          // Filter berdasarkan hari
+          hari: hariIni,
+          kelas: {
             historyGuruKelases: {
-              where: {
+              some: {
+                guruId: targetGuruId,
                 statusGuru: "ACTIVE",
               },
-              select: {
-                guru: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-              take: 1,
             },
           },
         },
-        ruang: {
-          select: {
-            namaRuang: true,
+        select: {
+          id: true, // ID JadwalKelas (untuk "Mulai Sesi")
+          kelasId: true,
+          ruangId: true,
+          kelas: {
+            select: {
+              kodeKelas: true,
+              historyGuruKelases: {
+                where: {
+                  statusGuru: "ACTIVE",
+                },
+                select: {
+                  guru: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+                take: 1,
+              },
+            },
+          },
+          ruang: {
+            select: {
+              namaRuang: true,
+            },
+          },
+          // Ambil jam dari kedua kemungkinan sumber
+          jamSlotTetap: {
+            select: {
+              jamMulai: true,
+              jamSelesai: true,
+            },
+          },
+          jamSlotCustom: {
+            select: {
+              jamMulai: true,
+              jamSelesai: true,
+            },
           },
         },
-        // Ambil jam dari kedua kemungkinan sumber
-        jamSlotTetap: {
-          select: {
-            jamMulai: true,
-            jamSelesai: true,
+        orderBy: [
+          { jamSlotTetap: { jamMulai: "asc" } },
+          { jamSlotCustom: { jamMulai: "asc" } },
+        ],
+      });
+
+      // 3. (Opsional tapi Direkomendasikan) Cek sesi yang sudah dibuat hari ini
+      const hariIniStart = dayjs().tz(TIMEZONE_BISNIS).startOf("day").toDate();
+      const hariIniEnd = dayjs().tz(TIMEZONE_BISNIS).endOf("day").toDate();
+
+      const sesiSudahDibuat = await db.sesiPertemuanKelas.findMany({
+        where: {
+          jadwalKelasId: {
+            in: jadwalHariIni.map((j) => j.id),
+          },
+          tanggalWaktu: {
+            gte: hariIniStart,
+            lte: hariIniEnd,
           },
         },
-        jamSlotCustom: {
-          select: {
-            jamMulai: true,
-            jamSelesai: true,
-          },
+        select: {
+          id: true, // ID SesiPertemuanKelas
+          jadwalKelasId: true,
         },
-      },
-      orderBy: [
-        { jamSlotTetap: { jamMulai: "asc" } },
-        { jamSlotCustom: { jamMulai: "asc" } },
-      ],
-    });
+      });
 
-    // 3. (Opsional tapi Direkomendasikan) Cek sesi yang sudah dibuat hari ini
-    const hariIniStart = dayjs().tz(TIMEZONE_BISNIS).startOf("day").toDate();
-    const hariIniEnd = dayjs().tz(TIMEZONE_BISNIS).endOf("day").toDate();
+      const sesiMap = new Map(
+        sesiSudahDibuat.map((s) => [s.jadwalKelasId, s.id]),
+      );
 
-    const sesiSudahDibuat = await db.sesiPertemuanKelas.findMany({
-      where: {
-        jadwalKelasId: {
-          in: jadwalHariIni.map((j) => j.id),
-        },
-        tanggalWaktu: {
-          gte: hariIniStart,
-          lte: hariIniEnd,
-        },
-      },
-      select: {
-        id: true, // ID SesiPertemuanKelas
-        jadwalKelasId: true,
-      },
-    });
+      // 4. Proses data agar rapi untuk UI
+      const hasil = jadwalHariIni.map((jadwal) => {
+        const jam = jadwal.jamSlotTetap ?? jadwal.jamSlotCustom;
+        const sesiId = sesiMap.get(jadwal.id) ?? null;
+        const guruAktif = jadwal.kelas.historyGuruKelases[0]?.guru;
 
-    const sesiMap = new Map(
-      sesiSudahDibuat.map((s) => [s.jadwalKelasId, s.id]),
-    );
+        return {
+          jadwalId: jadwal.id,
+          kelasId: jadwal.kelasId,
+          ruangId: jadwal.ruangId,
+          kodeKelas: jadwal.kelas.kodeKelas,
+          namaRuang: jadwal.ruang.namaRuang,
+          jamMulai: jam?.jamMulai ?? "N/A",
+          jamSelesai: jam?.jamSelesai ?? "N/A",
+          guru: guruAktif ? { id: guruAktif.id, name: guruAktif.name } : null,
+          sesiIdSudahDibuat: sesiId,
+          isJadwalPengganti: targetGuruId !== session.user.id,
+        };
+      });
 
-    // 4. Proses data agar rapi untuk UI
-    const hasil = jadwalHariIni.map((jadwal) => {
-      const jam = jadwal.jamSlotTetap ?? jadwal.jamSlotCustom;
-      const sesiId = sesiMap.get(jadwal.id) ?? null;
-      const guruAktif = jadwal.kelas.historyGuruKelases[0]?.guru;
+      return hasil;
+    }),
 
-      return {
-        jadwalId: jadwal.id,
-        kelasId: jadwal.kelasId,
-        ruangId: jadwal.ruangId,
-        kodeKelas: jadwal.kelas.kodeKelas,
-        namaRuang: jadwal.ruang.namaRuang,
-        jamMulai: jam?.jamMulai ?? "N/A",
-        jamSelesai: jam?.jamSelesai ?? "N/A",
-        guru: guruAktif ? { id: guruAktif.id, name: guruAktif.name } : null,
-        sesiIdSudahDibuat: sesiId,
-      };
-    });
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx;
 
-    return hasil;
-  }),
+      const jadwal = await db.jadwalKelas.findUnique({
+        where: { id: input.id },
+        select: { jamSlotCustomId: true },
+      });
+
+      if (!jadwal) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Jadwal tidak ditemukan",
+        });
+      }
+
+      // Hapus Jadwal
+      await db.jadwalKelas.delete({
+        where: { id: input.id },
+      });
+      return { success: true };
+    }),
 });

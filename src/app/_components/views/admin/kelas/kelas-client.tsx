@@ -3,7 +3,7 @@
 // import { DataTable } from "@/app/_components/shared/data-table";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as kelas } from "./columns/columns-kelas";
-import { columns as columnsMurid } from "../murid/columns/columns-murid-not-registered";
+import { columns as jadwal } from "./columns/columns-jadwal";
 import type { TypeKelas } from "@/types/kelas.type";
 import TambahProgramKelas from "./drawers/tambah-kelas";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,15 +20,17 @@ import { toast } from "sonner";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
 import RangkumanSesiTab from "./tabs/rangkuman-sesi-tab";
 import UpLevelKelas from "./drawers/up-level-kelas";
+import { useJadwalKelas } from "@/hooks/useJadwalKelas";
+import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
 
 interface ProgramKelasClientProps {
   initialDataKelas: TypeKelas[];
-  initialDataMuridNotRegistered: TypeMuridNotRegistered[];
+  initialDataJadwal: TypeJadwalKelas[];
 }
 
 export default function KelasClient({
   initialDataKelas,
-  initialDataMuridNotRegistered,
+  initialDataJadwal,
 }: ProgramKelasClientProps) {
   const { openDrawer: openKelasDrawer } = useKelasStore();
   const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
@@ -37,6 +39,12 @@ export default function KelasClient({
   const [selectedKelasToDelete, setSelectedKelasToDelete] =
     useState<TypeKelas | null>(null);
 
+  const [deleteJadwalDialogOpen, setDeleteJadwalDialogOpen] = useState(false);
+  const [selectedJadwalToDelete, setSelectedJadwalToDelete] = useState<{
+    id: string;
+    deskripsi: string;
+  } | null>(null);
+
   const { data: dataKelas, mutations: kelasMutations } = useKelas({
     initialData: initialDataKelas,
     onSuccessDelete: () => {
@@ -44,8 +52,12 @@ export default function KelasClient({
       setSelectedKelasToDelete(null);
     },
   });
-  const { dataMuridNotRegistered } = useMurid({
-    initialDataNotRegistered: initialDataMuridNotRegistered,
+  const { dataJadwal, mutations: jadwalMutation } = useJadwalKelas({
+    initialData: initialDataJadwal,
+    onSuccessDelete: () => {
+      setDeleteJadwalDialogOpen(false);
+      setSelectedJadwalToDelete(null);
+    },
   });
 
   const handleEditClickKelas = (item: TypeKelas) => {
@@ -67,6 +79,12 @@ export default function KelasClient({
     if (!selectedKelasToDelete) return;
 
     await kelasMutations.delete.mutateAsync({ id: selectedKelasToDelete.id });
+  };
+
+  const handleConfirmDeleteJadwal = async () => {
+    if (!selectedJadwalToDelete) return;
+
+    await jadwalMutation.delete.mutateAsync({ id: selectedJadwalToDelete.id });
   };
 
   const columnsKelas = kelas({
@@ -93,6 +111,16 @@ export default function KelasClient({
     onDeleteClick: (kelasId, kodeKelas) => {
       console.log("deleted: ", kelasId, kodeKelas);
       handleDeleteClickKelas(kelasId, kodeKelas);
+    },
+  });
+
+  const columnsJadwal = jadwal({
+    onEditClick: (item) => {
+      console.log("edit jadwal: ", item);
+    },
+    onDeleteClick: (id, deskripsi) => {
+      setSelectedJadwalToDelete({ id, deskripsi });
+      setDeleteJadwalDialogOpen(true);
     },
   });
 
@@ -160,7 +188,27 @@ export default function KelasClient({
             </header>
 
             <TambahJadwalKelas />
+            <DeleteConfirmationDialog
+              isOpen={deleteJadwalDialogOpen}
+              onOpenChange={setDeleteJadwalDialogOpen}
+              title="Hapus Jadwal Kelas"
+              description={
+                <>
+                  Yakin ingin menghapus Jadwal Kelas{" "}
+                  <span className="text-accent font-bold">
+                    {selectedJadwalToDelete?.deskripsi}
+                  </span>
+                  ? Tindakan ini tidak dapat dibatalkan.
+                </>
+              }
+              onConfirm={handleConfirmDeleteJadwal}
+              isLoading={jadwalMutation.delete.isPending}
+              confirmText="Hapus"
+              cancelText="Batal"
+            />
           </div>
+
+          <DataTable columns={columnsJadwal} data={dataJadwal ?? []} />
         </div>
       </TabsContent>
     </Tabs>

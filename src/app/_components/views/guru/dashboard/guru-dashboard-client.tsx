@@ -43,16 +43,26 @@ import {
   Loader2,
   Play,
   Replace,
+  User,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { StatusAbsenGuru } from "@prisma/client";
 import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
 import { toast } from "sonner";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
+import { useUser } from "@/hooks/useUser";
+import { useJadwalKelas } from "@/hooks/useJadwalKelas";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 
 export default function GuruDashboardClient() {
   const router = useRouter();
+  const { data: session } = useSession();
 
-  // --- State untuk Dialog Ganti Ruang ---
+  // --- State  ---
   const [isGantiRuangOpen, setIsGantiRuangOpen] = useState(false);
   const [selectedJadwal, setSelectedJadwal] =
     useState<TypeJadwalHariIniItem | null>(null);
@@ -60,45 +70,66 @@ export default function GuruDashboardClient() {
     undefined,
   );
 
+  const [selectedGuruId, setSelectedGuruId] = useState<string | undefined>(
+    undefined,
+  );
+
+  const [isConfirmStartOpen, setIsConfirmStartOpen] = useState(false);
+  // Kita perlu menyimpan data jadwal & ruang sementara sebelum user klik "Ya/Confirm"
+  const [pendingStartData, setPendingStartData] = useState<{
+    jadwal: TypeJadwalHariIniItem;
+    ruangId?: string;
+  } | null>(null);
+
   // --- Hooks & Mutations ---
-  // Menggunakan custom hook yang sudah direfactor
+  const { data: listGuru, isLoading: isLoadingGuru } = useUser();
+
+  const {
+    dataJadwalHariIni: jadwalHariIni,
+    isLoadingJadwalHariIni: isLoading,
+    isErrorJadwalHariIni: isError,
+    errorJadwalHariIni: error,
+  } = useJadwalKelas({
+    guruId: selectedGuruId, // Pass filter ID ke hook
+  });
+
+  const { data: semuaRuangan, isLoading: isLoadingRuangan } =
+    api.ruang.getAll.useQuery();
+
   const { mutations } = useAbsenGuru({
     onSuccessStartSesi: (newSesiId) => {
       setIsGantiRuangOpen(false);
-      // Redirect ke halaman absensi
       router.push(`/guru/absen/${newSesiId}`);
     },
   });
 
-  // Ambil mutation object
   const {
     mutate: mulaiSesi,
     isPending: isStartingSesi,
     variables: startingVars,
   } = mutations.startSesi;
 
-  // --- Data Queries ---
-  const {
-    data: jadwalHariIni,
-    isLoading,
-    isError,
-    error,
-  } = api.jadwalKelas.getJadwalHariIniForGuru.useQuery();
-
-  const { data: semuaRuangan, isLoading: isLoadingRuangan } =
-    api.ruang.getAll.useQuery();
+  // --- Helpers ---
+  const activeGuruName = selectedGuruId
+    ? (listGuru?.find((g) => g.id === selectedGuruId)?.name ?? "Guru Lain")
+    : "Saya Sendiri";
 
   // --- Handlers ---
-  const handleMulaiSesi = (
+  const handleMulaiSesiClick = (
     jadwal: TypeJadwalHariIniItem,
     ruangId: string | undefined,
   ) => {
     if (isStartingSesi) return;
+    setPendingStartData({ jadwal, ruangId });
+    setIsConfirmStartOpen(true);
+  };
+  const handleConfirmStartSesi = () => {
+    if (!pendingStartData) return;
 
     mulaiSesi({
-      jadwalKelasId: jadwal.jadwalId,
+      jadwalKelasId: pendingStartData.jadwal.jadwalId,
       status: StatusAbsenGuru.HADIR,
-      overrideRuangId: ruangId,
+      overrideRuangId: pendingStartData.ruangId,
     });
   };
 
@@ -110,16 +141,24 @@ export default function GuruDashboardClient() {
 
   const handleGantiRuangSubmit = () => {
     if (selectedJadwal) {
-      handleMulaiSesi(selectedJadwal, overrideRuangId);
+      setIsGantiRuangOpen(false);
+      handleMulaiSesiClick(selectedJadwal, overrideRuangId);
     }
   };
 
   // --- Render States ---
   if (isLoading || isLoadingRuangan) {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-64" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
       </div>
     );
   }
@@ -134,25 +173,94 @@ export default function GuruDashboardClient() {
     );
   }
 
-  if (!jadwalHariIni || jadwalHariIni.length === 0) {
-    return (
-      <Alert
-        variant="default"
-        className="bg-muted/50 border-muted-foreground/20"
-      >
-        <CheckCircle2 className="h-4 w-4 text-green-600" />
-        <AlertTitle>Jadwal Kosong</AlertTitle>
-        <AlertDescription>
-          Anda tidak memiliki jadwal mengajar hari ini. Selamat beristirahat!
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
   return (
-    <>
+    <div className="space-y-6">
+      <div
+        className={cn(
+          "flex flex-col gap-4 rounded-lg border p-4 transition-colors sm:flex-row sm:items-center sm:justify-between",
+          selectedGuruId
+            ? "border-orange-200 bg-orange-50/50 dark:border-orange-900/50 dark:bg-orange-950/20"
+            : "bg-card",
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              "flex size-10 items-center justify-center rounded-full",
+              selectedGuruId
+                ? "bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-200"
+                : "bg-primary/10 text-primary",
+            )}
+          >
+            {selectedGuruId ? (
+              <Users className="size-5" />
+            ) : (
+              <UserCheck className="size-5" />
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium">
+              {selectedGuruId ? "Mode Guru Pengganti" : "Jadwal Mengajar Anda"}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Menampilkan jadwal:{" "}
+              <span className="text-foreground font-semibold">
+                {activeGuruName}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <Select
+            value={selectedGuruId ?? "me"}
+            onValueChange={(val) =>
+              setSelectedGuruId(val === "me" ? undefined : val)
+            }
+            disabled={isLoadingGuru}
+          >
+            <SelectTrigger className="bg-background w-full sm:w-60">
+              <SelectValue placeholder="Pilih Guru..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="me">
+                <div className="flex items-center gap-2 font-medium">
+                  <User className="h-4 w-4" />
+                  Jadwal Saya (Default)
+                </div>
+              </SelectItem>
+              {/* Separator visual jika perlu */}
+              <div className="text-muted-foreground px-2 py-1.5 text-xs font-semibold">
+                Guru Lain
+              </div>
+              {listGuru
+                ?.filter((guru) => guru.id !== session?.user.id)
+                .map((guru) => (
+                  <SelectItem key={guru.id} value={guru.id}>
+                    {guru.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {jadwalHariIni.map((jadwal) => {
+        {!jadwalHariIni ||
+          (jadwalHariIni.length === 0 && (
+            <Alert
+              variant="default"
+              className="bg-muted/50 border-muted-foreground/20 col-span-full items-center"
+            >
+              <CheckCircle2 className="text-accent-foreground h-6 w-6" />
+              <AlertTitle>Jadwal Kosong</AlertTitle>
+              <AlertDescription>
+                tidak ada jadwal mengajar hari ini. Silakan bersantai atau
+                persiapkan materi untuk sesi berikutnya.
+              </AlertDescription>
+            </Alert>
+          ))}
+        {jadwalHariIni?.map((jadwal) => {
           // Cek apakah sesi untuk jadwal ini sudah dibuat
           const sudahDimulai = !!jadwal.sesiIdSudahDibuat;
           const isThisItemLoading =
@@ -202,8 +310,8 @@ export default function GuruDashboardClient() {
                   <div className="flex w-full items-center gap-2">
                     <Button
                       className="flex-1"
-                      onClick={() => handleMulaiSesi(jadwal, undefined)}
-                      disabled={isStartingSesi} // Disable semua tombol agar tidak spam klik
+                      onClick={() => handleMulaiSesiClick(jadwal, undefined)}
+                      disabled={isStartingSesi}
                     >
                       {isThisItemLoading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -292,6 +400,34 @@ export default function GuruDashboardClient() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+
+      <DeleteConfirmationDialog
+        isOpen={isConfirmStartOpen}
+        onOpenChange={setIsConfirmStartOpen}
+        title="Mulai Sesi Kelas"
+        description={
+          <>
+            Apakah Anda yakin ingin memulai sesi untuk kelas{" "}
+            <span className="text-accent font-bold">
+              {pendingStartData?.jadwal.kodeKelas}
+            </span>
+            ?
+            <br />
+            <span className="text-muted-foreground mt-2 block text-xs">
+              Pastikan Anda berada di ruangan yang benar (
+              {pendingStartData?.ruangId
+                ? semuaRuangan?.find((r) => r.id === pendingStartData.ruangId)
+                    ?.namaRuang
+                : pendingStartData?.jadwal.namaRuang}
+              )
+            </span>
+          </>
+        }
+        onConfirm={handleConfirmStartSesi}
+        isLoading={isStartingSesi}
+        confirmText="Mulai Sesi"
+        cancelText="Batal"
+      />
+    </div>
   );
 }

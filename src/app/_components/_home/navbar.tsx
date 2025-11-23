@@ -87,9 +87,36 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Button className="mt-4 w-full" size="sm" onClick={() => signIn()}>
-              Log In
-            </Button>
+
+            {!session?.user && (
+              <Button
+                variant="outline"
+                className="mt-4 w-full"
+                size="sm"
+                onClick={() => signIn()}
+              >
+                Log In
+              </Button>
+            )}
+            {session?.user.role === UserRole.ADMIN ? (
+              <Button
+                variant="outline"
+                className="mt-4 w-full"
+                size="sm"
+                asChild
+              >
+                <Link href="/admin">Dashboard</Link>
+              </Button>
+            ) : session?.user.role === UserRole.GURU ? (
+              <Button
+                variant="outline"
+                className="mt-4 w-full"
+                size="sm"
+                asChild
+              >
+                <Link href="/guru">Dashboard</Link>
+              </Button>
+            ) : null}
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
 import { Prisma, StatusMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { paginationSchema } from "@/types/pagination.type";
 
 export const muridRouter = createTRPCRouter({
   registerMurid: publicProcedure
@@ -57,9 +58,36 @@ export const muridRouter = createTRPCRouter({
     }),
 
   getAllMurid: protectedProcedure.query(async ({ ctx }) => {
-    const allMurid = await ctx.db.murid.findMany();
+    const allMurid = await ctx.db.murid.findMany({
+      orderBy: { createdAt: "desc" }, // Tambahkan order agar rapi
+    });
     return allMurid;
   }),
+
+  getAllPaginated: protectedProcedure
+    .input(paginationSchema)
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { pageIndex, pageSize } = input;
+
+      // Gunakan transaction untuk performa (count + findMany paralel)
+      const [total, data] = await db.$transaction([
+        db.murid.count(),
+        db.murid.findMany({
+          skip: pageIndex * pageSize,
+          take: pageSize,
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
+
+      const pageCount = Math.ceil(total / pageSize);
+
+      return {
+        data,
+        pageCount,
+        total,
+      };
+    }),
 
   getMuridWhereNotRegistered: protectedProcedure.query(async ({ ctx }) => {
     // Cukup satu kueri ini

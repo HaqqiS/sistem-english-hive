@@ -4,6 +4,8 @@ import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type { RouterOutputs } from "@/trpc/react";
 import type { StatusPembayaran } from "@prisma/client";
+import type { PaginationState } from "@tanstack/react-table";
+import { keepPreviousData } from "@tanstack/react-query";
 
 // Define types based on Router Outputs for easier usage in components
 export type PembayaranData = RouterOutputs["pembayaran"]["getAll"][number];
@@ -14,10 +16,12 @@ export type SaldoSiswaData = RouterOutputs["pembayaran"]["getSaldoSiswa"];
 interface UsePembayaranOptions {
   // Query options
   enableGetAll?: boolean;
+  initialDataPaginated?: { data: PembayaranData[]; pageCount: number };
   enableGetJatuhTempo?: boolean;
 
-  // Filter options for getAll
-  statusFilter?: StatusPembayaran;
+  // Pagination & Filter
+  pagination?: PaginationState;
+  statusFilter?: StatusPembayaran | "ALL";
   muridIdFilter?: string;
 
   // Mutation callbacks
@@ -32,19 +36,40 @@ interface UsePembayaranOptions {
 export function usePembayaran(options?: UsePembayaranOptions) {
   const apiUtils = api.useUtils();
 
+  const pageIndex = options?.pagination?.pageIndex ?? 0;
+  const pageSize = options?.pagination?.pageSize ?? 10;
   // ========== QUERIES ==========
 
   // 1. Get All Pembayaran (with optional filters)
   const getAllQuery = api.pembayaran.getAll.useQuery(
     options?.statusFilter || options?.muridIdFilter
       ? {
-          status: options.statusFilter,
-          muridId: options.muridIdFilter,
+          status:
+            options?.statusFilter && options.statusFilter !== "ALL"
+              ? options.statusFilter
+              : undefined,
+          muridId: options?.muridIdFilter,
         }
       : undefined,
     {
       enabled: options?.enableGetAll ?? true,
       refetchOnWindowFocus: true, // Keep data fresh
+    },
+  );
+
+  const getAllPaginatedQuery = api.pembayaran.getAllPaginated.useQuery(
+    {
+      pageIndex,
+      pageSize,
+      status:
+        options?.statusFilter && options.statusFilter !== "ALL"
+          ? options.statusFilter
+          : undefined,
+      muridId: options?.muridIdFilter,
+    },
+    {
+      enabled: options?.enableGetAll ?? true,
+      placeholderData: keepPreviousData, // Agar UI tidak flicker saat ganti halaman
     },
   );
 
@@ -112,6 +137,15 @@ export function usePembayaran(options?: UsePembayaranOptions) {
     isErrorGetAll: getAllQuery.isError,
     errorGetAll: getAllQuery.error,
     refetchGetAll: getAllQuery.refetch,
+
+    dataGetAllPaginated: getAllPaginatedQuery.data?.data ?? [],
+    pageCount: getAllPaginatedQuery.data?.pageCount ?? -1,
+    totalRows: getAllPaginatedQuery.data?.total ?? 0,
+    isLoadingGetAllPaginated: getAllPaginatedQuery.isLoading,
+    isFetchingGetAllPaginated: getAllPaginatedQuery.isFetching, // Berguna untuk indikator loading halus
+    isErrorGetAllPaginated: getAllPaginatedQuery.isError,
+    errorGetAllPaginated: getAllPaginatedQuery.error,
+    refetchGetAllPaginated: getAllPaginatedQuery.refetch,
 
     dataJatuhTempo: getJatuhTempoQuery.data ?? [],
     isLoadingJatuhTempo: getJatuhTempoQuery.isLoading,

@@ -1,7 +1,7 @@
 "use client";
 
 import { DataTable } from "@/app/_components/shared/data-table-generic";
-import type { TypeKelas } from "@/types/kelas.type";
+import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
@@ -14,6 +14,7 @@ import EditMurid from "./drawer/edit-murid";
 import { useMuridStore } from "@/store/useMuridStore";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
+import type { PaginationState } from "@tanstack/react-table";
 
 interface ProgramMuridClientProps {
   initialDataMuridNotRegistered: TypeMuridNotRegistered[];
@@ -25,6 +26,10 @@ export default function MuridClient({
   initialDataAllMurid,
 }: ProgramMuridClientProps) {
   // STATE
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
   const [deleteMuridDialogOpen, setDeleteMuridDialogOpen] = useState(false);
   const [selectedMuridToDelete, setSelectedMuridToDelete] = useState<{
     id: string;
@@ -34,12 +39,17 @@ export default function MuridClient({
   const { openDrawer } = useMuridStore();
 
   // HOOKS/QUERIES&MUTATIONS
-  const { dataMuridNotRegistered } = useMurid({
-    initialDataNotRegistered: initialDataMuridNotRegistered,
-  });
+  const {
+    dataMuridNotRegistered,
 
-  const { dataAllMurid, mutations } = useMurid({
-    initialDataAllMurid: initialDataAllMurid,
+    dataAllMuridPaginated,
+    pageCount,
+    isLoadingAllMuridPaginated,
+
+    mutations,
+  } = useMurid({
+    initialDataNotRegistered: initialDataMuridNotRegistered,
+    pagination: pagination, // Pass pagination state ke hook
     onSuccessDelete: () => {
       setDeleteMuridDialogOpen(false);
       setSelectedMuridToDelete(null);
@@ -146,7 +156,13 @@ export default function MuridClient({
             />
           </div>
 
-          <DataTable columns={columnsAllMurid} data={dataAllMurid ?? []} />
+          <DataTablePagination
+            columns={columnsAllMurid}
+            data={dataAllMuridPaginated}
+            pageCount={pageCount}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+          />
         </div>
       </TabsContent>
       <EditMuridNotRegistered />

@@ -6,6 +6,7 @@ import { UserRole } from "@/server/auth/type";
 import { TRPCError } from "@trpc/server";
 import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
 import { updatePembayaranSchema } from "@/types/pembayaran.type";
+import { paginationSchema } from "@/types/pagination.type";
 
 export const pembayaranRouter = createTRPCRouter({
   // 1. GET ALL (Dengan Filter Opsional)
@@ -39,6 +40,55 @@ export const pembayaranRouter = createTRPCRouter({
           verifiedBy: { select: { name: true } }, // Lihat siapa admin yang verifikasi
         },
       });
+    }),
+
+  getAllPaginated: protectedProcedure
+    .input(
+      paginationSchema.extend({
+        status: z.nativeEnum(StatusPembayaran).optional(),
+        muridId: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { pageIndex, pageSize } = input;
+
+      const whereClause: Prisma.PembayaranWhereInput = {};
+
+      if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
+        whereClause.statusBayar = input.status;
+      }
+      if (input.muridId) {
+        whereClause.pendaftaranKelas = { muridId: input.muridId };
+      }
+
+      // Transaction untuk performa lebih baik (count + findMany)
+      const [total, data] = await db.$transaction([
+        db.pembayaran.count({ where: whereClause }),
+        db.pembayaran.findMany({
+          skip: pageIndex * pageSize,
+          take: pageSize,
+          where: whereClause,
+          orderBy: { tanggalJatuhTempo: "desc" },
+          include: {
+            pendaftaranKelas: {
+              include: {
+                murid: { select: { namaLengkap: true, noWA: true } },
+                Kelas: { select: { kodeKelas: true, hargaKelas: true } },
+              },
+            },
+            verifiedBy: { select: { name: true } },
+          },
+        }),
+      ]);
+
+      const pageCount = Math.ceil(total / pageSize);
+
+      return {
+        data,
+        pageCount,
+        total,
+      };
     }),
 
   // 2. GET TAGIHAN JATUH TEMPO (Untuk Dashboard)

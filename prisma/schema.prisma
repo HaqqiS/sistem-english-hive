@@ -250,6 +250,7 @@ model Kelas {
     hargaKelas     Int
     kodeKelas      String // e.g., "TinyTods 1-A|reguler|03/2025"
 
+    // cohortId Int @default(autoincrement())
     cohortId String @default(cuid())
 
     createdAt DateTime @default(now())

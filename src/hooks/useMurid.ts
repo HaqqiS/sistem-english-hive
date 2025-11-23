@@ -2,6 +2,8 @@
 
 import { api } from "@/trpc/react";
 import type { TypeMuridNotRegistered, TypeAllMurid } from "@/types/murid.type";
+import { keepPreviousData } from "@tanstack/react-query";
+import type { PaginationState } from "@tanstack/react-table";
 import { toast } from "sonner";
 
 interface useMuridOptions {
@@ -9,6 +11,9 @@ interface useMuridOptions {
   enableQuery?: boolean;
   initialDataNotRegistered?: TypeMuridNotRegistered[];
   initialDataAllMurid?: TypeAllMurid[];
+  initialDataAllPaginated?: { data: TypeAllMurid[]; pageCount: number };
+
+  pagination?: PaginationState;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -30,6 +35,8 @@ interface useMuridOptions {
  */
 export function useMurid(options?: useMuridOptions) {
   const apiUtils = api.useUtils();
+  const pageIndex = options?.pagination?.pageIndex ?? 0;
+  const pageSize = options?.pagination?.pageSize ?? 10;
 
   // ========== QUERIES ==========
   const MuridNotRegisteredQuery = api.murid.getMuridWhereNotRegistered.useQuery(
@@ -44,6 +51,14 @@ export function useMurid(options?: useMuridOptions) {
     enabled: options?.enableQuery ?? true,
     initialData: options?.initialDataAllMurid,
   });
+
+  const MuridPaginatedQuery = api.murid.getAllPaginated.useQuery(
+    { pageIndex, pageSize },
+    {
+      enabled: !!options?.pagination,
+      placeholderData: keepPreviousData,
+    },
+  );
 
   // ========== MUTATIONS ==========
 
@@ -107,6 +122,13 @@ export function useMurid(options?: useMuridOptions) {
     isLoadingAllMurid: MuridQuery.isLoading,
     isErrorAllMurid: MuridQuery.isError,
     errorAllMurid: MuridQuery.error,
+
+    dataAllMuridPaginated: MuridPaginatedQuery.data?.data ?? [],
+    pageCount: MuridPaginatedQuery.data?.pageCount ?? -1,
+    isLoadingAllMuridPaginated: MuridPaginatedQuery.isLoading,
+    isFetchingAllMuridPaginated: MuridPaginatedQuery.isFetching,
+    isErrorAllMuridPaginated: MuridPaginatedQuery.isError,
+    errorAllMuridPaginated: MuridPaginatedQuery.error,
 
     // Mutations
     mutations: {

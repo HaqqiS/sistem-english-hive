@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { api } from "@/trpc/react";
+import { DataTable } from "@/app/_components/shared/data-table";
 import { columns } from "./columns-pembayaran";
 import { StatusPembayaran } from "@prisma/client";
 import {
@@ -14,13 +13,13 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { type TypePembayaran } from "@/types/pembayaran.type";
 import { toRupiah } from "@/utils/toRupiah";
 import { usePembayaran } from "@/hooks/usePembayaran";
 import { usePembayaranStore } from "@/store/usePembayaranStore";
 import EditPembayaran from "./edit-pembayaran";
+import type { PaginationState } from "@tanstack/react-table";
 
 export default function PembayaranClient() {
   // --- STATE ---
@@ -32,16 +31,23 @@ export default function PembayaranClient() {
   // State Delete
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<TypePembayaran | null>(null);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   // --- HOOKS/QUERIES/MUTATIONS ---
   const {
-    dataGetAll: dataPembayaran,
-    isLoadingGetAll: isLoading,
-    refetchGetAll: refetch,
+    dataGetAllPaginated: dataPembayaran,
+    pageCount,
+    isLoadingGetAllPaginated: isLoading,
+    isFetchingGetAllPaginated: isFetching,
+    refetchGetAllPaginated: refetch,
     mutations,
   } = usePembayaran({
-    statusFilter: statusFilter !== "ALL" ? statusFilter : undefined,
+    statusFilter: statusFilter,
     enableGetAll: true,
+    pagination: pagination,
     onSuccessDelete: () => {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -99,11 +105,11 @@ export default function PembayaranClient() {
             variant="ghost"
             size="icon"
             onClick={() => refetch()}
-            disabled={isLoading}
+            disabled={isLoading || isFetching}
             title="Refresh Data"
           >
             <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${isLoading || isFetching ? "animate-spin" : ""}`}
             />
           </Button>
         </div>
@@ -138,9 +144,10 @@ export default function PembayaranClient() {
       <DataTable
         columns={tableColumns}
         data={dataPembayaran ?? []}
-        // Anda bisa tambahkan filterColumnId="namaMurid" jika ingin search bar nama di generic table
-        // filterColumnId="namaMurid"
-        // filterColumnPlaceholder="Cari nama murid..."
+        // 4. Pass props pagination ke Generic Table
+        pageCount={pageCount}
+        pagination={pagination}
+        onPaginationChange={setPagination}
       />
 
       <EditPembayaran />

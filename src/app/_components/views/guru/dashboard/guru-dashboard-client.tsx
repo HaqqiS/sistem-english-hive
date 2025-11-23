@@ -97,9 +97,27 @@ export default function GuruDashboardClient() {
     api.ruang.getAll.useQuery();
 
   const { mutations } = useAbsenGuru({
-    onSuccessStartSesi: (newSesiId) => {
+    onSuccessStartSesi: (newSesiId, isFinished) => {
       setIsGantiRuangOpen(false);
-      router.push(`/guru/absen/${newSesiId}`);
+      setIsConfirmStartOpen(false);
+      if (isFinished) {
+        // SKENARIO A: Tampilkan Alert Dialog "Selamat" sebelum redirect
+        // (Kamu perlu buat state dialog baru, misal setIsLevelUpDialogOpen(true))
+        toast("Kelas Telah Selesai!", {
+          description:
+            "Jadwal otomatis dihapus karena kuota pertemuan terpenuhi.",
+          action: {
+            label: "Lihat Laporan",
+            onClick: () => router.push(`/guru/laporan-kelas/${newSesiId}`), // Contoh redirect beda
+          },
+        });
+
+        // Atau tetap redirect ke absen, tapi bawa query param
+        router.push(`/guru/absen/${newSesiId}?status=finished`);
+      } else {
+        // SKENARIO B: Normal redirect
+        router.push(`/guru/absen/${newSesiId}`);
+      }
     },
   });
 

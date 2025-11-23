@@ -15,7 +15,7 @@ interface UseGuruOptions {
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
-  onSuccessStartSesi?: (newSesiId: string) => void;
+  onSuccessStartSesi?: (newSesiId: string, isFinished: boolean) => void;
   onSuccessUpdate?: () => void;
   onSuccessUpdateStatus?: () => void;
   onSuccessDelete?: () => void;
@@ -53,10 +53,20 @@ export function useAbsenGuru(options?: UseGuruOptions) {
   // CREATE
   const createSesiAbsensiMutation =
     api.absenGuru.createSesiAndAbsensi.useMutation({
-      onSuccess: async () => {
+      onSuccess: async (data) => {
         await apiUtils.absenGuru.getAllAbsensi.invalidate();
+        await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
         // await apiUtils.sesiPertemuan..invalidate();
-        toast.success("Absensi berhasil ditambahkan");
+        if (data.isFinished) {
+          toast.success(
+            "Selamat! Kelas ini telah menyelesaikan semua pertemuan (Lulus Level).",
+          );
+        } else {
+          toast.success("Sesi berhasil dimulai!");
+        }
+        if (options?.onSuccessStartSesi) {
+          options.onSuccessStartSesi(data.newSesiId, data.isFinished);
+        }
         options?.onSuccessCreate?.();
       },
       onError: (error) => {
@@ -70,11 +80,17 @@ export function useAbsenGuru(options?: UseGuruOptions) {
       await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
       await apiUtils.absenGuru.getAllAbsensi.invalidate();
 
-      toast.success("Sesi berhasil dimulai!");
+      if (data.isFinished) {
+        toast.success(
+          "Selamat! Kelas ini telah menyelesaikan semua pertemuan (Lulus Level).",
+        );
+      } else {
+        toast.success("Sesi berhasil dimulai!");
+      }
 
-      // Panggil callback navigasi jika ada
+      // Teruskan status isFinished ke komponen UI
       if (options?.onSuccessStartSesi) {
-        options.onSuccessStartSesi(data.newSesiId);
+        options.onSuccessStartSesi(data.newSesiId, data.isFinished);
       }
       options?.onSuccessCreate?.();
     },

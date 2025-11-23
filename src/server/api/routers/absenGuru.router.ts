@@ -115,10 +115,25 @@ export const absenGuruRouter = createTRPCRouter({
           },
         });
 
-        // Kembalikan ID sesi yang baru dibuat
+        const totalSesi = await tx.sesiPertemuanKelas.count({
+          where: { kelasId: jadwal.kelasId },
+        });
+
+        const BATAS_LEVEL = 24;
+
+        if (totalSesi >= BATAS_LEVEL) {
+          await tx.jadwalKelas.deleteMany({
+            where: { kelasId: jadwal.kelasId },
+          });
+
+          // Opsional: Anda juga bisa menonaktifkan Murid atau Logika "Naik Level" disini
+          // Contoh: console.log(`Kelas ${jadwal.kelasId} telah lulus level!`);
+        }
+
         return {
           newSesiId: newSesi.id,
           absensiId: newAbsensi.id,
+          isFinished: totalSesi >= BATAS_LEVEL,
         };
       });
 

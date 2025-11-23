@@ -47,6 +47,15 @@ export function useMurid(options?: useMuridOptions) {
     },
   );
 
+  const MuridNotRegisteredPaginatedQuery =
+    api.murid.getMuridNotRegisteredPaginated.useQuery(
+      { pageIndex, pageSize },
+      {
+        enabled: !!options?.pagination,
+        placeholderData: keepPreviousData,
+      },
+    );
+
   const MuridQuery = api.murid.getAllMurid.useQuery(undefined, {
     enabled: options?.enableQuery ?? true,
     initialData: options?.initialDataAllMurid,
@@ -118,6 +127,17 @@ export function useMurid(options?: useMuridOptions) {
     isErrorMuridNotRegistered: MuridNotRegisteredQuery.isError,
     errorMuridNotRegistered: MuridNotRegisteredQuery.error,
 
+    dataNotRegisteredPaginated:
+      MuridNotRegisteredPaginatedQuery.data?.data ?? [],
+    pageCountNotRegistered:
+      MuridNotRegisteredPaginatedQuery.data?.pageCount ?? -1,
+    totalRowsNotRegistered: MuridNotRegisteredPaginatedQuery.data?.total ?? 0,
+    isLoadingNotRegisteredPaginated: MuridNotRegisteredPaginatedQuery.isLoading,
+    isFetchingNotRegisteredPaginated:
+      MuridNotRegisteredPaginatedQuery.isFetching,
+    isErrorNotRegisteredPaginated: MuridNotRegisteredPaginatedQuery.isError,
+    errorNotRegisteredPaginated: MuridNotRegisteredPaginatedQuery.error,
+
     dataAllMurid: MuridQuery.data,
     isLoadingAllMurid: MuridQuery.isLoading,
     isErrorAllMurid: MuridQuery.isError,
@@ -125,6 +145,7 @@ export function useMurid(options?: useMuridOptions) {
 
     dataAllMuridPaginated: MuridPaginatedQuery.data?.data ?? [],
     pageCount: MuridPaginatedQuery.data?.pageCount ?? -1,
+    totalRows: MuridPaginatedQuery.data?.total ?? 0,
     isLoadingAllMuridPaginated: MuridPaginatedQuery.isLoading,
     isFetchingAllMuridPaginated: MuridPaginatedQuery.isFetching,
     isErrorAllMuridPaginated: MuridPaginatedQuery.isError,

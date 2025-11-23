@@ -26,10 +26,17 @@ export default function MuridClient({
   initialDataAllMurid,
 }: ProgramMuridClientProps) {
   // STATE
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
+  const [paginationAllMurid, setPaginationAllMurid] = useState<PaginationState>(
+    {
+      pageIndex: 0,
+      pageSize: 10,
+    },
+  );
+  const [paginationNotRegistered, setPaginationNotRegistered] =
+    useState<PaginationState>({
+      pageIndex: 0,
+      pageSize: 10,
+    });
   const [deleteMuridDialogOpen, setDeleteMuridDialogOpen] = useState(false);
   const [selectedMuridToDelete, setSelectedMuridToDelete] = useState<{
     id: string;
@@ -40,16 +47,23 @@ export default function MuridClient({
 
   // HOOKS/QUERIES&MUTATIONS
   const {
-    dataMuridNotRegistered,
+    dataNotRegisteredPaginated,
+    pageCountNotRegistered,
+    totalRowsNotRegistered,
+    isLoadingNotRegisteredPaginated,
+  } = useMurid({
+    pagination: paginationNotRegistered, // Pass pagination state ke hook
+  });
 
+  const {
     dataAllMuridPaginated,
     pageCount,
+    totalRows,
     isLoadingAllMuridPaginated,
 
     mutations,
   } = useMurid({
-    initialDataNotRegistered: initialDataMuridNotRegistered,
-    pagination: pagination, // Pass pagination state ke hook
+    pagination: paginationAllMurid, // Pass pagination state ke hook
     onSuccessDelete: () => {
       setDeleteMuridDialogOpen(false);
       setSelectedMuridToDelete(null);
@@ -115,9 +129,12 @@ export default function MuridClient({
             <TambahPendaftaranKelas />
           </div>
 
-          <DataTable
+          <DataTablePagination
             columns={columnsMuridNotRegistered}
-            data={dataMuridNotRegistered ?? []}
+            data={dataNotRegisteredPaginated ?? []}
+            pageCount={pageCountNotRegistered}
+            pagination={paginationNotRegistered}
+            onPaginationChange={setPaginationNotRegistered}
           />
         </div>
       </TabsContent>
@@ -131,6 +148,10 @@ export default function MuridClient({
                 <p className="text-muted-foreground text-sm">
                   Halaman ini menampilkan daftar semua murid.
                 </p>
+                <div className="text-muted-foreground text-xs font-medium">
+                  Total Data:{" "}
+                  <span className="text-foreground">{totalRows}</span> Murid
+                </div>
               </div>
             </header>
             <RegistrasiMurid />
@@ -160,8 +181,8 @@ export default function MuridClient({
             columns={columnsAllMurid}
             data={dataAllMuridPaginated}
             pageCount={pageCount}
-            pagination={pagination}
-            onPaginationChange={setPagination}
+            pagination={paginationAllMurid}
+            onPaginationChange={setPaginationAllMurid}
           />
         </div>
       </TabsContent>

@@ -90,24 +90,11 @@ export const muridRouter = createTRPCRouter({
     }),
 
   getMuridWhereNotRegistered: protectedProcedure.query(async ({ ctx }) => {
-    // Cukup satu kueri ini
     const unregisteredMurid = await ctx.db.murid.findMany({
       where: {
         OR: [
-          // Tidak punya pendaftaran sama sekali
-          {
-            pendaftaranKelases: {
-              none: {},
-            },
-          },
-          // Punya pendaftaran, tapi semuanya isAktif: false
-          {
-            pendaftaranKelases: {
-              every: {
-                isAktif: false,
-              },
-            },
-          },
+          { pendaftaranKelases: { none: {} } },
+          { pendaftaranKelases: { every: { isAktif: false } } },
         ],
       },
       select: {
@@ -119,9 +106,50 @@ export const muridRouter = createTRPCRouter({
         jamPulang: true,
       },
     });
-
     return unregisteredMurid;
   }),
+
+  getMuridNotRegisteredPaginated: protectedProcedure
+    .input(paginationSchema) // Input: pageIndex, pageSize
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { pageIndex, pageSize } = input;
+
+      // Definisikan where clause agar konsisten untuk count dan findMany
+      const whereClause: Prisma.MuridWhereInput = {
+        OR: [
+          { pendaftaranKelases: { none: {} } },
+          { pendaftaranKelases: { every: { isAktif: false } } },
+        ],
+      };
+
+      // Transaction untuk performa (count + query data paralel)
+      const [total, data] = await db.$transaction([
+        db.murid.count({ where: whereClause }),
+        db.murid.findMany({
+          skip: pageIndex * pageSize,
+          take: pageSize,
+          where: whereClause,
+          orderBy: { namaLengkap: "asc" }, // Urutkan berdasarkan nama
+          select: {
+            id: true,
+            namaLengkap: true,
+            pilihanProgram: true,
+            statusMurid: true,
+            noWA: true,
+            jamPulang: true,
+          },
+        }),
+      ]);
+
+      const pageCount = Math.ceil(total / pageSize);
+
+      return {
+        data,
+        pageCount,
+        total,
+      };
+    }),
 
   updateStatusMurid: protectedProcedure
     .input(updateStatusMuridSchema)

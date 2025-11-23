@@ -221,7 +221,7 @@ export const columns = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem onClick={() => onEditStatusClick(row.original)}>
-              Edit Status / Detail
+              Edit Status
             </DropdownMenuItem>
             {/* Uncomment jika ingin mengaktifkan delete
             <DropdownMenuSeparator />

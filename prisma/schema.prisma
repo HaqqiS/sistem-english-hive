@@ -192,7 +192,8 @@ enum Gender {
 enum StatusMurid {
     AKTIF //masih aktif
     NON_AKTIF // sudah tidak aktif(tidak kursus lagi)
-    // LULUS // sudah lulus semua kelas
+    LULUS // sudah lulus semua kelas
+    TRIAL //murid trial
 }
 
 model Murid {

@@ -7,6 +7,7 @@ import {
   EllipsisVertical,
   MapPin,
   MessageCircle,
+  StickyNote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -196,6 +197,24 @@ export const columns = ({
         >
           Plg: {row.original.jamPulang}
         </span>
+        {/* <span>
+          {row.original.deskripsi && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex cursor-help items-center gap-1 rounded border border-yellow-200 bg-yellow-50 px-1.5 py-0.5 text-[10px] text-yellow-700">
+                    <StickyNote className="h-3 w-3" />
+                    <span className="font-medium">Note</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="border-yellow-200 bg-yellow-50 text-yellow-900">
+                  <p className="max-w-xs text-xs font-medium">Catatan:</p>
+                  <p className="max-w-xs text-xs">{row.original.deskripsi}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </span> */}
       </div>
     ),
   },

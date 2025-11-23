@@ -100,20 +100,43 @@ export const pendaftaranKelasRouter = createTRPCRouter({
           },
         });
 
-        // 2b. Hitung Tagihan Pertama (8 Pertemuan)
-        const totalTagihan = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+        const jumlahSesiBerlalu = await tx.sesiPertemuanKelas.count({
+          where: {
+            kelasId: input.kelasId,
+            // Hanya hitung sesi yang tanggalnya KURANG DARI tanggal mulai murid
+            // Asumsi: input.tanggalMulai adalah string YYYY-MM-DD
+            tanggalWaktu: {
+              lt: dayjs(input.tanggalMulai).startOf("day").toDate(),
+            },
+          },
+        });
+
+        const sesiTerpakaiDiBlokIni =
+          jumlahSesiBerlalu % JUMLAH_PERTEMUAN_PER_BLOK;
+        const sisaSesiYangHarusDibayar =
+          JUMLAH_PERTEMUAN_PER_BLOK - sesiTerpakaiDiBlokIni;
+
+        const totalTagihan = sisaSesiYangHarusDibayar * kelas.hargaKelas;
         const tanggalMulai = dayjs(input.tanggalMulai);
+
+        const pembayaranKe =
+          Math.floor(jumlahSesiBerlalu / JUMLAH_PERTEMUAN_PER_BLOK) + 1;
+
+        const note =
+          sisaSesiYangHarusDibayar < JUMLAH_PERTEMUAN_PER_BLOK
+            ? `Pro-rate: Masuk telat ${sesiTerpakaiDiBlokIni} sesi. Tagihan untuk sisa ${sisaSesiYangHarusDibayar} pertemuan.`
+            : `Tagihan Awal Penuh (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`;
 
         // Buat HANYA 1 data pembayaran (Pembayaran Ke-1)
         // Pembayaran ke-2 dst akan digenerate otomatis saat absen mencapai 8, 16, dst.
         await tx.pembayaran.create({
           data: {
             pendaftaranKelasId: pendaftaran.id,
-            pembayaranKe: 1, // Blok pertama
+            pembayaranKe: pembayaranKe,
             jumlahBayar: totalTagihan,
-            tanggalJatuhTempo: tanggalMulai.toDate(), // Jatuh tempo di awal mulai
+            tanggalJatuhTempo: tanggalMulai.toDate(),
             statusBayar: StatusPembayaran.BELUM_LUNAS,
-            note: `Tagihan Awal (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
+            note: note,
           },
         });
 
@@ -162,11 +185,31 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
       // 3. Transaction: Loop create pendaftaran & invoice
       await db.$transaction(async (tx) => {
-        const totalTagihan = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
         const tglMulaiDate = dayjs(tanggalMulai).toDate();
 
+        const jumlahSesiBerlalu = await tx.sesiPertemuanKelas.count({
+          where: {
+            kelasId: kelasId,
+            tanggalWaktu: {
+              lt: dayjs(tanggalMulai).startOf("day").toDate(),
+            },
+          },
+        });
+
+        const sesiTerpakaiDiBlokIni =
+          jumlahSesiBerlalu % JUMLAH_PERTEMUAN_PER_BLOK;
+        const sisaSesiYangHarusDibayar =
+          JUMLAH_PERTEMUAN_PER_BLOK - sesiTerpakaiDiBlokIni;
+        const totalTagihan = sisaSesiYangHarusDibayar * kelas.hargaKelas;
+
+        const pembayaranKe =
+          Math.floor(jumlahSesiBerlalu / JUMLAH_PERTEMUAN_PER_BLOK) + 1;
+        const note =
+          sisaSesiYangHarusDibayar < JUMLAH_PERTEMUAN_PER_BLOK
+            ? `Pro-rate Bulk: Sisa ${sisaSesiYangHarusDibayar} pertemuan.`
+            : `Tagihan Awal (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`;
+
         for (const muridId of muridIds) {
-          // 3a. Buat Pendaftaran
           const pendaftaran = await tx.pendaftaranKelas.create({
             data: {
               muridId: muridId,
@@ -180,11 +223,11 @@ export const pendaftaranKelasRouter = createTRPCRouter({
           await tx.pembayaran.create({
             data: {
               pendaftaranKelasId: pendaftaran.id,
-              pembayaranKe: 1,
+              pembayaranKe: pembayaranKe,
               jumlahBayar: totalTagihan,
               tanggalJatuhTempo: tglMulaiDate,
               statusBayar: StatusPembayaran.BELUM_LUNAS,
-              note: `Tagihan Awal (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
+              note: note,
             },
           });
         }

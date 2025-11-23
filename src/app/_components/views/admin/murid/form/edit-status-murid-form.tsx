@@ -15,8 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatusMurid } from "@prisma/client";
 import type { TypeUpdateStatusMuridSchema } from "@/types/murid.type";
+import { StatusMurid } from "@prisma/client";
 
 // Simple schema for status update
 
@@ -46,6 +46,8 @@ export default function EditStatusMuridForm({
               <SelectContent>
                 <SelectItem value={StatusMurid.AKTIF}>Aktif</SelectItem>
                 <SelectItem value={StatusMurid.NON_AKTIF}>Non-Aktif</SelectItem>
+                <SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
+                <SelectItem value={StatusMurid.LULUS}>Lulus</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />

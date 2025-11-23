@@ -236,6 +236,7 @@ export const kelasRouter = createTRPCRouter({
         newBulanTahunAjar,
         newKodeKelas,
         newTanggalMulai,
+        hargaKelas,
       } = input;
 
       // 1. Ambil Data Kelas Lama
@@ -273,10 +274,10 @@ export const kelasRouter = createTRPCRouter({
             jenisKelas: oldKelas.jenisKelas,
             tipe: oldKelas.tipe,
             grup: oldKelas.grup,
-            hargaKelas: oldKelas.hargaKelas,
             deskripsi: oldKelas.deskripsi,
             cohortId: oldKelas.cohortId,
             // Override dengan input baru
+            hargaKelas: input.hargaKelas,
             level: newLevel,
             bulanTahunAjar: newBulanTahunAjar,
             kodeKelas: newKodeKelas,

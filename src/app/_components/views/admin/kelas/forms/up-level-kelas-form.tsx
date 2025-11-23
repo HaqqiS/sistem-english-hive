@@ -63,6 +63,7 @@ export default function UpLevelKelasForm({
           <li>Kode: {oldKelasData.kodeKelas}</li>
           <li>Level: {oldKelasData.level}</li>
           <li>Tahun Ajar: {oldKelasData.bulanTahunAjar}</li>
+          <li>Harga Program Kelas: {oldKelasData.hargaKelas}</li>
         </ul>
       </div>
 
@@ -116,6 +117,26 @@ export default function UpLevelKelasForm({
           )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="hargaKelas"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Harga Program Kelas Baru</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="Masukkan harga program kelas"
+                type="number"
+                {...field}
+                onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                required
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Tanggal Mulai Efektif */}
       <FormStringDatePicker

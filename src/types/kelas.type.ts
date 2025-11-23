@@ -48,6 +48,7 @@ export const upLevelKelasSchema = z.object({
   newTanggalMulai: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),
+  hargaKelas: z.coerce.number().min(0, "Harga Kelas harus diisi"),
 });
 
 export type TypeUpLevelKelasSchema = z.infer<typeof upLevelKelasSchema>;

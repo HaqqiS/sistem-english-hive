@@ -27,6 +27,7 @@ export default function UpLevelKelas() {
       newBulanTahunAjar: "",
       newKodeKelas: "",
       newTanggalMulai: "",
+      hargaKelas: 0,
     },
   });
 
@@ -35,12 +36,12 @@ export default function UpLevelKelas() {
     if (isOpen && selectedKelas) {
       form.reset({
         oldKelasId: selectedKelas.id,
-        // You might want to pre-fill some values here if logic permits,
-        // e.g. incrementing level automatically
+        // Auto-increment level
         newLevel: selectedKelas.level + 1,
         newBulanTahunAjar: "",
         newKodeKelas: "",
         newTanggalMulai: "",
+        hargaKelas: selectedKelas.hargaKelas,
       });
     }
   }, [isOpen, selectedKelas, form]);

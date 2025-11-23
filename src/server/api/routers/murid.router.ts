@@ -99,6 +99,8 @@ export const muridRouter = createTRPCRouter({
       },
       select: {
         id: true,
+        kelasSekolah: true,
+        umur: true,
         namaLengkap: true,
         pilihanProgram: true,
         statusMurid: true,
@@ -133,6 +135,8 @@ export const muridRouter = createTRPCRouter({
           orderBy: { namaLengkap: "asc" }, // Urutkan berdasarkan nama
           select: {
             id: true,
+            kelasSekolah: true,
+            umur: true,
             namaLengkap: true,
             pilihanProgram: true,
             statusMurid: true,

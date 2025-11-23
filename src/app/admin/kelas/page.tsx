@@ -7,7 +7,7 @@ export default async function KelasPage() {
   // await delay(600000);
 
   // const dataProgramKelas = await getData();
-  const dataKelas = await api.kelas.getAll();
+  const dataKelas = await api.kelas.getKelasAktif();
   const dataJadwalKelas = await api.jadwalKelas.getAll();
 
   return (

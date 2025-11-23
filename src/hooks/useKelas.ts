@@ -42,14 +42,18 @@ interface UseKelasOptions {
 export function useKelas(options?: UseKelasOptions) {
   const apiUtils = api.useUtils();
 
-  // ========== QUERIES ==========
   const kelasId = options?.kelasId;
   const cohortId = options?.cohortId;
-
   const isGetAllEnabled = (options?.enableQuery ?? true) && !kelasId;
+  // ========== QUERIES ==========
 
   const kelasQuery = api.kelas.getAll.useQuery(undefined, {
-    enabled: isGetAllEnabled, // <-- Gunakan logika baru
+    enabled: isGetAllEnabled,
+    initialData: options?.initialData,
+  });
+
+  const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(undefined, {
+    enabled: isGetAllEnabled,
     initialData: options?.initialData,
   });
 
@@ -77,6 +81,7 @@ export function useKelas(options?: UseKelasOptions) {
   const createMutation = api.kelas.createKelas.useMutation({
     onSuccess: async (newKelas) => {
       await apiUtils.kelas.getAll.invalidate();
+      await apiUtils.kelas.getKelasAktif.invalidate();
       toast.success("Kelas berhasil ditambahkan");
       options?.onSuccessCreate?.(newKelas);
     },
@@ -89,6 +94,7 @@ export function useKelas(options?: UseKelasOptions) {
   const updateMutation = api.kelas.updateKelas.useMutation({
     onSuccess: async () => {
       await apiUtils.kelas.getAll.invalidate();
+      await apiUtils.kelas.getKelasAktif.invalidate();
       toast.success("Kelas berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -101,6 +107,7 @@ export function useKelas(options?: UseKelasOptions) {
   const deleteMutation = api.kelas.deleteKelas.useMutation({
     onSuccess: async () => {
       await apiUtils.kelas.getAll.invalidate();
+      await apiUtils.kelas.getKelasAktif.invalidate();
       toast.success("Kelas berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -114,6 +121,7 @@ export function useKelas(options?: UseKelasOptions) {
     onSuccess: async () => {
       // Invalidate relevant queries
       await apiUtils.kelas.getAll.invalidate(); // Update list kelas
+      await apiUtils.kelas.getKelasAktif.invalidate(); // Update list kelas aktif
       await apiUtils.pendaftaranKelas.getAll.invalidate(); // Update status siswa di kelas lama
       // await apiUtils.pembayaran.getAll.invalidate(); // Update data pembayaran (jika ada list pembayaran global)
 
@@ -130,6 +138,11 @@ export function useKelas(options?: UseKelasOptions) {
     isLoading: kelasQuery.isLoading,
     isError: kelasQuery.isError,
     error: kelasQuery.error,
+
+    dataKelasAktif: kelasAktifQuery.data,
+    isLoadingKelasAktif: kelasAktifQuery.isLoading,
+    isErrorKelasAktif: kelasAktifQuery.isError,
+    errorKelasAktif: kelasAktifQuery.error,
 
     dataById: kelasByIdQuery.data,
     isLoadingById: kelasByIdQuery.isLoading,
@@ -172,6 +185,7 @@ export function useKelas(options?: UseKelasOptions) {
 
     // Utils untuk manual invalidation jika perlu
     refetch: kelasQuery.refetch,
+    refetchKelasAktif: kelasAktifQuery.refetch,
     refetchById: kelasByIdQuery.refetch,
     refetchHistory: kelasHistoryQuery.refetch,
     invalidate: () => apiUtils.kelas.getAll.invalidate(),

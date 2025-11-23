@@ -44,6 +44,50 @@ export const kelasRouter = createTRPCRouter({
     return kelas;
   }),
 
+  getKelasAktif: protectedProcedure.query(async ({ ctx }) => {
+    const kelas = await ctx.db.kelas.findMany({
+      // LOGIKA FILTER:
+      // 1. distinct: ['cohortId'] -> Pastikan hanya satu record per cohortId yang muncul
+      // 2. orderBy: { createdAt: 'desc' } -> Urutkan dari yang paling baru dibuat.
+      // Kombinasi ini memaksa Prisma mengambil record TERBARU untuk setiap cohortId.
+      distinct: ["cohortId"],
+      orderBy: { createdAt: "desc" },
+
+      // Select disamakan dengan getAll agar kompatibel dengan UI yang sudah ada
+      select: {
+        id: true,
+        jenisKelas: true,
+        level: true,
+        grup: true,
+        tipe: true,
+        kodeKelas: true,
+        bulanTahunAjar: true,
+        deskripsi: true,
+        hargaKelas: true,
+        cohortId: true,
+        historyGuruKelases: {
+          where: {
+            selesaiPada: null,
+          },
+          select: {
+            id: true,
+            kelasId: true,
+            guruId: true,
+            statusGuru: true,
+            mulaiPada: true,
+            selesaiPada: true,
+            guru: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    return kelas;
+  }),
+
   getKelasById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {

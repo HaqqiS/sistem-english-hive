@@ -49,7 +49,7 @@ export default function PendaftaranKelasForm({
 }: PendaftaranKelasFormProps) {
   const form = useFormContext<TypeClientBulkPendaftaranKelasSchema>();
   const { dataMuridNotRegistered } = useMurid();
-  const { data: dataKelas } = useKelas();
+  const { dataKelasAktif: dataKelas } = useKelas();
 
   // State for MultiSelect Popover
   const [open, setOpen] = React.useState(false);
@@ -91,7 +91,7 @@ export default function PendaftaranKelasForm({
                   </Button>
                 </FormControl>
               </PopoverTrigger>
-              <PopoverContent className="w-[400px] p-0">
+              <PopoverContent className="w-md p-0">
                 <Command>
                   <CommandInput placeholder="Cari murid..." />
                   <CommandList>
@@ -125,7 +125,7 @@ export default function PendaftaranKelasForm({
                           <div className="flex flex-col">
                             <span>{murid.namaLengkap}</span>
                             <span className="text-muted-foreground text-xs">
-                              {murid.noWA}
+                              {murid.umur} tahun - Kelas: {murid.kelasSekolah}
                             </span>
                           </div>
                         </CommandItem>

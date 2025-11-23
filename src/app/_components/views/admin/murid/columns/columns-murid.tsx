@@ -170,7 +170,7 @@ export const columns = ({
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="max-w-xs break-words">{row.original.alamat}</p>
+              <p className="max-w-xs wrap-break-word">{row.original.alamat}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -227,8 +227,11 @@ export const columns = ({
     cell: ({ row }) => {
       const status = row.original.statusMurid;
       return (
-        <Badge variant={status === "AKTIF" ? "default" : "destructive"}>
-          {status}
+        <Badge
+          variant={status === "AKTIF" ? "default" : "destructive"}
+          className="capitalize"
+        >
+          {status.toLowerCase().replace("_", " ")}
         </Badge>
       );
     },

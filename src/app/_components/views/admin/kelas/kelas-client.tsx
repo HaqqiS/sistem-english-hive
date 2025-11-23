@@ -45,7 +45,7 @@ export default function KelasClient({
     deskripsi: string;
   } | null>(null);
 
-  const { data: dataKelas, mutations: kelasMutations } = useKelas({
+  const { dataKelasAktif: dataKelas, mutations: kelasMutations } = useKelas({
     initialData: initialDataKelas,
     onSuccessDelete: () => {
       setDeleteKelasDialogOpen(false);

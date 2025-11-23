@@ -44,7 +44,8 @@ export default function JadwalKelasForm({ onSubmit }: JadwalKelasFormProps) {
   );
 
   // 1. Ambil semua data yang diperlukan
-  const { data: dataKelas, isLoading: isLoadingKelas } = useKelas();
+  const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
+    useKelas();
   const { data: dataRuang, isLoading: isLoadingRuang } = useRuang();
   const { dataJamTetap: dataJamSlot, isLoadingJamTetap: isLoadingJamSlot } =
     useJam();

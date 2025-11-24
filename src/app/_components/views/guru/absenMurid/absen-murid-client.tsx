@@ -1,6 +1,5 @@
 "use client";
 
-import { columns } from "./columns-jadwal-sesi";
 import type { TypeKelasByGuruId } from "@/types/kelas.type";
 import { Card, CardContent } from "@/components/ui/card";
 import {

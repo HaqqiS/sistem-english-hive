@@ -80,7 +80,7 @@ export default function RangkumanSesiTab() {
                         : "Belum ada sesi"}
                     </p>
                     <Button asChild size="sm" className="mt-4">
-                      <Link href={`/admin/sesi/${kelas.id}`}>
+                      <Link href={`/admin/kelas/sesi/${kelas.id}`}>
                         Lihat Detail Absensi
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>

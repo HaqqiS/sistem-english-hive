@@ -1,9 +1,13 @@
 "use client";
 
 import { DataTable } from "@/app/_components/shared/data-table-generic";
+import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
 import { columns as columnsAbsen } from "./columns/columns-absen-guru";
 import { columns as columnsGuru } from "./columns/columns-guru";
-import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
+import type {
+  TypeAbsensiGuru,
+  TypeAbsensiGuruPaginated,
+} from "@/types/absenGuru.type";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser } from "@/hooks/useUser";
@@ -13,13 +17,18 @@ import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confir
 import { useState } from "react";
 import RegistrasiGuru from "./drawer/registrasi-guru";
 import EditGuru from "./drawer/edit-guru";
+import type { PaginationState } from "@tanstack/react-table";
 
 interface GuruClientProps {
-  initialData: TypeAbsensiGuru[];
+  initialData: TypeAbsensiGuruPaginated;
 }
 
 export default function GuruClient({ initialData }: GuruClientProps) {
   // STATE
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const [deleteAbsenGuruDialogOpen, setDeleteAbsenGuruDialogOpen] =
@@ -41,19 +50,21 @@ export default function GuruClient({ initialData }: GuruClientProps) {
   const { openDrawer: openGuruDrawer } = useGuruStore();
 
   // HOOKS/MUTATIONS&QUERIES
-  const { data: dataAbsensiGuru, mutations: mutationsAbsenGuru } = useAbsenGuru(
-    {
-      initialDataAbsensi: initialData,
-      // onSuccessUpdate: () => {},
-      onSuccessDelete: () => {
-        setDeleteAbsenGuruDialogOpen(false);
-        setSelectedAbsenGuruToDelete(null);
-      },
-      onSuccessUpdateStatus: () => {
-        setPendingId(null);
-      },
+  const {
+    data: dataAbsensiGuru,
+    pageCount,
+    mutations: mutationsAbsenGuru,
+  } = useAbsenGuru({
+    initialDataAbsensi: initialData,
+    pagination: pagination,
+    onSuccessDelete: () => {
+      setDeleteAbsenGuruDialogOpen(false);
+      setSelectedAbsenGuruToDelete(null);
     },
-  );
+    onSuccessUpdateStatus: () => {
+      setPendingId(null);
+    },
+  });
 
   const { dataComplete: dataGuru, mutations: mutationsGuru } = useUser({
     onSuccessDelete() {
@@ -174,7 +185,14 @@ export default function GuruClient({ initialData }: GuruClientProps) {
           </div>
         </div>
 
-        <DataTable columns={columnsAbsensiGuru} data={dataAbsensiGuru ?? []} />
+        <DataTablePagination
+          columns={columnsAbsensiGuru}
+          data={dataAbsensiGuru ?? []}
+          // Tambahkan props pagination ke DataTable
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          pageCount={pageCount}
+        />
       </TabsContent>
 
       <TabsContent value="guru">

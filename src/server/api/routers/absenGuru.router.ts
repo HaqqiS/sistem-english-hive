@@ -9,55 +9,69 @@ import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { getPeriodeGaji } from "@/server/services/gaji.service";
+import { paginationSchema } from "@/types/pagination.type";
 
 export const absenGuruRouter = createTRPCRouter({
-  getAllAbsensi: protectedProcedure.query(async ({ ctx }) => {
-    // ... (kode getAllAbsensi Anda yang sudah ada)
-    const { db } = ctx;
-    const result = await db.absensiGuru.findMany({
-      orderBy: {
-        updatedAt: "desc",
-      },
-      select: {
-        id: true,
-        guruId: true,
-        guru: {
-          select: {
-            name: true,
-          },
-        },
-        sesiPertemuanKelasId: true,
-        sesiPertemuanKelas: {
-          select: {
-            tanggalWaktu: true,
-            kelas: {
-              select: {
-                kodeKelas: true,
-              },
-            },
-            ruang: {
-              // <-- Pastikan Anda juga menyertakan ruang di sini
-              select: {
-                namaRuang: true,
-              },
-            },
-          },
-        },
-        status: true,
-        isVerified: true,
-        verifiedById: true,
-        verifiedBy: {
-          select: {
-            name: true,
-          },
-        },
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+  getAllAbsensi: protectedProcedure
+    .input(paginationSchema)
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { pageIndex, pageSize } = input;
 
-    return result;
-  }),
+      const [total, data] = await db.$transaction([
+        db.absensiGuru.count(),
+        db.absensiGuru.findMany({
+          skip: pageIndex * pageSize,
+          take: pageSize,
+          orderBy: {
+            updatedAt: "desc",
+          },
+          select: {
+            id: true,
+            guruId: true,
+            guru: {
+              select: {
+                name: true,
+              },
+            },
+            sesiPertemuanKelasId: true,
+            sesiPertemuanKelas: {
+              select: {
+                tanggalWaktu: true,
+                kelas: {
+                  select: {
+                    kodeKelas: true,
+                  },
+                },
+                ruang: {
+                  // <-- Pastikan Anda juga menyertakan ruang di sini
+                  select: {
+                    namaRuang: true,
+                  },
+                },
+              },
+            },
+            status: true,
+            isVerified: true,
+            verifiedById: true,
+            verifiedBy: {
+              select: {
+                name: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+      ]);
+
+      const pageCount = Math.ceil(total / pageSize);
+      return {
+        data,
+        pageCount,
+        total,
+      };
+    }),
 
   /**
    * Dipanggil saat guru mengklik "Mulai Sesi".

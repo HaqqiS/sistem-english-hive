@@ -1,16 +1,17 @@
 "use client";
 import { api } from "@/trpc/react";
 import type {
-  TypeAbsensiGuru,
   TypeAbsensiGuruHistory,
+  TypeAbsensiGuruPaginated,
 } from "@/types/absenGuru.type";
-import { skipToken } from "@tanstack/react-query";
+import { keepPreviousData, skipToken } from "@tanstack/react-query";
+import type { PaginationState } from "@tanstack/react-table";
 import { toast } from "sonner";
 
 interface UseGuruOptions {
   // Query options
   enableQuery?: boolean;
-  initialDataAbsensi?: TypeAbsensiGuru[];
+  initialDataAbsensi?: TypeAbsensiGuruPaginated;
   initialDataHistory?: TypeAbsensiGuruHistory;
 
   // Mutation callbacks
@@ -22,20 +23,24 @@ interface UseGuruOptions {
 
   guruId?: string;
   month?: string;
+  pagination?: PaginationState;
 }
 
 export function useAbsenGuru(options?: UseGuruOptions) {
   const apiUtils = api.useUtils();
+  const pageIndex = options?.pagination?.pageIndex ?? 0;
+  const pageSize = options?.pagination?.pageSize ?? 10;
   const guruId = options?.guruId;
   const month = options?.month;
 
   // ========== QUERIES ==========
 
   const getAllAbsensiGuruQuery = api.absenGuru.getAllAbsensi.useQuery(
-    undefined,
+    { pageIndex, pageSize },
     {
-      enabled: options?.enableQuery ?? true,
+      enabled: !!options?.pagination,
       initialData: options?.initialDataAbsensi,
+      placeholderData: keepPreviousData,
     },
   );
 
@@ -137,7 +142,9 @@ export function useAbsenGuru(options?: UseGuruOptions) {
   return {
     // Query results
 
-    data: getAllAbsensiGuruQuery.data,
+    data: getAllAbsensiGuruQuery.data?.data ?? [],
+    pageCount: getAllAbsensiGuruQuery.data?.pageCount ?? 0,
+    totalRows: getAllAbsensiGuruQuery.data?.total ?? 0,
     isLoading: getAllAbsensiGuruQuery.isLoading,
     isError: getAllAbsensiGuruQuery.isError,
     error: getAllAbsensiGuruQuery.error,

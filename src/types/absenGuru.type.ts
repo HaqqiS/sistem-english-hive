@@ -8,7 +8,9 @@ import z from "zod";
 
 /** Tipe tunggal absensi guru (biasanya untuk list/table) */
 export type TypeAbsensiGuru =
-  RouterOutputs["absenGuru"]["getAllAbsensi"][number];
+  RouterOutputs["absenGuru"]["getAllAbsensi"]["data"][number];
+export type TypeAbsensiGuruPaginated =
+  RouterOutputs["absenGuru"]["getAllAbsensi"];
 
 /** Tipe history gaji/absensi guru */
 export type TypeAbsensiGuruHistory =

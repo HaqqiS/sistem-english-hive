@@ -274,7 +274,7 @@ export const kelasRouter = createTRPCRouter({
             deskripsi: oldKelas.deskripsi,
             cohortId: oldKelas.cohortId,
             // Override dengan input baru
-            hargaKelas: input.hargaKelas,
+            hargaKelas: hargaKelas,
             level: newLevel,
             bulanTahunAjar: newBulanTahunAjar,
             kodeKelas: newKodeKelas,

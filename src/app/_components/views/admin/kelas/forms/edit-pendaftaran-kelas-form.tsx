@@ -34,7 +34,7 @@ export default function EditPendaftaranKelasForm({
   // We use 'dataAllMurid' here because the current student is already registered
   // and wouldn't appear in the 'NotRegistered' list.
   const { dataAllMurid } = useMurid();
-  const { data: dataKelas } = useKelas();
+  const { dataKelasAktif: dataKelas } = useKelas();
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

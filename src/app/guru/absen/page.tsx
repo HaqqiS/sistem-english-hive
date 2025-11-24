@@ -7,9 +7,9 @@ export default async function AbsensiMuridPage() {
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <header className="flex items-center justify-between pt-6">
         <div>
-          <h1 className="text-xl">Kelola Absensi Murid</h1>
+          <h1 className="text-xl">Daftar Kelas Aktif</h1>
           <p className="text-muted-foreground text-sm">
-            This is the absensi murid management page.
+            Pilih kelas untuk melakukan absensi
           </p>
         </div>
       </header>

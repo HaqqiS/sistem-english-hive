@@ -130,7 +130,7 @@ export const kelasRouter = createTRPCRouter({
         // Filter kelas yang diajar oleh guru yang login & masih aktif
         historyGuruKelases: {
           some: {
-            guruId: guruId,
+            guruId,
             statusGuru: "ACTIVE",
           },
         },

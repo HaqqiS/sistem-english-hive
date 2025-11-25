@@ -1,10 +1,14 @@
 "use client";
 
-import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
+import type {
+  TypeAllMurid,
+  TypeAllMuridPaginated,
+  TypeMuridNotRegistered,
+  TypeMuridNotRegisteredPaginated,
+} from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
 import { columns as createColumnsMuridNotRegistered } from "./columns/columns-murid-not-registered";
 import { columns as createColumnsAllMurid } from "./columns/columns-murid";
@@ -17,8 +21,8 @@ import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
 import type { PaginationState } from "@tanstack/react-table";
 
 interface ProgramMuridClientProps {
-  initialDataMuridNotRegistered: TypeMuridNotRegistered[];
-  initialDataAllMurid: TypeAllMurid[];
+  initialDataMuridNotRegistered: TypeMuridNotRegisteredPaginated;
+  initialDataAllMurid: TypeAllMuridPaginated;
 }
 
 export default function MuridClient({
@@ -37,6 +41,8 @@ export default function MuridClient({
       pageIndex: 0,
       pageSize: 10,
     });
+
+  console.log("pagination: ", paginationNotRegistered);
   const [deleteMuridDialogOpen, setDeleteMuridDialogOpen] = useState(false);
   const [selectedMuridToDelete, setSelectedMuridToDelete] = useState<{
     id: string;
@@ -51,7 +57,9 @@ export default function MuridClient({
     pageCountNotRegistered,
     totalRowsNotRegistered,
     isLoadingNotRegisteredPaginated,
+    isFetchingNotRegisteredPaginated,
   } = useMurid({
+    initialDataNotRegisteredPaginated: initialDataMuridNotRegistered,
     pagination: paginationNotRegistered, // Pass pagination state ke hook
   });
 
@@ -60,9 +68,11 @@ export default function MuridClient({
     pageCount,
     totalRows,
     isLoadingAllMuridPaginated,
+    isFetchingAllMuridPaginated,
 
     mutations,
   } = useMurid({
+    initialDataAllPaginated: initialDataAllMurid,
     pagination: paginationAllMurid, // Pass pagination state ke hook
     onSuccessDelete: () => {
       setDeleteMuridDialogOpen(false);
@@ -135,6 +145,7 @@ export default function MuridClient({
             pageCount={pageCountNotRegistered}
             pagination={paginationNotRegistered}
             onPaginationChange={setPaginationNotRegistered}
+            isLoading={isFetchingNotRegisteredPaginated}
           />
         </div>
       </TabsContent>
@@ -183,6 +194,7 @@ export default function MuridClient({
             pageCount={pageCount}
             pagination={paginationAllMurid}
             onPaginationChange={setPaginationAllMurid}
+            isLoading={isFetchingAllMuridPaginated}
           />
         </div>
       </TabsContent>

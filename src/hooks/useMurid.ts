@@ -1,7 +1,12 @@
 "use client";
 
 import { api } from "@/trpc/react";
-import type { TypeMuridNotRegistered, TypeAllMurid } from "@/types/murid.type";
+import type {
+  TypeMuridNotRegistered,
+  TypeAllMurid,
+  TypeMuridNotRegisteredPaginated,
+  TypeAllMuridPaginated,
+} from "@/types/murid.type";
 import { keepPreviousData } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -10,8 +15,9 @@ interface useMuridOptions {
   // Query options
   enableQuery?: boolean;
   initialDataNotRegistered?: TypeMuridNotRegistered[];
+  initialDataNotRegisteredPaginated?: TypeMuridNotRegisteredPaginated;
   initialDataAllMurid?: TypeAllMurid[];
-  initialDataAllPaginated?: { data: TypeAllMurid[]; pageCount: number };
+  initialDataAllPaginated?: TypeAllMuridPaginated;
 
   pagination?: PaginationState;
 
@@ -37,6 +43,7 @@ export function useMurid(options?: useMuridOptions) {
   const apiUtils = api.useUtils();
   const pageIndex = options?.pagination?.pageIndex ?? 0;
   const pageSize = options?.pagination?.pageSize ?? 10;
+  const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
 
   // ========== QUERIES ==========
   const MuridNotRegisteredQuery = api.murid.getMuridWhereNotRegistered.useQuery(
@@ -53,6 +60,9 @@ export function useMurid(options?: useMuridOptions) {
       {
         enabled: !!options?.pagination,
         placeholderData: keepPreviousData,
+        initialData: shouldUseInitialData
+          ? options?.initialDataNotRegisteredPaginated
+          : undefined,
       },
     );
 
@@ -66,6 +76,9 @@ export function useMurid(options?: useMuridOptions) {
     {
       enabled: !!options?.pagination,
       placeholderData: keepPreviousData,
+      initialData: shouldUseInitialData
+        ? options?.initialDataAllPaginated
+        : undefined,
     },
   );
 

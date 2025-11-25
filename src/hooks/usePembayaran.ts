@@ -6,6 +6,8 @@ import type { RouterOutputs } from "@/trpc/react";
 import type { StatusPembayaran } from "@prisma/client";
 import type { PaginationState } from "@tanstack/react-table";
 import { keepPreviousData } from "@tanstack/react-query";
+import type { Type } from "typescript";
+import type { TypePembayaranPaginated } from "@/types/pembayaran.type";
 
 // Define types based on Router Outputs for easier usage in components
 export type PembayaranData = RouterOutputs["pembayaran"]["getAll"][number];
@@ -16,7 +18,7 @@ export type SaldoSiswaData = RouterOutputs["pembayaran"]["getSaldoSiswa"];
 interface UsePembayaranOptions {
   // Query options
   enableGetAll?: boolean;
-  initialDataPaginated?: { data: PembayaranData[]; pageCount: number };
+  initialDataPaginated?: TypePembayaranPaginated;
   enableGetJatuhTempo?: boolean;
 
   // Pagination & Filter
@@ -38,6 +40,8 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 
   const pageIndex = options?.pagination?.pageIndex ?? 0;
   const pageSize = options?.pagination?.pageSize ?? 10;
+  const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
+
   // ========== QUERIES ==========
 
   // 1. Get All Pembayaran (with optional filters)
@@ -69,7 +73,10 @@ export function usePembayaran(options?: UsePembayaranOptions) {
     },
     {
       enabled: options?.enableGetAll ?? true,
-      placeholderData: keepPreviousData, // Agar UI tidak flicker saat ganti halaman
+      placeholderData: keepPreviousData,
+      initialData: shouldUseInitialData
+        ? options?.initialDataPaginated
+        : undefined,
     },
   );
 

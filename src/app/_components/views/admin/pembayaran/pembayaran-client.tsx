@@ -14,14 +14,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { type TypePembayaran } from "@/types/pembayaran.type";
+import {
+  type TypePembayaran,
+  type TypePembayaranPaginated,
+} from "@/types/pembayaran.type";
 import { toRupiah } from "@/utils/toRupiah";
 import { usePembayaran } from "@/hooks/usePembayaran";
 import { usePembayaranStore } from "@/store/usePembayaranStore";
 import EditPembayaran from "./edit-pembayaran";
 import type { PaginationState } from "@tanstack/react-table";
 
-export default function PembayaranClient() {
+interface PembayaranClientProps {
+  initialDataPembayaran?: TypePembayaranPaginated;
+}
+export default function PembayaranClient({
+  initialDataPembayaran,
+}: PembayaranClientProps) {
   // --- STATE ---
   const [statusFilter, setStatusFilter] = useState<StatusPembayaran | "ALL">(
     "ALL",
@@ -43,8 +51,10 @@ export default function PembayaranClient() {
     isLoadingGetAllPaginated: isLoading,
     isFetchingGetAllPaginated: isFetching,
     refetchGetAllPaginated: refetch,
+    isFetchingGetAllPaginated: isRefetching,
     mutations,
   } = usePembayaran({
+    initialDataPaginated: initialDataPembayaran,
     statusFilter: statusFilter,
     enableGetAll: true,
     pagination: pagination,
@@ -144,10 +154,10 @@ export default function PembayaranClient() {
       <DataTable
         columns={tableColumns}
         data={dataPembayaran ?? []}
-        // 4. Pass props pagination ke Generic Table
         pageCount={pageCount}
         pagination={pagination}
         onPaginationChange={setPagination}
+        isLoading={isLoading || isFetching}
       />
 
       <EditPembayaran />

@@ -3,6 +3,8 @@ import { StatusPembayaran } from "@prisma/client";
 import z from "zod";
 
 export type TypePembayaran = RouterOutputs["pembayaran"]["getAll"][number];
+export type TypePembayaranPaginated =
+  RouterOutputs["pembayaran"]["getAllPaginated"];
 export type TypePembayaranJatuhTempo =
   RouterOutputs["pembayaran"]["getTagihanJatuhTempo"][number];
 

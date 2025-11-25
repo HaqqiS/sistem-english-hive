@@ -77,7 +77,8 @@ export const columns = ({
   },
 
   {
-    accessorKey: "kelas",
+    accessorKey: "sesiPertemuanKelas.kelas.kodeKelas",
+    id: "kelas",
     header: "Kelas",
     cell: ({ row }) => (
       <div
@@ -90,7 +91,8 @@ export const columns = ({
   },
 
   {
-    accessorKey: "jadwalSesi.tanggalWaktu",
+    accessorKey: "sesiPertemuanKelas.tanggalWaktu",
+    id: "jadwal sesi",
     header: "Jadwal Sesi",
     cell: ({ row }) => (
       <div
@@ -104,6 +106,7 @@ export const columns = ({
 
   {
     accessorKey: "isVerified",
+    id: "status verifikasi",
     header: "Status Verifikasi",
     cell: ({ row }) => {
       const isVerified = row.original.isVerified;
@@ -167,7 +170,8 @@ export const columns = ({
 
   {
     accessorKey: "verifiedBy.name",
-    header: "Verified By",
+    id: "diverifikasi oleh",
+    header: "Diverifikasi Oleh",
     cell: ({ row }) => {
       if (!row.original.isVerified || !row.original.verifiedBy) {
         return <div>-</div>;

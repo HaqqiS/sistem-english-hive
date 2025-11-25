@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Check, EllipsisVertical } from "lucide-react";
+import { EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -50,8 +50,8 @@ export const columns = ({
   },
 
   {
-    id: "guru.name",
-    accessorKey: "guru.name",
+    id: "guru name",
+    accessorKey: "name",
     header: "Nama Guru",
     cell: ({ row }) => (
       <Link href={`/admin/guru/${row.original.id}`}>
@@ -67,13 +67,18 @@ export const columns = ({
   },
 
   {
-    id: "guru.email",
-    accessorKey: "guru.email",
-    header: "Email Guru",
+    id: "guru email",
+    accessorKey: "email",
+    header() {
+      return (
+        <div className="min-w-sm">
+          <p>Email Guru</p>
+        </div>
+      );
+    },
     cell: ({ row }) => (
       <span className="text-foreground/80">{row.original.email}</span>
     ),
-    enableHiding: false,
   },
 
   {

@@ -58,8 +58,8 @@ export default function EditVerifikasiAbsen() {
     <EditDrawer
       isOpen={isOpen}
       onOpenChange={(open) => !open && closeDrawer()}
-      title="Edit Ruang"
-      description="Ubah informasi ruang yang sudah ada"
+      title="Edit Absensi Guru"
+      description="Ubah informasi absensi guru yang sudah ada"
       onSubmit={editAbsensiGuruForm.handleSubmit(handleSubmitEdit)}
       isPending={mutations.update.isPending}
       submitText="Simpan Perubahan"

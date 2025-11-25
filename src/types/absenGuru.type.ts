@@ -2,10 +2,6 @@ import type { RouterOutputs } from "@/trpc/react";
 import { StatusAbsenGuru } from "@prisma/client";
 import z from "zod";
 
-// ==========================================
-// 1. READ TYPES (Output dari Router)
-// ==========================================
-
 /** Tipe tunggal absensi guru (biasanya untuk list/table) */
 export type TypeAbsensiGuru =
   RouterOutputs["absenGuru"]["getAllAbsensi"]["data"][number];

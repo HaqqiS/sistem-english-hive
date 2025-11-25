@@ -2,7 +2,6 @@ import DetailGuruClient from "@/app/_components/views/admin/guru/detail/detail-g
 import { api, HydrateClient } from "@/trpc/server";
 import dayjs from "dayjs";
 
-// Tambahkan revalidate = 0 agar data selalu baru saat admin me-refresh halaman
 export const revalidate = 0;
 
 export default async function DetailGuruPage({
@@ -13,7 +12,6 @@ export default async function DetailGuruPage({
   const { guruId } = await params;
   const currentMonth = dayjs().format("YYYY-MM");
 
-  // Prefetch data guru dan history bulan ini di server
   await Promise.all([
     api.user.getAllGuruSimple.prefetch(),
     api.absenGuru.getHistoryByGuruId.prefetch({

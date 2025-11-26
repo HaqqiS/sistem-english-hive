@@ -1,6 +1,5 @@
 "use client";
 
-// import { DataTable } from "@/app/_components/shared/data-table";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as kelas } from "./columns/columns-kelas";
 import { columns as jadwal } from "./columns/columns-jadwal";
@@ -14,14 +13,12 @@ import EditKelas from "./drawers/edit-kelas";
 import EditGuruKelas from "./drawers/edit-guru-kelas";
 import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import type { TypeMuridNotRegistered } from "@/types/murid.type";
-import { useMurid } from "@/hooks/useMurid";
-import { toast } from "sonner";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
 import RangkumanSesiTab from "./tabs/rangkuman-sesi-tab";
 import UpLevelKelas from "./drawers/up-level-kelas";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
+import { toast } from "sonner";
 
 interface ProgramKelasClientProps {
   initialDataKelas: TypeKelas[];

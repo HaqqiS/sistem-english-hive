@@ -55,7 +55,7 @@ export const columns = ({
     accessorKey: "kodeKelas",
     header: "Nama Program Kelas",
     cell: ({ row }) => (
-      <Link href={`/admin/kelas/${row.original.id}`}>
+      <Link href={`/admin/kelas/detail/${row.original.id}`}>
         <Button
           variant="link"
           className="text-foreground w-fit px-0 text-left text-base"

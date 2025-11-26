@@ -12,6 +12,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+const IGNORED_SEGMENTS = ["detail", "sesi"];
+
 // Fungsi helper untuk membuat huruf pertama kapital
 function capitalize(str: string) {
   if (!str) return str;
@@ -34,29 +36,44 @@ export function DynamicBreadcrumb() {
     );
   }
 
-  // Menangani kasus lain, cth: /admin/verivikasi -> Admin > Verifikasi
+  let currentPath = "";
+
   return (
     <Breadcrumb>
       <BreadcrumbList>
         {segments.map((segment, index) => {
-          const isLast = index === segments.length - 1;
-          const href = `/${segments.slice(0, index + 1).join("/")}`;
+          const isIgnored = IGNORED_SEGMENTS.includes(segment);
+          currentPath += `/${segment}`;
+          const isLastVisible = !isIgnored && index === segments.length - 1;
+          if (isIgnored) {
+            // Jangan tampilkan segmen penanda (detail, sesi)
+            return null;
+          }
+
+          let displayLabel = capitalize(segment);
+
+          // Cek apakah segmen adalah ID (lebih dari 10 karakter biasanya ID cuid)
+          if (segment.length > 10) {
+            // Jika segmen ID, ganti labelnya menjadi "Detail" atau "ID: ..."
+            // Untuk saat loading, kita pakai label generik "Detail"
+            displayLabel = "Detail";
+          }
 
           return (
-            <React.Fragment key={href}>
+            <React.Fragment key={currentPath}>
               <BreadcrumbItem>
-                {isLast ? (
+                {isLastVisible ? (
                   // Item terakhir, tidak bisa diklik
-                  <BreadcrumbPage>{capitalize(segment)}</BreadcrumbPage>
+                  <BreadcrumbPage>{displayLabel}</BreadcrumbPage>
                 ) : (
                   // Item di tengah, bisa diklik
                   <BreadcrumbLink asChild>
-                    <Link href={href}>{capitalize(segment)}</Link>
+                    <Link href={currentPath}>{displayLabel}</Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
               {/* Tambahkan separator jika bukan item terakhir */}
-              {!isLast && <BreadcrumbSeparator />}
+              {!isLastVisible && <BreadcrumbSeparator />}
             </React.Fragment>
           );
         })}

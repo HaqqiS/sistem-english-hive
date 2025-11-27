@@ -12,7 +12,7 @@ import TambahProgramKelas from "./drawers/tambah-kelas";
 import EditKelas from "./drawers/edit-kelas";
 import EditGuruKelas from "./drawers/edit-guru-kelas";
 import UpLevelKelas from "./drawers/up-level-kelas";
-import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
+import type { TypeHistoryGuruKelasByKelasId } from "@/types/historyGuruKelas.type";
 import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
@@ -51,7 +51,7 @@ export default function KelasClient() {
     openKelasDrawer("edit", item);
   };
 
-  const handleEditClickGuruKelas = (item: TypeHistoryGuruKelas) => {
+  const handleEditClickGuruKelas = (item: TypeHistoryGuruKelasByKelasId) => {
     openGuruKelasDrawer("edit", item);
   };
 
@@ -83,7 +83,9 @@ export default function KelasClient() {
       if (history) {
         // assert to the expected type after guarding against undefined
         // cast via unknown first to avoid incompatible structural typing error
-        handleEditClickGuruKelas(history as unknown as TypeHistoryGuruKelas);
+        handleEditClickGuruKelas(
+          history as unknown as TypeHistoryGuruKelasByKelasId,
+        );
       } else {
         // no history available for this kelas
         toast.error("Tidak ada data guru untuk kelas ini.", {

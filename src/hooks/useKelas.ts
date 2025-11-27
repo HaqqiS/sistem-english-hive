@@ -122,7 +122,6 @@ export function useKelas(options?: UseKelasOptions) {
       // Invalidate relevant queries
       await apiUtils.kelas.getAll.invalidate(); // Update list kelas
       await apiUtils.kelas.getKelasAktif.invalidate(); // Update list kelas aktif
-      await apiUtils.pendaftaranKelas.getAll.invalidate(); // Update status siswa di kelas lama
       // await apiUtils.pembayaran.getAll.invalidate(); // Update data pembayaran (jika ada list pembayaran global)
 
       toast.success("Kelas berhasil di-uplevel");

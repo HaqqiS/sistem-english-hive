@@ -6,12 +6,6 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
 
 export const historyGuruKelasRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
-    const historyGuruKelas = await db.historyGuruKelas.findMany({});
-    return historyGuruKelas;
-  }),
-
   getHistoryGuruByKelasId: protectedProcedure
     .input(z.object({ kelasId: z.string().min(1, "Kelas ID harus diisi") }))
     .query(async ({ ctx, input }) => {

@@ -77,7 +77,6 @@ export const jadwalKelasRouter = createTRPCRouter({
 
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const { db } = ctx;
-    // TODO: Tambahkan pagination nanti
     return db.jadwalKelas.findMany({
       orderBy: {
         hari: "asc", // Urutkan Senin -> Minggu (perlu mapping enum jika ingin akurat)
@@ -92,19 +91,6 @@ export const jadwalKelasRouter = createTRPCRouter({
       },
     });
   }),
-
-  getByKelasId: protectedProcedure
-    .input(z.object({ kelasId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.jadwalKelas.findMany({
-        where: { kelasId: input.kelasId },
-        include: {
-          ruang: true,
-          jamSlotTetap: true,
-          jamSlotCustom: true,
-        },
-      });
-    }),
 
   getJadwalHariIniForGuru: protectedProcedure
     .input(

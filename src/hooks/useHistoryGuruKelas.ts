@@ -1,13 +1,13 @@
 "use client";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
+import type { TypeHistoryGuruKelasByKelasId } from "@/types/historyGuruKelas.type";
 import { skipToken } from "@tanstack/react-query";
 
 interface useHistoryGuruKelasOptions {
   // Query options
   enableQuery?: boolean;
-  initialData?: TypeHistoryGuruKelas[];
+  initialData?: TypeHistoryGuruKelasByKelasId[];
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -47,7 +47,6 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   const createMutation =
     api.historyGuruKelas.createHistoryGuruKelas.useMutation({
       onSuccess: async (data, variables) => {
-        await apiUtils.historyGuruKelas.getAll.invalidate();
         await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
           kelasId: variables.kelasId,
         });
@@ -63,7 +62,6 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   const updateMutation =
     api.historyGuruKelas.updateHistoryGuruKelas.useMutation({
       onSuccess: async (data, variables) => {
-        await apiUtils.historyGuruKelas.getAll.invalidate();
         await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
           kelasId: variables.kelasId,
         });
@@ -79,7 +77,6 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   const deleteMutation =
     api.historyGuruKelas.deleteHistoryGuruKelas.useMutation({
       onSuccess: async (data, variables) => {
-        await apiUtils.historyGuruKelas.getAll.invalidate();
         await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
           kelasId: variables.kelasId,
         });

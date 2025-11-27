@@ -1,4 +1,4 @@
-import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
+import type { TypeHistoryGuruKelasByKelasId } from "@/types/historyGuruKelas.type";
 import type { TypeKelas } from "@/types/kelas.type";
 import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
 import { create } from "zustand";
@@ -22,10 +22,13 @@ interface KelasStore {
 interface GuruKelasStore {
   // Drawer management
   activeDrawer: DrawerType;
-  selectedHistoryGuruKelas: TypeHistoryGuruKelas | null;
+  selectedHistoryGuruKelas: TypeHistoryGuruKelasByKelasId | null;
 
   // Action methods
-  openDrawer: (drawer: DrawerType, kelas?: TypeHistoryGuruKelas) => void;
+  openDrawer: (
+    drawer: DrawerType,
+    kelas?: TypeHistoryGuruKelasByKelasId,
+  ) => void;
   closeDrawer: () => void;
 
   // Helpers

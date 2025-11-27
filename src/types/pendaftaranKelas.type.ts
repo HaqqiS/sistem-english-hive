@@ -1,7 +1,8 @@
 import type { RouterOutputs } from "@/trpc/react";
 import z from "zod";
+
 export type PendaftaranKelasType =
-  RouterOutputs["pendaftaranKelas"]["getAll"][number];
+  RouterOutputs["pendaftaranKelas"]["getPendaftarByKelasId"][number];
 
 const basePendaftaranKelasSchema = z.object({
   muridId: z.string().min(1, "Murid harus dipilih"),

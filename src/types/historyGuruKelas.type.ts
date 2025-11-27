@@ -2,9 +2,6 @@ import type { RouterOutputs } from "@/trpc/react";
 import { EnumStatusGuru } from "@prisma/client";
 import z from "zod";
 
-export type TypeHistoryGuruKelas =
-  RouterOutputs["historyGuruKelas"]["getAll"][number];
-
 export type TypeHistoryGuruKelasByKelasId =
   RouterOutputs["historyGuruKelas"]["getHistoryGuruByKelasId"][number];
 

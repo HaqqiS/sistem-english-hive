@@ -11,26 +11,6 @@ import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 
 export const pendaftaranKelasRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const pendaftaranKelas = await ctx.db.pendaftaranKelas.findMany({
-      include: {
-        murid: {
-          select: {
-            namaLengkap: true,
-            email: true,
-          },
-        },
-        Kelas: {
-          select: {
-            kodeKelas: true,
-          },
-        },
-      },
-    });
-
-    return pendaftaranKelas;
-  }),
-
   getPendaftarByKelasId: protectedProcedure
     .input(serverPendaftaranKelasSchema.pick({ kelasId: true }))
     .query(async ({ ctx, input }) => {

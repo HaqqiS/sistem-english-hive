@@ -32,14 +32,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
   const apiUtils = api.useUtils();
 
   // ========== QUERIES ==========
-  const pendaftaranKelasQuery = api.pendaftaranKelas.getAll.useQuery(
-    undefined,
-    {
-      enabled: options?.enableQuery ?? true,
-      initialData: options?.initialData,
-    },
-  );
-
   const daftarMuridByKelasIdQuery =
     api.pendaftaranKelas.getPendaftarByKelasId.useQuery(
       options?.kelasId ? { kelasId: options.kelasId } : skipToken,
@@ -54,7 +46,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
   const createMutation =
     api.pendaftaranKelas.createPendaftaranKelas.useMutation({
       onSuccess: async () => {
-        await apiUtils.pendaftaranKelas.getAll.invalidate();
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
         toast.success("Pendaftaran Kelas berhasil ditambahkan");
@@ -68,7 +59,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
   const createBulkMutation =
     api.pendaftaranKelas.createBulkPendaftaranKelas.useMutation({
       onSuccess: async (data) => {
-        await apiUtils.pendaftaranKelas.getAll.invalidate();
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
         toast.success(`Berhasil mendaftarkan ${data.count} murid ke kelas.`);
@@ -83,7 +73,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
   const updateMutation =
     api.pendaftaranKelas.updatePendaftaranKelas.useMutation({
       onSuccess: async () => {
-        await apiUtils.pendaftaranKelas.getAll.invalidate();
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
         toast.success("Pendaftaran Kelas berhasil diupdate");
@@ -98,7 +87,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
   const deleteMutation =
     api.pendaftaranKelas.deletePendaftaranKelas.useMutation({
       onSuccess: async () => {
-        await apiUtils.pendaftaranKelas.getAll.invalidate();
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
         toast.success("Murid berhasil dihapus dari Kelas");
@@ -111,10 +99,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
 
   return {
     // Query results
-    data: pendaftaranKelasQuery.data,
-    isLoading: pendaftaranKelasQuery.isLoading,
-    isError: pendaftaranKelasQuery.isError,
-    error: pendaftaranKelasQuery.error,
 
     dataByKelasId: daftarMuridByKelasIdQuery.data,
     isLoadingByKelasId: daftarMuridByKelasIdQuery.isLoading,
@@ -146,7 +130,8 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
     },
 
     // Utils untuk manual invalidation jika perlu
-    refetch: pendaftaranKelasQuery.refetch,
-    invalidate: () => apiUtils.pendaftaranKelas.getAll.invalidate(),
+    refetch: daftarMuridByKelasIdQuery.refetch,
+    invalidate: () =>
+      apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate(),
   };
 }

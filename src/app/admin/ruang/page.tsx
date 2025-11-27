@@ -4,15 +4,8 @@ import { api, HydrateClient } from "@/trpc/server";
 // const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default async function RuangPage() {
-  const defaultPagination = { pageIndex: 0, pageSize: 10 };
-  const defaultPaginationCabang = { pageIndex: 0, pageSize: 5 };
-
-  const dataCabang = await api.cabang.getAllPaginated.prefetch(
-    defaultPaginationCabang,
-  );
-
   const [cabang, ruang, jamTetap, jamCustom] = await Promise.all([
-    api.cabang.getAllPaginated(defaultPaginationCabang),
+    api.cabang.getAll(),
     api.ruang.getRuangByCabangId({ cabangId: "all" }),
     api.jam.getAllJamTetap(),
     api.jam.getAllJamCustom(),

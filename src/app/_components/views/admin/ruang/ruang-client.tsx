@@ -33,7 +33,7 @@ import EditJamCustom from "./drawers/edit-jam-custom";
 import type { PaginationState } from "@tanstack/react-table";
 
 interface RuangClientProps {
-  initialDataCabang: { data: CabangType[]; pageCount: number };
+  initialDataCabang: CabangType[];
   initialDataRuang: RouterOutputs["ruang"]["getRuangByCabangId"];
   initialDataJamTetap: TypeJamTetap[];
   initialDataJamCustom: TypeJamCustom[];
@@ -74,13 +74,8 @@ export default function RuangClient({
   const [selectedJamCustomToDelete, setSelectedJamCustomToDelete] =
     useState<TypeJamCustom | null>(null);
 
-  const {
-    data: dataCabang,
-    pageCount: cabangPageCount,
-    mutations: cabangMutations,
-  } = useCabang({
-    initialDataPaginated: initialDataCabang,
-    pagination: cabangPagination,
+  const { data: dataCabang, mutations: cabangMutations } = useCabang({
+    initialData: initialDataCabang,
     onSuccessDelete: () => {
       setDeleteCabangDialogOpen(false);
       setSelectedCabangToDelete(null);
@@ -130,7 +125,7 @@ export default function RuangClient({
 
   const handleDeleteClickCabang = (id: string, nama: string) => {
     // const cabang = dataCabang.find((c) => c.id === id);
-    const cabang = initialDataCabang.data.find((c) => c.id === id);
+    const cabang = initialDataCabang.find((c) => c.id === id);
     if (cabang) {
       setSelectedCabangToDelete(cabang);
       setDeleteCabangDialogOpen(true);
@@ -315,32 +310,7 @@ export default function RuangClient({
             />
           </div>
 
-          <DataTable
-            filterColumnId="namaCabang"
-            filterColumnPlaceholder="Filter Nama Cabang..."
-            columns={columnsCabang}
-            data={dataCabang ?? []}
-            pagination={cabangPagination}
-            onPaginationChange={setCabangPagination}
-            pageCount={cabangPageCount}
-            toolbar={(table) => (
-              <div className="flex items-center gap-2">
-                {/* <Input
-              placeholder="Cari nama cabang..."
-              value={
-                (table.getColumn("namaCabang")?.getFilterValue() as string) ??
-                ""
-              }
-              onChange={(event) =>
-                table
-                  .getColumn("namaCabang")
-                  ?.setFilterValue(event.target.value)
-              }
-              className="max-w-sm"
-            /> */}
-              </div>
-            )}
-          />
+          <DataTableGeneric columns={columnsCabang} data={dataCabang ?? []} />
         </div>
       </TabsContent>
       <TabsContent value="jamReg">

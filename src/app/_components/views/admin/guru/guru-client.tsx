@@ -20,16 +20,8 @@ import EditGuru from "./drawer/edit-guru";
 import type { PaginationState } from "@tanstack/react-table";
 import type { TypeGuruComplete } from "@/types/user.type";
 
-interface GuruClientProps {
-  initialDataAbsensi: TypeAbsensiGuruPaginated;
-  initialDataGuru: TypeGuruComplete[];
-}
-
-export default function GuruClient({
-  initialDataAbsensi,
-  initialDataGuru,
-}: GuruClientProps) {
-  // STATE
+export default function GuruClient() {
+  // STATES
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -60,7 +52,7 @@ export default function GuruClient({
     pageCount,
     mutations: mutationsAbsenGuru,
   } = useAbsenGuru({
-    initialDataAbsensi: initialDataAbsensi,
+    // initialDataAbsensi: initialDataAbsensi,
     pagination: pagination,
     onSuccessDelete: () => {
       setDeleteAbsenGuruDialogOpen(false);
@@ -72,7 +64,7 @@ export default function GuruClient({
   });
 
   const { dataComplete: dataGuru, mutations: mutationsGuru } = useUser({
-    initialDataGuruComplete: initialDataGuru,
+    // initialDataGuruComplete: initialDataGuru,
     onSuccessDelete() {
       setDeleteGuruDialogOpen(false);
       setSelectedGuruToDelete(null);

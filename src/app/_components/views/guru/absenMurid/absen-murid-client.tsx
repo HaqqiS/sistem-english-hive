@@ -18,15 +18,9 @@ import { CalendarDays, ChevronRight, Clock, School, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
-interface AbsenClientProps {
-  initialData: TypeKelasByGuruId[];
-}
-
-export default function AbsenMuridClient({ initialData }: AbsenClientProps) {
-  console.table(initialData);
-
+export default function AbsenMuridClient() {
   const { dataWithSesi: dataKelas, isLoadingWithSesi } = useKelas({
-    initialDataKelasWithSesi: initialData,
+    // initialDataKelasWithSesi: initialData,
   });
 
   if (isLoadingWithSesi) {

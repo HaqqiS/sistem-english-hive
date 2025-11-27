@@ -1,23 +1,17 @@
 import KelasClient from "@/app/_components/views/admin/kelas/kelas-client";
 import { api, HydrateClient } from "@/trpc/server";
 
-// const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export default async function KelasPage() {
-  // await delay(600000);
-
-  // const dataProgramKelas = await getData();
-  const dataKelas = await api.kelas.getKelasAktif();
-  const dataJadwalKelas = await api.jadwalKelas.getAll();
+  await Promise.all([
+    api.kelas.getKelasAktif.prefetch(),
+    api.jadwalKelas.getAll.prefetch(),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <main className="flex flex-1 flex-col gap-4 pt-0">
         <HydrateClient>
-          <KelasClient
-            initialDataKelas={dataKelas}
-            initialDataJadwal={dataJadwalKelas}
-          />
+          <KelasClient />
         </HydrateClient>
       </main>
     </div>

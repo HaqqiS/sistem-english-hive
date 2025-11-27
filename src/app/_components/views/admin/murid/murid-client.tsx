@@ -20,15 +20,7 @@ import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confir
 import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
 import type { PaginationState } from "@tanstack/react-table";
 
-interface ProgramMuridClientProps {
-  initialDataMuridNotRegistered: TypeMuridNotRegisteredPaginated;
-  initialDataAllMurid: TypeAllMuridPaginated;
-}
-
-export default function MuridClient({
-  initialDataMuridNotRegistered,
-  initialDataAllMurid,
-}: ProgramMuridClientProps) {
+export default function MuridClient() {
   // STATE
   const [paginationAllMurid, setPaginationAllMurid] = useState<PaginationState>(
     {
@@ -59,7 +51,6 @@ export default function MuridClient({
     isLoadingNotRegisteredPaginated,
     isFetchingNotRegisteredPaginated,
   } = useMurid({
-    initialDataNotRegisteredPaginated: initialDataMuridNotRegistered,
     pagination: paginationNotRegistered, // Pass pagination state ke hook
   });
 
@@ -72,7 +63,6 @@ export default function MuridClient({
 
     mutations,
   } = useMurid({
-    initialDataAllPaginated: initialDataAllMurid,
     pagination: paginationAllMurid, // Pass pagination state ke hook
     onSuccessDelete: () => {
       setDeleteMuridDialogOpen(false);

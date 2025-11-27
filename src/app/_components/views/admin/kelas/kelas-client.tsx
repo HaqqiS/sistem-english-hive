@@ -4,31 +4,23 @@ import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as kelas } from "./columns/columns-kelas";
 import { columns as jadwal } from "./columns/columns-jadwal";
 import type { TypeKelas } from "@/types/kelas.type";
-import TambahProgramKelas from "./drawers/tambah-kelas";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useKelas } from "@/hooks/useKelas";
 import { useState } from "react";
 import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
+import TambahProgramKelas from "./drawers/tambah-kelas";
 import EditKelas from "./drawers/edit-kelas";
 import EditGuruKelas from "./drawers/edit-guru-kelas";
+import UpLevelKelas from "./drawers/up-level-kelas";
 import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
+import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
 import KelasTab from "./tabs/kelas-tab";
-import UpLevelKelas from "./drawers/up-level-kelas";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
-import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
 import { toast } from "sonner";
 
-interface ProgramKelasClientProps {
-  initialDataKelas: TypeKelas[];
-  initialDataJadwal: TypeJadwalKelas[];
-}
-
-export default function KelasClient({
-  initialDataKelas,
-  initialDataJadwal,
-}: ProgramKelasClientProps) {
+export default function KelasClient() {
   const { openDrawer: openKelasDrawer } = useKelasStore();
   const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
 
@@ -43,14 +35,12 @@ export default function KelasClient({
   } | null>(null);
 
   const { dataKelasAktif: dataKelas, mutations: kelasMutations } = useKelas({
-    initialData: initialDataKelas,
     onSuccessDelete: () => {
       setDeleteKelasDialogOpen(false);
       setSelectedKelasToDelete(null);
     },
   });
   const { dataJadwal, mutations: jadwalMutation } = useJadwalKelas({
-    initialData: initialDataJadwal,
     onSuccessDelete: () => {
       setDeleteJadwalDialogOpen(false);
       setSelectedJadwalToDelete(null);
@@ -66,7 +56,7 @@ export default function KelasClient({
   };
 
   const handleDeleteClickKelas = (id: string, kodeKelas: string) => {
-    const kelas = initialDataKelas.find((c) => c.id === id);
+    const kelas = dataKelas?.find((c) => c.id === id);
     if (kelas) {
       setSelectedKelasToDelete(kelas);
       setDeleteKelasDialogOpen(true);

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { type RouterOutputs } from "@/trpc/react";
-import { DataTable } from "@/app/_components/shared/data-table";
 import { DataTable as DataTableGeneric } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { columns as createCabangColumns } from "./columns/cabang-columns";
@@ -32,19 +30,7 @@ import TambahJamCustom from "./drawers/tambah-jam-custom";
 import EditJamCustom from "./drawers/edit-jam-custom";
 import type { PaginationState } from "@tanstack/react-table";
 
-interface RuangClientProps {
-  initialDataCabang: CabangType[];
-  initialDataRuang: RouterOutputs["ruang"]["getRuangByCabangId"];
-  initialDataJamTetap: TypeJamTetap[];
-  initialDataJamCustom: TypeJamCustom[];
-}
-
-export default function RuangClient({
-  initialDataCabang,
-  initialDataRuang,
-  initialDataJamTetap,
-  initialDataJamCustom,
-}: RuangClientProps) {
+export default function RuangClient() {
   // State management
   const [cabangPagination, setCabangPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -75,21 +61,21 @@ export default function RuangClient({
     useState<TypeJamCustom | null>(null);
 
   const { data: dataCabang, mutations: cabangMutations } = useCabang({
-    initialData: initialDataCabang,
+    // initialData: initialDataCabang,
     onSuccessDelete: () => {
       setDeleteCabangDialogOpen(false);
       setSelectedCabangToDelete(null);
     },
   });
   const { data: dataRuang, mutations: ruangMutations } = useRuang({
-    initialData: initialDataRuang,
+    // initialData: initialDataRuang,
     onSuccessDelete: () => {
       setDeleteRuangDialogOpen(false);
       setSelectedRuangToDelete(null);
     },
   });
   const { dataJamTetap, tetapMutations } = useJam({
-    initialDataJamTetap,
+    // initialDataJamTetap,
     onSuccessDelete: () => {
       setDeleteJamTetapDialogOpen(false);
       setSelectedJamTetapToDelete(null);
@@ -97,7 +83,7 @@ export default function RuangClient({
   });
 
   const { dataJamCustom, customMutations } = useJam({
-    initialDataJamCustom,
+    // initialDataJamCustom,
     onSuccessDelete: () => {
       setDeleteJamCustomDialogOpen(false);
       setSelectedJamCustomToDelete(null);
@@ -125,14 +111,14 @@ export default function RuangClient({
 
   const handleDeleteClickCabang = (id: string, nama: string) => {
     // const cabang = dataCabang.find((c) => c.id === id);
-    const cabang = initialDataCabang.find((c) => c.id === id);
+    const cabang = dataCabang?.find((c) => c.id === id);
     if (cabang) {
       setSelectedCabangToDelete(cabang);
       setDeleteCabangDialogOpen(true);
     }
   };
   const handleDeleteClickRuang = (id: string, nama: string) => {
-    const ruang = initialDataRuang.find((r) => r.id === id);
+    const ruang = dataRuang?.find((r) => r.id === id);
     if (ruang) {
       setSelectedRuangToDelete(ruang);
       setDeleteRuangDialogOpen(true);
@@ -140,7 +126,7 @@ export default function RuangClient({
   };
 
   const handleDeleteClickJamTetap = (id: string, nama: string) => {
-    const jam = initialDataJamTetap.find((j) => j.id === id);
+    const jam = dataJamTetap?.find((j) => j.id === id);
     if (jam) {
       setSelectedJamTetapToDelete(jam);
       setDeleteJamTetapDialogOpen(true);
@@ -148,7 +134,7 @@ export default function RuangClient({
   };
 
   const handleDeleteClickJamCustom = (id: string) => {
-    const jam = initialDataJamCustom.find((j) => j.id === id);
+    const jam = dataJamCustom?.find((j) => j.id === id);
     if (jam) {
       setSelectedJamCustomToDelete(jam);
       setDeleteJamCustomDialogOpen(true);

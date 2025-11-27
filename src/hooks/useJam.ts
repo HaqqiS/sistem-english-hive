@@ -6,7 +6,9 @@ import { toast } from "sonner";
 
 interface useJamOptions {
   // Query options
-  enableQuery?: boolean;
+  enableQueryJamTetap?: boolean;
+  enableQueryJamCustom?: boolean;
+
   initialDataJamTetap?: TypeJamTetap[];
   initialDataJamCustom?: TypeJamCustom[];
 
@@ -34,12 +36,12 @@ export function useJam(options?: useJamOptions) {
   // ========== QUERIES ==========
 
   const JamTetapQuery = api.jam.getAllJamTetap.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
+    enabled: options?.enableQueryJamTetap ?? true,
     initialData: options?.initialDataJamTetap,
   });
 
   const JamCustomQuery = api.jam.getAllJamCustom.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
+    enabled: options?.enableQueryJamCustom ?? true,
     initialData: options?.initialDataJamCustom,
   });
 

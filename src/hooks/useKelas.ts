@@ -52,7 +52,7 @@ export function useKelas(options?: UseKelasOptions) {
   });
 
   const kelasCountQuery = api.kelas.getKelasAndCount.useQuery(undefined, {
-    enabled: options?.enableQueryGetKelasCount ?? true,
+    enabled: options?.enableQueryGetKelasCount ?? false,
     initialData: options?.initialDataKelasCount,
     refetchOnWindowFocus: false,
   });
@@ -64,6 +64,7 @@ export function useKelas(options?: UseKelasOptions) {
   const kelasWithSesiQuery = api.kelas.getKelasWithSesiForGuru.useQuery(
     undefined,
     {
+      enabled: options?.enableQueryGetKelasWithSesi ?? false,
       initialData: options?.initialDataKelasWithSesi,
     },
   );
@@ -81,7 +82,7 @@ export function useKelas(options?: UseKelasOptions) {
   const createMutation = api.kelas.createKelas.useMutation({
     onSuccess: async (newKelas) => {
       await apiUtils.kelas.getAll.invalidate();
-      await apiUtils.kelas.getKelasAktif.invalidate();
+      await apiUtils.kelas.getKelasAndCount.invalidate();
       toast.success("Kelas berhasil ditambahkan");
       options?.onSuccessCreate?.(newKelas);
     },
@@ -94,7 +95,7 @@ export function useKelas(options?: UseKelasOptions) {
   const updateMutation = api.kelas.updateKelas.useMutation({
     onSuccess: async () => {
       await apiUtils.kelas.getAll.invalidate();
-      await apiUtils.kelas.getKelasAktif.invalidate();
+      await apiUtils.kelas.getKelasAndCount.invalidate();
       toast.success("Kelas berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -107,7 +108,7 @@ export function useKelas(options?: UseKelasOptions) {
   const deleteMutation = api.kelas.deleteKelas.useMutation({
     onSuccess: async () => {
       await apiUtils.kelas.getAll.invalidate();
-      await apiUtils.kelas.getKelasAktif.invalidate();
+      await apiUtils.kelas.getKelasAndCount.invalidate();
       toast.success("Kelas berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -121,7 +122,7 @@ export function useKelas(options?: UseKelasOptions) {
     onSuccess: async () => {
       // Invalidate relevant queries
       await apiUtils.kelas.getAll.invalidate(); // Update list kelas
-      await apiUtils.kelas.getKelasAktif.invalidate(); // Update list kelas aktif
+      await apiUtils.kelas.getKelasAndCount.invalidate(); // Update list kelas aktif
       // await apiUtils.pembayaran.getAll.invalidate(); // Update data pembayaran (jika ada list pembayaran global)
 
       toast.success("Kelas berhasil di-uplevel");

@@ -48,6 +48,7 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
       onSuccess: async () => {
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+        await apiUtils.kelas.getKelasAndCount.invalidate();
         toast.success("Pendaftaran Kelas berhasil ditambahkan");
         options?.onSuccessCreate?.();
       },
@@ -61,6 +62,7 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
       onSuccess: async (data) => {
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+        await apiUtils.kelas.getKelasAndCount.invalidate();
         toast.success(`Berhasil mendaftarkan ${data.count} murid ke kelas.`);
         options?.onSuccessCreate?.();
       },
@@ -75,6 +77,7 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
       onSuccess: async () => {
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+        await apiUtils.kelas.getKelasAndCount.invalidate();
         toast.success("Pendaftaran Kelas berhasil diupdate");
         options?.onSuccessUpdate?.();
       },
@@ -89,6 +92,7 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
       onSuccess: async () => {
         await apiUtils.pendaftaranKelas.getPendaftarByKelasId.invalidate();
         await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+        await apiUtils.kelas.getKelasAndCount.invalidate();
         toast.success("Murid berhasil dihapus dari Kelas");
         options?.onSuccessDelete?.();
       },

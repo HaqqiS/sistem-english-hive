@@ -1,32 +1,22 @@
 "use client";
 
 import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { columns as kelas } from "./columns/columns-kelas";
 import { columns as jadwal } from "./columns/columns-jadwal";
-import type { TypeKelas } from "@/types/kelas.type";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useKelas } from "@/hooks/useKelas";
 import { useState } from "react";
-import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
-import TambahProgramKelas from "./drawers/tambah-kelas";
-import EditKelas from "./drawers/edit-kelas";
-import EditGuruKelas from "./drawers/edit-guru-kelas";
-import UpLevelKelas from "./drawers/up-level-kelas";
-import type { TypeHistoryGuruKelasByKelasId } from "@/types/historyGuruKelas.type";
-import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
 import KelasTab from "./tabs/kelas-tab";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
-import { toast } from "sonner";
 
 export default function KelasClient() {
-  const { openDrawer: openKelasDrawer } = useKelasStore();
-  const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
+  // const { openDrawer: openKelasDrawer } = useKelasStore();
+  // const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
 
-  const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
-  const [selectedKelasToDelete, setSelectedKelasToDelete] =
-    useState<TypeKelas | null>(null);
+  // const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
+  // const [selectedKelasToDelete, setSelectedKelasToDelete] =
+  //   useState<TypeKelas | null>(null);
 
   const [deleteJadwalDialogOpen, setDeleteJadwalDialogOpen] = useState(false);
   const [selectedJadwalToDelete, setSelectedJadwalToDelete] = useState<{
@@ -35,10 +25,9 @@ export default function KelasClient() {
   } | null>(null);
 
   const { dataKelasAktif: dataKelas, mutations: kelasMutations } = useKelas({
-    onSuccessDelete: () => {
-      setDeleteKelasDialogOpen(false);
-      setSelectedKelasToDelete(null);
-    },
+    enableQueryGetAll: false,
+    enableQueryGetKelasCount: false,
+    enableQueryGetKelasId: true,
   });
   const { dataJadwal, mutations: jadwalMutation } = useJadwalKelas({
     onSuccessDelete: () => {
@@ -47,61 +36,11 @@ export default function KelasClient() {
     },
   });
 
-  const handleEditClickKelas = (item: TypeKelas) => {
-    openKelasDrawer("edit", item);
-  };
-
-  const handleEditClickGuruKelas = (item: TypeHistoryGuruKelasByKelasId) => {
-    openGuruKelasDrawer("edit", item);
-  };
-
-  const handleDeleteClickKelas = (id: string, kodeKelas: string) => {
-    const kelas = dataKelas?.find((c) => c.id === id);
-    if (kelas) {
-      setSelectedKelasToDelete(kelas);
-      setDeleteKelasDialogOpen(true);
-    }
-  };
-  const handleConfirmDeleteKelas = async () => {
-    if (!selectedKelasToDelete) return;
-
-    await kelasMutations.delete.mutateAsync({ id: selectedKelasToDelete.id });
-  };
-
   const handleConfirmDeleteJadwal = async () => {
     if (!selectedJadwalToDelete) return;
 
     await jadwalMutation.delete.mutateAsync({ id: selectedJadwalToDelete.id });
   };
-
-  const columnsKelas = kelas({
-    onEditKelasClick: (item) => {
-      handleEditClickKelas(item);
-    },
-    onEditGuruKelasClick: (item) => {
-      const history = item.historyGuruKelases?.[0];
-      if (history) {
-        // assert to the expected type after guarding against undefined
-        // cast via unknown first to avoid incompatible structural typing error
-        handleEditClickGuruKelas(
-          history as unknown as TypeHistoryGuruKelasByKelasId,
-        );
-      } else {
-        // no history available for this kelas
-        toast.error("Tidak ada data guru untuk kelas ini.", {
-          richColors: true,
-        });
-      }
-    },
-    onUpLevelClick: (item) => {
-      // console.log("up level: ", item);
-      openKelasDrawer("upLevel", item);
-    },
-    onDeleteClick: (kelasId, kodeKelas) => {
-      console.log("deleted: ", kelasId, kodeKelas);
-      handleDeleteClickKelas(kelasId, kodeKelas);
-    },
-  });
 
   const columnsJadwal = jadwal({
     onEditClick: (item) => {
@@ -119,47 +58,6 @@ export default function KelasClient() {
         <TabsTrigger value="listKelas">List Kelas</TabsTrigger>
         <TabsTrigger value="penjadwalanKelas">Penjadwalan Kelas</TabsTrigger>
       </TabsList>
-      {/* <TabsContent value="kelas">
-        <div>
-          <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl">Daftar Kelas</h1>
-                <p className="text-muted-foreground text-sm">
-                  halaman ini mengatur data kelas dan penugasan guru.
-                </p>
-              </div>
-            </header>
-            <TambahProgramKelas />
-
-            <DeleteConfirmationDialog
-              isOpen={deleteKelasDialogOpen}
-              onOpenChange={setDeleteKelasDialogOpen}
-              title="Hapus Kelas"
-              description={
-                <>
-                  Yakin ingin menghapus Kelas{" "}
-                  <span className="text-accent font-bold">
-                    {selectedKelasToDelete?.kodeKelas}
-                  </span>
-                  ? Tindakan ini tidak dapat dibatalkan.
-                </>
-              }
-              onConfirm={handleConfirmDeleteKelas}
-              isLoading={kelasMutations.delete.isPending}
-              confirmText="Hapus"
-              cancelText="Batal"
-            />
-          </div>
-
-          <EditKelas />
-          <EditGuruKelas />
-          <UpLevelKelas />
-
-          <DataTable columns={columnsKelas} data={dataKelas ?? []} />
-        </div>
-      </TabsContent> */}
-
       <TabsContent value="listKelas">
         <KelasTab />
       </TabsContent>

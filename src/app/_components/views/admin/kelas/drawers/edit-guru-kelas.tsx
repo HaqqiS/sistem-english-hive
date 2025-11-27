@@ -48,7 +48,6 @@ export default function EditGuruKelas() {
   const handleSubmitEdit = async (data: TypeUpdateHistoryGuruKelasSchema) => {
     if (!selectedHistoryGuruKelas) return;
 
-    console.log("data submit: ", data);
     await mutations.update.mutateAsync({
       id: selectedHistoryGuruKelas.id,
       ...data,

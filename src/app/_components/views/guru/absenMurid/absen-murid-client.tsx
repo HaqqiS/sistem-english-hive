@@ -1,6 +1,5 @@
 "use client";
 
-import type { TypeKelasByGuruId } from "@/types/kelas.type";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Accordion,
@@ -20,7 +19,8 @@ import { Badge } from "@/components/ui/badge";
 
 export default function AbsenMuridClient() {
   const { dataWithSesi: dataKelas, isLoadingWithSesi } = useKelas({
-    // initialDataKelasWithSesi: initialData,
+    enableQueryGetAll: false,
+    enableQueryGetKelasWithSesi: true,
   });
 
   if (isLoadingWithSesi) {

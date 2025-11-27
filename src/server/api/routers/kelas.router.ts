@@ -96,8 +96,15 @@ export const kelasRouter = createTRPCRouter({
 
       select: {
         id: true,
+        jenisKelas: true,
+        level: true,
+        grup: true,
+        tipe: true,
         kodeKelas: true,
+        bulanTahunAjar: true,
+        deskripsi: true,
         hargaKelas: true,
+        cohortId: true,
         historyGuruKelases: {
           where: {
             selesaiPada: null,
@@ -105,8 +112,11 @@ export const kelasRouter = createTRPCRouter({
           },
           select: {
             id: true,
+            kelasId: true,
             guruId: true,
             statusGuru: true,
+            mulaiPada: true,
+            selesaiPada: true,
             guru: {
               select: {
                 name: true,

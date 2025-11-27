@@ -65,6 +65,7 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
         await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
           kelasId: variables.kelasId,
         });
+        await apiUtils.kelas.getKelasAndCount.invalidate();
         toast.success("History Guru Kelas berhasil diupdate");
         options?.onSuccessUpdate?.();
       },

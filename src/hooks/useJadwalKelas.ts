@@ -9,7 +9,9 @@ import { toast } from "sonner";
 
 interface useJadwalKelasOptions {
   // Query options
-  enableQuery?: boolean;
+  enableQueryAll?: boolean;
+  enableQueryHariIni?: boolean;
+
   initialData?: TypeJadwalKelas[];
   initialDataJadwalHariIni?: TypeJadwalHariIni;
 
@@ -41,14 +43,14 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
   const jadwalHariIniQuery = api.jadwalKelas.getJadwalHariIniForGuru.useQuery(
     { guruId: options?.guruId }, // Kirim guruId ke backend (bisa undefined)
     {
-      enabled: options?.enableQuery ?? true,
+      enabled: options?.enableQueryHariIni ?? true,
       initialData: options?.initialDataJadwalHariIni,
       refetchOnWindowFocus: true, // Agar realtime jika ada perubahan
     },
   );
 
   const getAllJadwal = api.jadwalKelas.getAll.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
+    enabled: options?.enableQueryAll ?? false,
     initialData: options?.initialData,
   });
 

@@ -39,7 +39,7 @@ export function useUser(options?: UseGuruOptions) {
   const getAllGuruCompleteQuery = api.user.getAllGuruComplete.useQuery(
     undefined,
     {
-      enabled: options?.enableQuery ?? true,
+      enabled: options?.enableQuery ?? false,
       initialData: options?.initialDataGuruComplete,
     },
   );

@@ -3,7 +3,7 @@ import { api, HydrateClient } from "@/trpc/server";
 
 export default async function KelasPage() {
   await Promise.all([
-    api.kelas.getKelasAktif.prefetch(),
+    api.kelas.getKelasAndCount.prefetch(),
     api.jadwalKelas.getAll.prefetch(),
   ]);
 

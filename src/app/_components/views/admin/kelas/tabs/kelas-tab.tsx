@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Accordion,
@@ -17,23 +17,87 @@ import {
   ArrowRight,
   CalendarClock,
   CalendarDays,
-  DollarSign,
+  Edit2,
+  EllipsisVertical,
   GraduationCap,
+  Trash,
+  TrendingUp,
   User,
 } from "lucide-react";
-import { formatToWITA } from "@/utils/dateUtils"; // Pastikan Anda mengimpor ini
+import TambahProgramKelas from "../drawers/tambah-kelas";
+import EditKelas from "../drawers/edit-kelas";
+import EditGuruKelas from "../drawers/edit-guru-kelas";
+import UpLevelKelas from "../drawers/up-level-kelas";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { toast } from "sonner";
+import { formatToWITA } from "@/utils/dateUtils";
 import { useKelas } from "@/hooks/useKelas";
 import { toRupiah } from "@/utils/toRupiah";
+import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
+import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function KelasTab() {
+  // 1. State Lokal untuk Delete Dialog
+  const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
+  const [selectedKelasToDelete, setSelectedKelasToDelete] =
+    useState<TypeKelasWithSesiPertemuanCount | null>(null);
+
+  // 2. Zustand Store Actions
+  const { openDrawer: openKelasDrawer } = useKelasStore();
+  const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
+
   const {
     dataKelasCount,
     isLoadingKelasCount,
     isErrorKelasCount,
     errorKelasCount,
+    mutations: kelasMutations,
   } = useKelas({
+    enableQueryGetAll: false,
     enableQueryGetKelasCount: true,
+    onSuccessDelete: () => {
+      setDeleteKelasDialogOpen(false);
+      setSelectedKelasToDelete(null);
+    },
   });
+
+  // 4. Handlers
+  const handleEditClickKelas = (item: TypeKelasWithSesiPertemuanCount) => {
+    // Perlu casting karena TypeKelasWithSesiPertemuanCount strukturnya mirip TypeKelas
+    // tapi ada tambahan _count. Untuk form edit, data dasar sudah cukup.
+    openKelasDrawer("edit", item);
+  };
+
+  const handleEditClickGuruKelas = (item: TypeKelasWithSesiPertemuanCount) => {
+    const history = item.historyGuruKelases?.[0];
+    if (history) {
+      // @ts-expect-error: types compatible
+      openGuruKelasDrawer("edit", history);
+    } else {
+      toast.error("Tidak ada data guru aktif untuk diedit.");
+    }
+  };
+
+  const handleUpLevelClick = (item: TypeKelasWithSesiPertemuanCount) => {
+    openKelasDrawer("upLevel", item);
+  };
+
+  const handleDeleteClick = (item: TypeKelasWithSesiPertemuanCount) => {
+    setSelectedKelasToDelete(item);
+    setDeleteKelasDialogOpen(true);
+  };
+
+  const handleConfirmDeleteKelas = async () => {
+    if (!selectedKelasToDelete) return;
+    await kelasMutations.delete.mutateAsync({ id: selectedKelasToDelete.id });
+  };
 
   if (isLoadingKelasCount) {
     return (
@@ -62,7 +126,20 @@ export default function KelasTab() {
   }
 
   return (
-    <div className="pt-4">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between space-x-2 pt-4">
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl">Daftar Kelas</h1>
+            <p className="text-muted-foreground text-sm">
+              {dataKelasCount?.length} kelas terdaftar
+            </p>
+          </div>
+        </header>
+
+        <TambahProgramKelas />
+      </div>
+
       <Accordion type="single" collapsible className="w-full space-y-4">
         {dataKelasCount && dataKelasCount.length > 0 ? (
           dataKelasCount.map((kelas) => {
@@ -164,12 +241,14 @@ export default function KelasTab() {
                           >
                             <Link href={`/admin/sesi/${kelas.id}`}>
                               Riwayat Absensi
+                              <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
                           </Button>
 
                           <Button
                             asChild
                             size="sm"
+                            variant="secondary"
                             className="w-full shadow-sm sm:w-auto"
                           >
                             <Link href={`/admin/kelas/detail/${kelas.id}`}>
@@ -177,44 +256,50 @@ export default function KelasTab() {
                               <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
                           </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="text-muted-foreground data-[state=open]:bg-muted flex size-8"
+                                size="icon"
+                              >
+                                <EllipsisVertical />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-32">
+                              <DropdownMenuItem
+                                onClick={() => handleEditClickKelas(kelas)}
+                              >
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                Edit Kelas
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditClickGuruKelas(kelas)}
+                              >
+                                <User className="mr-2 h-4 w-4" />
+                                Edit Guru
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleUpLevelClick(kelas)}
+                              >
+                                <TrendingUp className="mr-2 h-4 w-4" />
+                                Naik Kelas (Up Level)
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => handleDeleteClick(kelas)}
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </AccordionContent>
-
-                    {/* <AccordionContent className="bg-muted/10 border-t px-6 py-4">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="space-y-1">
-                          <p className="text-foreground text-sm font-medium">
-                            Pertemuan Terakhir
-                          </p>
-                          <p className="text-muted-foreground text-sm">
-                            Sesi terakhir:{" "}
-                            {lastSession ? (
-                              <span className="text-foreground font-medium">
-                                {formatToWITA(lastSession)}
-                              </span>
-                            ) : (
-                              <span className="italic">Belum ada sesi</span>
-                            )}
-                          </p>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <Button asChild size="sm" variant="secondary">
-                            <Link href={`/admin/kelas/sesi/${kelas.id}`}>
-                              Lihat Absensi
-                            </Link>
-                          </Button>
-
-                          <Button asChild size="sm">
-                            <Link href={`/admin/kelas/detail/${kelas.id}`}>
-                              Detail Kelas
-                              <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </AccordionContent> */}
                   </AccordionItem>
                 </CardContent>
               </Card>
@@ -226,6 +311,28 @@ export default function KelasTab() {
           </p>
         )}
       </Accordion>
+
+      <EditKelas />
+      <EditGuruKelas />
+      <UpLevelKelas />
+      <DeleteConfirmationDialog
+        isOpen={deleteKelasDialogOpen}
+        onOpenChange={setDeleteKelasDialogOpen}
+        title="Hapus Kelas"
+        description={
+          <>
+            Yakin ingin menghapus Kelas{" "}
+            <span className="text-accent font-bold">
+              {selectedKelasToDelete?.kodeKelas}
+            </span>
+            ? Tindakan ini tidak dapat dibatalkan.
+          </>
+        }
+        onConfirm={handleConfirmDeleteKelas}
+        isLoading={kelasMutations.delete.isPending}
+        confirmText="Hapus"
+        cancelText="Batal"
+      />
     </div>
   );
 }

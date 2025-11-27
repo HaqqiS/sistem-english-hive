@@ -34,7 +34,6 @@ export default function MuridClient() {
       pageSize: 10,
     });
 
-  console.log("pagination: ", paginationNotRegistered);
   const [deleteMuridDialogOpen, setDeleteMuridDialogOpen] = useState(false);
   const [selectedMuridToDelete, setSelectedMuridToDelete] = useState<{
     id: string;

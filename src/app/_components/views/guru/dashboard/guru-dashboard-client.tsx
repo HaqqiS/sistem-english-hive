@@ -53,7 +53,6 @@ import { toast } from "sonner";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import { useUser } from "@/hooks/useUser";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
@@ -90,6 +89,8 @@ export default function GuruDashboardClient() {
     isErrorJadwalHariIni: isError,
     errorJadwalHariIni: error,
   } = useJadwalKelas({
+    enableQueryHariIni: true,
+    enableQueryAll: false,
     guruId: selectedGuruId, // Pass filter ID ke hook
   });
 

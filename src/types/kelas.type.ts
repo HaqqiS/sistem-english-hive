@@ -7,6 +7,8 @@ export type TypeCreateKelas = RouterOutputs["kelas"]["createKelas"];
 export type TypeKelasWithSesi =
   RouterOutputs["kelas"]["getKelasWithSesiForGuru"];
 export type TypeKelasByGuruId = TypeKelasWithSesi[number];
+export type TypeKelasWithSesiPertemuanCount =
+  RouterOutputs["kelas"]["getKelasAndCount"][number];
 export type TypeSesiPertemuanShort =
   TypeKelasByGuruId["sesiPertemuanKelases"][number];
 export type TypeKelasHistory =

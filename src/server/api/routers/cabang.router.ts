@@ -1,27 +1,15 @@
 import { serverCabangSchema } from "@/types/cabang.type";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
-import { paginationSchema } from "@/types/pagination.type";
 
 export const cabangRouter = createTRPCRouter({
-  getAllPaginated: protectedProcedure
-    .input(paginationSchema)
-    .query(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const { pageIndex, pageSize } = input;
+  getAll: protectedProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
 
-      const total = await db.cabang.count();
-      const cabang = await db.cabang.findMany({
-        skip: pageIndex * pageSize,
-        take: pageSize,
-      });
-      const pageCount = Math.ceil(total / pageSize);
+    const cabang = await db.cabang.findMany({});
 
-      return {
-        data: cabang,
-        pageCount,
-      };
-    }),
+    return cabang;
+  }),
 
   getAllList: publicProcedure.query(async ({ ctx }) => {
     const { db } = ctx;

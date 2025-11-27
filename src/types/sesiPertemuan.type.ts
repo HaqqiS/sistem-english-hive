@@ -4,9 +4,6 @@ import z from "zod";
 export type SesiPertemuanType =
   RouterOutputs["sesiPertemuan"]["getAll"][number];
 
-export type SesiPertemuanWithKelasCountType =
-  RouterOutputs["sesiPertemuan"]["getKelasAndCount"][number];
-
 export type TypeSesiSummary =
   RouterOutputs["sesiPertemuan"]["getSesiSummaryByKelasId"];
 

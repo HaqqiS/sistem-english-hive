@@ -52,11 +52,12 @@ export function DynamicBreadcrumb() {
 
           let displayLabel = capitalize(segment);
 
-          // Cek apakah segmen adalah ID (lebih dari 10 karakter biasanya ID cuid)
           if (segment.length > 10) {
-            // Jika segmen ID, ganti labelnya menjadi "Detail" atau "ID: ..."
-            // Untuk saat loading, kita pakai label generik "Detail"
-            displayLabel = "Detail";
+            if (currentPath === `/admin/kelas/detail/${segment}`) {
+              displayLabel = "Detail Kelas";
+            } else if (currentPath === `/admin/kelas/sesi/${segment}`) {
+              displayLabel = "Detail Sesi";
+            }
           }
 
           return (

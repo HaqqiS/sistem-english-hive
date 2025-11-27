@@ -105,6 +105,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
             kelasId: input.kelasId,
             // Hanya hitung sesi yang tanggalnya KURANG DARI tanggal mulai murid
             // Asumsi: input.tanggalMulai adalah string YYYY-MM-DD
+            // TODO: ubah per pertemuanKelas
             tanggalWaktu: {
               lt: dayjs(input.tanggalMulai).startOf("day").toDate(),
             },

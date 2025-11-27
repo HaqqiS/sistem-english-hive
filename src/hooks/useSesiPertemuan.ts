@@ -3,7 +3,6 @@ import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import type {
   SesiPertemuanType,
-  SesiPertemuanWithKelasCountType,
   TypeSesiSummary,
 } from "@/types/sesiPertemuan.type";
 import { skipToken } from "@tanstack/react-query";
@@ -13,7 +12,6 @@ interface UseSesiPertemuanOptions {
   enableQuery?: boolean;
   initialData?: SesiPertemuanType[];
   initialDataSummary?: TypeSesiSummary;
-  initialDataKelasCount?: SesiPertemuanWithKelasCountType[];
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -54,22 +52,12 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
     },
   );
 
-  const kelasCountQuery = api.sesiPertemuan.getKelasAndCount.useQuery(
-    undefined,
-    {
-      enabled: options?.enableQuery ?? true,
-      initialData: options?.initialDataKelasCount,
-      refetchOnWindowFocus: false,
-    },
-  );
-
   // ========== MUTATIONS ==========
 
   // CREATE
   const createMutation = api.sesiPertemuan.createSesiPertemuan.useMutation({
     onSuccess: async () => {
       await apiUtils.sesiPertemuan.getAll.invalidate();
-      await apiUtils.sesiPertemuan.getKelasAndCount.invalidate();
       toast.success("Program Kelas berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -116,11 +104,6 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
     isErrorSummary: sesiSummaryQuery.isError,
     errorSummary: sesiSummaryQuery.error,
 
-    dataKelasCount: kelasCountQuery.data,
-    isLoadingKelasCount: kelasCountQuery.isLoading,
-    isErrorKelasCount: kelasCountQuery.isError,
-    errorKelasCount: kelasCountQuery.error,
-
     // Mutations
     mutations: {
       create: {
@@ -143,13 +126,10 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
     // Utils untuk manual invalidation jika perlu
     refetch: sesiPertemuanQuery.refetch,
     refetchSummary: sesiSummaryQuery.refetch,
-    refetchKelasCount: kelasCountQuery.refetch,
     invalidate: () => apiUtils.sesiPertemuan.getAll.invalidate(),
     invalidateSummary: () =>
       kelasId
         ? apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate({ kelasId })
         : undefined,
-    invalidateKelasCount: () =>
-      apiUtils.sesiPertemuan.getKelasAndCount.invalidate(),
   };
 }

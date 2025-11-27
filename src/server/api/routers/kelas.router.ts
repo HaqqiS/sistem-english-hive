@@ -88,6 +88,59 @@ export const kelasRouter = createTRPCRouter({
     return kelas;
   }),
 
+  getKelasAndCount: protectedProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+    const kelasWithCount = await db.kelas.findMany({
+      distinct: ["cohortId"],
+      orderBy: { createdAt: "desc" },
+
+      select: {
+        id: true,
+        kodeKelas: true,
+        hargaKelas: true,
+        historyGuruKelases: {
+          where: {
+            selesaiPada: null,
+            statusGuru: "ACTIVE",
+          },
+          select: {
+            id: true,
+            guruId: true,
+            statusGuru: true,
+            guru: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        sesiPertemuanKelases: {
+          orderBy: {
+            tanggalWaktu: "desc",
+          },
+          take: 1,
+          select: {
+            tanggalWaktu: true,
+          },
+        },
+        pendaftaranKelases: {
+          where: { isAktif: true },
+        },
+        jadwalKelas: {
+          select: {
+            id: true,
+            hari: true,
+          },
+        },
+        _count: {
+          select: { sesiPertemuanKelases: true, pendaftaranKelases: true },
+        },
+      },
+    });
+
+    return kelasWithCount;
+  }),
+
   getKelasById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {

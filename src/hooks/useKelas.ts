@@ -6,13 +6,19 @@ import type {
   TypeKelas,
   TypeKelasByGuruId,
   TypeKelasHistory,
+  TypeKelasWithSesiPertemuanCount,
 } from "@/types/kelas.type";
 import { skipToken } from "@tanstack/react-query";
 
 interface UseKelasOptions {
   // Query options
-  enableQuery?: boolean;
+  enableQueryGetAll?: boolean;
+  enableQueryGetKelasCount?: boolean;
+  enableQueryGetKelasId?: boolean;
+  enableQueryGetKelasWithSesi?: boolean;
+
   initialData?: TypeKelas[];
+  initialDataKelasCount?: TypeKelasWithSesiPertemuanCount[];
   initialDataKelasWithSesi?: TypeKelasByGuruId[];
   initialDataHistory?: TypeKelasHistory[];
 
@@ -27,24 +33,12 @@ interface UseKelasOptions {
   cohortId?: string;
 }
 
-/**
- * Custom hook untuk mengelola Cabang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data cabang
- * const { data: cabangList } = useCabang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useCabang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
- */
 export function useKelas(options?: UseKelasOptions) {
   const apiUtils = api.useUtils();
 
   const kelasId = options?.kelasId;
   const cohortId = options?.cohortId;
-  const isGetAllEnabled = (options?.enableQuery ?? true) && !kelasId;
+  const isGetAllEnabled = (options?.enableQueryGetAll ?? true) && !kelasId;
   // ========== QUERIES ==========
 
   const kelasQuery = api.kelas.getAll.useQuery(undefined, {
@@ -53,8 +47,14 @@ export function useKelas(options?: UseKelasOptions) {
   });
 
   const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(undefined, {
-    enabled: isGetAllEnabled,
+    enabled: options?.enableQueryGetKelasId ?? false,
     initialData: options?.initialData,
+  });
+
+  const kelasCountQuery = api.kelas.getKelasAndCount.useQuery(undefined, {
+    enabled: options?.enableQueryGetKelasCount ?? true,
+    initialData: options?.initialDataKelasCount,
+    refetchOnWindowFocus: false,
   });
 
   const kelasByIdQuery = api.kelas.getKelasById.useQuery(
@@ -143,6 +143,11 @@ export function useKelas(options?: UseKelasOptions) {
     isLoadingKelasAktif: kelasAktifQuery.isLoading,
     isErrorKelasAktif: kelasAktifQuery.isError,
     errorKelasAktif: kelasAktifQuery.error,
+
+    dataKelasCount: kelasCountQuery.data,
+    isLoadingKelasCount: kelasCountQuery.isLoading,
+    isErrorKelasCount: kelasCountQuery.isError,
+    errorKelasCount: kelasCountQuery.error,
 
     dataById: kelasByIdQuery.data,
     isLoadingById: kelasByIdQuery.isLoading,

@@ -14,7 +14,7 @@ import EditGuruKelas from "./drawers/edit-guru-kelas";
 import type { TypeHistoryGuruKelas } from "@/types/historyGuruKelas.type";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
-import RangkumanSesiTab from "./tabs/rangkuman-sesi-tab";
+import KelasTab from "./tabs/kelas-tab";
 import UpLevelKelas from "./drawers/up-level-kelas";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
@@ -122,13 +122,12 @@ export default function KelasClient({
   });
 
   return (
-    <Tabs defaultValue="kelas">
+    <Tabs defaultValue="listKelas">
       <TabsList>
-        <TabsTrigger value="kelas">Kelola Kelas</TabsTrigger>
-        <TabsTrigger value="rangkumanSesi">Rangkuman Sesi</TabsTrigger>
+        <TabsTrigger value="listKelas">List Kelas</TabsTrigger>
         <TabsTrigger value="penjadwalanKelas">Penjadwalan Kelas</TabsTrigger>
       </TabsList>
-      <TabsContent value="kelas">
+      {/* <TabsContent value="kelas">
         <div>
           <div className="flex items-center justify-between space-x-2 pt-4">
             <header className="flex items-center justify-between">
@@ -167,10 +166,10 @@ export default function KelasClient({
 
           <DataTable columns={columnsKelas} data={dataKelas ?? []} />
         </div>
-      </TabsContent>
+      </TabsContent> */}
 
-      <TabsContent value="rangkumanSesi">
-        <RangkumanSesiTab />
+      <TabsContent value="listKelas">
+        <KelasTab />
       </TabsContent>
       <TabsContent value="penjadwalanKelas">
         <div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DataTable } from "@/app/_components/shared/data-table";
 import { columns } from "./columns/columns-pembayaran";
 import { StatusPembayaran } from "@prisma/client";
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import {
   type TypePembayaran,
@@ -24,6 +24,7 @@ import { usePembayaranStore } from "@/store/usePembayaranStore";
 import EditPembayaran from "./edit-pembayaran";
 import type { PaginationState } from "@tanstack/react-table";
 import TambahPembayaran from "./tambah-pembayara";
+import { Input } from "@/components/ui/input";
 
 interface PembayaranClientProps {
   initialDataPembayaran?: TypePembayaranPaginated;
@@ -35,7 +36,19 @@ export default function PembayaranClient({
   const [statusFilter, setStatusFilter] = useState<StatusPembayaran | "ALL">(
     "ALL",
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const { openDrawer } = usePembayaranStore();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // State Delete
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -57,6 +70,7 @@ export default function PembayaranClient({
   } = usePembayaran({
     initialDataPaginated: initialDataPembayaran,
     statusFilter: statusFilter,
+    searchFilter: debouncedSearch,
     enableGetAll: true,
     pagination: pagination,
     onSuccessDelete: () => {
@@ -126,7 +140,17 @@ export default function PembayaranClient({
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+              <Input
+                placeholder="Cari nama murid..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9"
+              />
+            </div>
+
             {/* Filter Status */}
             <Select
               value={statusFilter}

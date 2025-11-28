@@ -50,6 +50,7 @@ export const pembayaranRouter = createTRPCRouter({
       paginationSchema.extend({
         status: z.nativeEnum(StatusPembayaran).optional(),
         muridId: z.string().optional(),
+        search: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -61,8 +62,22 @@ export const pembayaranRouter = createTRPCRouter({
       if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
         whereClause.statusBayar = input.status;
       }
-      if (input.muridId) {
-        whereClause.pendaftaranKelas = { muridId: input.muridId };
+      if (input.muridId || input.search) {
+        whereClause.pendaftaranKelas = {
+          ...(input.muridId ? { muridId: input.muridId } : {}),
+
+          // Jika ada search, filter partial match pada nama murid
+          ...(input.search
+            ? {
+                murid: {
+                  namaLengkap: {
+                    contains: input.search,
+                    mode: "insensitive", // Agar tidak case-sensitive (Huruf besar/kecil dianggap sama)
+                  },
+                },
+              }
+            : {}),
+        };
       }
 
       // Transaction untuk performa lebih baik (count + findMany)

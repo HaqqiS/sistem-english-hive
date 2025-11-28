@@ -27,6 +27,7 @@ interface UsePembayaranOptions {
   pagination?: PaginationState;
   statusFilter?: StatusPembayaran | "ALL";
   muridIdFilter?: string;
+  searchFilter?: string;
 
   // Mutation callbacks
   onSuccessUpdate?: () => void;
@@ -72,6 +73,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
           ? options.statusFilter
           : undefined,
       muridId: options?.muridIdFilter,
+      search: options?.searchFilter,
     },
     {
       enabled: options?.enableGetAll ?? true,

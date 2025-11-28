@@ -58,6 +58,9 @@ export function DynamicBreadcrumb() {
             } else if (currentPath === `/admin/kelas/sesi/${segment}`) {
               displayLabel = "Detail Sesi";
             }
+            if (currentPath === `/admin/pembayaran/${segment}`) {
+              displayLabel = "Detail Pembayaran";
+            }
           }
 
           return (

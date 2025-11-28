@@ -1,7 +1,7 @@
 "use client";
 
 import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { columnsJatuhTempo } from "@/app/_components/views/admin/pembayaran/columns-jatuh-tempo";
+import { columnsJatuhTempo } from "@/app/_components/views/admin/pembayaran/columns/columns-jatuh-tempo";
 import type { TypePembayaranJatuhTempo } from "@/types/pembayaran.type";
 import { usePembayaran } from "@/hooks/usePembayaran";
 import {

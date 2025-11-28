@@ -18,8 +18,10 @@ export type SaldoSiswaData = RouterOutputs["pembayaran"]["getSaldoSiswa"];
 interface UsePembayaranOptions {
   // Query options
   enableGetAll?: boolean;
-  initialDataPaginated?: TypePembayaranPaginated;
   enableGetJatuhTempo?: boolean;
+  enableGetHistoryByMuridId?: boolean;
+
+  initialDataPaginated?: TypePembayaranPaginated;
 
   // Pagination & Filter
   pagination?: PaginationState;
@@ -94,12 +96,14 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // Note: We expose the hook creator itself so components can call it with specific IDs
   const getSaldoSiswaQuery = api.pembayaran.getSaldoSiswa.useQuery;
 
+  const getSaldoByMuridIdQuery = api.pembayaran.getSaldoByMuridId.useQuery;
+
   // ========== MUTATIONS ==========
 
   // 1. Update Status Pembayaran
   const updateMutation = api.pembayaran.updatePembayaran.useMutation({
     onSuccess: async () => {
-      await apiUtils.pembayaran.getAll.invalidate();
+      await apiUtils.pembayaran.getAllPaginated.invalidate();
       await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
       toast.success("Data pembayaran berhasil diperbarui");
       options?.onSuccessUpdate?.();
@@ -112,7 +116,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // 2. Delete Pembayaran
   const deleteMutation = api.pembayaran.deletePembayaran.useMutation({
     onSuccess: async () => {
-      await apiUtils.pembayaran.getAll.invalidate();
+      await apiUtils.pembayaran.getAllPaginated.invalidate();
       await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
 
       toast.success("Data pembayaran berhasil dihapus");
@@ -126,14 +130,14 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // 3. Create Manual Tagihan
   const createManualMutation = api.pembayaran.createManualTagihan.useMutation({
     onSuccess: async () => {
-      await apiUtils.pembayaran.getAll.invalidate();
+      await apiUtils.pembayaran.getAllPaginated.invalidate();
       await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
 
-      toast.success("Tagihan manual berhasil dibuat");
+      toast.success("Pembayaran manual berhasil dibuat");
       options?.onSuccessCreateManual?.();
     },
     onError: (error) => {
-      toast.error(`Gagal membuat tagihan: ${error.message}`);
+      toast.error(`Gagal membuat pembayaran: ${error.message}`);
     },
   });
 
@@ -162,6 +166,8 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 
     // Expose Query Hook for specific ID usage
     getSaldoSiswaQuery,
+
+    getSaldoByMuridIdQuery,
 
     // Mutations
     mutations: {

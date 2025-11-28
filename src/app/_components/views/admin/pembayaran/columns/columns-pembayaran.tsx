@@ -4,6 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowUpDown,
   CheckCircle,
+  Edit2,
+  Trash,
   EllipsisVertical,
   MessageCircle,
   XCircle,
@@ -103,14 +105,16 @@ export const columns = ({
       </Button>
     ),
     cell: ({ row }) => (
-      <div className="flex flex-col">
-        <span className="font-medium">
-          {row.original.pendaftaranKelas.murid.namaLengkap}
-        </span>
-        <span className="text-muted-foreground text-xs">
-          {row.original.pendaftaranKelas.Kelas.kodeKelas}
-        </span>
-      </div>
+      <Link href={`/admin/pembayaran/${row.original.pendaftaranKelas.muridId}`}>
+        <div className="flex flex-col">
+          <span className="font-medium">
+            {row.original.pendaftaranKelas.murid.namaLengkap}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            {row.original.pendaftaranKelas.Kelas.kodeKelas}
+          </span>
+        </div>
+      </Link>
     ),
   },
 
@@ -269,6 +273,7 @@ export const columns = ({
               )}
 
               <DropdownMenuItem onClick={() => onEditClick(row.original)}>
+                <Edit2 className="mr-2 h-4 w-4" />
                 Edit Detail
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -276,6 +281,7 @@ export const columns = ({
                 variant="destructive"
                 onClick={() => onDeleteClick(row.original)}
               >
+                <Trash className="mr-2 h-4 w-4" />
                 Hapus Tagihan
               </DropdownMenuItem>
             </DropdownMenuContent>

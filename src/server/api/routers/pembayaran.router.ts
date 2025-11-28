@@ -5,7 +5,10 @@ import { StatusPembayaran, type Prisma } from "@prisma/client";
 import { UserRole } from "@/server/auth/type";
 import { TRPCError } from "@trpc/server";
 import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
-import { updatePembayaranSchema } from "@/types/pembayaran.type";
+import {
+  createPembayaranSchema,
+  updatePembayaranSchema,
+} from "@/types/pembayaran.type";
 import { paginationSchema } from "@/types/pagination.type";
 
 export const pembayaranRouter = createTRPCRouter({
@@ -135,6 +138,26 @@ export const pembayaranRouter = createTRPCRouter({
       return saldoInfo;
     }),
 
+  getSaldoByMuridId: protectedProcedure
+    .input(z.object({ muridId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const pendaftaranAktif = await db.pendaftaranKelas.findFirst({
+        where: {
+          muridId: input.muridId,
+          isAktif: true, // Pastikan hanya ambil yang aktif
+        },
+        select: { id: true },
+      });
+
+      if (!pendaftaranAktif) {
+        return null;
+      }
+
+      return await calculateSisaPertemuan(db, pendaftaranAktif.id);
+    }),
+
   updatePembayaran: protectedProcedure
     .input(updatePembayaranSchema)
     .mutation(async ({ ctx, input }) => {
@@ -204,19 +227,12 @@ export const pembayaranRouter = createTRPCRouter({
   // 5. [BARU] CREATE TAGIHAN MANUAL
   // Jika admin perlu membuat tagihan di luar siklus otomatis
   createManualTagihan: protectedProcedure
-    .input(
-      z.object({
-        pendaftaranKelasId: z.string(),
-        jumlahBayar: z.number().min(1),
-        tanggalJatuhTempo: z.date(),
-        note: z.string().optional(),
-        pembayaranKe: z.number().optional(), // Opsional, kalau mau override urutan
-      }),
-    )
+    .input(createPembayaranSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
 
-      // Jika pembayaranKe tidak diisi, cari urutan terakhir + 1
+      const tanggalTransaksi = input.tanggalBayar ?? new Date();
+
       let urutan = input.pembayaranKe;
       if (!urutan) {
         const lastBill = await db.pembayaran.findFirst({
@@ -230,9 +246,11 @@ export const pembayaranRouter = createTRPCRouter({
         data: {
           pendaftaranKelasId: input.pendaftaranKelasId,
           jumlahBayar: input.jumlahBayar,
-          tanggalJatuhTempo: input.tanggalJatuhTempo,
+          tanggalJatuhTempo: tanggalTransaksi,
+          tanggalBayar: tanggalTransaksi,
           pembayaranKe: urutan,
-          statusBayar: StatusPembayaran.BELUM_LUNAS,
+          statusBayar: StatusPembayaran.LUNAS,
+          verifiedById: session.user.id,
           note: input.note ?? "Tagihan Manual Admin",
         },
       });

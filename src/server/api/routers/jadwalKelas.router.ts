@@ -1,8 +1,5 @@
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import {
-  serverCreateBulkJadwalSchema,
-  serverCreateJadwalSchema,
-} from "@/types/jadwalKelas.type";
+import { serverCreateBulkJadwalSchema } from "@/types/jadwalKelas.type";
 import { TRPCError } from "@trpc/server";
 import type { Hari } from "@prisma/client";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";

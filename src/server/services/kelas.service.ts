@@ -100,18 +100,19 @@ export const handleAutoLevelUp = async ({
     where: { kelasId: jadwal.kelasId },
   });
 
-  for (const oldJadwal of oldJadwals) {
-    await tx.jadwalKelas.create({
-      data: {
-        kelasId: newKelas.id,
-        ruangId: oldJadwal.ruangId,
-        hari: oldJadwal.hari,
-        jamSlotTetapId: oldJadwal.jamSlotTetapId,
-        jamSlotCustomId: oldJadwal.jamSlotCustomId,
-      },
+  if (oldJadwals.length > 0) {
+    const jadwalData = oldJadwals.map((old) => ({
+      kelasId: newKelas.id,
+      ruangId: old.ruangId,
+      hari: old.hari,
+      jamSlotTetapId: old.jamSlotTetapId,
+      jamSlotCustomId: old.jamSlotCustomId,
+    }));
+
+    await tx.jadwalKelas.createMany({
+      data: jadwalData,
     });
   }
-
   // C. Pindahkan Murid Aktif
   const activeStudents = await tx.pendaftaranKelas.findMany({
     where: { kelasId: jadwal.kelasId, isAktif: true },
@@ -120,30 +121,34 @@ export const handleAutoLevelUp = async ({
   const totalTagihan = newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
   // Tanggal mulai efektif kelas baru = 2 minggu lagi (estimasi)
   const estimasiMulai = dayjs().add(2, "week").toDate();
+  const estimasiMulaiString = dayjs(estimasiMulai).format("YYYY-MM-DD");
 
-  for (const student of activeStudents) {
-    // 1. Buat Pendaftaran Baru
-    const newReg = await tx.pendaftaranKelas.create({
-      data: {
-        muridId: student.muridId,
-        kelasId: newKelas.id,
-        tanggalMulai: dayjs(estimasiMulai).format("YYYY-MM-DD"),
-        isAktif: true,
-      },
-    });
+  // Jalankan semua operasi murid secara bersamaan
+  await Promise.all(
+    activeStudents.map(async (student) => {
+      // A. Buat Pendaftaran Baru
+      const newReg = await tx.pendaftaranKelas.create({
+        data: {
+          muridId: student.muridId,
+          kelasId: newKelas.id,
+          tanggalMulai: estimasiMulaiString,
+          isAktif: true,
+        },
+      });
 
-    // 2. Buat Tagihan PENDING
-    await tx.pembayaran.create({
-      data: {
-        pendaftaranKelasId: newReg.id,
-        pembayaranKe: 1,
-        jumlahBayar: totalTagihan,
-        tanggalJatuhTempo: estimasiMulai,
-        statusBayar: StatusPembayaran.PENDING,
-        note: "Auto-Generate Level Up (Menunggu Konfirmasi)",
-      },
-    });
-  }
+      // B. Buat Tagihan PENDING (Linked ke Pendaftaran Baru)
+      await tx.pembayaran.create({
+        data: {
+          pendaftaranKelasId: newReg.id,
+          pembayaranKe: 1,
+          jumlahBayar: totalTagihan,
+          tanggalJatuhTempo: estimasiMulai,
+          statusBayar: StatusPembayaran.PENDING,
+          note: "Auto-Generate Level Up (Menunggu Konfirmasi)",
+        },
+      });
+    }),
+  );
 
   return newKelas;
 };

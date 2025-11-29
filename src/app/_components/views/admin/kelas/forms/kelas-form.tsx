@@ -207,7 +207,7 @@ export default function KelasForm({ onSubmit }: KelasFormProps) {
                 placeholder="MM/YYYY"
                 // 4. Hubungkan ke react-hook-form
                 value={field.value ?? ""}
-                onAccept={(value: any) => {
+                onAccept={(value: string) => {
                   // 'onAccept' adalah cara imask menggantikan 'onChange'
                   field.onChange(value);
                 }}

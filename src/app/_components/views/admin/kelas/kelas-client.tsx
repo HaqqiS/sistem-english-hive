@@ -11,25 +11,15 @@ import KelasTab from "./tabs/kelas-tab";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 
 export default function KelasClient() {
-  // const { openDrawer: openKelasDrawer } = useKelasStore();
-  // const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
-
-  // const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
-  // const [selectedKelasToDelete, setSelectedKelasToDelete] =
-  //   useState<TypeKelas | null>(null);
-
   const [deleteJadwalDialogOpen, setDeleteJadwalDialogOpen] = useState(false);
   const [selectedJadwalToDelete, setSelectedJadwalToDelete] = useState<{
     id: string;
     deskripsi: string;
   } | null>(null);
 
-  const { dataKelasAktif: dataKelas, mutations: kelasMutations } = useKelas({
-    enableQueryGetAll: false,
-    enableQueryGetKelasCount: false,
-    enableQueryGetKelasId: true,
-  });
   const { dataJadwal, mutations: jadwalMutation } = useJadwalKelas({
+    enableQueryAll: true,
+    enableQueryHariIni: false,
     onSuccessDelete: () => {
       setDeleteJadwalDialogOpen(false);
       setSelectedJadwalToDelete(null);

@@ -107,10 +107,10 @@ export default function GuruDashboardClient() {
         toast("Kelas Telah Selesai!", {
           description:
             "Jadwal otomatis dihapus karena kuota pertemuan terpenuhi.",
-          action: {
-            label: "Lihat Laporan",
-            onClick: () => router.push(`/guru/laporan-kelas/${newSesiId}`), // Contoh redirect beda
-          },
+          // action: {
+          //   label: "Lihat Laporan",
+          //   onClick: () => router.push(`/guru/laporan-kelas/${newSesiId}`), // Contoh redirect beda
+          // },
         });
 
         // Atau tetap redirect ke absen, tapi bawa query param

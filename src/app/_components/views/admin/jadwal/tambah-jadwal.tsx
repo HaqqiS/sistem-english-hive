@@ -8,26 +8,37 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {
-  serverCreateJadwalSchema as clientCreateJadwalSchema, // Ganti nama skema di file type jika perlu
+  serverCreateJadwalSchema as clientCreateJadwalSchema,
+  serverCreateBulkJadwalSchema, // Ganti nama skema di file type jika perlu
   type TypeServerCreateJadwalSchema,
 } from "@/types/jadwalKelas.type";
 import JadwalKelasForm from "./jadwal-kelas-form";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
-import { TipeKelas } from "@prisma/client";
+import z from "zod";
+
+const formSchema = z.object({
+  schedules: serverCreateBulkJadwalSchema,
+});
+
+type FormSchemaType = z.infer<typeof formSchema>;
 
 export default function TambahJadwalKelas() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const form = useForm<TypeServerCreateJadwalSchema>({
-    resolver: zodResolver(clientCreateJadwalSchema),
+  const form = useForm<FormSchemaType>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      kelasId: "",
-      ruangId: "",
-      hari: undefined,
-      tipeJam: undefined, // Biarkan Zod yang menentukan
-      jamSlotTetapId: undefined,
-      jamMulai: undefined,
-      jamSelesai: undefined,
+      schedules: [
+        {
+          kelasId: "",
+          ruangId: "",
+          hari: undefined,
+          tipeJam: undefined,
+          jamSlotTetapId: undefined,
+          jamMulai: undefined,
+          jamSelesai: undefined,
+        },
+      ],
     },
   });
 
@@ -38,16 +49,15 @@ export default function TambahJadwalKelas() {
     },
   });
 
-  const onSubmit = (values: TypeServerCreateJadwalSchema) => {
-    console.log("Submitting Jadwal:", values);
-    mutations.create.mutate(values);
+  const onSubmit = (schedules: FormSchemaType["schedules"]) => {
+    // console.log("Submitting Bulk Jadwal:", schedules);
+    mutations.create.mutate(schedules);
   };
-
   return (
     <AddDrawer
       title="Tambah Jadwal Kelas"
-      description="Buat jadwal tetap atau privat baru untuk sebuah kelas."
-      onSubmit={form.handleSubmit(onSubmit)}
+      description="Buat jadwal (Reguler/Privat) untuk kelas. Maksimal 2 jadwal sekaligus."
+      onSubmit={form.handleSubmit((data) => onSubmit(data.schedules))}
       isPending={mutations.create.isPending}
       submitText="Tambah Jadwal"
       cancelText="Batal"

@@ -10,6 +10,10 @@ import { TRPCError } from "@trpc/server";
 import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { getPeriodeGaji } from "@/server/services/gaji.service";
 import { paginationSchema } from "@/types/pagination.type";
+import {
+  handleAutoLevelUp,
+  handleClassCompletion,
+} from "@/server/services/kelas.service";
 
 export const absenGuruRouter = createTRPCRouter({
   getAllAbsensi: protectedProcedure
@@ -85,69 +89,84 @@ export const absenGuruRouter = createTRPCRouter({
       const guruId = session.user.id;
       const { jadwalKelasId, status, overrideRuangId } = input;
 
-      // 1. Dapatkan data jadwal (rencana)
+      // 1. Dapatkan data jadwal & kelas
       const jadwal = await db.jadwalKelas.findUnique({
         where: { id: jadwalKelasId },
-        select: { kelasId: true, ruangId: true }, // Ambil data default
+        select: {
+          kelasId: true,
+          ruangId: true,
+          kelas: {
+            select: {
+              level: true,
+              cohortId: true,
+              jenisKelas: true,
+              tipe: true,
+              grup: true,
+              hargaKelas: true,
+              deskripsi: true,
+              kodeKelas: true,
+            },
+          },
+        },
       });
 
-      if (!jadwal) {
+      if (!jadwal)
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Jadwal kelas tidak ditemukan.",
+          message: "Jadwal tidak ditemukan",
         });
-      }
 
       // 2. Tentukan ruangId yang akan dipakai
       // Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
       const finalRuangId = overrideRuangId ?? jadwal.ruangId;
-
       // 3. Tentukan tanggalWaktu (REALITA)
       // Gunakan Waktu WITA saat ini
       const tanggalWaktuSesi = dayjs().tz(TIMEZONE_BISNIS).toDate();
 
-      // 4. Gunakan $transaction
+      // 4. Transaction: Buat Sesi -> Cek Level Up -> Cek Finish
       const result = await db.$transaction(async (tx) => {
         // 4a. Buat SesiPertemuanKelas (Realisasi)
         const newSesi = await tx.sesiPertemuanKelas.create({
           data: {
             kelasId: jadwal.kelasId,
-            ruangId: finalRuangId, // <-- Gunakan ruangId final
-            tanggalWaktu: tanggalWaktuSesi, // <-- Gunakan waktu server
-            jadwalKelasId: jadwalKelasId, // <-- Link ke rencana
+            ruangId: finalRuangId,
+            tanggalWaktu: tanggalWaktuSesi,
+            jadwalKelasId: jadwalKelasId,
           },
           select: { id: true },
         });
 
         // 4b. Buat AbsensiGuru
-        const newAbsensi = await tx.absensiGuru.create({
+        await tx.absensiGuru.create({
           data: {
-            guruId: guruId,
+            guruId,
             sesiPertemuanKelasId: newSesi.id,
-            status: status,
+            status,
             isVerified: false,
           },
         });
 
+        // Hitung Total Sesi (Termasuk yang baru dibuat)
         const totalSesi = await tx.sesiPertemuanKelas.count({
           where: { kelasId: jadwal.kelasId },
         });
 
-        const BATAS_LEVEL = 24;
-
-        if (totalSesi >= BATAS_LEVEL) {
-          await tx.jadwalKelas.deleteMany({
-            where: { kelasId: jadwal.kelasId },
-          });
-
-          // Opsional: Anda juga bisa menonaktifkan Murid atau Logika "Naik Level" disini
-          // Contoh: console.log(`Kelas ${jadwal.kelasId} telah lulus level!`);
+        // === SERVICE CALL: LEVEL UP (Trigger di Sesi 20) ===
+        if (totalSesi === 20) {
+          await handleAutoLevelUp({ tx, jadwal });
         }
+
+        // === SERVICE CALL: CLASS COMPLETION (Trigger di Sesi 24) ===
+        const isFinished = await handleClassCompletion(
+          tx,
+          jadwal.kelasId,
+          totalSesi,
+        );
 
         return {
           newSesiId: newSesi.id,
-          absensiId: newAbsensi.id,
-          isFinished: totalSesi >= BATAS_LEVEL,
+          absensiId: null,
+          isFinished: isFinished,
         };
       });
 
@@ -164,9 +183,8 @@ export const absenGuruRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      if ((session.user.role as UserRole) !== UserRole.ADMIN) {
+      if ((session.user.role as UserRole) !== UserRole.ADMIN)
         throw new Error("Unauthorized");
-      }
 
       await db.absensiGuru.update({
         where: {

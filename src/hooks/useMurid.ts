@@ -88,7 +88,7 @@ export function useMurid(options?: useMuridOptions) {
   const createMutation = api.murid.registerMurid.useMutation({
     onSuccess: async () => {
       await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
-      await apiUtils.murid.getAllMurid.invalidate();
+      await apiUtils.murid.getAllPaginated.invalidate();
       toast.success("Murid berhasil didaftarkan");
       options?.onSuccessCreate?.();
     },
@@ -111,7 +111,7 @@ export function useMurid(options?: useMuridOptions) {
   });
   const updateMutation = api.murid.updateMurid.useMutation({
     onSuccess: async () => {
-      await apiUtils.murid.getAllMurid.invalidate();
+      await apiUtils.murid.getAllPaginated.invalidate();
       toast.success("Murid berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -123,7 +123,7 @@ export function useMurid(options?: useMuridOptions) {
   // DELETE
   const deleteMutation = api.murid.deleteMurid.useMutation({
     onSuccess: async () => {
-      await apiUtils.murid.getAllMurid.invalidate();
+      await apiUtils.murid.getAllPaginated.invalidate();
       await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
       toast.success("Murid berhasil dihapus");
       options?.onSuccessDelete?.();

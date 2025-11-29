@@ -54,7 +54,7 @@ export default function Hero() {
                 <div className="from-primary/20 to-secondary/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-3xl" />
                 <div className="relative flex h-full items-center justify-center">
                   <Image
-                    src="/professional-female-student-in-pink-shirt-with-bac.png"
+                    src="/miss_desak.webp"
                     alt="Student learning English"
                     width={350}
                     height={350}

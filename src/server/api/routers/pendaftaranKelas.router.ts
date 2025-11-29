@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { StatusMurid, StatusPembayaran } from "@prisma/client";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
+import { calculateInitialBill } from "@/server/services/pembayaran.service";
 
 export const pendaftaranKelasRouter = createTRPCRouter({
   getPendaftarByKelasId: protectedProcedure
@@ -44,7 +45,12 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       // 1. Kita butuh harga kelas untuk tagihan
       const kelas = await db.kelas.findUnique({
         where: { id: input.kelasId },
-        select: { hargaKelas: true },
+        select: {
+          hargaKelas: true,
+          kodeKelas: true,
+          cohortId: true,
+          level: true,
+        },
       });
 
       if (!kelas) {
@@ -54,14 +60,11 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         });
       }
 
-      const existingActiveRegistration = await db.pendaftaranKelas.findFirst({
-        where: {
-          muridId: input.muridId,
-          isAktif: true, // Cek apakah ada pendaftaran LAIN yang masih aktif
-        },
+      // Validasi Duplikat Pendaftaran Aktif
+      const existingActive = await db.pendaftaranKelas.findFirst({
+        where: { muridId: input.muridId, isAktif: true },
       });
-
-      if (existingActiveRegistration) {
+      if (existingActive) {
         // Gunakan TRPCError dan pesan yang benar
         throw new TRPCError({
           code: "CONFLICT",
@@ -70,9 +73,28 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         });
       }
 
-      // 2. Gunakan $transaction
-      const newPendaftaranKelas = await db.$transaction(async (tx) => {
-        // 2a. Buat Pendaftaran
+      const jumlahSesiBerlalu = await db.sesiPertemuanKelas.count({
+        where: { kelasId: input.kelasId },
+      });
+
+      // 3. Kalkulasi Tagihan (Menggunakan Service)
+      let billInfo;
+      try {
+        billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          message: error.message,
+        });
+      }
+
+      // Sesi dimana murid ini akan mulai masuk (Sesi Berikutnya)
+
+      // 4. EKSEKUSI TRANSACTION
+      const result = await db.$transaction(async (tx) => {
+        // A. Create Pendaftaran Utama (Level Ini)
         const pendaftaran = await tx.pendaftaranKelas.create({
           data: {
             ...input,
@@ -80,51 +102,68 @@ export const pendaftaranKelasRouter = createTRPCRouter({
           },
         });
 
-        const jumlahSesiBerlalu = await tx.sesiPertemuanKelas.count({
-          where: {
-            kelasId: input.kelasId,
-            // Hanya hitung sesi yang tanggalnya KURANG DARI tanggal mulai murid
-            // Asumsi: input.tanggalMulai adalah string YYYY-MM-DD
-            // TODO: ubah per pertemuanKelas
-            tanggalWaktu: {
-              lt: dayjs(input.tanggalMulai).startOf("day").toDate(),
-            },
-          },
-        });
-
-        const sesiTerpakaiDiBlokIni =
-          jumlahSesiBerlalu % JUMLAH_PERTEMUAN_PER_BLOK;
-        const sisaSesiYangHarusDibayar =
-          JUMLAH_PERTEMUAN_PER_BLOK - sesiTerpakaiDiBlokIni;
-
-        const totalTagihan = sisaSesiYangHarusDibayar * kelas.hargaKelas;
-        const tanggalMulai = dayjs(input.tanggalMulai);
-
-        const pembayaranKe =
-          Math.floor(jumlahSesiBerlalu / JUMLAH_PERTEMUAN_PER_BLOK) + 1;
-
-        const note =
-          sisaSesiYangHarusDibayar < JUMLAH_PERTEMUAN_PER_BLOK
-            ? `Pro-rate: Masuk telat ${sesiTerpakaiDiBlokIni} sesi. Tagihan untuk sisa ${sisaSesiYangHarusDibayar} pertemuan.`
-            : `Tagihan Awal Penuh (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`;
-
-        // Buat HANYA 1 data pembayaran (Pembayaran Ke-1)
-        // Pembayaran ke-2 dst akan digenerate otomatis saat absen mencapai 8, 16, dst.
+        // B. Create Tagihan Utama
         await tx.pembayaran.create({
           data: {
             pendaftaranKelasId: pendaftaran.id,
-            pembayaranKe: pembayaranKe,
-            jumlahBayar: totalTagihan,
-            tanggalJatuhTempo: tanggalMulai.toDate(),
+            pembayaranKe: billInfo.pembayaranKe,
+            jumlahBayar: billInfo.totalTagihan,
+            tanggalJatuhTempo: dayjs(input.tanggalMulai).toDate(),
             statusBayar: StatusPembayaran.BELUM_LUNAS,
-            note: note,
+            note: billInfo.note,
           },
         });
 
-        return pendaftaran;
+        // C. CEK "VERY LATE JOINER" (Sesi 21-24)
+        // Jika murid masuk setelah trigger level up (Sesi 20),
+        // Cek apakah kelas masa depan sudah dibuat?
+        let nextLevelRegistrationId: string | null = null;
+
+        if (billInfo.sesiMasuk > 20) {
+          const nextClass = await tx.kelas.findFirst({
+            where: {
+              cohortId: kelas.cohortId,
+              level: kelas.level + 1,
+            },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (nextClass) {
+            const nextStartDate = dayjs(input.tanggalMulai)
+              .add(1, "month")
+              .format("YYYY-MM-DD");
+
+            const nextReg = await tx.pendaftaranKelas.create({
+              data: {
+                muridId: input.muridId,
+                kelasId: nextClass.id,
+                tanggalMulai: nextStartDate,
+                isAktif: true,
+              },
+            });
+            nextLevelRegistrationId = nextReg.id;
+
+            // Tagihan Pending Level Berikutnya
+            const tagihanNext =
+              nextClass.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+
+            await tx.pembayaran.create({
+              data: {
+                pendaftaranKelasId: nextReg.id,
+                pembayaranKe: 1,
+                jumlahBayar: tagihanNext,
+                tanggalJatuhTempo: dayjs(nextStartDate).toDate(),
+                statusBayar: StatusPembayaran.PENDING,
+                note: "Auto-Registration (Very Late Joiner Lvl Sebelumnya)",
+              },
+            });
+          }
+        }
+
+        return { pendaftaran, nextLevelRegistrationId };
       });
 
-      return newPendaftaranKelas;
+      return result.pendaftaran;
     }),
 
   createBulkPendaftaranKelas: protectedProcedure
@@ -133,82 +172,47 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       const { db } = ctx;
       const { muridIds, kelasId, tanggalMulai } = input;
 
-      // 1. Ambil info harga kelas
       const kelas = await db.kelas.findUnique({
         where: { id: kelasId },
         select: { hargaKelas: true, kodeKelas: true },
       });
+      if (!kelas) throw new TRPCError({ code: "NOT_FOUND" });
 
-      if (!kelas) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Kelas yang dipilih tidak ditemukan.",
-        });
-      }
-
-      // 2. Validasi: Cek apakah ada murid yang sudah terdaftar aktif di kelas manapun
-      // Kita cek satu per satu atau pakai `in` query
+      // Validasi Bulk
       const existingActive = await db.pendaftaranKelas.findMany({
-        where: {
-          muridId: { in: muridIds },
-          isAktif: true,
-        },
+        where: { muridId: { in: muridIds }, isAktif: true },
         include: { murid: true },
       });
-
       if (existingActive.length > 0) {
-        const names = existingActive.map((p) => p.murid.namaLengkap).join(", ");
         throw new TRPCError({
           code: "CONFLICT",
-          message: `Beberapa murid sudah terdaftar aktif: ${names}. Harap nonaktifkan dulu atau hapus dari seleksi.`,
+          message: `Beberapa murid sudah aktif: ${existingActive.map((p) => p.murid.namaLengkap).join(", ")}`,
         });
       }
 
-      // 3. Transaction: Loop create pendaftaran & invoice
+      // Transaction
       await db.$transaction(async (tx) => {
         const tglMulaiDate = dayjs(tanggalMulai).toDate();
-
-        const jumlahSesiBerlalu = await tx.sesiPertemuanKelas.count({
-          where: {
-            kelasId: kelasId,
-            tanggalWaktu: {
-              lt: dayjs(tanggalMulai).startOf("day").toDate(),
-            },
-          },
-        });
-
-        const sesiTerpakaiDiBlokIni =
-          jumlahSesiBerlalu % JUMLAH_PERTEMUAN_PER_BLOK;
-        const sisaSesiYangHarusDibayar =
-          JUMLAH_PERTEMUAN_PER_BLOK - sesiTerpakaiDiBlokIni;
-        const totalTagihan = sisaSesiYangHarusDibayar * kelas.hargaKelas;
-
-        const pembayaranKe =
-          Math.floor(jumlahSesiBerlalu / JUMLAH_PERTEMUAN_PER_BLOK) + 1;
-        const note =
-          sisaSesiYangHarusDibayar < JUMLAH_PERTEMUAN_PER_BLOK
-            ? `Pro-rate Bulk: Sisa ${sisaSesiYangHarusDibayar} pertemuan.`
-            : `Tagihan Awal (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`;
+        const totalTagihan = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
 
         for (const muridId of muridIds) {
           const pendaftaran = await tx.pendaftaranKelas.create({
             data: {
-              muridId: muridId,
-              kelasId: kelasId,
-              tanggalMulai: tanggalMulai,
+              muridId,
+              kelasId,
+              tanggalMulai,
               isAktif: true,
             },
           });
 
-          // 3b. Buat Tagihan Awal
           await tx.pembayaran.create({
             data: {
               pendaftaranKelasId: pendaftaran.id,
-              pembayaranKe: pembayaranKe,
+              pembayaranKe: 1,
               jumlahBayar: totalTagihan,
               tanggalJatuhTempo: tglMulaiDate,
               statusBayar: StatusPembayaran.BELUM_LUNAS,
-              note: note,
+              note: "Tagihan Awal (Bulk Registration)",
             },
           });
         }
@@ -222,93 +226,114 @@ export const pendaftaranKelasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // 1. Ambil data pendaftaran lama
+      // 1. Ambil data lama
       const existingRecord = await db.pendaftaranKelas.findUnique({
         where: { id: input.id },
+        include: { Kelas: true },
       });
 
-      if (!existingRecord) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data pendaftaran tidak ditemukan",
-        });
-      }
+      if (!existingRecord) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // 2. Cek apakah ada perubahan fundamental (Siswa atau Kelas)
-      const isMuridChanged = existingRecord.muridId !== input.muridId;
-      const isKelasChanged = existingRecord.kelasId !== input.kelasId;
-
-      // === SKENARIO: GANTI SISWA ATAU PINDAH KELAS (Buat Baru) ===
-      if (isMuridChanged || isKelasChanged) {
-        // Ambil info harga dari kelas TUJUAN (baik itu kelas baru atau tetap kelas lama)
-        const targetKelas = await db.kelas.findUnique({
-          where: { id: input.kelasId },
-          select: { hargaKelas: true },
-        });
-
-        if (!targetKelas) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Kelas tujuan tidak ditemukan",
-          });
-        }
-
-        return await db.$transaction(async (tx) => {
-          // A. Non-aktifkan pendaftaran lama (Soft Delete / Arsip)
+      return await db.$transaction(async (tx) => {
+        // === SKEMA 1: TRANSFER KELAS / GANTI MURID (Hard Change) ===
+        // Jika Admin mengubah Kelas atau Murid, kita anggap ini perpindahan.
+        // Cara aman: Matikan record lama, buat record baru (agar history bayar lama tetap tercatat di kelas lama).
+        if (
+          (input.kelasId && input.kelasId !== existingRecord.kelasId) ||
+          (input.muridId && input.muridId !== existingRecord.muridId)
+        ) {
+          // 1a. Non-aktifkan pendaftaran lama
           await tx.pendaftaranKelas.update({
             where: { id: input.id },
             data: { isAktif: false },
           });
 
-          // B. Buat Pendaftaran Baru
+          // 1b. Buat Pendaftaran Baru
           const newRegistration = await tx.pendaftaranKelas.create({
             data: {
-              muridId: input.muridId, // Pakai muridId dari input (baru/lama)
-              kelasId: input.kelasId, // Pakai kelasId dari input (baru/lama)
-              tanggalMulai: input.tanggalMulai,
+              muridId: input.muridId ?? existingRecord.muridId,
+              kelasId: input.kelasId ?? existingRecord.kelasId,
+              tanggalMulai: input.tanggalMulai, // Tanggal mulai di kelas baru
               isAktif: true,
             },
           });
 
-          // C. Generate Tagihan Pertama untuk Pendaftaran Baru
-          // Menggunakan harga kelas tujuan * 8 pertemuan
-          const totalTagihan =
-            targetKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+          // 1c. Pindahkan Tagihan BELUM LUNAS ke Pendaftaran Baru (Opsional tapi Bagus)
+          // Atau buat tagihan baru. Di sini kita buat tagihan transfer simpel.
+          const targetKelas = await tx.kelas.findUnique({
+            where: { id: input.kelasId ?? existingRecord.kelasId },
+          });
 
-          // Buat catatan otomatis agar admin tahu kenapa tagihan ini muncul
-          let noteType = "Transfer Kelas";
-          if (isMuridChanged && isKelasChanged)
-            noteType = "Ganti Siswa & Kelas";
-          else if (isMuridChanged) noteType = "Ganti Siswa";
+          if (targetKelas) {
+            await tx.pembayaran.create({
+              data: {
+                pendaftaranKelasId: newRegistration.id,
+                pembayaranKe: 1,
+                jumlahBayar: targetKelas.hargaKelas * 8, // Atau logika prorate
+                statusBayar: StatusPembayaran.BELUM_LUNAS,
+                tanggalJatuhTempo: new Date(input.tanggalMulai),
+                note: "Tagihan Pindahan Kelas / Koreksi Data",
+              },
+            });
+          }
 
-          await tx.pembayaran.create({
-            data: {
-              pendaftaranKelasId: newRegistration.id,
-              pembayaranKe: 1,
-              jumlahBayar: totalTagihan,
-              tanggalJatuhTempo: dayjs(input.tanggalMulai).toDate(),
-              statusBayar: StatusPembayaran.BELUM_LUNAS,
-              note: `Tagihan ${noteType} (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
+          return newRegistration; // Return data baru
+        }
+
+        // === SKEMA 2 & 3: UPDATE STATUS (Soft Change) ===
+
+        // A. Jika Status Berubah jadi NON-AKTIF (Berhenti)
+        if (input.isAktif === false && existingRecord.isAktif === true) {
+          // Cleanup 1: Hapus pendaftaran masa depan (Logic Anda yang sudah bagus)
+          const nextLevelRegistration = await tx.pendaftaranKelas.findFirst({
+            where: {
+              muridId: existingRecord.muridId,
+              Kelas: {
+                cohortId: existingRecord.Kelas.cohortId,
+                level: { gt: existingRecord.Kelas.level },
+              },
+              // Pastikan hanya menghapus yang belum ada pembayaran lunas
+              pembayarans: {
+                every: { statusBayar: { not: StatusPembayaran.LUNAS } },
+              },
             },
           });
 
-          return newRegistration;
-        });
-      }
+          if (nextLevelRegistration) {
+            await tx.pendaftaranKelas.delete({
+              where: { id: nextLevelRegistration.id },
+            });
+          }
 
-      // === SKENARIO: UPDATE BIASA (Edit Data Ringan) ===
-      else {
-        const updated = await db.pendaftaranKelas.update({
+          // Cleanup 2: [BARU] Hapus tagihan 'gantung' di level ini
+          // Hapus tagihan BELUM LUNAS yang dibuat otomatis (bukan manual) agar tidak jadi piutang macet
+          await tx.pembayaran.deleteMany({
+            where: {
+              pendaftaranKelasId: input.id,
+              statusBayar: {
+                in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+              },
+              note: { contains: "Auto-Generate" }, // Safety: Hanya hapus yg auto
+            },
+          });
+        }
+
+        // B. Jika Status Berubah jadi AKTIF (Re-Join)
+        if (input.isAktif === true && existingRecord.isAktif === false) {
+          // Opsional: Cek apakah perlu generate tagihan baru?
+          // Untuk amannya, biarkan Guru trigger tagihan lewat absensi pertama,
+          // atau Admin buat tagihan manual lewat menu Pembayaran.
+        }
+
+        // Update Biasa
+        return tx.pendaftaranKelas.update({
           where: { id: input.id },
           data: {
-            // Karena muridId dan kelasId sama, tidak perlu diupdate
             tanggalMulai: input.tanggalMulai,
-            isAktif: input.isAktif, // Admin bisa manual matikan status di sini
+            isAktif: input.isAktif,
           },
         });
-
-        return updated;
-      }
+      });
     }),
 
   deletePendaftaranKelas: protectedProcedure

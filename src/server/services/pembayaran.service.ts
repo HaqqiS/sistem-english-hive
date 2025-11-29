@@ -1,8 +1,12 @@
-import type { PrismaClient } from "@prisma/client";
-import { StatusPembayaran, StatusAbsenMurid } from "@prisma/client";
+import {
+  StatusPembayaran,
+  StatusAbsenMurid,
+  type PrismaClient,
+} from "@prisma/client";
 import {
   JUMLAH_PERTEMUAN_PER_BLOK,
   BATAS_SISA_UNTUK_TAGIHAN,
+  BATAS_SESI,
 } from "@/constants/pembayaran";
 
 // Definisi tipe kembalian agar TypeScript tidak bingung
@@ -138,5 +142,88 @@ export const calculateSisaPertemuan = async (
     pendaftaranData: pendaftaran,
     hargaPerSesi,
     paketPertemuan,
+  };
+};
+
+export const generateTagihan = async (
+  db: PrismaClient,
+  params: {
+    pendaftaranId: string;
+    pembayaranKe: number;
+    jumlahBayar: number;
+    jatuhTempo: Date;
+    note: string;
+  },
+) => {
+  const exists = await db.pembayaran.findFirst({
+    where: {
+      pendaftaranKelasId: params.pendaftaranId,
+      pembayaranKe: params.pembayaranKe,
+    },
+  });
+
+  if (exists) return exists;
+
+  return db.pembayaran.create({
+    data: {
+      pendaftaranKelasId: params.pendaftaranId,
+      pembayaranKe: params.pembayaranKe,
+      jumlahBayar: params.jumlahBayar,
+      tanggalJatuhTempo: params.jatuhTempo,
+      statusBayar: StatusPembayaran.BELUM_LUNAS,
+      note: params.note,
+    },
+  });
+};
+
+/**
+ * Menghitung tagihan awal untuk pendaftaran baru, termasuk logika Late Joiner.
+ */
+export const calculateInitialBill = (
+  hargaPerSesi: number,
+  jumlahSesiBerlalu: number,
+) => {
+  const sesiMasuk = jumlahSesiBerlalu + 1;
+  let targetSesiAkhir = 0;
+  let note = "";
+  let pembayaranKe = 1;
+
+  // Validasi batas sesi
+  if (sesiMasuk > BATAS_SESI) {
+    throw new Error(
+      `Kelas ini sudah selesai (Mencapai batas ${BATAS_SESI} sesi).`,
+    );
+  }
+
+  // Logika Checkpoint Auto-Generate
+  const checkpoint1 = JUMLAH_PERTEMUAN_PER_BLOK - BATAS_SISA_UNTUK_TAGIHAN; // 8 - 2 = 6
+  const checkpoint2 = JUMLAH_PERTEMUAN_PER_BLOK * 2 - BATAS_SISA_UNTUK_TAGIHAN; // 16 - 2 = 14
+
+  if (sesiMasuk <= checkpoint1) {
+    // Masuk Sesi 1-6 -> Target Sesi 8
+    targetSesiAkhir = JUMLAH_PERTEMUAN_PER_BLOK;
+    note = `Tagihan Blok 1 (Sesi ${sesiMasuk} s.d ${targetSesiAkhir})`;
+    pembayaranKe = 1;
+  } else if (sesiMasuk <= checkpoint2) {
+    // Masuk Sesi 7-14 -> Target Sesi 16
+    targetSesiAkhir = JUMLAH_PERTEMUAN_PER_BLOK * 2;
+    note = `Late Joiner Blok 2 (Sesi ${sesiMasuk} s.d ${targetSesiAkhir})`;
+    pembayaranKe = 2;
+  } else {
+    // Masuk Sesi 15-24 -> Target Sesi 24
+    targetSesiAkhir = BATAS_SESI;
+    note = `Late Joiner Blok Akhir (Sesi ${sesiMasuk} s.d ${targetSesiAkhir})`;
+    pembayaranKe = 3;
+  }
+
+  const jumlahSesiDibayar = targetSesiAkhir - jumlahSesiBerlalu;
+  const totalTagihan = jumlahSesiDibayar * hargaPerSesi;
+
+  return {
+    totalTagihan,
+    jumlahSesiDibayar,
+    pembayaranKe,
+    note,
+    sesiMasuk,
   };
 };

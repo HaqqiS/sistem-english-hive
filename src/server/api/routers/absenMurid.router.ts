@@ -1,11 +1,13 @@
-import { getAbsensiByJadwalSesiIdSchema } from "@/types/absenMurid.type";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
 import { StatusAbsenMurid, StatusPembayaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
 import dayjs from "@/utils/dateUtils";
-import { BATAS_SISA_UNTUK_TAGIHAN } from "@/constants/pembayaran";
+import {
+  BATAS_SISA_UNTUK_TAGIHAN,
+  JUMLAH_PERTEMUAN_PER_BLOK,
+} from "@/constants/pembayaran";
 
 export const absenMuridRouter = createTRPCRouter({
   getMuridForAbsensi: protectedProcedure
@@ -109,9 +111,7 @@ export const absenMuridRouter = createTRPCRouter({
             sesiPertemuanKelasId: sesiId,
           },
         },
-        update: {
-          status: status,
-        },
+        update: { status: status },
         create: {
           muridId: muridId,
           sesiPertemuanKelasId: sesiId,
@@ -120,8 +120,6 @@ export const absenMuridRouter = createTRPCRouter({
       });
 
       // 2. Logic Kalkulasi Tagihan (On-the-Fly)
-      // Kita perlu mencari ID Pendaftaran Kelas yang aktif untuk murid & kelas ini
-      // Ambil kelasId dari sesi dulu
       const sesi = await db.sesiPertemuanKelas.findUnique({
         where: { id: sesiId },
         select: { kelasId: true, tanggalWaktu: true },
@@ -137,29 +135,42 @@ export const absenMuridRouter = createTRPCRouter({
         });
 
         if (pendaftaran) {
-          // Panggil Service Helper
+          // Hitung sisa pertemuan
           const billingStatus = await calculateSisaPertemuan(
             db,
             pendaftaran.id,
           );
 
-          // Jika perlu buat tagihan baru
+          // === LOGIC AUTO-BILLING ===
           if (billingStatus.needNewBill) {
-            if (billingStatus.nextBillPembayaranKe > 3) {
-              // Jika tagihan berikutnya adalah ke-4 atau lebih, JANGAN buat tagihan.
-              // Karena tagihan selanjutnya akan dihandle oleh sistem Up Level (Pendaftaran Baru).
+            // [BARU] CIRCUIT BREAKER: Cek apakah kelas sudah di fase akhir (Sesi 20++)?
+            const jumlahSesiBerlalu = await db.sesiPertemuanKelas.count({
+              where: { kelasId: sesi.kelasId },
+            });
+
+            // Jika kelas sudah mencapai sesi 20 (Trigger Level Up) atau lebih,
+            // JANGAN buat tagihan lagi untuk Level ini.
+            // Tagihan selanjutnya akan dihandle oleh pendaftaran di Level Baru.
+            if (jumlahSesiBerlalu >= 20) {
               console.log(
-                `Tagihan ke-${billingStatus.nextBillPembayaranKe} ditahan. Maksimal 3 tagihan per level.`,
+                `[AUTO-BILL] Skipped. Kelas sudah di Sesi ${jumlahSesiBerlalu} (Fase Level Up).`,
               );
               return absensi;
             }
 
+            // Guard lama: Max 3 tagihan per level (untuk kasus normal)
+            if (billingStatus.nextBillPembayaranKe > 3) {
+              console.log(
+                `[AUTO-BILL] Skipped. Tagihan ke-${billingStatus.nextBillPembayaranKe} melebihi batas per level.`,
+              );
+              return absensi;
+            }
+
+            // Buat Tagihan Baru
             const harga = billingStatus.hargaPerSesi ?? 0;
-            const paket = billingStatus.paketPertemuan ?? 8;
-
+            const paket =
+              billingStatus.paketPertemuan ?? JUMLAH_PERTEMUAN_PER_BLOK;
             const totalTagihan = harga * paket;
-
-            // Jatuh tempo = Hari ini (saat kuota habis) atau besok
             const jatuhTempo = dayjs().add(1, "day").toDate();
 
             await db.pembayaran.create({
@@ -172,13 +183,9 @@ export const absenMuridRouter = createTRPCRouter({
                 note: `Auto-Generate: Kuota sisa ${billingStatus.sisaPertemuan}. Paket ${paket} Sesi berikutnya.`,
               },
             });
-
-            console.log(`Tagihan baru dibuat untuk ${billingStatus.muridName}`);
           } else {
-            // Cek jika kuota ternyata masih aman (lebih dari batas)
-            // Ini terjadi jika guru merevisi absen dari HADIR -> OFF/SAKIT
+            // [CLEANUP] Jika revisi absen membuat kuota kembali aman
             if (billingStatus.sisaPertemuan > BATAS_SISA_UNTUK_TAGIHAN) {
-              // Cari tagihan terakhir yang BELUM LUNAS dan dibuat oleh SISTEM
               const autoBillToDelete = await db.pembayaran.findFirst({
                 where: {
                   pendaftaranKelasId: pendaftaran.id,
@@ -188,24 +195,15 @@ export const absenMuridRouter = createTRPCRouter({
                       StatusPembayaran.PENDING,
                     ],
                   },
-                  // Filter penting: Hanya hapus tagihan yang dibuat otomatis
-                  // Kita cek apakah 'note' mengandung kata kunci 'Auto-Generate'
-                  note: {
-                    contains: "Auto-Generate",
-                  },
+                  note: { contains: "Auto-Generate" }, // Hanya hapus yg auto
                 },
-                orderBy: {
-                  createdAt: "desc", // Ambil yang paling baru dibuat
-                },
+                orderBy: { createdAt: "desc" },
               });
 
               if (autoBillToDelete) {
                 await db.pembayaran.delete({
                   where: { id: autoBillToDelete.id },
                 });
-                console.log(
-                  `[CLEANUP] Tagihan ID ${autoBillToDelete.id} dihapus karena revisi absen (Sisa Kuota: ${billingStatus.sisaPertemuan})`,
-                );
               }
             }
           }

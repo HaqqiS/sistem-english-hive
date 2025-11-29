@@ -60,7 +60,7 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
   const createMutation = api.jadwalKelas.create.useMutation({
     onSuccess: async () => {
       // Nanti jika ada query getAll, invalidate di sini
-      // await apiUtils.jadwalKelas.getAll.invalidate();
+      await apiUtils.jadwalKelas.getAll.invalidate();
       toast.success("Jadwal baru berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },

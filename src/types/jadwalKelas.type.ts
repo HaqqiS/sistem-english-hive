@@ -18,10 +18,10 @@ export type TypeJadwalKelas = RouterOutputs["jadwalKelas"]["getAll"][number];
  * Skema dasar yang dibutuhkan oleh kedua tipe jadwal.
  */
 const baseJadwalSchema = z.object({
-  kelasId: z.string().cuid("ID Kelas tidak valid"),
-  ruangId: z.string().cuid("ID Ruang tidak valid"),
+  kelasId: z.string().cuid("Kelas tidak valid"),
+  ruangId: z.string().cuid("Ruang tidak valid"),
   hari: z.nativeEnum(Hari, {
-    errorMap: () => ({ message: "Hari tidak valid" }),
+    errorMap: () => ({ message: "Pilih hari yang valid" }),
   }),
 });
 
@@ -30,7 +30,9 @@ const baseJadwalSchema = z.object({
  * Kita hanya butuh ID slot jam tetap.
  */
 const regulerJadwalSchema = baseJadwalSchema.extend({
-  tipeJam: z.literal("TETAP"),
+  tipeJam: z.literal("TETAP", {
+    errorMap: () => ({ message: "Pilih waktu yang valid" }),
+  }),
   jamSlotTetapId: z.string().cuid("ID Slot Jam Tetap tidak valid"),
   // Pastikan field jam custom tidak terkirim
   jamMulai: z.undefined().optional(),
@@ -43,7 +45,9 @@ const regulerJadwalSchema = baseJadwalSchema.extend({
  */
 const customJadwalSchema = baseJadwalSchema
   .extend({
-    tipeJam: z.literal("CUSTOM"),
+    tipeJam: z.literal("CUSTOM", {
+      errorMap: () => ({ message: "Pilih waktu yang valid" }),
+    }),
     // Pastikan ID slot tetap tidak terkirim
     jamSlotTetapId: z.undefined().optional(),
     jamMulai: z
@@ -76,7 +80,7 @@ const customJadwalSchema = baseJadwalSchema
       if (!tMulai.isValid() || !tSelesai.isValid()) return true;
 
       const durasiMenit = tSelesai.diff(tMulai, "minute");
-      return durasiMenit <= 90; // Durasi maksimal 90 menit
+      return durasiMenit === 90; // Durasi maksimal 90 menit
     },
     (data) => {
       // Pesan error dinamis
@@ -104,4 +108,13 @@ export const serverCreateJadwalSchema = z.union([
 
 export type TypeServerCreateJadwalSchema = z.infer<
   typeof serverCreateJadwalSchema
+>;
+
+export const serverCreateBulkJadwalSchema = z
+  .array(serverCreateJadwalSchema)
+  .min(1, "Minimal satu jadwal harus diisi")
+  .max(2, "Maksimal dua jadwal sekaligus");
+
+export type TypeServerCreateBulkJadwalSchema = z.infer<
+  typeof serverCreateBulkJadwalSchema
 >;

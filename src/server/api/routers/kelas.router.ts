@@ -245,6 +245,43 @@ export const kelasRouter = createTRPCRouter({
     .input(serverKelasSchema.extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+
+      const oldKelas = await db.kelas.findUnique({
+        where: { id: input.id },
+        select: { hargaKelas: true },
+      });
+
+      if (!oldKelas) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Kelas tidak ditemukan",
+        });
+      }
+
+      // 2. Cek apakah User mencoba mengubah harga?
+      if (input.hargaKelas !== oldKelas.hargaKelas) {
+        // 3. Cek apakah sudah ada transaksi (Pembayaran) atau Sesi yang berjalan
+        const hasTransactions = await db.pembayaran.findFirst({
+          where: {
+            pendaftaranKelas: { kelasId: input.id },
+          },
+          select: { id: true }, // Cukup ambil ID untuk efisiensi
+        });
+
+        // Opsi tambahan: Cek apakah sudah ada sesi berjalan
+        const hasSessions = await db.sesiPertemuanKelas.findFirst({
+          where: { kelasId: input.id },
+          select: { id: true },
+        });
+
+        if (hasTransactions || hasSessions) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED", // 412 Precondition Failed
+            message:
+              "Tidak dapat mengubah harga kelas yang sudah memiliki riwayat transaksi atau sesi berjalan. Silakan buat kelas baru untuk harga baru.",
+          });
+        }
+      }
       const kelas = await db.kelas.update({
         where: { id: input.id },
         data: {

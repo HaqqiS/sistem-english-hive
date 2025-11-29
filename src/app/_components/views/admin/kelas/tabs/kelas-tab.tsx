@@ -239,7 +239,7 @@ export default function KelasTab() {
                             variant="secondary"
                             className="w-full sm:w-auto"
                           >
-                            <Link href={`/admin/sesi/${kelas.id}`}>
+                            <Link href={`/admin/kelas/sesi/${kelas.id}`}>
                               Riwayat Absensi
                               <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
@@ -306,9 +306,7 @@ export default function KelasTab() {
             );
           })
         ) : (
-          <p className="text-muted-foreground text-center">
-            Belum ada kelas yang memiliki sesi pertemuan.
-          </p>
+          <p className="text-muted-foreground text-center">Belum ada kelas.</p>
         )}
       </Accordion>
 

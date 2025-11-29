@@ -1,284 +1,6 @@
-// "use client";
-
-// import React, { useMemo, useState } from "react";
-// import { useFormContext, Controller } from "react-hook-form";
-// import {
-//   FormControl,
-//   FormField,
-//   FormItem,
-//   FormLabel,
-//   FormMessage,
-// } from "@/components/ui/form";
-// import { Input } from "@/components/ui/input";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select";
-// import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-// import { Label } from "@/components/ui/label";
-// import { Skeleton } from "@/components/ui/skeleton";
-// import { Alert, AlertDescription } from "@/components/ui/alert";
-// import { Info } from "lucide-react";
-
-// import { useKelas } from "@/hooks/useKelas";
-// import { useRuang } from "@/hooks/useRuang";
-// import { useJam } from "@/hooks/useJam";
-// import type { TypeServerCreateJadwalSchema } from "@/types/jadwalKelas.type";
-// import { Hari, TipeKelas } from "@prisma/client";
-// import { Badge } from "@/components/ui/badge";
-
-// interface JadwalKelasFormProps {
-//   onSubmit: (data: TypeServerCreateJadwalSchema) => void;
-// }
-
-// export default function JadwalKelasForm({ onSubmit }: JadwalKelasFormProps) {
-//   const form = useFormContext<TypeServerCreateJadwalSchema>();
-//   const { watch, setValue, clearErrors } = form;
-
-//   // State internal untuk mengontrol RadioGroup
-//   const [jamSelection, setJamSelection] = useState<string | undefined>(
-//     undefined,
-//   );
-
-//   // 1. Ambil semua data yang diperlukan
-//   const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
-//     useKelas({
-//       enableQueryGetAll: false,
-//       enableQueryGetKelasId: true,
-//       enableQueryGetKelasCount: false,
-//     });
-//   const { data: dataRuang, isLoading: isLoadingRuang } = useRuang();
-//   const { dataJamTetap: dataJamSlot, isLoadingJamTetap: isLoadingJamSlot } =
-//     useJam();
-
-//   // 2. Amati field kunci
-//   const selectedKelasId = watch("kelasId");
-//   const selectedRuangId = watch("ruangId");
-
-//   // 3. Dapatkan data turunan berdasarkan apa yang di-watch
-//   const { tipeKelas, cabangId } = useMemo(() => {
-//     const selectedKelas = dataKelas?.find((k) => k.id === selectedKelasId);
-//     const selectedRuang = dataRuang?.find((r) => r.id === selectedRuangId);
-//     return {
-//       tipeKelas: selectedKelas?.tipe,
-//       cabangId: selectedRuang?.cabangId,
-//     };
-//   }, [selectedKelasId, selectedRuangId, dataKelas, dataRuang]);
-
-//   // 4. Filter slot jam berdasarkan cabangId dari ruang yang dipilih
-//   const filteredJamSlots = useMemo(() => {
-//     if (!cabangId || !dataJamSlot) return [];
-//     return dataJamSlot.filter((slot) => slot.cabangId === cabangId);
-//   }, [cabangId, dataJamSlot]);
-
-//   // 5. Handler saat pilihan jam (RadioGroup) berubah
-//   const handleJamSelectionChange = (value: string) => {
-//     setJamSelection(value);
-//     clearErrors(["jamMulai", "jamSelesai", "jamSlotTetapId"]); // Hapus error lama
-
-//     if (value === "CUSTOM") {
-//       // User memilih "Other" (Kelas Privat)
-//       setValue("tipeJam", "CUSTOM");
-//       setValue("jamSlotTetapId", undefined); // Kosongkan ID slot tetap
-//     } else {
-//       // User memilih slot reguler
-//       setValue("tipeJam", "TETAP");
-//       setValue("jamSlotTetapId", value); // Set ID slot tetap
-//       setValue("jamMulai", undefined); // Kosongkan jam custom
-//       setValue("jamSelesai", undefined); // Kosongkan jam custom
-//     }
-//   };
-
-//   return (
-//     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-//       {/* Pilih Kelas */}
-//       <FormField
-//         control={form.control}
-//         name="kelasId"
-//         render={({ field }) => (
-//           <FormItem>
-//             <FormLabel>Pilih Kelas</FormLabel>
-//             <FormControl>
-//               <Select
-//                 onValueChange={field.onChange}
-//                 value={field.value}
-//                 disabled={isLoadingKelas}
-//               >
-//                 <SelectTrigger>
-//                   <SelectValue placeholder="Pilih kelas..." />
-//                 </SelectTrigger>
-//                 <SelectContent>
-//                   {dataKelas?.map((kelas) => (
-//                     <SelectItem key={kelas.id} value={kelas.id}>
-//                       {kelas.kodeKelas}
-//                     </SelectItem>
-//                   ))}
-//                 </SelectContent>
-//               </Select>
-//             </FormControl>
-//             <FormMessage />
-//           </FormItem>
-//         )}
-//       />
-
-//       {/* Pilih Ruang */}
-//       <FormField
-//         control={form.control}
-//         name="ruangId"
-//         render={({ field }) => (
-//           <FormItem>
-//             <FormLabel>Pilih Ruang</FormLabel>
-//             <FormControl>
-//               <Select
-//                 onValueChange={field.onChange}
-//                 value={field.value}
-//                 disabled={isLoadingRuang}
-//               >
-//                 <SelectTrigger>
-//                   <SelectValue placeholder="Pilih ruang..." />
-//                 </SelectTrigger>
-//                 <SelectContent>
-//                   {dataRuang?.map((ruang) => (
-//                     <SelectItem key={ruang.id} value={ruang.id}>
-//                       {ruang.namaRuang} (Cabang: {ruang.cabang.namaCabang})
-//                     </SelectItem>
-//                   ))}
-//                 </SelectContent>
-//               </Select>
-//             </FormControl>
-//             <FormMessage />
-//           </FormItem>
-//         )}
-//       />
-
-//       {/* Pilih Hari */}
-//       <FormField
-//         control={form.control}
-//         name="hari"
-//         render={({ field }) => (
-//           <FormItem>
-//             <FormLabel>Pilih Hari</FormLabel>
-//             <FormControl>
-//               <Select onValueChange={field.onChange} value={field.value}>
-//                 <SelectTrigger>
-//                   <SelectValue placeholder="Pilih hari..." />
-//                 </SelectTrigger>
-//                 <SelectContent>
-//                   {Object.values(Hari).map((hari) => (
-//                     <SelectItem key={hari} value={hari}>
-//                       {hari}
-//                     </SelectItem>
-//                   ))}
-//                 </SelectContent>
-//               </Select>
-//             </FormControl>
-//             <FormMessage />
-//           </FormItem>
-//         )}
-//       />
-
-//       {/* Pilihan Jam (Dinamis) */}
-//       <FormItem>
-//         <FormLabel>Pilih Jam</FormLabel>
-//         {!selectedRuangId ? (
-//           <Alert variant="destructive">
-//             <Info className="h-4 w-4" />
-//             <AlertDescription>
-//               Pilih Ruang terlebih dahulu untuk melihat slot jam.
-//             </AlertDescription>
-//           </Alert>
-//         ) : isLoadingJamSlot ? (
-//           <Skeleton className="h-20 w-full" />
-//         ) : (
-//           <Controller
-//             control={form.control}
-//             name="tipeJam" // Field ini dikontrol oleh RadioGroup
-//             render={() => (
-//               <RadioGroup
-//                 value={jamSelection}
-//                 onValueChange={handleJamSelectionChange}
-//                 className="space-y-2"
-//               >
-//                 {/* Render Slot Jam Tetap */}
-//                 {filteredJamSlots.length > 0 ? (
-//                   filteredJamSlots.map((slot) => (
-//                     <FormItem
-//                       key={slot.id}
-//                       className="flex items-center space-y-0 space-x-3"
-//                     >
-//                       <FormControl>
-//                         <RadioGroupItem value={slot.id} id={slot.id} />
-//                       </FormControl>
-//                       <Label htmlFor={slot.id} className="font-normal">
-//                         {slot.namaSlot} ({slot.jamMulai} - {slot.jamSelesai})
-//                       </Label>
-//                     </FormItem>
-//                   ))
-//                 ) : (
-//                   <Label className="text-muted-foreground text-sm">
-//                     Belum ada slot jam tetap untuk cabang ini.
-//                   </Label>
-//                 )}
-
-//                 {/* Render Opsi "Other" (Privat) */}
-//                 <FormItem className="flex items-center space-y-0 space-x-3">
-//                   <FormControl>
-//                     <RadioGroupItem value="CUSTOM" id="custom-jam" />
-//                   </FormControl>
-//                   <Label htmlFor="custom-jam" className="font-normal">
-//                     Other (Input Manual)
-//                   </Label>
-//                   {tipeKelas === TipeKelas.REGULAR && (
-//                     <Badge variant="secondary">Hanya untuk kelas Privat</Badge>
-//                   )}
-//                 </FormItem>
-//               </RadioGroup>
-//             )}
-//           />
-//         )}
-//       </FormItem>
-
-//       {/* Input Jam Manual (Kondisional) */}
-//       {jamSelection === "CUSTOM" && (
-//         <div className="grid grid-cols-2 gap-4 rounded-md border p-4">
-//           <FormField
-//             control={form.control}
-//             name="jamMulai"
-//             render={({ field }) => (
-//               <FormItem>
-//                 <FormLabel>Jam Mulai (Privat)</FormLabel>
-//                 <FormControl>
-//                   <Input type="time" {...field} />
-//                 </FormControl>
-//                 <FormMessage />
-//               </FormItem>
-//             )}
-//           />
-//           <FormField
-//             control={form.control}
-//             name="jamSelesai"
-//             render={({ field }) => (
-//               <FormItem>
-//                 <FormLabel>Jam Selesai (Privat)</FormLabel>
-//                 <FormControl>
-//                   <Input type="time" {...field} />
-//                 </FormControl>
-//                 <FormMessage />
-//               </FormItem>
-//             )}
-//           />
-//         </div>
-//       )}
-//     </form>
-//   );
-// }
-
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   useFormContext,
   useFieldArray,
@@ -306,7 +28,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Plus, Trash2 } from "lucide-react";
+import { Info, Plus, Trash2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -315,7 +37,10 @@ import { useKelas } from "@/hooks/useKelas";
 import { useRuang } from "@/hooks/useRuang";
 import { useJam } from "@/hooks/useJam";
 import { Hari, TipeKelas } from "@prisma/client";
-import type { TypeServerCreateBulkJadwalSchema } from "@/types/jadwalKelas.type";
+import type {
+  TypeServerCreateBulkJadwalSchema,
+  TypeServerCreateJadwalSchema,
+} from "@/types/jadwalKelas.type";
 
 // Tipe Schema Form Wrapper
 type FormSchemaType = {
@@ -323,7 +48,7 @@ type FormSchemaType = {
 };
 
 // =========================================================
-// 1. KOMPONEN CHILD (ITEM JADWAL) - Memindahkan Logic Row ke sini
+// 1. KOMPONEN CHILD (ITEM JADWAL)
 // =========================================================
 
 interface ScheduleItemRowProps {
@@ -343,72 +68,66 @@ function ScheduleItemRow({
   remove,
   firstItemKelasId,
 }: ScheduleItemRowProps) {
-  // --- DATA FETCHING (Cached by React Query) ---
-  // Aman dipanggil di sini karena ini adalah Komponen React
+  // --- DATA FETCHING ---
   const { data: dataRuang, isLoading: isLoadingRuang } = useRuang();
   const { dataJamTetap: dataJamSlot, isLoadingJamTetap: isLoadingJamSlot } =
     useJam();
   const { dataKelasAktif: dataKelas } = useKelas();
 
-  // --- WATCH FIELD KHUSUS ROW INI ---
+  // --- WATCH FIELDS ---
   const currentRuangId = useWatch({
     control,
     name: `schedules.${index}.ruangId`,
-  });
-  const currentTipeJam = useWatch({
-    control,
-    name: `schedules.${index}.tipeJam`,
   });
   const currentJamTetapId = useWatch({
     control,
     name: `schedules.${index}.jamSlotTetapId`,
   });
 
-  // --- LOGIC ---
+  // --- LOGIC OTOMATIS TIPE JAM ---
 
-  // Info Tipe Kelas (Reguler/Privat) berdasarkan kelas yang dipilih di Parent
+  // 1. Cek Tipe Kelas (Reguler / Privat)
   const selectedKelasInfo = useMemo(
     () => dataKelas?.find((k) => k.id === firstItemKelasId),
     [dataKelas, firstItemKelasId],
   );
+  const isPrivateClass = selectedKelasInfo?.tipe === TipeKelas.PRIVATE;
 
-  // Tentukan Cabang berdasarkan Ruang yang dipilih di row ini
+  // 2. Effect: Set tipeJam otomatis saat kelas berubah
+  useEffect(() => {
+    if (isPrivateClass) {
+      setValue(`schedules.${index}.tipeJam`, "CUSTOM");
+      setValue(`schedules.${index}.jamSlotTetapId`, undefined);
+    } else {
+      setValue(`schedules.${index}.tipeJam`, "TETAP");
+      setValue(`schedules.${index}.jamMulai`, undefined);
+      setValue(`schedules.${index}.jamSelesai`, undefined);
+    }
+    // Trigger validasi agar error state bersih
+    // void trigger(`schedules.${index}`);
+  }, [isPrivateClass, setValue, index]);
+
+  // 3. Filter Jam Slot berdasarkan Cabang Ruang
   const currentCabangId = useMemo(() => {
     return dataRuang?.find((r) => r.id === currentRuangId)?.cabangId;
   }, [dataRuang, currentRuangId]);
 
-  // Filter Jam Slot berdasarkan Cabang Ruang tersebut
   const filteredJamSlots = useMemo(() => {
     if (!currentCabangId || !dataJamSlot) return [];
     return dataJamSlot.filter((slot) => slot.cabangId === currentCabangId);
   }, [currentCabangId, dataJamSlot]);
 
-  // Handler perubahan radio jam
-  const handleJamSelectionChange = (value: string) => {
-    if (value === "CUSTOM") {
-      setValue(`schedules.${index}.tipeJam`, "CUSTOM");
-      setValue(`schedules.${index}.jamSlotTetapId`, undefined);
-    } else {
-      setValue(`schedules.${index}.tipeJam`, "TETAP");
-      setValue(`schedules.${index}.jamSlotTetapId`, value);
-      // Reset jam custom
-      setValue(`schedules.${index}.jamMulai`, undefined);
-      setValue(`schedules.${index}.jamSelesai`, undefined);
-    }
-    // Trigger validasi ulang
-    void trigger(`schedules.${index}`);
-  };
-
-  // Tentukan value radio group saat ini untuk UI
-  const currentRadioValue =
-    currentTipeJam === "CUSTOM" ? "CUSTOM" : (currentJamTetapId ?? undefined);
-
   return (
     <Card className="relative border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-medium">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
             Jadwal Pertemuan #{index + 1}
+            {isPrivateClass ? (
+              <Badge variant="secondary">Privat (Custom Jam)</Badge>
+            ) : (
+              <Badge variant="outline">Reguler (Jam Tetap)</Badge>
+            )}
           </CardTitle>
           {index > 0 && (
             <Button
@@ -433,160 +152,194 @@ function ScheduleItemRow({
           )}
         />
 
-        {/* Pilih Ruang */}
+        {/* Hidden Field: Tipe Jam (Diset otomatis oleh useEffect di atas) */}
         <FormField
           control={control}
-          name={`schedules.${index}.ruangId`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pilih Ruang</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value}
-                disabled={isLoadingRuang}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih ruang..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {dataRuang?.map((ruang) => (
-                    <SelectItem key={ruang.id} value={ruang.id}>
-                      {ruang.namaRuang} ({ruang.cabang.namaCabang})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          name={`schedules.${index}.tipeJam`}
+          render={({ field }) => <input type="hidden" {...field} />}
         />
 
-        {/* Pilih Hari */}
-        <FormField
-          control={control}
-          name={`schedules.${index}.hari`}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pilih Hari</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih hari..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.values(Hari).map((hari) => (
-                    <SelectItem key={hari} value={hari}>
-                      {hari}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Pilih Waktu (Jam) */}
-        <FormItem>
-          <FormLabel>Pilih Waktu</FormLabel>
-          {!currentRuangId ? (
-            <Alert variant="destructive" className="py-2">
-              <Info className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Pilih Ruang dulu untuk melihat slot jam.
-              </AlertDescription>
-            </Alert>
-          ) : isLoadingJamSlot ? (
-            <Skeleton className="h-20 w-full" />
-          ) : (
-            <RadioGroup
-              value={currentRadioValue}
-              onValueChange={handleJamSelectionChange}
-              className="grid grid-cols-1 gap-2"
-            >
-              {/* Slot Tetap */}
-              {filteredJamSlots.length > 0 ? (
-                filteredJamSlots.map((slot) => (
-                  <FormItem
-                    key={slot.id}
-                    className="hover:bg-accent flex items-center space-y-0 space-x-3 rounded-md border p-2"
-                  >
-                    <FormControl>
-                      <>
-                        <RadioGroupItem value={slot.id} />
-                        <Label className="flex-1 cursor-pointer font-normal">
-                          {slot.namaSlot} ({slot.jamMulai} - {slot.jamSelesai})
-                        </Label>
-                      </>
-                    </FormControl>
-                  </FormItem>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-xs italic">
-                  Tidak ada slot reguler di cabang ini.
-                </p>
-              )}
-
-              {/* Slot Custom */}
-              <FormItem className="hover:bg-accent flex items-center space-y-0 space-x-3 rounded-md border p-2">
-                <FormControl>
-                  <RadioGroupItem value="CUSTOM" />
-                </FormControl>
-                <div className="flex flex-1 items-center justify-between">
-                  <Label className="cursor-pointer font-normal">
-                    Input Manual (Privat/Custom)
-                  </Label>
-                  {selectedKelasInfo?.tipe === TipeKelas.REGULAR && (
-                    <Badge variant="secondary" className="text-[10px]">
-                      Hanya Privat
-                    </Badge>
-                  )}
-                </div>
-              </FormItem>
-            </RadioGroup>
-          )}
-          {/* Pesan Error Tipe Jam */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Pilih Ruang */}
           <FormField
             control={control}
-            name={`schedules.${index}.tipeJam`}
-            render={() => <FormMessage />}
+            name={`schedules.${index}.ruangId`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pilih Ruang</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={isLoadingRuang}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih ruang..." />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {dataRuang?.map((ruang) => (
+                      <SelectItem key={ruang.id} value={ruang.id}>
+                        {ruang.namaRuang} ({ruang.cabang.namaCabang})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </FormItem>
 
-        {/* Input Manual (Kondisional) */}
-        {currentTipeJam === "CUSTOM" && (
-          <div className="bg-muted/30 grid grid-cols-2 gap-4 rounded-md border p-3">
+          {/* Pilih Hari */}
+          <FormField
+            control={control}
+            name={`schedules.${index}.hari`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pilih Hari</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih hari..." />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.values(Hari).map((hari) => (
+                      <SelectItem key={hari} value={hari}>
+                        {hari}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="pt-2">
+          {/* --- KONDISI 1: KELAS REGULER (PILIH SLOT) --- */}
+          {!isPrivateClass && (
             <FormField
               control={control}
-              name={`schedules.${index}.jamMulai`}
+              name={`schedules.${index}.jamSlotTetapId`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Mulai</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
+                  <FormLabel>Pilih Slot Waktu (Reguler)</FormLabel>
+                  {!currentRuangId ? (
+                    <Alert variant="destructive" className="py-2">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Pilih Ruang dulu untuk melihat slot jam yang tersedia di
+                        cabang tersebut.
+                      </AlertDescription>
+                    </Alert>
+                  ) : isLoadingJamSlot ? (
+                    <Skeleton className="h-20 w-full" />
+                  ) : filteredJamSlots.length === 0 ? (
+                    <Alert
+                      variant="destructive"
+                      className="border-yellow-200 bg-yellow-50 py-2 text-yellow-800"
+                    >
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Tidak ada slot jam reguler di cabang ini.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+                    >
+                      {filteredJamSlots.map((slot) => (
+                        <FormItem key={slot.id}>
+                          {/* <FormControl>
+                            <RadioGroupItem value={slot.id} 
+                            className="hover:bg-accent flex cursor-pointer items-center space-y-0 space-x-3 rounded-md border p-3" 
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <Label className="cursor-pointer font-medium">
+                              {slot.namaSlot}
+                            </Label>
+                            <p className="text-muted-foreground text-xs">
+                              {slot.jamMulai} - {slot.jamSelesai}
+                            </p>
+                          </div> */}
+                          <Label
+                            htmlFor={`slot-${index}-${slot.id}`}
+                            className="hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex cursor-pointer items-center space-x-3 rounded-md border p-3 transition-all"
+                            // className="hover:bg-accent flex cursor-pointer items-center space-y-0 space-x-3 rounded-md border p-3"
+                          >
+                            <FormControl>
+                              <RadioGroupItem
+                                value={slot.id}
+                                id={`slot-${index}-${slot.id}`}
+                              />
+                            </FormControl>
+                            <div className="flex-1 space-y-1 leading-none">
+                              <div className="text-sm font-medium">
+                                {slot.namaSlot}
+                              </div>
+                              <div className="text-muted-foreground flex items-center gap-1 text-xs font-normal">
+                                <Clock className="h-3 w-3" />
+                                {slot.jamMulai} - {slot.jamSelesai}
+                              </div>
+                            </div>
+                          </Label>
+                        </FormItem>
+                      ))}
+                    </RadioGroup>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={control}
-              name={`schedules.${index}.jamSelesai`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs">Selesai</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )}
+          )}
+
+          {/* --- KONDISI 2: KELAS PRIVATE (INPUT MANUAL / CUSTOM) --- */}
+          {isPrivateClass && (
+            <div className="bg-muted/10 space-y-3 rounded-md border border-dashed p-4">
+              <div className="text-primary flex items-center gap-2 text-sm font-medium">
+                <Clock className="h-4 w-4" />
+                Atur Waktu Custom
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={control}
+                  name={`schedules.${index}.jamMulai`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Jam Mulai</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name={`schedules.${index}.jamSelesai`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Jam Selesai</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <p className="text-muted-foreground text-[10px]">
+                *Durasi kelas privat harus 90 menit. Sistem akan otomatis
+                menggunakan jam yang sudah ada jika waktu sama.
+              </p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -626,24 +379,27 @@ export default function JadwalKelasForm({
     // Update semua item yang ada agar kelasId-nya sama
     fields.forEach((_, index) => {
       setValue(`schedules.${index}.kelasId`, kelasId);
+
+      // Trigger validasi ulang untuk tipe jam (karena kelas berubah, tipe mungkin berubah)
+      // Namun karena kita pakai useEffect di child row, update tipeJam akan terjadi otomatis di sana.
     });
   };
 
   const handleAddSchedule = () => {
-    // Tambahkan item baru. Kita pakai 'as any' sementara karena
-    // tipe union Zod (TETAP vs CUSTOM) ketat, sedangkan state awal form bisa jadi partial.
-    // Namun, kita set default 'TETAP' agar lebih aman.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    append({
+    // Buat objek dengan tipe eksplisit agar Typescript tidak komplain "any"
+    // Kita gunakan varian 'TETAP' sebagai default yang aman
+    // Untuk 'hari', kita cast ke Hari agar sesuai tipe, tapi nilainya string kosong untuk UI placeholder
+    const newItem: TypeServerCreateJadwalSchema = {
       kelasId: firstItemKelasId || "",
       ruangId: "",
-      hari: undefined as unknown as Hari, // Paksa undefined agar user memilih
+      hari: "" as unknown as Hari,
       tipeJam: "TETAP",
       jamSlotTetapId: "",
       jamMulai: undefined,
       jamSelesai: undefined,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    };
+
+    append(newItem);
   };
 
   return (
@@ -665,7 +421,10 @@ export default function JadwalKelasForm({
           <SelectContent>
             {dataKelas?.map((kelas) => (
               <SelectItem key={kelas.id} value={kelas.id}>
-                {kelas.kodeKelas}
+                {kelas.kodeKelas}{" "}
+                <span className="text-muted-foreground text-xs">
+                  ({kelas.tipe})
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -696,7 +455,7 @@ export default function JadwalKelasForm({
         <Button
           type="button"
           variant="secondary"
-          className="w-full border"
+          className="w-full border border-dashed"
           onClick={handleAddSchedule}
         >
           <Plus className="mr-2 h-4 w-4" />

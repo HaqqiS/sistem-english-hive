@@ -31,14 +31,39 @@ export const jadwalKelasRouter = createTRPCRouter({
 
           if (tipeJam === "CUSTOM") {
             // --- Alur Kelas Privat (Jam Custom) ---
-            // TypeScript tahu 'jamMulai' & 'jamSelesai' ada karena discriminate union
-            const newJamCustom = await tx.jamSlotCustom.create({
-              data: {
-                jamMulai: scheduleData.jamMulai,
-                jamSelesai: scheduleData.jamSelesai,
+            const { jamMulai, jamSelesai } = scheduleData;
+
+            // Safety check (seharusnya sudah dicover Zod)
+            if (!jamMulai || !jamSelesai) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message:
+                  "Jam Mulai dan Selesai wajib diisi untuk jadwal Custom.",
+              });
+            }
+            const existingJamCustom = await tx.jamSlotCustom.findFirst({
+              where: {
+                jamMulai: jamMulai,
+                jamSelesai: jamSelesai,
               },
             });
-            jamSlotCustomId = newJamCustom.id;
+
+            if (existingJamCustom) {
+              // A. JIKA ADA: Pakai ID lama (Shared Reference)
+              jamSlotCustomId = existingJamCustom.id;
+              // Opsional: Log untuk debugging
+              // console.log(`[JADWAL] Reusing JamCustom ID: ${jamSlotCustomId}`);
+            } else {
+              // B. JIKA TIDAK ADA: Buat baru
+              const newJamCustom = await tx.jamSlotCustom.create({
+                data: {
+                  jamMulai: jamMulai,
+                  jamSelesai: jamSelesai,
+                },
+              });
+              jamSlotCustomId = newJamCustom.id;
+              // console.log(`[JADWAL] Created New JamCustom ID: ${jamSlotCustomId}`);
+            }
           } else if (tipeJam === "TETAP") {
             // --- Alur Kelas Reguler (Jam Tetap) ---
             jamSlotTetapId = scheduleData.jamSlotTetapId;
@@ -92,7 +117,7 @@ export const jadwalKelasRouter = createTRPCRouter({
     const { db } = ctx;
     return db.jadwalKelas.findMany({
       orderBy: {
-        hari: "asc", // Urutkan Senin -> Minggu (perlu mapping enum jika ingin akurat)
+        hari: "asc",
       },
       include: {
         kelas: { select: { kodeKelas: true, jenisKelas: true } },

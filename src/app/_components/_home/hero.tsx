@@ -3,102 +3,128 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { useIsMobile } from "@/hooks/use-mobile";
+import MarqueeBanner from "./marquee_banner";
+import { motion } from "framer-motion";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 export default function Hero() {
-  const isMobile = useIsMobile();
   return (
-    // Using min-h-[calc(100vh-4rem)] to account for navbar (h-16 = 4rem)
-    <section className="bg-background relative flex min-h-[calc(100vh-4rem)] flex-col justify-between overflow-hidden">
-      {/* Hero Content */}
-      <div className="flex flex-1 items-center px-4 py-6 sm:px-6 lg:px-8 lg:py-0">
-        <div className="mx-auto w-full max-w-7xl">
-          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2">
-            {/* Left Content */}
-            <div className="animate-fade-in space-y-4">
-              <h1 className="text-3xl leading-tight font-bold text-balance sm:text-4xl lg:text-5xl">
-                <span className="from-primary to-secondary bg-linear-to-r bg-clip-text text-transparent">
-                  Belajar Bahasa Inggris
-                </span>{" "}
-                Jadi Seru dan Percaya Diri!
+    <section className="bg-background relative flex min-h-[calc(100vh)] flex-col overflow-hidden pt-20">
+      {/* Background Decoration (Optional - Pastel Blob) */}
+      <div className="bg-primary/10 absolute top-[-10%] right-[-5%] -z-10 h-[500px] w-[500px] animate-pulse rounded-full blur-3xl" />
+      <div className="bg-secondary/20 absolute bottom-[10%] left-[-10%] -z-10 h-[400px] w-[400px] rounded-full blur-3xl" />
+
+      {/* Main Content Container: Flex Grow agar Marquee terdorong ke bawah */}
+      <div className="flex grow items-center justify-center px-4 py-8 sm:px-6 lg:px-8 lg:py-0">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-8">
+          {/* LEFT: Text Content */}
+          <div className="z-10 order-1 space-y-6 text-center lg:text-left">
+            <ScrollAnimation>
+              <div className="border-primary/30 bg-primary/5 text-primary mb-4 inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium">
+                <span className="bg-primary mr-2 flex h-2 w-2 animate-ping rounded-full"></span>
+                Pendaftaran Kelas Baru Dibuka
+              </div>
+            </ScrollAnimation>
+
+            <ScrollAnimation delay={0.1}>
+              <h1 className="text-foreground text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:leading-tight">
+                Belajar Bahasa Inggris <br className="hidden lg:block" />
+                <span className="from-primary to-secondary bg-linear-to-tl bg-clip-text text-transparent">
+                  Jadi Lebih Percaya Diri!
+                </span>
               </h1>
+            </ScrollAnimation>
 
-              <p className="text-muted-foreground line-clamp-3 max-w-lg text-base lg:text-lg">
-                Tingkatkan kemampuan bahasa inggris dengan cara fun, dan
-                interaktif. Ratusan siswa telah merasakan transformasi belajar
-                bersama kami.
+            <ScrollAnimation delay={0.2}>
+              <p className="text-muted-foreground mx-auto max-w-2xl text-lg leading-relaxed lg:mx-0">
+                Metode belajar interaktif yang dirancang khusus untuk membantu
+                Anda fasih berbicara dan sukses dalam akademik maupun karir.
+                Gabung bersama English Hive sekarang.
               </p>
+            </ScrollAnimation>
 
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-                <a href="#registration">
-                  <Button size="sm" className="group gap-2">
+            <ScrollAnimation delay={0.3}>
+              <div className="flex flex-col items-center justify-center gap-4 pt-2 sm:flex-row lg:justify-start">
+                <Button
+                  size="lg"
+                  className="shadow-primary/20 w-full gap-2 shadow-lg sm:w-auto"
+                  asChild
+                >
+                  <a href="#registration">
                     Daftar Sekarang
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                </a>
-                <Button size="sm" variant="outline">
-                  Pelajari Lebih Lanjut
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="bg-background/50 w-full backdrop-blur-sm sm:w-auto"
+                  asChild
+                >
+                  <a href="#programs">Lihat Program</a>
                 </Button>
               </div>
+            </ScrollAnimation>
 
-              <div className="text-muted-foreground flex items-center gap-2 pt-2 text-xs">
-                <div className="bg-primary h-2 w-2 rounded-full" />
-                <span>500+ siswa telah bergabung</span>
-              </div>
-            </div>
-
-            {/* Right Content - Hero Image */}
-
-            {!isMobile && (
-              <div className="animate-float relative max-h-40 md:h-full">
-                <div className="from-primary/20 to-secondary/20 absolute inset-0 rounded-3xl bg-linear-to-br blur-3xl" />
-                <div className="relative flex h-full items-center justify-center">
-                  <Image
-                    src="/miss_desak.webp"
-                    alt="Student learning English"
-                    width={350}
-                    height={350}
-                    className="rounded-2xl object-cover shadow-2xl"
-                  />
+            <ScrollAnimation delay={0.4}>
+              <div className="text-muted-foreground flex items-center justify-center gap-4 pt-4 text-sm lg:justify-start">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="border-background h-8 w-8 rounded-full border-2 bg-gray-200"
+                    />
+                  ))}
                 </div>
+                <p>Bergabung dengan 500+ siswa lainnya</p>
               </div>
-            )}
+            </ScrollAnimation>
+          </div>
+
+          {/* RIGHT: Image Illustration */}
+          {/* Mobile: Order 2 (di bawah teks), Desktop: Order 2 (di kanan) */}
+          <div className="relative order-2 flex items-center justify-center">
+            <ScrollAnimation
+              delay={0.3}
+              className="relative aspect-square w-full max-w-[400px] lg:max-w-[500px]"
+            >
+              {/* Abstract Shape behind image */}
+              <div className="from-accent/30 to-secondary/30 absolute inset-0 scale-95 rotate-6 rounded-4xl bg-linear-to-tr" />
+
+              <div className="relative h-full w-full overflow-hidden rounded-2xl border-4 border-white/50 shadow-2xl">
+                <Image
+                  src="/miss_desak.webp" // Pastikan path ini benar
+                  alt="English Learning Activity"
+                  fill
+                  className="object-contain object-top transition-transform duration-700 hover:scale-105"
+                  priority
+                />
+
+                {/* Floating Card Decoration */}
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 3,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute bottom-6 left-6 hidden max-w-[150px] rounded-xl bg-white/90 p-3 shadow-lg backdrop-blur sm:block"
+                >
+                  <p className="text-primary text-xs font-bold">Fun Learning</p>
+                  <p className="text-muted-foreground text-[10px]">
+                    Interactive & Engaging classes
+                  </p>
+                </motion.div>
+              </div>
+            </ScrollAnimation>
           </div>
         </div>
       </div>
 
-      {/* Marquee Banner */}
-      <div className="bg-secondary relative left-1/2 w-screen shrink-0 -translate-x-1/2 overflow-hidden py-5">
-        <div className="relative flex overflow-x-hidden">
-          <div className="animate-marquee flex gap-8 whitespace-nowrap">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex gap-8">
-                <span className="text-secondary-foreground text-xs font-bold tracking-wider uppercase sm:text-sm">
-                  ✨ FLUENT NOW
-                </span>
-                <span className="text-secondary-foreground text-xs font-bold tracking-wider uppercase sm:text-sm">
-                  CONFIDENT FOREVER
-                </span>
-                <span className="text-secondary-foreground text-xs font-bold tracking-wider uppercase sm:text-sm">
-                  WITH ENGLISH HIVE
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <style jsx>{`
-          @keyframes marquee {
-            0% {
-              transform: translateX(0);
-            }
-            100% {
-              transform: translateX(-33.333%);
-            }
-          }
-          .animate-marquee {
-            animation: marquee 20s linear infinite;
-          }
-        `}</style>
+      {/* Footer Hero: Marquee */}
+      {/* "mt-auto" memastikan dia kedorong ke paling bawah container flex */}
+      <div className="border-border/50 bg-background/50 z-10 mt-auto w-full border-t backdrop-blur-sm">
+        <MarqueeBanner />
       </div>
     </section>
   );

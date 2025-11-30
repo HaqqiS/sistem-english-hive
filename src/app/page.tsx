@@ -1,5 +1,7 @@
 import { auth } from "@/server/auth";
 import { api, HydrateClient } from "@/trpc/server";
+
+// Components
 import Navbar from "./_components/_home/navbar";
 import Hero from "./_components/_home/hero";
 import Features from "./_components/_home/features";
@@ -13,28 +15,64 @@ import Registration from "./_components/_home/registration";
 import CTA from "./_components/_home/cta";
 import Footer from "./_components/_home/footer";
 import FloatingButtons from "@/app/_components/_home/floating_buttons";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 export default async function Home() {
   const session = await auth();
 
-  if (session?.user) {
-    void api.post.getLatest.prefetch();
-  }
+  await Promise.all([
+    api.cabang.getAllList.prefetch(),
+    // api.jadwalKelas.getAll.prefetch(),
+  ]);
 
   return (
     <HydrateClient>
-      <main className="bg-background min-h-screen">
+      <main className="bg-background selection:bg-accent selection:text-accent-foreground min-h-screen overflow-x-hidden">
         <Navbar />
+
+        {/* Hero sudah punya animasi internal */}
         <Hero />
-        <Features />
-        <About />
-        <Programs />
-        <Pricing />
-        <Schedule />
-        <Testimonials />
-        <FAQ />
-        <Registration />
-        <CTA />
+
+        {/* Bungkus section lain dengan ScrollAnimation */}
+        <ScrollAnimation variant="stagger">
+          <Features />
+        </ScrollAnimation>
+
+        <ScrollAnimation>
+          <Programs />
+        </ScrollAnimation>
+
+        {/* Pricing: Regular vs Private */}
+        <ScrollAnimation variant="stagger">
+          <Pricing />
+        </ScrollAnimation>
+
+        <ScrollAnimation>
+          <Schedule />
+        </ScrollAnimation>
+
+        <ScrollAnimation variant="stagger">
+          <Testimonials />
+        </ScrollAnimation>
+
+        <ScrollAnimation>
+          <About />
+        </ScrollAnimation>
+
+        <ScrollAnimation>
+          <FAQ />
+        </ScrollAnimation>
+
+        <div id="registration">
+          <ScrollAnimation>
+            <Registration />
+          </ScrollAnimation>
+        </div>
+
+        <ScrollAnimation>
+          <CTA />
+        </ScrollAnimation>
+
         <Footer />
         <FloatingButtons />
       </main>

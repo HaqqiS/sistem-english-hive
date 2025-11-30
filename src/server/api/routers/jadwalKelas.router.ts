@@ -1,11 +1,94 @@
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { serverCreateBulkJadwalSchema } from "@/types/jadwalKelas.type";
 import { TRPCError } from "@trpc/server";
-import type { Hari } from "@prisma/client";
+import { Hari } from "@prisma/client";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import z from "zod";
 
 export const jadwalKelasRouter = createTRPCRouter({
+  getScheduleMatrix: protectedProcedure
+    .input(
+      z.object({
+        cabangId: z.string().min(1, "Cabang harus dipilih"),
+        hari: z.nativeEnum(Hari),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      // Optimasi: Jalankan 2 query secara paralel daripada nested deep include
+      const [rooms, rawSchedules] = await Promise.all([
+        // 1. Ambil Ruangan (Ringan)
+        db.ruang.findMany({
+          where: { cabangId: input.cabangId, isAktif: true },
+          orderBy: { namaRuang: "asc" },
+          select: { id: true, namaRuang: true },
+        }),
+
+        // 2. Ambil Jadwal (Terfilter specific hari & cabang)
+        db.jadwalKelas.findMany({
+          where: {
+            hari: input.hari,
+            ruang: {
+              cabangId: input.cabangId,
+            },
+          },
+          select: {
+            id: true,
+            ruangId: true,
+            kelasId: true,
+            jamSlotTetap: {
+              select: { jamMulai: true, jamSelesai: true },
+            },
+            jamSlotCustom: {
+              select: { jamMulai: true, jamSelesai: true },
+            },
+            kelas: {
+              select: {
+                kodeKelas: true,
+                tipe: true,
+                // Optimasi: Ambil jumlah murid aktif saja
+                _count: {
+                  select: {
+                    pendaftaranKelases: { where: { isAktif: true } },
+                  },
+                },
+                // Optimasi: Ambil guru aktif saja
+                historyGuruKelases: {
+                  where: { statusGuru: "ACTIVE" },
+                  take: 1,
+                  select: {
+                    guru: { select: { name: true } },
+                  },
+                },
+              },
+            },
+          },
+        }),
+      ]);
+
+      // 3. Formatting Data di level Aplikasi (Lebih cepat daripada DB formatting)
+      const formattedSchedules = rawSchedules.map((s) => {
+        const jam = s.jamSlotTetap ?? s.jamSlotCustom;
+
+        return {
+          id: s.id,
+          ruangId: s.ruangId,
+          kelasId: s.kelasId,
+          kodeKelas: s.kelas.kodeKelas,
+          tipeKelas: s.kelas.tipe,
+          guru: s.kelas.historyGuruKelases[0]?.guru.name ?? "Belum ada guru",
+          jamMulai: jam?.jamMulai ?? "00:00",
+          jamSelesai: jam?.jamSelesai ?? "00:00",
+          jumlahMurid: s.kelas._count.pendaftaranKelases,
+        };
+      });
+
+      return {
+        rooms,
+        schedules: formattedSchedules,
+      };
+    }),
   /**
    * Membuat JadwalKelas baru.
    * Ini menangani kelas REGULAR (link ke JamSlotTetap)
@@ -26,6 +109,8 @@ export const jadwalKelasRouter = createTRPCRouter({
 
           let jamSlotCustomId: string | undefined = undefined;
           let jamSlotTetapId: string | undefined = undefined;
+          let checkJamMulai = "";
+          let checkJamSelesai = "";
 
           // --- LOGIKA PER CABANG (CUSTOM / TETAP) ---
 
@@ -41,42 +126,36 @@ export const jadwalKelasRouter = createTRPCRouter({
                   "Jam Mulai dan Selesai wajib diisi untuk jadwal Custom.",
               });
             }
+            checkJamMulai = jamMulai;
+            checkJamSelesai = jamSelesai;
+
             const existingJamCustom = await tx.jamSlotCustom.findFirst({
-              where: {
-                jamMulai: jamMulai,
-                jamSelesai: jamSelesai,
-              },
+              where: { jamMulai, jamSelesai },
             });
 
             if (existingJamCustom) {
-              // A. JIKA ADA: Pakai ID lama (Shared Reference)
               jamSlotCustomId = existingJamCustom.id;
-              // Opsional: Log untuk debugging
-              // console.log(`[JADWAL] Reusing JamCustom ID: ${jamSlotCustomId}`);
             } else {
-              // B. JIKA TIDAK ADA: Buat baru
               const newJamCustom = await tx.jamSlotCustom.create({
-                data: {
-                  jamMulai: jamMulai,
-                  jamSelesai: jamSelesai,
-                },
+                data: { jamMulai, jamSelesai },
               });
               jamSlotCustomId = newJamCustom.id;
-              // console.log(`[JADWAL] Created New JamCustom ID: ${jamSlotCustomId}`);
             }
           } else if (tipeJam === "TETAP") {
             // --- Alur Kelas Reguler (Jam Tetap) ---
             jamSlotTetapId = scheduleData.jamSlotTetapId;
 
             // Validasi Konsistensi Cabang
-            const slot = await tx.jamSlotTetap.findUnique({
-              where: { id: jamSlotTetapId },
-              select: { cabangId: true },
-            });
-            const ruang = await tx.ruang.findUnique({
-              where: { id: ruangId },
-              select: { cabangId: true },
-            });
+            const [slot, ruang] = await Promise.all([
+              tx.jamSlotTetap.findUnique({
+                where: { id: jamSlotTetapId },
+                select: { cabangId: true, jamMulai: true, jamSelesai: true },
+              }),
+              tx.ruang.findUnique({
+                where: { id: ruangId },
+                select: { cabangId: true, namaRuang: true },
+              }),
+            ]);
 
             if (!slot || !ruang) {
               throw new TRPCError({
@@ -91,6 +170,45 @@ export const jadwalKelasRouter = createTRPCRouter({
                 message: `Konflik Cabang: Ruang dan Slot Jam harus berada di cabang yang sama (Hari: ${hari}).`,
               });
             }
+
+            checkJamMulai = slot.jamMulai;
+            checkJamSelesai = slot.jamSelesai;
+          }
+
+          const conflictingSchedule = await tx.jadwalKelas.findFirst({
+            where: {
+              hari: hari,
+              ruangId: ruangId,
+              // Logic overlapping:
+              // (StartA < EndB) AND (EndA > StartB)
+              // Kita cek apakah ada jadwal di DB (B) yang bertabrakan dengan input kita (A)
+              OR: [
+                // Cek tabrakan dengan jadwal yang pakai slot TETAP
+                {
+                  jamSlotTetap: {
+                    jamMulai: { lt: checkJamSelesai },
+                    jamSelesai: { gt: checkJamMulai },
+                  },
+                },
+                // Cek tabrakan dengan jadwal yang pakai slot CUSTOM
+                {
+                  jamSlotCustom: {
+                    jamMulai: { lt: checkJamSelesai },
+                    jamSelesai: { gt: checkJamMulai },
+                  },
+                },
+              ],
+            },
+            include: {
+              kelas: { select: { kodeKelas: true } },
+            },
+          });
+
+          if (conflictingSchedule) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Bentrok Jadwal! Ruang ini sudah dipakai oleh kelas ${conflictingSchedule.kelas.kodeKelas} pada jam yang beririsan di hari ${hari}.`,
+            });
           }
 
           // --- BUAT JADWAL KELAS ---
@@ -142,6 +260,7 @@ export const jadwalKelasRouter = createTRPCRouter({
       const { db, session } = ctx;
       const targetGuruId = input?.guruId ?? session.user.id;
 
+      // const hariIni = "SABTU" as Hari;
       const hariIni = dayjs()
         .tz(TIMEZONE_BISNIS)
         .format("dddd")

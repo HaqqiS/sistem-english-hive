@@ -2,37 +2,44 @@
 
 export default function MarqueeBanner() {
   return (
-    <section className="bg-secondary overflow-hidden py-6">
-      <div className="relative flex overflow-x-hidden">
-        <div className="animate-marquee flex gap-8 whitespace-nowrap">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex gap-8">
-              <span className="text-secondary-foreground text-sm font-bold tracking-wider uppercase">
-                ✨ FLUENT NOW
-              </span>
-              <span className="text-secondary-foreground text-sm font-bold tracking-wider uppercase">
-                CONFIDENT FOREVER
-              </span>
-              <span className="text-secondary-foreground text-sm font-bold tracking-wider uppercase">
-                WITH ENGLISH HIVE
-              </span>
-            </div>
-          ))}
-        </div>
+    <div className="relative w-full overflow-hidden py-4">
+      {/* Gradient overlay agar terlihat memudar di pinggir */}
+      <div className="from-background absolute top-0 bottom-0 left-0 z-10 w-16 bg-linear-to-r to-transparent" />
+      <div className="from-background absolute top-0 right-0 bottom-0 z-10 w-16 bg-linear-to-l to-transparent" />
+
+      <div className="animate-marquee flex whitespace-nowrap">
+        {/* Kita duplikasi konten beberapa kali agar looping mulus */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="mx-4 flex items-center">
+            <span className="text-muted-foreground/70 mx-6 flex items-center gap-2 text-sm font-bold tracking-widest uppercase">
+              ✨ FLUENT NOW
+            </span>
+            <span className="text-primary/80 mx-6 flex items-center gap-2 text-sm font-bold tracking-widest uppercase">
+              CONFIDENT FOREVER
+            </span>
+            <span className="text-secondary-foreground/70 mx-6 flex items-center gap-2 text-sm font-bold tracking-widest uppercase">
+              WITH ENGLISH HIVE
+            </span>
+            <span className="text-accent mx-6 flex items-center gap-2 text-sm font-bold tracking-widest uppercase">
+              • JOIN US •
+            </span>
+          </div>
+        ))}
       </div>
+
       <style jsx>{`
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
         @keyframes marquee {
           0% {
             transform: translateX(0);
           }
           100% {
-            transform: translateX(-33.333%);
-          }
-        }
-        .animate-marquee {
-          animation: marquee 20s linear infinite;
+            transform: translateX(-50%);
+          } /* Sesuaikan tergantung panjang konten */
         }
       `}</style>
-    </section>
+    </div>
   );
 }

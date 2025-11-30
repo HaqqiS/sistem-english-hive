@@ -1,142 +1,150 @@
-import { Globe, Briefcase, FileText, Users } from "lucide-react";
+"use client";
+
+import { motion, type Variants } from "framer-motion";
+import {
+  BookOpen,
+  Star,
+  Sun,
+  GraduationCap,
+  Sparkles,
+  Rocket,
+  Trophy,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 const programs = [
   {
-    title: "General English",
-    level: "Beginner - Advanced",
+    title: "TinyTods",
+    age: "3-4 Tahun",
     description:
-      "Program komprehensif untuk meningkatkan semua aspek bahasa: speaking, listening, reading, writing",
-    duration: "3-6 bulan",
-    sessions: "2x per minggu",
-    icon: Globe,
-    features: [
-      "Grammar fundamentals",
-      "Vocabulary building",
-      "Conversation practice",
-      "Writing skills",
-    ],
+      "Pengenalan Bahasa Inggris melalui lagu, gerak, dan permainan sensori.",
+    icon: Star,
+    color: "text-yellow-500",
   },
   {
-    title: "Business English",
-    level: "Intermediate - Advanced",
+    title: "PreLittleStar",
+    age: "4-5 Tahun",
     description:
-      "Fokus pada bahasa Inggris untuk dunia kerja, presentasi, meeting, dan komunikasi profesional",
-    duration: "4 bulan",
-    sessions: "2x per minggu",
-    icon: Briefcase,
-    features: [
-      "Business vocabulary",
-      "Email writing",
-      "Presentation skills",
-      "Negotiation",
-    ],
+      "Membangun kosakata dasar dan kepercayaan diri untuk berbicara.",
+    icon: Sun,
+    color: "text-orange-500",
   },
   {
-    title: "TOEFL/IELTS Prep",
-    level: "Intermediate - Advanced",
-    description:
-      "Persiapan intensif untuk tes TOEFL dan IELTS dengan strategi dan latihan soal",
-    duration: "2-3 bulan",
-    sessions: "3x per minggu",
-    icon: FileText,
-    features: [
-      "Test strategies",
-      "Practice tests",
-      "Score improvement",
-      "Time management",
-    ],
+    title: "LittleStar",
+    age: "5-6 Tahun",
+    description: "Fokus pada phonics dasar dan pembentukan kalimat sederhana.",
+    icon: Sparkles,
+    color: "text-purple-500",
   },
   {
-    title: "Kids & Teens",
-    level: "Elementary - High School",
+    title: "RisingStar",
+    age: "SD Kelas 1-2",
+    description: "Penguatan grammar dasar dan reading comprehension awal.",
+    icon: Rocket,
+    color: "text-blue-500",
+  },
+  {
+    title: "PreShiningStar",
+    age: "SD Kelas 3-4",
+    description: "Peningkatan kemampuan speaking dan listening interaktif.",
+    icon: BookOpen,
+    color: "text-green-500",
+  },
+  {
+    title: "ShiningStar",
+    age: "SD Kelas 5-6",
+    description: "Persiapan menuju tingkat lanjut dengan materi komprehensif.",
+    icon: Trophy,
+    color: "text-red-500",
+  },
+  {
+    title: "Elementary",
+    age: "SMP / Umum",
     description:
-      "Program khusus untuk anak dan remaja dengan metode fun learning dan game-based approach",
-    duration: "Ongoing",
-    sessions: "2x per minggu",
-    icon: Users,
-    features: [
-      "Interactive games",
-      "Story telling",
-      "Songs & activities",
-      "Age-appropriate content",
-    ],
+      "Program intensif mencakup 4 skill utama: Speaking, Listening, Reading, Writing.",
+    icon: GraduationCap,
+    color: "text-indigo-500",
   },
 ];
 
+const container: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50 } },
+};
+
 export default function Programs() {
   return (
-    <section className="bg-background flex min-h-screen items-center px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-      <div className="mx-auto w-full max-w-7xl">
-        <div className="mb-8 text-center">
-          <h2 className="mb-2 text-3xl font-bold text-balance sm:text-4xl lg:text-4xl">
-            Program Kursus Kami
-          </h2>
-          <p className="text-muted-foreground mx-auto max-w-2xl text-base">
-            Pilih program yang sesuai dengan kebutuhan dan level Anda
-          </p>
+    <section className="bg-background py-16 sm:py-24" id="programs">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="mx-auto mb-12 max-w-2xl text-center">
+          <motion.h2
+            initial={{ opacity: 0, y: -20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl"
+          >
+            Jenjang Program Kami
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="text-muted-foreground mt-4 text-lg leading-8"
+          >
+            Kurikulum yang disesuaikan dengan usia dan tahap perkembangan siswa.
+          </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        >
           {programs.map((program, index) => {
             const Icon = program.icon;
             return (
-              <Card
-                key={index}
-                className="flex flex-col transition-all duration-300 hover:shadow-lg"
-              >
-                <CardHeader className="pb-3">
-                  <div className="mb-2 flex items-start justify-between">
-                    <Icon className="text-primary h-6 w-6" />
-                    <Badge variant="secondary" className="text-xs">
-                      {program.level}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-lg">{program.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-3">
-                  <p className="text-muted-foreground text-sm">
-                    {program.description}
-                  </p>
-
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Durasi:</span>
-                      <span className="font-semibold">{program.duration}</span>
+              <motion.div key={index} variants={item}>
+                <Card className="hover:border-t-primary h-full border-t-4 border-t-transparent transition-all hover:-translate-y-1 hover:shadow-lg">
+                  <CardHeader className="pb-2">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div
+                        className={`bg-muted/50 rounded-lg p-2 ${program.color}`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs font-medium"
+                      >
+                        {program.age}
+                      </Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Frekuensi:</span>
-                      <span className="font-semibold">{program.sessions}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-foreground text-xs font-semibold">
-                      Fitur:
+                    <CardTitle className="text-xl">{program.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {program.description}
                     </p>
-                    <ul className="space-y-0.5">
-                      {program.features.map((feature, i) => (
-                        <li
-                          key={i}
-                          className="text-muted-foreground flex items-center gap-2 text-xs"
-                        >
-                          <span className="bg-primary h-1 w-1 rounded-full" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <Button className="mt-2 w-full" size="sm">
-                    Pilih Program
-                  </Button>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

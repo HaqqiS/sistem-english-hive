@@ -151,6 +151,8 @@ model JamSlotCustom {
 
     // Relasi balik ke jadwal yang menggunakannya
     jadwalKelases JadwalKelas[]
+
+    @@unique([jamMulai, jamSelesai])
 }
 
 enum Hari {
@@ -182,6 +184,8 @@ model JadwalKelas {
     @@index([kelasId])
     @@index([ruangId])
     @@index([hari])
+    @@index([jamSlotTetapId])
+    @@index([jamSlotCustomId])
 }
 
 enum Gender {

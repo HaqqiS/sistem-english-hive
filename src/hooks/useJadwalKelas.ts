@@ -5,22 +5,26 @@ import type {
   TypeJadwalHariIni,
   TypeJadwalKelas,
 } from "@/types/jadwalKelas.type";
+import { Hari } from "@prisma/client";
 import { toast } from "sonner";
 
 interface useJadwalKelasOptions {
   // Query options
   enableQueryAll?: boolean;
   enableQueryHariIni?: boolean;
+  enableQueryMatrix?: boolean;
 
   initialData?: TypeJadwalKelas[];
   initialDataJadwalHariIni?: TypeJadwalHariIni;
-
-  guruId?: string;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
+
+  cabangId?: string;
+  hari?: Hari;
+  guruId?: string;
 }
 
 /**
@@ -54,6 +58,18 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
     initialData: options?.initialData,
   });
 
+  const getScheduleMatrix = api.jadwalKelas.getScheduleMatrix.useQuery(
+    {
+      cabangId: options?.cabangId ?? "",
+      hari: options?.hari ?? Hari.SENIN,
+    },
+    {
+      // Hanya jalankan jika flag enable nyala DAN cabangId sudah terpilih
+      enabled: (options?.enableQueryMatrix ?? false) && !!options?.cabangId,
+      refetchOnWindowFocus: false, // Tidak perlu refetch agresif untuk matrix besar
+    },
+  );
+
   // ========== MUTATIONS ==========
 
   // CREATE
@@ -61,6 +77,10 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
     onSuccess: async () => {
       // Nanti jika ada query getAll, invalidate di sini
       await apiUtils.jadwalKelas.getAll.invalidate();
+      await apiUtils.jadwalKelas.getScheduleMatrix.invalidate({
+        cabangId: options?.cabangId,
+        hari: options?.hari,
+      });
       toast.success("Jadwal baru berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -86,6 +106,10 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
   const deleteMutationCustom = api.jadwalKelas.delete.useMutation({
     onSuccess: async () => {
       await apiUtils.jadwalKelas.getAll.invalidate();
+      await apiUtils.jadwalKelas.getScheduleMatrix.invalidate({
+        cabangId: options?.cabangId,
+        hari: options?.hari,
+      });
       toast.success("Jadwal berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -106,6 +130,12 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
     isLoadingDataJadwal: getAllJadwal.isLoading,
     isErrorDataJadwal: getAllJadwal.isError,
     errorDataJadwal: getAllJadwal.error,
+
+    dataMatrix: getScheduleMatrix.data,
+    isLoadingMatrix: getScheduleMatrix.isLoading,
+    isErrorMatrix: getScheduleMatrix.isError,
+    errorMatrix: getScheduleMatrix.error,
+    refetchMatrix: getScheduleMatrix.refetch,
 
     // Mutations
     mutations: {

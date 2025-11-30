@@ -8,6 +8,7 @@ import { formatDateWITA } from "@/utils/dateUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { StatusPembayaran } from "@prisma/client";
 
 interface ColumnsJatuhTempoConfig {
   onVerifyClick: (item: TypePembayaranJatuhTempo) => void;
@@ -36,6 +37,21 @@ const formatWhatsAppReminder = (
   const encodedText = encodeURIComponent(text);
 
   return `https://wa.me/${formatted.replace(/[^0-9]/g, "")}?text=${encodedText}`;
+};
+
+const getStatusBadgeVariant = (
+  status: StatusPembayaran,
+): "default" | "destructive" | "secondary" | "outline" => {
+  switch (status) {
+    case StatusPembayaran.LUNAS:
+      return "default"; // Hijau
+    case StatusPembayaran.BELUM_LUNAS:
+      return "destructive"; // Merah
+    case StatusPembayaran.PENDING:
+      return "secondary"; // Abu-abu
+    default:
+      return "outline";
+  }
 };
 
 export const columnsJatuhTempo = ({
@@ -128,6 +144,51 @@ export const columnsJatuhTempo = ({
         </div>
       );
     },
+  },
+
+  {
+    accessorKey: "statusBayar",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Status
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const status = row.original.statusBayar;
+      return (
+        <div className="flex flex-col items-start gap-1">
+          <Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>
+          {row.original.verifiedById && (
+            <span className="text-muted-foreground text-[10px]">
+              Verif: {row.original.verifiedById}
+            </span>
+          )}
+        </div>
+      );
+    },
+    filterFn: (row, id, value) => {
+      const cellValue = String(row.getValue(id) ?? "");
+      const values = Array.isArray(value) ? value.map(String) : [String(value)];
+      return values.includes(cellValue);
+    },
+  },
+
+  // Catatan
+  {
+    accessorKey: "note",
+    header: "Catatan",
+    cell: ({ row }) => (
+      <div
+        className="text-muted-foreground wrap-break-words line-clamp-2 max-w-[200px] text-xs whitespace-normal"
+        title={row.original.note ?? ""}
+      >
+        {row.original.note ?? "-"}
+      </div>
+    ),
   },
 
   // Aksi (WA Reminder & Quick Verify)

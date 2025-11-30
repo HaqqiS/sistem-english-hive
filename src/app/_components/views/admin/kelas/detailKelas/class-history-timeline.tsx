@@ -85,7 +85,7 @@ export function ClassHistoryTimeline({
                     </span>
                     <CardTitle className="text-base">
                       <Link
-                        href={`/admin/kelas/${item.id}`}
+                        href={`/admin/kelas/detail/${item.id}`}
                         className="hover:text-primary underline-offset-4 hover:underline"
                       >
                         {item.kodeKelas}

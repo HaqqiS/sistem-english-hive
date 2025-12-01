@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Beef as Bee,
@@ -10,15 +12,21 @@ import {
   Mail,
   Clock,
 } from "lucide-react";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 export default function Footer() {
   return (
     <footer className="bg-card text-card-foreground border-border border-t">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Main Footer Content */}
-        <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-4">
+        {/* Main Footer Content with Stagger Animation */}
+        <ScrollAnimation
+          variant="stagger"
+          className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-4"
+          viewportAmount={0.2}
+          once={true}
+        >
           {/* About */}
-          <div className="space-y-4">
+          <ScrollAnimation variant="fadeUp" className="space-y-4">
             <div className="text-primary flex items-center gap-2 text-lg font-bold">
               <Bee className="h-5 w-5" />
               <span>English Hive</span>
@@ -53,10 +61,10 @@ export default function Footer() {
                 <Linkedin className="h-5 w-5" />
               </Link>
             </div>
-          </div>
+          </ScrollAnimation>
 
           {/* Programs */}
-          <div className="space-y-4">
+          <ScrollAnimation variant="fadeUp" className="space-y-4">
             <h3 className="font-semibold">Program</h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -64,7 +72,7 @@ export default function Footer() {
                   href="#programs"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  General English
+                  TinyTods
                 </Link>
               </li>
               <li>
@@ -72,7 +80,7 @@ export default function Footer() {
                   href="#programs"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Business English
+                  PreLittleStar
                 </Link>
               </li>
               <li>
@@ -80,7 +88,7 @@ export default function Footer() {
                   href="#programs"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  TOEFL/IELTS Prep
+                  LittleStar
                 </Link>
               </li>
               <li>
@@ -88,22 +96,38 @@ export default function Footer() {
                   href="#programs"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Kids & Teens
+                  RisingStar
                 </Link>
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="#programs"
                   className="text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Conversation Club
+                  PreShiningStar
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#programs"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  ShiningStar
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="#programs"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Elementary
                 </Link>
               </li>
             </ul>
-          </div>
+          </ScrollAnimation>
 
           {/* Company */}
-          <div className="space-y-4">
+          <ScrollAnimation variant="fadeUp" className="space-y-4">
             <h3 className="font-semibold">Perusahaan</h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -147,41 +171,46 @@ export default function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </ScrollAnimation>
 
           {/* Contact */}
-          <div className="space-y-4">
+          <ScrollAnimation variant="fadeUp" className="space-y-4">
             <h3 className="font-semibold">Kontak</h3>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3">
-                <MapPin className="text-primary mt-0.5 h-4 w-4 flex-shrink-0" />
+                <MapPin className="text-primary mt-0.5 h-4 w-4 shrink-0" />
                 <span className="text-muted-foreground">
                   Jl. Pendidikan No. 123, Jakarta Selatan
                 </span>
               </li>
               <li className="flex items-center gap-3">
-                <Phone className="text-primary h-4 w-4 flex-shrink-0" />
+                <Phone className="text-primary h-4 w-4 shrink-0" />
                 <span className="text-muted-foreground">+62 812-3456-7890</span>
               </li>
               <li className="flex items-center gap-3">
-                <Mail className="text-primary h-4 w-4 flex-shrink-0" />
+                <Mail className="text-primary h-4 w-4 shrink-0" />
                 <span className="text-muted-foreground">
                   info@englishhive.com
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <Clock className="text-primary mt-0.5 h-4 w-4 flex-shrink-0" />
+                <Clock className="text-primary mt-0.5 h-4 w-4 shrink-0" />
                 <div className="text-muted-foreground">
                   <div>Senin - Jumat: 08:00 - 21:00</div>
                   <div>Sabtu - Minggu: 08:00 - 17:00</div>
                 </div>
               </li>
             </ul>
-          </div>
-        </div>
+          </ScrollAnimation>
+        </ScrollAnimation>
 
         {/* Bottom Bar */}
-        <div className="border-border border-t pt-8">
+        <ScrollAnimation
+          variant="fadeIn"
+          delay={0.2}
+          once={true}
+          className="border-border border-t pt-8"
+        >
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             <p className="text-muted-foreground text-sm">
               © 2025 English Hive. All rights reserved.
@@ -207,7 +236,7 @@ export default function Footer() {
               </Link>
             </div>
           </div>
-        </div>
+        </ScrollAnimation>
       </div>
     </footer>
   );

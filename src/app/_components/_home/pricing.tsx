@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, type Variants } from "framer-motion";
 import { Check, Users, User } from "lucide-react";
 import {
   Card,
@@ -14,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 const pricingOptions = [
   {
@@ -50,37 +50,15 @@ const pricingOptions = [
 ];
 
 export default function Pricing() {
-  const { scrollY } = useScroll();
-  const scrollVelocity = useVelocity(scrollY);
-  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
-
-  // Deteksi arah scroll
-  useEffect(() => {
-    const unsubscribe = scrollVelocity.on("change", (latest) => {
-      if (latest > 0) {
-        setScrollDirection(1);
-      } else if (latest < 0) {
-        setScrollDirection(-1);
-      }
-    });
-    return () => unsubscribe();
-  }, [scrollVelocity]);
+  const scrollDirection = useScrollDirection();
 
   // Variants untuk Container Grid
   const containerVariants: Variants = {
-    hidden: (direction: number) => ({
-      opacity: 0,
-      transition: {
-        when: "afterChildren",
-        staggerChildren: 0.15,
-        staggerDirection: direction,
-      },
-    }),
+    hidden: { opacity: 0 },
     visible: (direction: number) => ({
       opacity: 1,
       transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.2, // Jeda sedikit lebih lama karena itemnya besar
+        staggerChildren: 0.2,
         staggerDirection: direction,
       },
     }),
@@ -91,11 +69,7 @@ export default function Pricing() {
     hidden: {
       opacity: 0,
       y: 50,
-      scale: 0.9, // Efek mengecil saat hilang
-      transition: {
-        duration: 0.3,
-        ease: "easeInOut",
-      },
+      scale: 0.9,
     },
     visible: {
       opacity: 1,
@@ -113,10 +87,10 @@ export default function Pricing() {
   return (
     <section className="bg-muted/30 py-20" id="pricing">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Header tetap menggunakan ScrollAnimation standar */}
         <ScrollAnimation
           variant="fadeUp"
           className="mx-auto mb-16 max-w-2xl text-center"
+          once={true}
         >
           <h2 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
             Pilih Tipe Kelas Anda
@@ -127,12 +101,11 @@ export default function Pricing() {
           </p>
         </ScrollAnimation>
 
-        {/* Grid Container dengan Animasi Dinamis */}
         <motion.div
           className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-2"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, amount: 0.3, margin: "-100px" }}
+          viewport={{ once: true, amount: 0.3, margin: "-100px" }}
           custom={scrollDirection}
           variants={containerVariants}
         >

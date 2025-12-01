@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, type Variants } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -20,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, CalendarDays } from "lucide-react";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 // Data Jadwal Statis
 const scheduleData = {
@@ -79,38 +79,15 @@ const scheduleData = {
 export default function Schedule() {
   const branches = Object.keys(scheduleData);
   const defaultTab = branches[0];
-
-  // Logika Deteksi Scroll Direction
-  const { scrollY } = useScroll();
-  const scrollVelocity = useVelocity(scrollY);
-  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
-
-  useEffect(() => {
-    const unsubscribe = scrollVelocity.on("change", (latest) => {
-      if (latest > 0) {
-        setScrollDirection(1);
-      } else if (latest < 0) {
-        setScrollDirection(-1);
-      }
-    });
-    return () => unsubscribe();
-  }, [scrollVelocity]);
+  const scrollDirection = useScrollDirection();
 
   // Variants untuk Container (Table Body)
   const containerVariants: Variants = {
-    hidden: (direction: number) => ({
-      opacity: 0,
-      transition: {
-        when: "afterChildren",
-        staggerChildren: 0.1,
-        staggerDirection: direction,
-      },
-    }),
+    hidden: { opacity: 0 },
     visible: (direction: number) => ({
       opacity: 1,
       transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.15,
+        staggerChildren: 0.1,
         staggerDirection: direction,
       },
     }),
@@ -120,11 +97,7 @@ export default function Schedule() {
   const itemVariants: Variants = {
     hidden: {
       opacity: 0,
-      x: -20, // Slide sedikit ke kiri saat hilang
-      transition: {
-        duration: 0.3,
-        ease: "easeInOut",
-      },
+      x: -20,
     },
     visible: {
       opacity: 1,
@@ -144,6 +117,7 @@ export default function Schedule() {
         <ScrollAnimation
           variant="fadeUp"
           className="mx-auto mb-10 max-w-2xl text-center"
+          once={true}
         >
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Jadwal Kelas
@@ -160,7 +134,7 @@ export default function Schedule() {
         <Tabs defaultValue={defaultTab} className="mx-auto w-full max-w-5xl">
           {/* Tab Navigasi Cabang Animasi */}
           <div className="mb-8 flex justify-center">
-            <ScrollAnimation variant="zoomIn" delay={0.1}>
+            <ScrollAnimation variant="zoomIn" delay={0.1} once={true}>
               <TabsList className="bg-muted/50 flex h-auto flex-wrap justify-center gap-2 rounded-full p-2">
                 {branches.map((branch) => (
                   <TabsTrigger
@@ -218,7 +192,7 @@ export default function Schedule() {
                         className="[&_tr:last-child]:border-0"
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: false, amount: 0.2, margin: "-50px" }}
+                        viewport={{ once: true, amount: 0.2, margin: "-50px" }}
                         custom={scrollDirection}
                         variants={containerVariants}
                       >

@@ -13,7 +13,9 @@ export const cabangRouter = createTRPCRouter({
 
   getAllList: publicProcedure.query(async ({ ctx }) => {
     const { db } = ctx;
-    const cabang = await db.cabang.findMany();
+    const cabang = await db.cabang.findMany({
+      select: { id: true, namaCabang: true },
+    });
     return cabang;
   }),
 

@@ -10,6 +10,12 @@ interface ScrollAnimationProps extends HTMLMotionProps<"div"> {
   delay?: number;
   duration?: number;
   viewportAmount?: number;
+  /**
+   * Jika true, animasi hanya berjalan sekali saat elemen masuk viewport.
+   * Sangat disarankan 'true' untuk performa dan kenyamanan membaca (Visual Fatigue).
+   * Default: true
+   */
+  once?: boolean;
   variant?:
     | "fadeUp"
     | "fadeIn"
@@ -25,6 +31,7 @@ export function ScrollAnimation({
   delay = 0,
   duration = 0.5,
   viewportAmount = 0.2,
+  once = true, // PERFORMANCE FIX: Default ke true
   variant = "fadeUp",
   ...props
 }: ScrollAnimationProps) {
@@ -117,8 +124,7 @@ export function ScrollAnimation({
     <motion.div
       initial="hidden"
       whileInView="visible"
-      // viewport={{ once: false }} membuat animasi berjalan setiap kali elemen masuk viewport
-      viewport={{ once: false, amount: viewportAmount, margin: "-50px" }}
+      viewport={{ once: once, amount: viewportAmount, margin: "-50px" }}
       variants={getVariants()}
       className={cn(className)}
       {...props}

@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
-import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, type Variants } from "framer-motion";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 const features = [
   {
@@ -26,7 +26,7 @@ const features = [
     title: "Materi Terstruktur",
     description:
       "Kurikulum yang dirancang sistematis dari level dasar hingga mahir.",
-    color: "text-primary",
+    color: "text-secondary",
   },
   {
     icon: Award,
@@ -40,7 +40,7 @@ const features = [
     title: "Jadwal Fleksibel",
     description:
       "Pilih waktu belajar yang sesuai dengan aktivitas Anda (Pagi/Siang/Malam).",
-    color: "text-primary",
+    color: "text-secondary",
   },
   {
     icon: MessageCircle,
@@ -54,59 +54,31 @@ const features = [
     title: "Platform Online",
     description:
       "Akses materi dan latihan kapan saja melalui platform user-friendly.",
-    color: "text-primary",
+    color: "text-secondary",
   },
 ];
 
-// Varian item untuk animasi stagger (child animation)
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50 } },
-};
-
 export default function Features() {
-  const { scrollY } = useScroll();
-  const scrollVelocity = useVelocity(scrollY);
-  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
+  const scrollDirection = useScrollDirection();
 
-  useEffect(() => {
-    return scrollVelocity.on("change", (latest) => {
-      if (latest > 0) {
-        setScrollDirection(1); // Scrolling Down
-      } else if (latest < 0) {
-        setScrollDirection(-1); // Scrolling Up
-      }
-    });
-  }, [scrollVelocity]);
-
-  // 2. Definisi Varian Animasi
+  // Variants Container
   const containerVariants: Variants = {
-    hidden: (direction: number) => ({
-      opacity: 0,
-      transition: {
-        // Saat menghilang (exit), kita juga ingin stagger sesuai arah scroll terakhir
-        staggerChildren: 0.1,
-        staggerDirection: direction,
-        when: "afterChildren",
-      },
-    }),
+    hidden: { opacity: 0 },
     visible: (direction: number) => ({
       opacity: 1,
       transition: {
-        // Saat muncul (enter), stagger sesuai arah scroll
-        delayChildren: 0.1,
-        staggerChildren: 0.15,
+        staggerChildren: 0.1,
         staggerDirection: direction,
       },
     }),
   };
 
+  // Variants Item
   const itemVariants: Variants = {
     hidden: {
       opacity: 0,
       y: 30,
-      scale: 1,
-      transition: { duration: 0.3, ease: "easeOut" },
+      scale: 0.9,
     },
     visible: {
       opacity: 1,
@@ -116,7 +88,6 @@ export default function Features() {
         type: "spring",
         stiffness: 50,
         damping: 15,
-        mass: 1,
       },
     },
   };
@@ -128,6 +99,7 @@ export default function Features() {
           variant="fadeUp"
           className="mb-12 text-center"
           viewportAmount={0.5}
+          once={true}
         >
           <h2 className="mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
             Mengapa Memilih English Hive?
@@ -137,13 +109,12 @@ export default function Features() {
           </p>
         </ScrollAnimation>
 
-        {/* Grid Container - Animasi Stagger Dinamis */}
         <motion.div
           className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, amount: 0.2, margin: "-50px" }}
-          custom={scrollDirection} // Mengirim arah scroll ke variants
+          viewport={{ once: true, amount: 0.2, margin: "-50px" }}
+          custom={scrollDirection}
           variants={containerVariants}
         >
           {features.map((feature, index) => {

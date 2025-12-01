@@ -47,7 +47,12 @@ export default function FAQ() {
     <section className="bg-background flex min-h-screen items-center px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
       <div className="mx-auto w-full max-w-3xl">
         {/* Header Animasi */}
-        <ScrollAnimation variant="fadeUp" className="mb-12 text-center">
+        <ScrollAnimation
+          variant="fadeUp"
+          className="mb-12 text-center"
+          viewportAmount={0.5}
+          once={true}
+        >
           <h2 className="text-foreground mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
             Pertanyaan yang Sering Diajukan
           </h2>
@@ -61,8 +66,9 @@ export default function FAQ() {
             <ScrollAnimation
               key={index}
               variant="fadeUp"
-              delay={index * 0.1} // Delay bertahap untuk efek "muncul satu per satu"
-              viewportAmount={0.5} // Memicu animasi saat item terlihat 50%
+              delay={index * 0.1}
+              viewportAmount={0.5}
+              once={true}
             >
               <AccordionItem
                 value={`item-${index}`}

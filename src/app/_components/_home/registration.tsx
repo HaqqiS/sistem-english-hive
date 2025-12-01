@@ -49,17 +49,11 @@ export default function Registration() {
       className="bg-muted/30 flex min-h-screen items-center px-4 py-12 sm:px-6 lg:px-8 lg:py-16"
     >
       <div className="mx-auto w-full max-w-7xl">
-        {/* <div className="mb-6 text-center">
-          <h2 className="mb-2 text-3xl font-bold text-balance sm:text-4xl lg:text-4xl">
-            Daftar Sekarang
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Isi form di bawah ini dan tim kami akan menghubungi Anda dalam 1x24
-            jam
-          </p>
-        </div> */}
-
-        <ScrollAnimation variant="fadeUp" className="mb-10 text-center">
+        <ScrollAnimation
+          variant="fadeUp"
+          className="mb-10 text-center"
+          once={true}
+        >
           <h2 className="mb-2 text-3xl font-bold sm:text-4xl">
             Daftar Sekarang
           </h2>
@@ -69,16 +63,9 @@ export default function Registration() {
           </p>
         </ScrollAnimation>
 
-        <ScrollAnimation variant="zoomIn" delay={0.2}>
+        <ScrollAnimation variant="zoomIn" delay={0.2} once={true}>
           <Card>
             <CardContent className="pt-6">
-              {/* {submitSuccess && (
-              <div className="bg-primary/10 border-primary text-primary mb-4 rounded-lg border p-3 text-sm">
-              Terima kasih! Pendaftaran Anda telah kami terima. Tim kami akan
-                segera menghubungi Anda.
-                </div>
-            )} */}
-
               <Form {...form}>
                 <MuridForm onSubmit={onSubmit} />
 

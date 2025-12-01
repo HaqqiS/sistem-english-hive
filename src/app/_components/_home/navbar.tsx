@@ -2,24 +2,34 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn, useSession } from "next-auth/react";
 import { UserRole } from "@/server/auth/type";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { data: session } = useSession();
 
-  // Deteksi scroll untuk efek tambahan (opsional, misal nambah shadow)
+  // Deteksi scroll
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Kunci scroll body saat menu mobile terbuka
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+  }, [isOpen]);
 
   const navLinks = [
     { label: "Program", href: "#programs" },
@@ -28,42 +38,58 @@ export default function Navbar() {
     { label: "Tentang", href: "#about" },
   ];
 
+  // Helper untuk menentukan style background navbar
+  // Jika Menu Terbuka (isOpen) -> Paksa background solid agar menyatu dengan menu
+  // Jika Scrolled -> Glassmorphism
+  // Jika Top -> Transparan
+  const navBackgroundClass = isOpen
+    ? "bg-background border-b border-border"
+    : isScrolled
+      ? "bg-background/80 border-border/50 border-b shadow-sm backdrop-blur-md"
+      : "border-transparent bg-transparent";
+
   return (
-    // PENGATURAN WARNA NAVBAR:
-    // bg-accent/85: Menggunakan warna accent (teal/pastel) dengan transparansi 85%
-    // backdrop-blur-md: Efek kaca buram
-    // text-accent-foreground: Teks putih (sesuai definisi global css)
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`bg-accent/85 text-accent-foreground fixed top-0 right-0 left-0 z-50 border-b border-white/10 shadow-sm backdrop-blur-md transition-all duration-300`}
+      className={cn(
+        "fixed top-0 right-0 left-0 z-50 transition-all duration-300 ease-in-out",
+        navBackgroundClass,
+        isOpen ? "py-2" : isScrolled ? "py-2" : "py-4", // Samakan padding saat open/scrolled
+      )}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="z-50 flex items-center gap-2">
+          <Link
+            href="/"
+            className="z-50 flex items-center gap-2"
+            onClick={() => setIsOpen(false)}
+          >
             <div className="relative h-10 w-10">
-              {/* Pastikan logo putih */}
               <Image
-                src="/logo_putih.webp"
+                src="/logo_hijau.webp"
                 alt="English Hive Logo"
                 fill
                 className="object-contain"
               />
             </div>
-            <span className="text-xl font-bold tracking-tight">
+            <span className="text-primary text-xl font-bold tracking-tight">
               English Hive
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-4 md:flex">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
                 <Button
                   variant="ghost"
-                  className="text-accent-foreground/90 font-medium hover:bg-white/20 hover:text-white"
+                  className={cn(
+                    "hover:bg-primary/10 text-base font-medium",
+                    "text-foreground/80 hover:text-primary", // Gunakan foreground agar adaptif Dark/Light mode
+                  )}
                 >
                   {link.label}
                 </Button>
@@ -75,15 +101,21 @@ export default function Navbar() {
           <div className="hidden items-center gap-3 md:flex">
             {!session?.user ? (
               <Button
-                variant="secondary" // Putih/Terang agar kontras dengan accent
+                variant="ghost"
                 size="sm"
                 onClick={() => signIn()}
-                className="font-semibold shadow-md transition-all hover:shadow-lg"
+                className={cn(
+                  "gap-2 text-base",
+                  // Perbaikan Warna: Gunakan text-foreground agar terlihat jelas di Light/Dark mode
+                  // Hover state menggunakan warna primary agar konsisten
+                  "text-foreground/70 hover:bg-primary/10 hover:text-primary",
+                )}
               >
-                Masuk
+                <LogIn className="h-4 w-4" />
+                <span className="hidden lg:inline">Masuk</span>
               </Button>
             ) : (
-              <Button variant="secondary" size="sm" asChild>
+              <Button variant="ghost" size="sm" asChild className="text-base">
                 <Link
                   href={
                     session?.user.role === UserRole.ADMIN ? "/admin" : "/guru"
@@ -93,11 +125,23 @@ export default function Navbar() {
                 </Link>
               </Button>
             )}
+
+            {/* Tombol Daftar (Primary) */}
+            {!session?.user && (
+              <Button
+                variant="default"
+                size="sm"
+                asChild
+                className="text-base font-semibold shadow-sm transition-all hover:scale-105 dark:text-white"
+              >
+                <a href="#registration">Daftar Sekarang</a>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="z-50 rounded-md p-2 transition-colors hover:bg-white/20 md:hidden"
+            className="text-foreground z-50 rounded-md p-2 transition-colors hover:bg-black/5 md:hidden"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
           >
@@ -106,58 +150,73 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation Menu (Full Screen Overlay) */}
+      {/* Mobile Navigation Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "100vh" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-accent fixed inset-0 top-0 z-40 flex flex-col items-center justify-center gap-6 overflow-hidden md:hidden"
+            initial={{ opacity: 0, x: "100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: "tween", duration: 0.3 }}
+            // PERBAIKAN: top-16 agar mulai DI BAWAH header, tidak tertutup
+            // h-[calc(100vh-4rem)] agar tinggi pas sisa layar
+            className="bg-background fixed inset-x-0 top-16 z-40 flex h-[calc(100vh-4rem)] flex-col items-center justify-center gap-8 md:hidden"
           >
-            {navLinks.map((link, i) => (
-              <motion.div
-                key={link.href}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.1 }}
-              >
-                <Link
-                  href={link.href}
-                  className="text-accent-foreground text-2xl font-bold hover:opacity-80"
-                  onClick={() => setIsOpen(false)}
+            <div className="flex flex-col items-center gap-6">
+              {navLinks.map((link, i) => (
+                <motion.div
+                  key={link.href}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.1 }}
                 >
-                  {link.label}
-                </Link>
-              </motion.div>
-            ))}
+                  <Link
+                    href={link.href}
+                    className="text-foreground hover:text-primary text-2xl font-bold transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="mt-4"
+              className="mt-8 flex w-64 flex-col gap-4"
             >
+              <Button
+                size="lg"
+                className="w-full text-lg dark:text-white"
+                asChild
+                onClick={() => setIsOpen(false)}
+              >
+                <a href="#registration">Daftar Sekarang</a>
+              </Button>
+
               {!session?.user ? (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="lg"
-                  className="w-40"
+                  className="w-full gap-2"
                   onClick={async () => {
                     await signIn();
                     setIsOpen(false);
                   }}
                 >
-                  Masuk / Daftar
+                  <LogIn className="h-4 w-4" /> Masuk (Guru)
                 </Button>
               ) : (
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="lg"
+                  className="w-full"
                   asChild
                   onClick={() => setIsOpen(false)}
                 >
-                  <Link href="/guru">Dashboard</Link>
+                  <Link href="/guru">Ke Dashboard</Link>
                 </Button>
               )}
             </motion.div>

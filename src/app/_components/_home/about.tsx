@@ -21,10 +21,11 @@ export default function About() {
           <ScrollAnimation
             variant="fadeLeft"
             className="relative h-64 w-full lg:h-96"
+            once={true}
           >
             <div className="bg-primary/10 absolute inset-0 -z-10 scale-105 rotate-3 rounded-2xl" />
             <Image
-              src="/team-photo-classroom-environment-english-learning.jpg" // Pastikan ada placeholder gambar ini atau ganti
+              src="/team-photo-classroom-environment-english-learning.jpg"
               alt="English Hive Team"
               fill
               className="rounded-2xl object-cover shadow-xl"
@@ -35,7 +36,11 @@ export default function About() {
           </ScrollAnimation>
 
           {/* Teks: Muncul dari Kanan */}
-          <ScrollAnimation variant="fadeRight" className="space-y-6">
+          <ScrollAnimation
+            variant="fadeRight"
+            className="space-y-6"
+            once={true}
+          >
             <h2 className="text-3xl font-bold text-balance sm:text-4xl lg:text-4xl">
               Tentang <span className="text-primary">English Hive</span>
             </h2>
@@ -59,6 +64,7 @@ export default function About() {
                   key={index}
                   variant="zoomIn"
                   delay={index * 0.1}
+                  once={true}
                 >
                   <Card className="bg-background hover:border-primary transition-colors">
                     <CardContent className="pt-4 text-center">

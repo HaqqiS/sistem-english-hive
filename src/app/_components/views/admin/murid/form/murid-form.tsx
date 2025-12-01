@@ -39,8 +39,9 @@ export default function MuridForm({
   forceStacked = false, // Default false (Responsive)
 }: MuridFormProps) {
   const form = useFormContext<TypeClientRegisterMuridSchema>();
-  const { data: dataCabang, isLoading: isLoadingCabang } = useCabang({
-    enableQuery: true,
+  const { dataList: dataCabang, isLoading: isLoadingCabang } = useCabang({
+    enableQuery: false,
+    enableQueryList: true,
   });
 
   const [isOther, setIsOther] = useState(

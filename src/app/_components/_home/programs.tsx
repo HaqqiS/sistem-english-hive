@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, type Variants } from "framer-motion";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 const programs = [
   {
@@ -71,49 +71,26 @@ const programs = [
 ];
 
 export default function Programs() {
-  const { scrollY } = useScroll();
-  const scrollVelocity = useVelocity(scrollY);
-  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
-
-  // Deteksi arah scroll untuk menentukan urutan stagger
-  useEffect(() => {
-    const unsubscribe = scrollVelocity.on("change", (latest) => {
-      if (latest > 0) {
-        setScrollDirection(1);
-      } else if (latest < 0) {
-        setScrollDirection(-1);
-      }
-    });
-    return () => unsubscribe();
-  }, [scrollVelocity]);
+  const scrollDirection = useScrollDirection();
 
   // Variants Container
   const containerVariants: Variants = {
-    hidden: (direction: number) => ({
-      opacity: 0,
-      transition: {
-        when: "afterChildren",
-        staggerChildren: 0.08, // Sedikit lebih cepat dibanding features
-        staggerDirection: direction,
-      },
-    }),
+    hidden: { opacity: 0 },
     visible: (direction: number) => ({
       opacity: 1,
       transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1,
+        staggerChildren: 0.08,
         staggerDirection: direction,
       },
     }),
   };
 
-  // Variants Item (Card) - Efek Scale & Bounce
+  // Variants Item
   const itemVariants: Variants = {
     hidden: {
       opacity: 0,
       y: 30,
-      scale: 0.8, // Mengecil saat hilang
-      transition: { duration: 0.3, ease: "easeInOut" },
+      scale: 0.8,
     },
     visible: {
       opacity: 1,
@@ -121,7 +98,7 @@ export default function Programs() {
       scale: 1,
       transition: {
         type: "spring",
-        stiffness: 70, // Lebih "bouncy" dari features
+        stiffness: 70,
         damping: 12,
       },
     },
@@ -133,10 +110,10 @@ export default function Programs() {
       id="programs"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Header menggunakan ScrollAnimation standar */}
         <ScrollAnimation
           variant="fadeUp"
           className="mx-auto mb-12 max-w-2xl text-center"
+          once={true}
         >
           <h2 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
             Jenjang Program Kami
@@ -146,12 +123,11 @@ export default function Programs() {
           </p>
         </ScrollAnimation>
 
-        {/* Grid Programs dengan Animasi Direction-Aware */}
         <motion.div
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, amount: 0.2, margin: "-50px" }}
+          viewport={{ once: true, amount: 0.2, margin: "-50px" }}
           custom={scrollDirection}
           variants={containerVariants}
         >

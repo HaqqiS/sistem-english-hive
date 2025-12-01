@@ -1,5 +1,7 @@
 "use client";
 
+import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -10,53 +12,135 @@ import {
 } from "@/components/ui/card";
 import {
   Table,
-  TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/trpc/react";
-import { Loader2, MapPin, CalendarDays } from "lucide-react";
+import { MapPin, Clock, CalendarDays } from "lucide-react";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
+// Data Jadwal Statis
+const scheduleData = {
+  Gatsu: {
+    address: "Jl. Gatot Subroto No. 123, Denpasar",
+    mapLink: "https://maps.google.com/?q=English+Hive+Gatsu",
+    schedules: [
+      {
+        days: "Senin & Kamis",
+        sessions: [
+          "14.00 - 15.30",
+          "15.30 - 17.00",
+          "17.00 - 18.30",
+          "18.30 - 20.00",
+        ],
+      },
+      {
+        days: "Selasa & Jumat",
+        sessions: [
+          "14.00 - 15.30",
+          "15.30 - 17.00",
+          "17.00 - 18.30",
+          "18.30 - 20.00",
+        ],
+      },
+      {
+        days: "Rabu & Sabtu",
+        sessions: [
+          "14.00 - 15.30",
+          "15.30 - 17.00",
+          "17.00 - 18.30",
+          "18.30 - 20.00",
+        ],
+      },
+    ],
+  },
+  Mambal: {
+    address: "Jl. Padang Luwih No. 88, Mambal",
+    mapLink: "https://maps.google.com/?q=English+Hive+Mambal",
+    schedules: [
+      {
+        days: "Senin & Kamis",
+        sessions: ["14.30 - 16.00", "16.00 - 17.30", "17.30 - 19.00"],
+      },
+      {
+        days: "Selasa & Jumat",
+        sessions: ["14.30 - 16.00", "16.00 - 17.30", "17.30 - 19.00"],
+      },
+      {
+        days: "Rabu & Sabtu",
+        sessions: ["14.30 - 16.00", "16.00 - 17.30", "17.30 - 19.00"],
+      },
+    ],
+  },
+};
+
 export default function Schedule() {
-  // 1. Fetch Data Cabang (Untuk Tabs)
-  const { data: cabangList, isLoading: loadingCabang } =
-    api.cabang.getAllList.useQuery();
+  const branches = Object.keys(scheduleData);
+  const defaultTab = branches[0];
 
-  // 2. Fetch Semua Jadwal
-  const { data: jadwalList, isLoading: loadingJadwal } =
-    api.jadwalKelas.getAll.useQuery();
+  // Logika Deteksi Scroll Direction
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
 
-  // State untuk Tab Aktif (Default ke cabang pertama jika ada)
-  // Kita gunakan useEffect atau logic derived state sederhana
-  // Jika cabangList belum load, value default string kosong.
+  useEffect(() => {
+    const unsubscribe = scrollVelocity.on("change", (latest) => {
+      if (latest > 0) {
+        setScrollDirection(1);
+      } else if (latest < 0) {
+        setScrollDirection(-1);
+      }
+    });
+    return () => unsubscribe();
+  }, [scrollVelocity]);
 
-  const defaultTab = cabangList?.[0]?.id;
+  // Variants untuk Container (Table Body)
+  const containerVariants: Variants = {
+    hidden: (direction: number) => ({
+      opacity: 0,
+      transition: {
+        when: "afterChildren",
+        staggerChildren: 0.1,
+        staggerDirection: direction,
+      },
+    }),
+    visible: (direction: number) => ({
+      opacity: 1,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.15,
+        staggerDirection: direction,
+      },
+    }),
+  };
+
+  // Variants untuk Item (Table Row)
+  const itemVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      x: -20, // Slide sedikit ke kiri saat hilang
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut",
+      },
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        type: "spring",
+        stiffness: 50,
+        damping: 15,
+      },
+    },
+  };
 
   return (
     <section className="bg-background py-16 sm:py-24" id="schedule">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* <div className="mx-auto mb-10 max-w-2xl text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl font-bold tracking-tight sm:text-4xl"
-          >
-            Jadwal Kelas
-          </motion.h2>
-          <p className="text-muted-foreground mt-4">
-            Cek ketersediaan jadwal di cabang terdekat Anda.
-            <br />
-            <span className="text-xs italic">
-              *Jadwal Private dapat disesuaikan (Flexible)
-            </span>
-          </p>
-        </div> */}
-
+        {/* Header Animasi */}
         <ScrollAnimation
           variant="fadeUp"
           className="mx-auto mb-10 max-w-2xl text-center"
@@ -65,163 +149,117 @@ export default function Schedule() {
             Jadwal Kelas
           </h2>
           <p className="text-muted-foreground mt-4">
-            Cek ketersediaan jadwal di cabang terdekat Anda.
+            Pilih cabang terdekat untuk melihat jadwal sesi yang tersedia.
             <br />
-            <span className="text-xs italic">
+            <span className="text-primary text-xs italic">
               *Jadwal Private dapat disesuaikan (Flexible)
             </span>
           </p>
         </ScrollAnimation>
 
-        {/* Loading State */}
-        {(loadingCabang || loadingJadwal) && (
-          <div className="flex justify-center py-12">
-            <Loader2 className="text-primary h-8 w-8 animate-spin" />
-          </div>
-        )}
-
-        {/* Content */}
-        {cabangList && jadwalList && (
-          <Tabs defaultValue={defaultTab} className="mx-auto w-full max-w-4xl">
-            <div className="mb-8 flex justify-center">
-              <TabsList className="bg-muted/50 flex h-auto flex-wrap gap-2 p-2">
-                {cabangList.map((cabang) => (
+        <Tabs defaultValue={defaultTab} className="mx-auto w-full max-w-5xl">
+          {/* Tab Navigasi Cabang Animasi */}
+          <div className="mb-8 flex justify-center">
+            <ScrollAnimation variant="zoomIn" delay={0.1}>
+              <TabsList className="bg-muted/50 flex h-auto flex-wrap justify-center gap-2 rounded-full p-2">
+                {branches.map((branch) => (
                   <TabsTrigger
-                    key={cabang.id}
-                    value={cabang.id}
-                    className="px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    key={branch}
+                    value={branch}
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-full px-6 py-2 transition-all data-[state=active]:shadow-md"
                   >
                     <MapPin className="mr-2 h-4 w-4" />
-                    {cabang.namaCabang}
+                    {branch}
                   </TabsTrigger>
                 ))}
               </TabsList>
-            </div>
+            </ScrollAnimation>
+          </div>
 
-            {cabangList.map((cabang) => {
-              // Filter jadwal berdasarkan cabang
-              // Asumsi: relasi jadwal -> ruang -> cabang
-              const jadwalDiCabang = jadwalList.filter(
-                (j) => j.ruang.cabang?.namaCabang === cabang.namaCabang,
-                // Catatan: Idealnya filter by ID jika data relasi mengembalikan ID cabang.
-                // Berdasarkan router Anda: include: { ruang: { include: { cabang: true } } }
-                // Cek output JSON dari trpc router Anda untuk memastikan path object-nya.
-                // Jika router 'getAll' mengembalikan `ruang: { select: { cabang: { select: { namaCabang: true } } } }`
-                // Maka logic di atas sudah benar (filter by string name), atau lebih aman fetch cabangId di router.
-              );
+          {/* Konten Jadwal Per Cabang */}
+          {Object.entries(scheduleData).map(([branchName, data]) => (
+            <TabsContent key={branchName} value={branchName}>
+              <Card className="border-t-primary border-t-4 shadow-lg">
+                <CardHeader className="text-center sm:text-left">
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                    <div>
+                      <CardTitle className="flex items-center justify-center gap-2 text-2xl sm:justify-start">
+                        Cabang {branchName}
+                      </CardTitle>
+                      <CardDescription className="mt-2 flex items-center justify-center gap-2 sm:justify-start">
+                        <MapPin className="text-muted-foreground h-4 w-4" />
+                        {data.address}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-background overflow-hidden rounded-lg border">
+                    <Table>
+                      <TableHeader className="bg-muted/30">
+                        <TableRow>
+                          <TableHead className="text-primary w-[40%] py-4 text-base font-bold">
+                            <div className="flex items-center gap-2">
+                              <CalendarDays className="h-5 w-5" />
+                              Hari
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-primary py-4 text-base font-bold">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-5 w-5" />
+                              Pilihan Sesi Waktu
+                            </div>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
 
-              // Mengurutkan hari: Senin -> Minggu
-              const sorter = {
-                SENIN: 1,
-                SELASA: 2,
-                RABU: 3,
-                KAMIS: 4,
-                JUMAT: 5,
-                SABTU: 6,
-                MINGGU: 7,
-              };
-
-              const sortedJadwal = [...jadwalDiCabang].sort((a, b) => {
-                return (
-                  (sorter[a.hari as keyof typeof sorter] || 0) -
-                  (sorter[b.hari as keyof typeof sorter] || 0)
-                );
-              });
-
-              return (
-                <TabsContent key={cabang.id} value={cabang.id}>
-                  {/* <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  > */}
-                  <ScrollAnimation
-                    variant="fadeUp"
-                    delay={0.2}
-                    className="mx-auto w-full max-w-5xl"
-                  >
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Jadwal {cabang.namaCabang}</CardTitle>
-                        <CardDescription>{cabang.alamat}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {sortedJadwal.length > 0 ? (
-                          <div className="overflow-hidden rounded-md border">
-                            <Table>
-                              <TableHeader className="bg-muted">
-                                <TableRow>
-                                  <TableHead className="w-[120px]">
-                                    Hari
-                                  </TableHead>
-                                  <TableHead>Waktu</TableHead>
-                                  <TableHead>Kelas</TableHead>
-                                  <TableHead className="text-right">
-                                    Ruang
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {sortedJadwal.map((item) => {
-                                  // Handle logic jam Tetap vs Custom
-                                  const jamMulai =
-                                    item.jamSlotTetap?.jamMulai ??
-                                    item.jamSlotCustom?.jamMulai ??
-                                    "-";
-                                  const jamSelesai =
-                                    item.jamSlotTetap?.jamSelesai ??
-                                    item.jamSlotCustom?.jamSelesai ??
-                                    "-";
-                                  const isPrivate = !!item.jamSlotCustom;
-
-                                  return (
-                                    <TableRow key={item.id}>
-                                      <TableCell className="font-medium">
-                                        <Badge variant="outline">
-                                          {item.hari}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell>
-                                        {jamMulai} - {jamSelesai} WIB
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex flex-col">
-                                          <span className="font-semibold">
-                                            {item.kelas.kodeKelas}
-                                          </span>
-                                          <span className="text-muted-foreground text-xs capitalize">
-                                            {item.kelas.jenisKelas
-                                              .toLowerCase()
-                                              .replace("_", " ")}
-                                            {isPrivate && " (Privat)"}
-                                          </span>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        {item.ruang.namaRuang}
-                                      </TableCell>
-                                    </TableRow>
-                                  );
-                                })}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        ) : (
-                          <div className="text-muted-foreground py-10 text-center">
-                            <CalendarDays className="mx-auto mb-3 h-10 w-10 opacity-20" />
-                            <p>Belum ada jadwal terdaftar untuk cabang ini.</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </ScrollAnimation>
-
-                  {/* </motion.div> */}
-                </TabsContent>
-              );
-            })}
-          </Tabs>
-        )}
+                      {/* Animasi diterapkan pada tbody sebagai container */}
+                      <motion.tbody
+                        className="[&_tr:last-child]:border-0"
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: false, amount: 0.2, margin: "-50px" }}
+                        custom={scrollDirection}
+                        variants={containerVariants}
+                      >
+                        {data.schedules.map((item, idx) => (
+                          // Gunakan motion.tr pengganti TableRow untuk animasi item
+                          <motion.tr
+                            key={idx}
+                            variants={itemVariants}
+                            className="hover:bg-muted/20 border-b transition-colors"
+                          >
+                            <TableCell className="py-6 align-top font-medium">
+                              <Badge
+                                variant="secondary"
+                                className="px-3 py-1 text-sm"
+                              >
+                                {item.days}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="py-6">
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                {item.sessions.map((session, sIdx) => (
+                                  <div
+                                    key={sIdx}
+                                    className="border-border bg-card text-card-foreground flex items-center gap-2 rounded-md border px-3 py-2 text-sm shadow-sm"
+                                  >
+                                    <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                                    {session}
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </motion.tr>
+                        ))}
+                      </motion.tbody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </section>
   );

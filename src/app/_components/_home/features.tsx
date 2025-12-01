@@ -9,8 +9,9 @@ import {
   Smartphone,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion, type Variants } from "framer-motion";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
+import { useEffect, useState } from "react";
 
 const features = [
   {
@@ -25,7 +26,7 @@ const features = [
     title: "Materi Terstruktur",
     description:
       "Kurikulum yang dirancang sistematis dari level dasar hingga mahir.",
-    color: "text-secondary",
+    color: "text-primary",
   },
   {
     icon: Award,
@@ -39,7 +40,7 @@ const features = [
     title: "Jadwal Fleksibel",
     description:
       "Pilih waktu belajar yang sesuai dengan aktivitas Anda (Pagi/Siang/Malam).",
-    color: "text-secondary",
+    color: "text-primary",
   },
   {
     icon: MessageCircle,
@@ -53,7 +54,7 @@ const features = [
     title: "Platform Online",
     description:
       "Akses materi dan latihan kapan saja melalui platform user-friendly.",
-    color: "text-secondary",
+    color: "text-primary",
   },
 ];
 
@@ -64,10 +65,70 @@ const itemVariants: Variants = {
 };
 
 export default function Features() {
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
+
+  useEffect(() => {
+    return scrollVelocity.on("change", (latest) => {
+      if (latest > 0) {
+        setScrollDirection(1); // Scrolling Down
+      } else if (latest < 0) {
+        setScrollDirection(-1); // Scrolling Up
+      }
+    });
+  }, [scrollVelocity]);
+
+  // 2. Definisi Varian Animasi
+  const containerVariants: Variants = {
+    hidden: (direction: number) => ({
+      opacity: 0,
+      transition: {
+        // Saat menghilang (exit), kita juga ingin stagger sesuai arah scroll terakhir
+        staggerChildren: 0.1,
+        staggerDirection: direction,
+        when: "afterChildren",
+      },
+    }),
+    visible: (direction: number) => ({
+      opacity: 1,
+      transition: {
+        // Saat muncul (enter), stagger sesuai arah scroll
+        delayChildren: 0.1,
+        staggerChildren: 0.15,
+        staggerDirection: direction,
+      },
+    }),
+  };
+
+  const itemVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+      scale: 1,
+      transition: { duration: 0.3, ease: "easeOut" },
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 50,
+        damping: 15,
+        mass: 1,
+      },
+    },
+  };
+
   return (
-    <section className="bg-background py-16 sm:py-24">
+    <section className="bg-muted/30 py-16 sm:py-24">
       <div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
-        <ScrollAnimation variant="fadeUp" className="mb-12 text-center">
+        <ScrollAnimation
+          variant="fadeUp"
+          className="mb-12 text-center"
+          viewportAmount={0.5}
+        >
           <h2 className="mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
             Mengapa Memilih English Hive?
           </h2>
@@ -76,9 +137,14 @@ export default function Features() {
           </p>
         </ScrollAnimation>
 
-        <ScrollAnimation
-          variant="stagger"
+        {/* Grid Container - Animasi Stagger Dinamis */}
+        <motion.div
           className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, amount: 0.2, margin: "-50px" }}
+          custom={scrollDirection} // Mengirim arah scroll ke variants
+          variants={containerVariants}
         >
           {features.map((feature, index) => {
             const Icon = feature.icon;
@@ -98,7 +164,7 @@ export default function Features() {
               </motion.div>
             );
           })}
-        </ScrollAnimation>
+        </motion.div>
       </div>
     </section>
   );

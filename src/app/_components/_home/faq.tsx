@@ -1,9 +1,12 @@
+"use client";
+
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 const faqs = [
   {
@@ -43,29 +46,36 @@ export default function FAQ() {
   return (
     <section className="bg-background flex min-h-screen items-center px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
+        {/* Header Animasi */}
+        <ScrollAnimation variant="fadeUp" className="mb-12 text-center">
+          <h2 className="text-foreground mb-4 text-3xl font-bold text-balance sm:text-4xl lg:text-5xl">
             Pertanyaan yang Sering Diajukan
           </h2>
           <p className="text-muted-foreground text-lg">
             Temukan jawaban untuk pertanyaan umum tentang English Hive
           </p>
-        </div>
+        </ScrollAnimation>
 
-        <Accordion type="single" collapsible className="w-full space-y-2">
+        <Accordion type="single" collapsible className="w-full space-y-4">
           {faqs.map((faq, index) => (
-            <AccordionItem
+            <ScrollAnimation
               key={index}
-              value={`item-${index}`}
-              className="border-border rounded-lg border px-4"
+              variant="fadeUp"
+              delay={index * 0.1} // Delay bertahap untuk efek "muncul satu per satu"
+              viewportAmount={0.5} // Memicu animasi saat item terlihat 50%
             >
-              <AccordionTrigger className="hover:text-primary transition-colors">
-                {faq.question}
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                {faq.answer}
-              </AccordionContent>
-            </AccordionItem>
+              <AccordionItem
+                value={`item-${index}`}
+                className="border-border rounded-lg border px-4"
+              >
+                <AccordionTrigger className="hover:text-primary text-left font-medium transition-colors">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            </ScrollAnimation>
           ))}
         </Accordion>
       </div>

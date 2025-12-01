@@ -15,7 +15,6 @@ import Registration from "./_components/_home/registration";
 import CTA from "./_components/_home/cta";
 import Footer from "./_components/_home/footer";
 import FloatingButtons from "@/app/_components/_home/floating_buttons";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 export default async function Home() {
   const session = await auth();
@@ -30,48 +29,27 @@ export default async function Home() {
       <main className="bg-background selection:bg-accent selection:text-accent-foreground min-h-screen overflow-x-hidden">
         <Navbar />
 
-        {/* Hero sudah punya animasi internal */}
         <Hero />
 
-        {/* Bungkus section lain dengan ScrollAnimation */}
-        <ScrollAnimation variant="stagger">
-          <Features />
-        </ScrollAnimation>
+        <Features />
 
-        <ScrollAnimation>
-          <Programs />
-        </ScrollAnimation>
+        <Programs />
 
-        {/* Pricing: Regular vs Private */}
-        <ScrollAnimation variant="stagger">
-          <Pricing />
-        </ScrollAnimation>
+        <Pricing />
 
-        <ScrollAnimation>
-          <Schedule />
-        </ScrollAnimation>
+        <Schedule />
 
-        <ScrollAnimation variant="stagger">
-          <Testimonials />
-        </ScrollAnimation>
+        <Testimonials />
 
-        <ScrollAnimation>
-          <About />
-        </ScrollAnimation>
+        <About />
 
-        <ScrollAnimation>
-          <FAQ />
-        </ScrollAnimation>
+        <FAQ />
 
         <div id="registration">
-          <ScrollAnimation>
-            <Registration />
-          </ScrollAnimation>
+          <Registration />
         </div>
 
-        <ScrollAnimation>
-          <CTA />
-        </ScrollAnimation>
+        <CTA />
 
         <Footer />
         <FloatingButtons />

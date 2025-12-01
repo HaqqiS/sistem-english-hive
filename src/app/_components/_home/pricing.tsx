@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
+import { useEffect, useState } from "react";
 import { Check, Users, User } from "lucide-react";
 import {
   Card,
@@ -49,14 +50,75 @@ const pricingOptions = [
 ];
 
 export default function Pricing() {
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
+
+  // Deteksi arah scroll
+  useEffect(() => {
+    const unsubscribe = scrollVelocity.on("change", (latest) => {
+      if (latest > 0) {
+        setScrollDirection(1);
+      } else if (latest < 0) {
+        setScrollDirection(-1);
+      }
+    });
+    return () => unsubscribe();
+  }, [scrollVelocity]);
+
+  // Variants untuk Container Grid
+  const containerVariants: Variants = {
+    hidden: (direction: number) => ({
+      opacity: 0,
+      transition: {
+        when: "afterChildren",
+        staggerChildren: 0.15,
+        staggerDirection: direction,
+      },
+    }),
+    visible: (direction: number) => ({
+      opacity: 1,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.2, // Jeda sedikit lebih lama karena itemnya besar
+        staggerDirection: direction,
+      },
+    }),
+  };
+
+  // Variants untuk Item Card
+  const itemVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 50,
+      scale: 0.9, // Efek mengecil saat hilang
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut",
+      },
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 60,
+        damping: 15,
+        mass: 1,
+      },
+    },
+  };
+
   return (
     <section className="bg-muted/30 py-20" id="pricing">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Header tetap menggunakan ScrollAnimation standar */}
         <ScrollAnimation
           variant="fadeUp"
           className="mx-auto mb-16 max-w-2xl text-center"
         >
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
             Pilih Tipe Kelas Anda
           </h2>
           <p className="text-muted-foreground mt-4 text-lg">
@@ -65,18 +127,29 @@ export default function Pricing() {
           </p>
         </ScrollAnimation>
 
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-2">
+        {/* Grid Container dengan Animasi Dinamis */}
+        <motion.div
+          className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-2"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, amount: 0.3, margin: "-100px" }}
+          custom={scrollDirection}
+          variants={containerVariants}
+        >
           {pricingOptions.map((option, index) => {
             const Icon = option.icon;
             return (
-              <ScrollAnimation
+              <motion.div
                 key={index}
-                variant="zoomIn"
-                delay={index * 0.2}
+                variants={itemVariants}
                 className="h-full"
               >
                 <Card
-                  className={`relative flex h-full flex-col ${option.highlight ? "border-primary scale-105 shadow-xl" : "border-border"}`}
+                  className={`relative flex h-full flex-col transition-all duration-300 ${
+                    option.highlight
+                      ? "border-primary z-10 scale-105 shadow-xl"
+                      : "border-border hover:border-primary/50"
+                  }`}
                 >
                   {option.highlight && (
                     <div className="absolute -top-4 right-0 left-0 flex justify-center">
@@ -88,7 +161,11 @@ export default function Pricing() {
                   <CardHeader>
                     <div className="mb-2 flex items-center gap-3">
                       <div
-                        className={`rounded-full p-2 ${option.highlight ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                        className={`rounded-full p-2 ${
+                          option.highlight
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-muted-foreground"
+                        }`}
                       >
                         <Icon className="h-6 w-6" />
                       </div>
@@ -124,10 +201,10 @@ export default function Pricing() {
                     </Button>
                   </CardFooter>
                 </Card>
-              </ScrollAnimation>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

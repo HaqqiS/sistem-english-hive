@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
 import {
   BookOpen,
   Star,
@@ -12,13 +11,16 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { motion, useScroll, useVelocity, type Variants } from "framer-motion";
+import { useEffect, useState } from "react";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 const programs = [
   {
     title: "TinyTods",
     age: "3-4 Tahun",
     description:
-      "Pengenalan Bahasa Inggris melalui lagu, gerak, dan permainan sensori.",
+      "Pengenalan Bahasa Inggris melalui lagu, gerak, dan permainan sensorik.",
     icon: Star,
     color: "text-yellow-500",
   },
@@ -68,56 +70,95 @@ const programs = [
   },
 ];
 
-const container: Variants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const item: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50 } },
-};
-
 export default function Programs() {
-  return (
-    <section className="bg-background py-16 sm:py-24" id="programs">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto mb-12 max-w-2xl text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: -20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl"
-          >
-            Jenjang Program Kami
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="text-muted-foreground mt-4 text-lg leading-8"
-          >
-            Kurikulum yang disesuaikan dengan usia dan tahap perkembangan siswa.
-          </motion.p>
-        </div>
+  const { scrollY } = useScroll();
+  const scrollVelocity = useVelocity(scrollY);
+  const [scrollDirection, setScrollDirection] = useState(1); // 1: Down, -1: Up
 
+  // Deteksi arah scroll untuk menentukan urutan stagger
+  useEffect(() => {
+    const unsubscribe = scrollVelocity.on("change", (latest) => {
+      if (latest > 0) {
+        setScrollDirection(1);
+      } else if (latest < 0) {
+        setScrollDirection(-1);
+      }
+    });
+    return () => unsubscribe();
+  }, [scrollVelocity]);
+
+  // Variants Container
+  const containerVariants: Variants = {
+    hidden: (direction: number) => ({
+      opacity: 0,
+      transition: {
+        when: "afterChildren",
+        staggerChildren: 0.08, // Sedikit lebih cepat dibanding features
+        staggerDirection: direction,
+      },
+    }),
+    visible: (direction: number) => ({
+      opacity: 1,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.1,
+        staggerDirection: direction,
+      },
+    }),
+  };
+
+  // Variants Item (Card) - Efek Scale & Bounce
+  const itemVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+      scale: 0.8, // Mengecil saat hilang
+      transition: { duration: 0.3, ease: "easeInOut" },
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        type: "spring",
+        stiffness: 70, // Lebih "bouncy" dari features
+        damping: 12,
+      },
+    },
+  };
+
+  return (
+    <section
+      className="bg-background overflow-hidden py-16 sm:py-24"
+      id="programs"
+    >
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        {/* Header menggunakan ScrollAnimation standar */}
+        <ScrollAnimation
+          variant="fadeUp"
+          className="mx-auto mb-12 max-w-2xl text-center"
+        >
+          <h2 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
+            Jenjang Program Kami
+          </h2>
+          <p className="text-muted-foreground mt-4 text-lg leading-8">
+            Kurikulum yang disesuaikan dengan usia dan tahap perkembangan siswa.
+          </p>
+        </ScrollAnimation>
+
+        {/* Grid Programs dengan Animasi Direction-Aware */}
         <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: false, amount: 0.2, margin: "-50px" }}
+          custom={scrollDirection}
+          variants={containerVariants}
         >
           {programs.map((program, index) => {
             const Icon = program.icon;
             return (
-              <motion.div key={index} variants={item}>
+              <motion.div key={index} variants={itemVariants}>
                 <Card className="hover:border-t-primary h-full border-t-4 border-t-transparent transition-all hover:-translate-y-1 hover:shadow-lg">
                   <CardHeader className="pb-2">
                     <div className="mb-2 flex items-center justify-between">

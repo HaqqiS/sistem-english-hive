@@ -11,7 +11,7 @@ import type { JWT } from "next-auth/jwt";
 import { db } from "@/server/db";
 import { NextResponse } from "next/server";
 import { protectedRoutes } from "@/constants/routes";
-// import { UserRole } from "@prisma/client";
+import { env } from "@/env";
 import type { Adapter } from "next-auth/adapters";
 import { UserRole } from "./type";
 
@@ -49,7 +49,8 @@ declare module "next-auth/jwt" {
 }
 
 export const authConfig: NextAuthConfig = {
-  secret: process.env.NEXTAUTH_SECRET,
+  // secret: process.env.NEXTAUTH_SECRET,
+  secret: env.AUTH_SECRET,
   adapter: PrismaAdapter(db) as unknown as Adapter,
 
   session: {

@@ -45,7 +45,7 @@ export default function FloatingButtons() {
             className="fixed right-6 bottom-24 z-40"
             aria-label="Scroll to top"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-gray-300 bg-white shadow-lg transition-all hover:bg-gray-50">
+            <div className="text-accent flex h-14 w-14 items-center justify-center rounded-full border border-gray-300 bg-white shadow-lg transition-all hover:bg-gray-50">
               <ArrowUp className="h-6 w-6" />
             </div>
           </button>

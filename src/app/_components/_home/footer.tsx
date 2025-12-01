@@ -13,6 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -28,7 +29,14 @@ export default function Footer() {
           {/* About */}
           <ScrollAnimation variant="fadeUp" className="space-y-4">
             <div className="text-primary flex items-center gap-2 text-lg font-bold">
-              <Bee className="h-5 w-5" />
+              {/* <Bee className="h-5 w-5" /> */}
+              <Image
+                src="/logo_hijau2.webp"
+                alt="English Hive Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
               <span>English Hive</span>
             </div>
             <p className="text-muted-foreground text-sm">

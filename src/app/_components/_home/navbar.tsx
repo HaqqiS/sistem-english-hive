@@ -69,7 +69,7 @@ export default function Navbar() {
           >
             <div className="relative h-10 w-10">
               <Image
-                src="/logo_hijau.webp"
+                src="/logo_hijau2.webp"
                 alt="English Hive Logo"
                 fill
                 className="object-contain"

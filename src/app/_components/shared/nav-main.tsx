@@ -32,7 +32,7 @@ export function NavMain({ projects }: NavMainProps) {
 
   return (
     <SidebarGroup className="">
-      <SidebarGroupLabel>Projects</SidebarGroupLabel>
+      <SidebarGroupLabel>Modules</SidebarGroupLabel>
       <SidebarMenu>
         {projects.map((item) => {
           const IconComponent = iconMap[item.icon] ?? Folder;

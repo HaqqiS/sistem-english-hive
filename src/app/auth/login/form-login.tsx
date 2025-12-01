@@ -142,12 +142,12 @@ export default function LoginForm() {
             </Button>
           </div>
         </div>
-        <div className="mt-4 text-center text-sm">
+        {/* <div className="mt-4 text-center text-sm">
           Belum punya akun?{" "}
           <Link href="/auth/register" className="underline underline-offset-4">
             Daftar
           </Link>
-        </div>
+        </div> */}
       </form>
     </Form>
   );

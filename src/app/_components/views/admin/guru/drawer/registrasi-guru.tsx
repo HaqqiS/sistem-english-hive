@@ -12,7 +12,7 @@ import {
   type RegisterGuruFormSchema,
 } from "@/types/user.type";
 import { useUser } from "@/hooks/useUser";
-import RegisterForm from "@/app/auth/register/form-register";
+import RegisterForm from "@/app/_components/shared/form-register";
 
 export default function RegistrasiGuru() {
   const [isOpen, setIsOpen] = useState(false);

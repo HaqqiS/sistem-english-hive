@@ -111,8 +111,12 @@ export const calculateSisaPertemuan = async (
     (acc, curr) => acc + curr.jumlahBayar,
     0,
   );
+  // totalKapasitasDitagih = 300k/ 50k
+  // totalKapasitasDitagih = 6 sesi
   const totalKapasitasDitagih = Math.floor(totalUangDitagih / hargaPerSesi);
 
+  // potensiSisa = 6 - totalTerpakai(3)
+  // potensiSisa = 3 sesi
   const potensiSisa = totalKapasitasDitagih - totalTerpakai;
 
   if (potensiSisa <= BATAS_SISA_UNTUK_TAGIHAN) {

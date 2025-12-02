@@ -102,34 +102,61 @@ export const calculateSisaPertemuan = async (
   let needNewBill = false;
   let nextBillPembayaranKe = 0;
 
-  // Jika sisa pertemuan sudah sedikit (<= BATAS)
-  if (sisaPertemuan <= BATAS_SISA_UNTUK_TAGIHAN) {
-    // --- LOGIKA BARU: CEK BERDASARKAN JUMLAH TAGIHAN YANG ADA ---
+  const allBills = await db.pembayaran.findMany({
+    where: { pendaftaranKelasId: pendaftaranKelasId },
+    select: { jumlahBayar: true, pembayaranKe: true },
+  });
 
-    // Hitung total tagihan yang SUDAH dibuat (baik Lunas maupun Belum)
-    const totalTagihanDibuat = await db.pembayaran.count({
-      where: { pendaftaranKelasId: pendaftaranKelasId },
-    });
+  const totalUangDitagih = allBills.reduce(
+    (acc, curr) => acc + curr.jumlahBayar,
+    0,
+  );
+  const totalKapasitasDitagih = Math.floor(totalUangDitagih / hargaPerSesi);
 
-    // Hitung berapa paket yang SEHARUSNYA sudah ditagih agar bisa mengcover pemakaian saat ini + buffer 1 paket ke depan
-    // Rumus: Jika pemakaian 6, butuh 1 paket (cover 1-8). Jika pemakaian 8, butuh 2 paket (biar ada sisa 8 lagi).
-    // Tapi kita ingin mentrigger tagihan BARU (paket ke-N+1) saat sisa menipis.
+  const potensiSisa = totalKapasitasDitagih - totalTerpakai;
 
-    // Logika: "Apakah jumlah paket yang sudah ditagih CUKUP untuk menutupi pemakaian + 1 paket ke depan?"
-    // Total kapasitas yang seharusnya dimiliki = totalTagihanDibuat * 8
-    // Kita ingin men-trigger tagihan baru JIKA:
-    // (Kapasitas yg dimiliki - Pemakaian) <= Batas
-    // Tapi kapasitas yg dimiliki disini adalah berdasarkan TAGIHAN YANG ADA (bukan cuma yg lunas)
+  if (potensiSisa <= BATAS_SISA_UNTUK_TAGIHAN) {
+    needNewBill = true;
 
-    const totalKapasitasTagihan = totalTagihanDibuat * paketPertemuan;
-    const potensiSisa = totalKapasitasTagihan - totalTerpakai;
+    // E. Tentukan urutan pembayaran berikutnya
+    // Ambil angka terbesar yang ada, lalu tambah 1.
+    // Ini aman untuk Late Joiner yang mungkin start dari pembayaranKe: 2.
+    const maxPembayaranKe =
+      allBills.length > 0
+        ? Math.max(...allBills.map((b) => b.pembayaranKe))
+        : 0;
 
-    // Jika potensi sisa (berdasarkan semua tagihan yg ada) sudah <= Batas, buat tagihan baru
-    if (potensiSisa <= BATAS_SISA_UNTUK_TAGIHAN) {
-      needNewBill = true;
-      nextBillPembayaranKe = totalTagihanDibuat + 1;
-    }
+    nextBillPembayaranKe = maxPembayaranKe + 1;
   }
+
+  // // Jika sisa pertemuan sudah sedikit (<= BATAS)
+  // if (sisaPertemuan <= BATAS_SISA_UNTUK_TAGIHAN) {
+  //   // --- LOGIKA BARU: CEK BERDASARKAN JUMLAH TAGIHAN YANG ADA ---
+
+  //   // Hitung total tagihan yang SUDAH dibuat (baik Lunas maupun Belum)
+  //   const totalTagihanDibuat = await db.pembayaran.count({
+  //     where: { pendaftaranKelasId: pendaftaranKelasId },
+  //   });
+
+  //   // Hitung berapa paket yang SEHARUSNYA sudah ditagih agar bisa mengcover pemakaian saat ini + buffer 1 paket ke depan
+  //   // Rumus: Jika pemakaian 6, butuh 1 paket (cover 1-8). Jika pemakaian 8, butuh 2 paket (biar ada sisa 8 lagi).
+  //   // Tapi kita ingin mentrigger tagihan BARU (paket ke-N+1) saat sisa menipis.
+
+  //   // Logika: "Apakah jumlah paket yang sudah ditagih CUKUP untuk menutupi pemakaian + 1 paket ke depan?"
+  //   // Total kapasitas yang seharusnya dimiliki = totalTagihanDibuat * 8
+  //   // Kita ingin men-trigger tagihan baru JIKA:
+  //   // (Kapasitas yg dimiliki - Pemakaian) <= Batas
+  //   // Tapi kapasitas yg dimiliki disini adalah berdasarkan TAGIHAN YANG ADA (bukan cuma yg lunas)
+
+  //   const totalKapasitasTagihan = totalTagihanDibuat * paketPertemuan;
+  //   const potensiSisa = totalKapasitasTagihan - totalTerpakai;
+
+  //   // Jika potensi sisa (berdasarkan semua tagihan yg ada) sudah <= Batas, buat tagihan baru
+  //   if (potensiSisa <= BATAS_SISA_UNTUK_TAGIHAN) {
+  //     needNewBill = true;
+  //     nextBillPembayaranKe = totalTagihanDibuat + 1;
+  //   }
+  // }
 
   return {
     muridName,

@@ -90,8 +90,8 @@ export const kelasRouter = createTRPCRouter({
 
   getKelasAndCount: protectedProcedure.query(async ({ ctx }) => {
     const { db } = ctx;
-    const kelasWithCount = await db.kelas.findMany({
-      distinct: ["cohortId"],
+    const allKelasData = await db.kelas.findMany({
+      // distinct: ["cohortId"],
       orderBy: { createdAt: "desc" },
 
       select: {
@@ -148,7 +148,11 @@ export const kelasRouter = createTRPCRouter({
       },
     });
 
-    return kelasWithCount;
+    const filteredKelas = allKelasData.filter(
+      (kelas) => kelas._count.sesiPertemuanKelases < 24,
+    );
+
+    return filteredKelas;
   }),
 
   getKelasById: protectedProcedure

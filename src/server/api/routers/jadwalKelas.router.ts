@@ -261,10 +261,9 @@ export const jadwalKelasRouter = createTRPCRouter({
       const targetGuruId = input?.guruId ?? session.user.id;
 
       // const hariIni = "SABTU" as Hari;
-      const hariIni = dayjs()
-        .tz(TIMEZONE_BISNIS)
-        .format("dddd")
-        .toUpperCase() as Hari;
+      const now = dayjs().tz(TIMEZONE_BISNIS);
+      const hariIni = now.format("dddd").toUpperCase() as Hari;
+      const tanggalHariIniStr = now.format("YYYY-MM-DD");
 
       // 2. Cari semua JadwalKelas untuk guru ini yang aktif hari ini
       const jadwalHariIni = await db.jadwalKelas.findMany({
@@ -276,6 +275,9 @@ export const jadwalKelasRouter = createTRPCRouter({
               some: {
                 guruId: targetGuruId,
                 statusGuru: "ACTIVE",
+                mulaiPada: {
+                  lte: tanggalHariIniStr,
+                },
               },
             },
           },

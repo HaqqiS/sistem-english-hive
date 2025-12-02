@@ -58,6 +58,9 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
   const createMutation = api.sesiPertemuan.createSesiPertemuan.useMutation({
     onSuccess: async () => {
       await apiUtils.sesiPertemuan.getAll.invalidate();
+      await apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate({
+        kelasId: kelasId!,
+      });
       toast.success("Program Kelas berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },

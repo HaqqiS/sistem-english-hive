@@ -81,6 +81,7 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
         cabangId: options?.cabangId,
         hari: options?.hari,
       });
+      await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
       toast.success("Jadwal baru berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -110,6 +111,8 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
         cabangId: options?.cabangId,
         hari: options?.hari,
       });
+      await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
+
       toast.success("Jadwal berhasil dihapus");
       options?.onSuccessDelete?.();
     },

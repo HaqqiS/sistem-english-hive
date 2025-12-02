@@ -9,8 +9,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import type { JWT } from "next-auth/jwt";
 import { db } from "@/server/db";
-import { NextResponse } from "next/server";
-import { protectedRoutes } from "@/constants/routes";
 import { env } from "@/env";
 import type { Adapter } from "next-auth/adapters";
 import { UserRole } from "./type";

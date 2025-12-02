@@ -36,11 +36,13 @@ export const userRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
+      const hashPassword = await bcrypt.hash(input.password, 12);
+
       const newGuru = await db.user.create({
         data: {
           name: input.name,
           email: input.email,
-          password: input.password,
+          password: hashPassword,
         },
       });
 

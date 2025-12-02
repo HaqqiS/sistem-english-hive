@@ -102,6 +102,7 @@ export function useMurid(options?: useMuridOptions) {
   const updateStatusMuridMutation = api.murid.updateStatusMurid.useMutation({
     onSuccess: async () => {
       await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+      await apiUtils.murid.getAllPaginated.invalidate();
       toast.success("Status Murid berhasil diupdate");
       options?.onSuccessUpdate?.();
     },

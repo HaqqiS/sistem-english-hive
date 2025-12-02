@@ -45,6 +45,17 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   const pageSize = options?.pagination?.pageSize ?? 10;
   const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
 
+  const invalidatePayments = async () => {
+    await Promise.all([
+      apiUtils.pembayaran.getAllPaginated.invalidate(),
+      apiUtils.pembayaran.getTagihanJatuhTempo.invalidate(),
+      // TAMBAHAN: Invalidate list detail & saldo siswa
+      apiUtils.pembayaran.getAll.invalidate(),
+      apiUtils.pembayaran.getSaldoSiswa.invalidate(),
+      apiUtils.pembayaran.getSaldoByMuridId.invalidate(),
+    ]);
+  };
+
   // ========== QUERIES ==========
 
   // 1. Get All Pembayaran (with optional filters)
@@ -59,7 +70,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
         }
       : undefined,
     {
-      enabled: options?.enableGetAll ?? true,
+      enabled: options?.enableGetAll ?? false,
       refetchOnWindowFocus: true, // Keep data fresh
     },
   );
@@ -105,8 +116,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // 1. Update Status Pembayaran
   const updateMutation = api.pembayaran.updatePembayaran.useMutation({
     onSuccess: async () => {
-      await apiUtils.pembayaran.getAllPaginated.invalidate();
-      await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
+      await invalidatePayments();
       toast.success("Data pembayaran berhasil diperbarui");
       options?.onSuccessUpdate?.();
     },
@@ -118,9 +128,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // 2. Delete Pembayaran
   const deleteMutation = api.pembayaran.deletePembayaran.useMutation({
     onSuccess: async () => {
-      await apiUtils.pembayaran.getAllPaginated.invalidate();
-      await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
-
+      await invalidatePayments();
       toast.success("Data pembayaran berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -132,9 +140,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // 3. Create Manual Tagihan
   const createManualMutation = api.pembayaran.createManualTagihan.useMutation({
     onSuccess: async () => {
-      await apiUtils.pembayaran.getAllPaginated.invalidate();
-      await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
-
+      await invalidatePayments();
       toast.success("Pembayaran manual berhasil dibuat");
       options?.onSuccessCreateManual?.();
     },
@@ -155,7 +161,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
     pageCount: getAllPaginatedQuery.data?.pageCount ?? -1,
     totalRows: getAllPaginatedQuery.data?.total ?? 0,
     isLoadingGetAllPaginated: getAllPaginatedQuery.isLoading,
-    isFetchingGetAllPaginated: getAllPaginatedQuery.isFetching, // Berguna untuk indikator loading halus
+    isFetchingGetAllPaginated: getAllPaginatedQuery.isFetching,
     isErrorGetAllPaginated: getAllPaginatedQuery.isError,
     errorGetAllPaginated: getAllPaginatedQuery.error,
     refetchGetAllPaginated: getAllPaginatedQuery.refetch,

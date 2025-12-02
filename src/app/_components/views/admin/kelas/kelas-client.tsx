@@ -54,42 +54,6 @@ export default function KelasClient() {
       <TabsContent value="listKelas">
         <KelasTab />
       </TabsContent>
-      {/* <TabsContent value="penjadwalanKelas">
-        <div>
-          <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl">Daftar jadwal Kelas</h1>
-                <p className="text-muted-foreground text-sm">
-                  halaman ini mengatur data jadwal kelas.
-                </p>
-              </div>
-            </header>
-
-            <TambahJadwalKelas />
-            <DeleteConfirmationDialog
-              isOpen={deleteJadwalDialogOpen}
-              onOpenChange={setDeleteJadwalDialogOpen}
-              title="Hapus Jadwal Kelas"
-              description={
-                <>
-                  Yakin ingin menghapus Jadwal Kelas{" "}
-                  <span className="text-accent font-bold">
-                    {selectedJadwalToDelete?.deskripsi}
-                  </span>
-                  ? Tindakan ini tidak dapat dibatalkan.
-                </>
-              }
-              onConfirm={handleConfirmDeleteJadwal}
-              isLoading={jadwalMutation.delete.isPending}
-              confirmText="Hapus"
-              cancelText="Batal"
-            />
-          </div>
-
-          <DataTable columns={columnsJadwalTabel} data={dataJadwal ?? []} />
-        </div>
-      </TabsContent> */}
 
       <TabsContent
         value="penjadwalanKelas"

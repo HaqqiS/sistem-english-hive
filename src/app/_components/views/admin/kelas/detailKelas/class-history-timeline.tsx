@@ -55,7 +55,7 @@ export function ClassHistoryTimeline({
             {/* Dot Indicator */}
             <span
               className={cn(
-                "ring-background absolute top-1 -left-[41px] flex h-6 w-6 items-center justify-center rounded-full ring-4",
+                "ring-background absolute top-10 -left-11 flex h-6 w-6 items-center justify-center rounded-full ring-4",
                 isCurrent
                   ? "bg-primary text-primary-foreground"
                   : isPast
@@ -77,7 +77,7 @@ export function ClassHistoryTimeline({
                 isCurrent ? "border-primary/50 shadow-sm" : "opacity-90",
               )}
             >
-              <CardHeader className="pt-4 pb-2">
+              <CardHeader className="pt-2 pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
@@ -99,7 +99,7 @@ export function ClassHistoryTimeline({
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="pb-4">
+              <CardContent className="pb-2">
                 <div className="text-muted-foreground flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1.5">
                     <GraduationCap className="h-4 w-4" />
@@ -111,17 +111,33 @@ export function ClassHistoryTimeline({
                   </div>
                 </div>
 
-                {/* Tombol lihat detail jika bukan halaman aktif */}
-                {!isCurrent && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground mt-2 h-7 px-2 text-xs"
-                    asChild
-                  >
-                    <Link href={`/admin/kelas/${item.id}`}>Lihat Detail</Link>
-                  </Button>
-                )}
+                <div className="shrink md:shrink-0">
+                  {/* Tombol lihat detail & sesi jika bukan halaman aktif */}
+                  {!isCurrent && (
+                    <Button
+                      variant="ghost"
+                      // size=""
+                      className="text-accent mt-2 h-7 px-2 text-xs"
+                      asChild
+                    >
+                      <Link href={`/admin/kelas/sesi/${item.id}`}>
+                        Detail Kelas
+                      </Link>
+                    </Button>
+                  )}
+                  {!isCurrent && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-accent mt-2 h-7 px-2 text-xs"
+                      asChild
+                    >
+                      <Link href={`/admin/kelas/sesi/${item.id}`}>
+                        Riwayat Absensi
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -121,9 +121,10 @@ export function useKelas(options?: UseKelasOptions) {
   const upLevelMutation = api.kelas.upLevelKelas.useMutation({
     onSuccess: async () => {
       // Invalidate relevant queries
-      await apiUtils.kelas.getAll.invalidate(); // Update list kelas
-      await apiUtils.kelas.getKelasAndCount.invalidate(); // Update list kelas aktif
-      // await apiUtils.pembayaran.getAll.invalidate(); // Update data pembayaran (jika ada list pembayaran global)
+      await apiUtils.kelas.getAll.invalidate();
+      await apiUtils.kelas.getKelasAndCount.invalidate();
+      await apiUtils.pembayaran.getAllPaginated.invalidate();
+      await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
 
       toast.success("Kelas berhasil di-uplevel");
       options?.onSuccessUpLevel?.();

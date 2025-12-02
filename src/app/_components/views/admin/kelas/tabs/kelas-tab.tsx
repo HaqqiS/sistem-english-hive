@@ -20,6 +20,7 @@ import {
   Edit2,
   EllipsisVertical,
   GraduationCap,
+  RefreshCw,
   Trash,
   TrendingUp,
   User,
@@ -42,6 +43,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export default function KelasTab() {
   // 1. State Lokal untuk Delete Dialog
@@ -57,7 +59,9 @@ export default function KelasTab() {
     dataKelasCount,
     isLoadingKelasCount,
     isErrorKelasCount,
+    isRefetchingKelasCount,
     errorKelasCount,
+    refetchKelasCount,
     mutations: kelasMutations,
   } = useKelas({
     enableQueryGetAll: false,
@@ -128,7 +132,23 @@ export default function KelasTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between space-x-2 pt-4">
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            disabled={isLoadingKelasCount || isRefetchingKelasCount}
+            onClick={() => refetchKelasCount()}
+            title="Refresh Jadwal"
+          >
+            <RefreshCw
+              className={cn(
+                "h-4 w-4",
+                (isLoadingKelasCount || isRefetchingKelasCount) &&
+                  "animate-spin",
+              )}
+            />
+          </Button>
           <div>
             <h1 className="text-xl">Daftar Kelas</h1>
             <p className="text-muted-foreground text-sm">

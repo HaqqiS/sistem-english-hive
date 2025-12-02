@@ -12,10 +12,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { StatusPembayaran } from "@prisma/client";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function DashboardClientPage() {
   // Gunakan hook usePembayaran agar logika mutasi terpusat
-  const { dataJatuhTempo, isLoadingJatuhTempo, mutations } = usePembayaran({
+  const {
+    dataJatuhTempo,
+    isLoadingJatuhTempo,
+    refetchJatuhTempo: refetch,
+    mutations,
+  } = usePembayaran({
     enableGetJatuhTempo: true, // Aktifkan query khusus dashboard
     enableGetAll: false, // Matikan query berat (getAll) di dashboard
   });
@@ -38,11 +46,24 @@ export default function DashboardClientPage() {
   return (
     <div className="space-y-6">
       <Card className="border-l-accent border-l-4 shadow-sm">
-        <CardHeader>
-          <CardTitle>Tagihan Jatuh Tempo (14 Hari ke Depan)</CardTitle>
-          <CardDescription>
-            Daftar siswa yang perlu diingatkan untuk pembayaran periode ini.
-          </CardDescription>
+        <CardHeader className="flex items-center gap-4 space-y-0 pb-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => refetch()}
+            title="Refresh Jadwal"
+          >
+            <RefreshCw
+              className={cn("h-4 w-4", isLoadingJatuhTempo && "animate-spin")}
+            />
+          </Button>
+          <div className="space-y-2">
+            <CardTitle>Tagihan Jatuh Tempo (14 Hari ke Depan)</CardTitle>
+            <CardDescription>
+              Daftar siswa yang perlu diingatkan untuk pembayaran periode ini.
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoadingJatuhTempo ? (

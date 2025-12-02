@@ -137,6 +137,7 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
     dataMatrix: getScheduleMatrix.data,
     isLoadingMatrix: getScheduleMatrix.isLoading,
     isErrorMatrix: getScheduleMatrix.isError,
+    isRefetchingMatrix: getScheduleMatrix.isFetching,
     errorMatrix: getScheduleMatrix.error,
     refetchMatrix: getScheduleMatrix.refetch,
 

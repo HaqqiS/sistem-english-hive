@@ -19,6 +19,9 @@ import { useMuridStore } from "@/store/useMuridStore";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
 import type { PaginationState } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function MuridClient() {
   // STATE
@@ -49,6 +52,7 @@ export default function MuridClient() {
     totalRowsNotRegistered,
     isLoadingNotRegisteredPaginated,
     isFetchingNotRegisteredPaginated,
+    refetchNotRegisteredPaginated,
   } = useMurid({
     pagination: paginationNotRegistered, // Pass pagination state ke hook
   });
@@ -59,7 +63,7 @@ export default function MuridClient() {
     totalRows,
     isLoadingAllMuridPaginated,
     isFetchingAllMuridPaginated,
-
+    refetchPaginated,
     mutations,
   } = useMurid({
     pagination: paginationAllMurid, // Pass pagination state ke hook
@@ -114,7 +118,27 @@ export default function MuridClient() {
       <TabsContent value="daftarMurid">
         <div>
           <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between">
+            <header className="flex items-center justify-between gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                disabled={
+                  isLoadingNotRegisteredPaginated ||
+                  isFetchingNotRegisteredPaginated
+                }
+                onClick={() => refetchNotRegisteredPaginated()}
+                title="Refresh Jadwal"
+              >
+                <RefreshCw
+                  className={cn(
+                    "h-4 w-4",
+                    (isLoadingNotRegisteredPaginated ||
+                      isFetchingNotRegisteredPaginated) &&
+                      "animate-spin",
+                  )}
+                />
+              </Button>
               <div>
                 <h1 className="text-xl">
                   Daftar Murid Belum Terdaftar ke Kelas
@@ -142,7 +166,27 @@ export default function MuridClient() {
       <TabsContent value="listMurid">
         <div>
           <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between">
+            <header className="flex items-center justify-between gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                disabled={
+                  isLoadingAllMuridPaginated || isFetchingAllMuridPaginated
+                }
+                onClick={() => refetchPaginated()}
+                title="Refresh Jadwal"
+              >
+                <RefreshCw
+                  className={cn(
+                    "h-4 w-4",
+                    (isLoadingAllMuridPaginated ||
+                      isFetchingAllMuridPaginated) &&
+                      "animate-spin",
+                  )}
+                />
+              </Button>
+
               <div>
                 <h1 className="text-xl">Daftar Murid</h1>
                 <p className="text-muted-foreground text-sm">

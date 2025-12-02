@@ -126,10 +126,10 @@ export default function PembayaranClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col items-start gap-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Data Pembayaran</h2>
             <Button
               variant="ghost"
               size="icon"
+              className="h-9 w-9 shrink-0"
               onClick={() => refetch()}
               disabled={isLoading || isFetching}
               title="Refresh Data"
@@ -138,6 +138,7 @@ export default function PembayaranClient({
                 className={`h-4 w-4 ${isLoading || isFetching ? "animate-spin" : ""}`}
               />
             </Button>
+            <h2 className="text-lg font-semibold">Data Pembayaran</h2>
           </div>
 
           <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">

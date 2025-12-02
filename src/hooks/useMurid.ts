@@ -190,7 +190,8 @@ export function useMurid(options?: useMuridOptions) {
     },
 
     // Utils untuk manual invalidation jika perlu
-    // refetch: MuridNotRegisteredQuery.refetch,
+    refetchPaginated: MuridPaginatedQuery.refetch,
+    refetchNotRegisteredPaginated: MuridNotRegisteredPaginatedQuery.refetch,
     // invalidate: () => apiUtils.murid.getMuridWhereNotRegistered.invalidate(),
   };
 }

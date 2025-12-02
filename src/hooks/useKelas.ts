@@ -148,6 +148,7 @@ export function useKelas(options?: UseKelasOptions) {
     dataKelasCount: kelasCountQuery.data,
     isLoadingKelasCount: kelasCountQuery.isLoading,
     isErrorKelasCount: kelasCountQuery.isError,
+    isRefetchingKelasCount: kelasCountQuery.isFetching,
     errorKelasCount: kelasCountQuery.error,
 
     dataById: kelasByIdQuery.data,
@@ -192,6 +193,7 @@ export function useKelas(options?: UseKelasOptions) {
     // Utils untuk manual invalidation jika perlu
     refetch: kelasQuery.refetch,
     refetchKelasAktif: kelasAktifQuery.refetch,
+    refetchKelasCount: kelasCountQuery.refetch,
     refetchById: kelasByIdQuery.refetch,
     refetchHistory: kelasHistoryQuery.refetch,
     invalidate: () => apiUtils.kelas.getAll.invalidate(),

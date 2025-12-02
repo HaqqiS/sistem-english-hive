@@ -50,6 +50,7 @@ export default function ScheduleGrid() {
     isLoadingMatrix: isLoading,
     isErrorMatrix: isError,
     refetchMatrix: refetch,
+    isRefetchingMatrix: isRefetching,
     mutations,
   } = useJadwalKelas({
     enableQueryMatrix: true,
@@ -111,10 +112,16 @@ export default function ScheduleGrid() {
             variant="outline"
             size="icon"
             className="h-9 w-9 shrink-0"
+            disabled={isLoading || isRefetching}
             onClick={() => refetch()}
             title="Refresh Jadwal"
           >
-            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+            <RefreshCw
+              className={cn(
+                "h-4 w-4",
+                (isLoading || isRefetching) && "animate-spin",
+              )}
+            />
           </Button>
 
           <Select value={selectedCabangId} onValueChange={setSelectedCabangId}>

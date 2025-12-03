@@ -49,7 +49,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import z from "zod";
 
 // Tipe props yang generik
 interface DataTableProps<TData, TValue> {

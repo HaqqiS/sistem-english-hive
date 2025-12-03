@@ -16,6 +16,15 @@ export default function EditCabang() {
   const { isDrawerOpen, selectedCabang, closeDrawer, clearSelected } =
     useCabangStore();
 
+  const editCabangForm = useForm<TypeClientCabangSchema>({
+    resolver: zodResolver(clientCabangSchema),
+    defaultValues: {
+      namaCabang: selectedCabang?.namaCabang,
+      alamat: selectedCabang?.alamat,
+      noTelp: selectedCabang?.noTelp,
+    },
+  });
+
   useEffect(() => {
     if (selectedCabang) {
       editCabangForm.reset({
@@ -27,15 +36,6 @@ export default function EditCabang() {
   }, [selectedCabang]);
 
   const isOpen = isDrawerOpen("edit");
-
-  const editCabangForm = useForm<TypeClientCabangSchema>({
-    resolver: zodResolver(clientCabangSchema),
-    defaultValues: {
-      namaCabang: selectedCabang?.namaCabang,
-      alamat: selectedCabang?.alamat,
-      noTelp: selectedCabang?.noTelp,
-    },
-  });
 
   const { mutations } = useCabang({
     onSuccessUpdate: () => {

@@ -14,14 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import {
-  MoreHorizontal,
-  User,
-  Users,
-  Clock,
-  Trash,
-  Pencil,
-} from "lucide-react";
+import { MoreHorizontal, User, Clock, Trash, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ScheduleCardProps {

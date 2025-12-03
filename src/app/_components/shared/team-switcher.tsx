@@ -1,14 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, LayoutDashboard, Plus, Square } from "lucide-react";
+import { ChevronsUpDown, LayoutDashboard, Square } from "lucide-react";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {

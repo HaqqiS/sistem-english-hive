@@ -79,10 +79,10 @@ function ScheduleItemRow({
     control,
     name: `schedules.${index}.ruangId`,
   });
-  const currentJamTetapId = useWatch({
-    control,
-    name: `schedules.${index}.jamSlotTetapId`,
-  });
+  // const currentJamTetapId = useWatch({
+  //   control,
+  //   name: `schedules.${index}.jamSlotTetapId`,
+  // });
 
   // --- LOGIC OTOMATIS TIPE JAM ---
 

@@ -23,7 +23,7 @@ import { usePembayaran } from "@/hooks/usePembayaran";
 import { usePembayaranStore } from "@/store/usePembayaranStore";
 import EditPembayaran from "./edit-pembayaran";
 import type { PaginationState } from "@tanstack/react-table";
-import TambahPembayaran from "./tambah-pembayara";
+import TambahPembayaran from "./tambah-pembayaran";
 import { Input } from "@/components/ui/input";
 
 interface PembayaranClientProps {
@@ -189,7 +189,7 @@ export default function PembayaranClient({
         pageCount={pageCount}
         pagination={pagination}
         onPaginationChange={setPagination}
-        isLoading={isLoading || isFetching}
+        isLoading={isLoading || isFetching || isRefetching}
       />
 
       <EditPembayaran />

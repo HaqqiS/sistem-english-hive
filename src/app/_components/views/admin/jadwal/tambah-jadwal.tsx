@@ -7,11 +7,7 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import {
-  serverCreateJadwalSchema as clientCreateJadwalSchema,
-  serverCreateBulkJadwalSchema, // Ganti nama skema di file type jika perlu
-  type TypeServerCreateJadwalSchema,
-} from "@/types/jadwalKelas.type";
+import { serverCreateBulkJadwalSchema } from "@/types/jadwalKelas.type";
 import JadwalKelasForm from "./jadwal-kelas-form";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import z from "zod";

@@ -10,7 +10,6 @@ import {
   type UpdateProfileFormSchema,
 } from "@/types/user.type";
 import { useUser } from "@/hooks/useUser";
-import RegisterForm from "@/app/_components/shared/form-register";
 import EditGuruForm from "../form/edit-guru-form";
 
 export default function EditGuru() {

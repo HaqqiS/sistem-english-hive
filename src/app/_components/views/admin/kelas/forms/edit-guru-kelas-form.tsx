@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import {
@@ -21,7 +20,6 @@ import { useFormContext } from "react-hook-form";
 import type { TypeUpdateHistoryGuruKelasSchema } from "@/types/historyGuruKelas.type";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import { useUser } from "@/hooks/useUser";
-import { Input } from "@/components/ui/input";
 
 interface EditGuruKelasFormProps {
   onSubmit: (data: TypeUpdateHistoryGuruKelasSchema) => void;

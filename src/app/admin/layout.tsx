@@ -15,8 +15,6 @@ const adminNavItems: NavItem[] = [
   },
 ];
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export default async function AdminLayout({
   children,
 }: {

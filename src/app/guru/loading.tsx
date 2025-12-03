@@ -24,7 +24,6 @@
 //   );
 // }
 
-import { SidebarMenuSkeleton } from "@/app/_components/shared/sidebar-menu-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminLoading() {

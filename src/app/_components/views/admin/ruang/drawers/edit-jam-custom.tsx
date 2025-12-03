@@ -16,6 +16,14 @@ export default function EditJam() {
   const { isDrawerOpen, selectedJam, closeDrawer, clearSelected } =
     useJamCustomStore();
 
+  const editJamForm = useForm<TypeClientJamCustomSchema>({
+    resolver: zodResolver(clientJamCustomSchema),
+    defaultValues: {
+      jamMulai: selectedJam?.jamMulai,
+      jamSelesai: selectedJam?.jamSelesai,
+    },
+  });
+
   useEffect(() => {
     if (selectedJam) {
       editJamForm.reset({
@@ -26,14 +34,6 @@ export default function EditJam() {
   }, [selectedJam]);
 
   const isOpen = isDrawerOpen("edit");
-
-  const editJamForm = useForm<TypeClientJamCustomSchema>({
-    resolver: zodResolver(clientJamCustomSchema),
-    defaultValues: {
-      jamMulai: selectedJam?.jamMulai,
-      jamSelesai: selectedJam?.jamSelesai,
-    },
-  });
 
   const { customMutations } = useJam({
     onSuccessUpdate: () => {

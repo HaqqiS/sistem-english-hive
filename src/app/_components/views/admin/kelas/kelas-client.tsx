@@ -3,7 +3,6 @@
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { columns as jadwalColumns } from "./columns/columns-jadwal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useKelas } from "@/hooks/useKelas";
 import { useState } from "react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";

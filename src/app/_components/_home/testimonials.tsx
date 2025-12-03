@@ -161,7 +161,7 @@ export default function Testimonials() {
               variants={containerVariants}
             >
               <AnimatePresence mode="popLayout" custom={direction}>
-                {visibleItems.map((item, index) => {
+                {visibleItems.map((item) => {
                   const isCenter = item.position === "center";
 
                   // Tentukan style aktif/inaktif

@@ -6,13 +6,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import {
-  clientPendaftaranKelasSchema,
   clientTambahMuridSchema,
   type TypeClientTambahMuridSchema,
 } from "@/types/pendaftaranKelas.type";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import type z from "zod";
 import { useMurid } from "@/hooks/useMurid";
 
 interface TambahMuridDetailKelasProps {

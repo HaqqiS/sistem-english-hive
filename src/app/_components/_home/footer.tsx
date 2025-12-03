@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  Beef as Bee,
   Instagram,
   Facebook,
   Youtube,

@@ -1,7 +1,4 @@
 import type { NavItem } from "@/types/nav.type";
-import { Home, Users, BookCopy, Settings } from "lucide-react"; // Impor ikon yang Anda butuhkan
-import { auth } from "@/server/auth"; // Impor fungsi auth dari T3/NextAuth
-import { redirect } from "next/navigation";
 import DashboardLayout from "../_components/layouts/dashboard-layout";
 
 // Tentukan navigasi khusus untuk Teacher

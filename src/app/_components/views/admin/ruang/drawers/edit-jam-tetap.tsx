@@ -16,6 +16,16 @@ export default function EditJamTetap() {
   const { isDrawerOpen, selectedJam, closeDrawer, clearSelected } =
     useJamTetapStore();
 
+  const editJamForm = useForm<TypeClientJamTetapSchema>({
+    resolver: zodResolver(clientJamSchema),
+    defaultValues: {
+      cabangId: selectedJam?.cabangId,
+      jamMulai: selectedJam?.jamMulai,
+      jamSelesai: selectedJam?.jamSelesai,
+      namaSlot: selectedJam?.namaSlot,
+    },
+  });
+
   useEffect(() => {
     if (selectedJam) {
       editJamForm.reset({
@@ -28,16 +38,6 @@ export default function EditJamTetap() {
   }, [selectedJam]);
 
   const isOpen = isDrawerOpen("edit");
-
-  const editJamForm = useForm<TypeClientJamTetapSchema>({
-    resolver: zodResolver(clientJamSchema),
-    defaultValues: {
-      cabangId: selectedJam?.cabangId,
-      jamMulai: selectedJam?.jamMulai,
-      jamSelesai: selectedJam?.jamSelesai,
-      namaSlot: selectedJam?.namaSlot,
-    },
-  });
 
   const { tetapMutations } = useJam({
     onSuccessUpdate: () => {

@@ -4,7 +4,6 @@ import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useKelas } from "@/hooks/useKelas";
 import {
   clientUpdatePendaftaranKelasSchema,
   type TypeClientUpdatePendaftaranKelasSchema,

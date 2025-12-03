@@ -17,8 +17,6 @@ import Footer from "./_components/_home/footer";
 import FloatingButtons from "@/app/_components/_home/floating_buttons";
 
 export default async function Home() {
-  const session = await auth();
-
   await Promise.all([
     api.cabang.getAllList.prefetch(),
     // api.jadwalKelas.getAll.prefetch(),

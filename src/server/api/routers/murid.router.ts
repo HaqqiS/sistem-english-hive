@@ -4,7 +4,7 @@ import {
 } from "@/types/murid.type";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
-import { Prisma, StatusMurid } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { paginationSchema } from "@/types/pagination.type";
 

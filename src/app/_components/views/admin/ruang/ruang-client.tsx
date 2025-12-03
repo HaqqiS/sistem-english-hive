@@ -28,14 +28,9 @@ import TambahJamTetap from "./drawers/tambah-jam-tetap";
 import EditJamTetap from "./drawers/edit-jam-tetap";
 import TambahJamCustom from "./drawers/tambah-jam-custom";
 import EditJamCustom from "./drawers/edit-jam-custom";
-import type { PaginationState } from "@tanstack/react-table";
 
 export default function RuangClient() {
   // State management
-  const [cabangPagination, setCabangPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 5,
-  });
 
   const { openDrawer: openCabangDrawer } = useCabangStore();
   const { openDrawer: openRuangDrawer } = useRuangStore();
@@ -109,7 +104,7 @@ export default function RuangClient() {
     console.log(item);
   };
 
-  const handleDeleteClickCabang = (id: string, nama: string) => {
+  const handleDeleteClickCabang = (id: string) => {
     // const cabang = dataCabang.find((c) => c.id === id);
     const cabang = dataCabang?.find((c) => c.id === id);
     if (cabang) {
@@ -117,7 +112,7 @@ export default function RuangClient() {
       setDeleteCabangDialogOpen(true);
     }
   };
-  const handleDeleteClickRuang = (id: string, nama: string) => {
+  const handleDeleteClickRuang = (id: string) => {
     const ruang = dataRuang?.find((r) => r.id === id);
     if (ruang) {
       setSelectedRuangToDelete(ruang);
@@ -125,7 +120,7 @@ export default function RuangClient() {
     }
   };
 
-  const handleDeleteClickJamTetap = (id: string, nama: string) => {
+  const handleDeleteClickJamTetap = (id: string) => {
     const jam = dataJamTetap?.find((j) => j.id === id);
     if (jam) {
       setSelectedJamTetapToDelete(jam);

@@ -85,7 +85,7 @@ export default function MuridClient() {
       handleEditNotRegistered(item);
     },
     onDeleteClick: (pendaftaranId) => {
-      console.log("deleted");
+      console.log("deleted", pendaftaranId);
     },
   });
 

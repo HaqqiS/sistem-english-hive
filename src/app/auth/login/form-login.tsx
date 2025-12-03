@@ -16,7 +16,6 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import InputPassword from "@/app/_components/shared/input-password";
-import Link from "next/link";
 import { useState } from "react";
 
 export default function LoginForm() {

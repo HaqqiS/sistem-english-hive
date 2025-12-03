@@ -7,6 +7,7 @@ export type TypePembayaranPaginated =
   RouterOutputs["pembayaran"]["getAllPaginated"];
 export type TypePembayaranJatuhTempo =
   RouterOutputs["pembayaran"]["getTagihanJatuhTempo"][number];
+export type SaldoSiswaData = RouterOutputs["pembayaran"]["getSaldoByMuridId"];
 
 const basePembayaranSchema = z.object({
   pendaftaranKelasId: z.string(),

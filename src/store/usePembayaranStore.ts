@@ -1,13 +1,13 @@
+import type { TypePembayaran } from "@/types/pembayaran.type";
 import { create } from "zustand";
-import type { PembayaranData } from "@/hooks/usePembayaran";
 
 type DrawerType = "none" | "edit" | "create";
 
 interface PembayaranStore {
   activeDrawer: DrawerType;
-  selectedPembayaran: PembayaranData | null;
+  selectedPembayaran: TypePembayaran | null;
 
-  openDrawer: (drawer: DrawerType, item?: PembayaranData) => void;
+  openDrawer: (drawer: DrawerType, item?: TypePembayaran) => void;
   closeDrawer: () => void;
 
   isDrawerOpen: (drawer: DrawerType) => boolean;

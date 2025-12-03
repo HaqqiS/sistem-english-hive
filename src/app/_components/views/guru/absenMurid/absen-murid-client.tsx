@@ -19,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 
 export default function AbsenMuridClient() {
   const { dataWithSesi: dataKelas, isLoadingWithSesi } = useKelas({
-    enableQueryGetAll: false,
     enableQueryGetKelasWithSesi: true,
   });
 

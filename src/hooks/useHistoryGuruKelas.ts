@@ -122,6 +122,7 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
     // Utils untuk manual invalidation jika perlu
     // refetch: kelasQuery.refetch,
     refetchById: historyGuruKelasQuery.refetch,
-    invalidate: () => apiUtils.kelas.getAll.invalidate(),
+    invalidate: () =>
+      apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate(),
   };
 }

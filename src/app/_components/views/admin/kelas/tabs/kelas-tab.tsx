@@ -64,7 +64,6 @@ export default function KelasTab() {
     refetchKelasCount,
     mutations: kelasMutations,
   } = useKelas({
-    enableQueryGetAll: false,
     enableQueryGetKelasCount: true,
     onSuccessDelete: () => {
       setDeleteKelasDialogOpen(false);

@@ -2,18 +2,10 @@
 
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
-import type { RouterOutputs } from "@/trpc/react";
 import type { StatusPembayaran } from "@prisma/client";
 import type { PaginationState } from "@tanstack/react-table";
 import { keepPreviousData } from "@tanstack/react-query";
-import type { Type } from "typescript";
 import type { TypePembayaranPaginated } from "@/types/pembayaran.type";
-
-// Define types based on Router Outputs for easier usage in components
-export type PembayaranData = RouterOutputs["pembayaran"]["getAll"][number];
-export type PembayaranJatuhTempoData =
-  RouterOutputs["pembayaran"]["getTagihanJatuhTempo"][number];
-export type SaldoSiswaData = RouterOutputs["pembayaran"]["getSaldoSiswa"];
 
 interface UsePembayaranOptions {
   // Query options
@@ -51,7 +43,6 @@ export function usePembayaran(options?: UsePembayaranOptions) {
       apiUtils.pembayaran.getTagihanJatuhTempo.invalidate(),
       // TAMBAHAN: Invalidate list detail & saldo siswa
       apiUtils.pembayaran.getAll.invalidate(),
-      apiUtils.pembayaran.getSaldoSiswa.invalidate(),
       apiUtils.pembayaran.getSaldoByMuridId.invalidate(),
     ]);
   };
@@ -107,7 +98,6 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // 3. Get Saldo Siswa (Helper wrapper)
   // Usage: const { data: saldo } = usePembayaran().getSaldoSiswaQuery({ pendaftaranKelasId: "..." })
   // Note: We expose the hook creator itself so components can call it with specific IDs
-  const getSaldoSiswaQuery = api.pembayaran.getSaldoSiswa.useQuery;
 
   const getSaldoByMuridIdQuery = api.pembayaran.getSaldoByMuridId.useQuery;
 
@@ -174,7 +164,6 @@ export function usePembayaran(options?: UsePembayaranOptions) {
     refetchJatuhTempo: getJatuhTempoQuery.refetch,
 
     // Expose Query Hook for specific ID usage
-    getSaldoSiswaQuery,
 
     getSaldoByMuridIdQuery,
 

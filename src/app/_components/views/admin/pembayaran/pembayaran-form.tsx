@@ -41,7 +41,6 @@ export default function PembayaranForm({ onSubmit }: PembayaranFormProps) {
   // 2. Ambil Data Kelas (Untuk Dropdown 1 & Harga)
   const { dataKelasAktif } = useKelas({
     enableQueryGetKelasId: true, // Mengambil list kelas aktif
-    enableQueryGetAll: false,
   });
 
   // 3. Ambil Data Siswa berdasarkan Kelas yang dipilih (Untuk Dropdown 2)

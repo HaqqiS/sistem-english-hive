@@ -1,4 +1,3 @@
-// @ts-exopect-error Async Server Component
 import "@/styles/globals.css";
 
 import { type Metadata } from "next";
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
   title: "English Hive",
   description:
     "Kursus bahasa Inggris interaktif dengan tutor berpengalaman. Tingkatkan kemampuan speaking, listening, reading, dan writing Anda dengan metode pembelajaran yang menyenangkan.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [{ rel: "icon", url: "/logo_putih.webp" }],
 };
 
 const geist = Geist({

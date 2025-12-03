@@ -364,7 +364,6 @@ export default function JadwalKelasForm({
 
   const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
     useKelas({
-      enableQueryGetAll: false,
       enableQueryGetKelasId: true,
       enableQueryGetKelasCount: false,
     });

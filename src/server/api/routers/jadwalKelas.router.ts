@@ -1,7 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { serverCreateBulkJadwalSchema } from "@/types/jadwalKelas.type";
 import { TRPCError } from "@trpc/server";
-import { Hari } from "@prisma/client";
+import { Hari, Prisma } from "@prisma/client";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import z from "zod";
 
@@ -98,137 +98,152 @@ export const jadwalKelasRouter = createTRPCRouter({
     .input(serverCreateBulkJadwalSchema)
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+      try {
+        // Gunakan transaction agar semua jadwal berhasil dibuat atau gagal semua
+        const result = await db.$transaction(async (tx) => {
+          const createdSchedules = [];
 
-      // Gunakan transaction agar semua jadwal berhasil dibuat atau gagal semua
-      const result = await db.$transaction(async (tx) => {
-        const createdSchedules = [];
+          // Loop setiap item jadwal yang dikirim dari FE
+          for (const scheduleData of input) {
+            const { kelasId, ruangId, hari, tipeJam } = scheduleData;
 
-        // Loop setiap item jadwal yang dikirim dari FE
-        for (const scheduleData of input) {
-          const { kelasId, ruangId, hari, tipeJam } = scheduleData;
+            let jamSlotCustomId: string | undefined = undefined;
+            let jamSlotTetapId: string | undefined = undefined;
+            let checkJamMulai = "";
+            let checkJamSelesai = "";
 
-          let jamSlotCustomId: string | undefined = undefined;
-          let jamSlotTetapId: string | undefined = undefined;
-          let checkJamMulai = "";
-          let checkJamSelesai = "";
+            // --- LOGIKA PER CABANG (CUSTOM / TETAP) ---
 
-          // --- LOGIKA PER CABANG (CUSTOM / TETAP) ---
+            if (tipeJam === "CUSTOM") {
+              // --- Alur Kelas Privat (Jam Custom) ---
+              const { jamMulai, jamSelesai } = scheduleData;
 
-          if (tipeJam === "CUSTOM") {
-            // --- Alur Kelas Privat (Jam Custom) ---
-            const { jamMulai, jamSelesai } = scheduleData;
+              // Safety check (seharusnya sudah dicover Zod)
+              if (!jamMulai || !jamSelesai) {
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message:
+                    "Jam Mulai dan Selesai wajib diisi untuk jadwal Custom.",
+                });
+              }
+              checkJamMulai = jamMulai;
+              checkJamSelesai = jamSelesai;
 
-            // Safety check (seharusnya sudah dicover Zod)
-            if (!jamMulai || !jamSelesai) {
-              throw new TRPCError({
-                code: "BAD_REQUEST",
-                message:
-                  "Jam Mulai dan Selesai wajib diisi untuk jadwal Custom.",
+              const existingJamCustom = await tx.jamSlotCustom.findFirst({
+                where: { jamMulai, jamSelesai },
               });
-            }
-            checkJamMulai = jamMulai;
-            checkJamSelesai = jamSelesai;
 
-            const existingJamCustom = await tx.jamSlotCustom.findFirst({
-              where: { jamMulai, jamSelesai },
+              if (existingJamCustom) {
+                jamSlotCustomId = existingJamCustom.id;
+              } else {
+                const newJamCustom = await tx.jamSlotCustom.create({
+                  data: { jamMulai, jamSelesai },
+                });
+                jamSlotCustomId = newJamCustom.id;
+              }
+            } else if (tipeJam === "TETAP") {
+              // --- Alur Kelas Reguler (Jam Tetap) ---
+              jamSlotTetapId = scheduleData.jamSlotTetapId;
+
+              // Validasi Konsistensi Cabang
+              const [slot, ruang] = await Promise.all([
+                tx.jamSlotTetap.findUnique({
+                  where: { id: jamSlotTetapId },
+                  select: { cabangId: true, jamMulai: true, jamSelesai: true },
+                }),
+                tx.ruang.findUnique({
+                  where: { id: ruangId },
+                  select: { cabangId: true, namaRuang: true },
+                }),
+              ]);
+
+              if (!slot || !ruang) {
+                throw new TRPCError({
+                  code: "NOT_FOUND",
+                  message: "Data Ruang atau Slot Jam tidak ditemukan.",
+                });
+              }
+
+              if (slot.cabangId !== ruang.cabangId) {
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message: `Konflik Cabang: Ruang dan Slot Jam harus berada di cabang yang sama (Hari: ${hari}).`,
+                });
+              }
+
+              checkJamMulai = slot.jamMulai;
+              checkJamSelesai = slot.jamSelesai;
+            }
+
+            const conflictingSchedule = await tx.jadwalKelas.findFirst({
+              where: {
+                hari: hari,
+                ruangId: ruangId,
+                // Logic overlapping:
+                // (StartA < EndB) AND (EndA > StartB)
+                // Kita cek apakah ada jadwal di DB (B) yang bertabrakan dengan input kita (A)
+                OR: [
+                  // Cek tabrakan dengan jadwal yang pakai slot TETAP
+                  {
+                    jamSlotTetap: {
+                      jamMulai: { lt: checkJamSelesai },
+                      jamSelesai: { gt: checkJamMulai },
+                    },
+                  },
+                  // Cek tabrakan dengan jadwal yang pakai slot CUSTOM
+                  {
+                    jamSlotCustom: {
+                      jamMulai: { lt: checkJamSelesai },
+                      jamSelesai: { gt: checkJamMulai },
+                    },
+                  },
+                ],
+              },
+              include: {
+                kelas: { select: { kodeKelas: true } },
+              },
             });
 
-            if (existingJamCustom) {
-              jamSlotCustomId = existingJamCustom.id;
-            } else {
-              const newJamCustom = await tx.jamSlotCustom.create({
-                data: { jamMulai, jamSelesai },
-              });
-              jamSlotCustomId = newJamCustom.id;
-            }
-          } else if (tipeJam === "TETAP") {
-            // --- Alur Kelas Reguler (Jam Tetap) ---
-            jamSlotTetapId = scheduleData.jamSlotTetapId;
-
-            // Validasi Konsistensi Cabang
-            const [slot, ruang] = await Promise.all([
-              tx.jamSlotTetap.findUnique({
-                where: { id: jamSlotTetapId },
-                select: { cabangId: true, jamMulai: true, jamSelesai: true },
-              }),
-              tx.ruang.findUnique({
-                where: { id: ruangId },
-                select: { cabangId: true, namaRuang: true },
-              }),
-            ]);
-
-            if (!slot || !ruang) {
+            if (conflictingSchedule) {
               throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Data Ruang atau Slot Jam tidak ditemukan.",
+                code: "CONFLICT",
+                message: `Bentrok Jadwal! Ruang ini sudah dipakai oleh kelas ${conflictingSchedule.kelas.kodeKelas} pada jam yang beririsan di hari ${hari}.`,
               });
             }
 
-            if (slot.cabangId !== ruang.cabangId) {
-              throw new TRPCError({
-                code: "BAD_REQUEST",
-                message: `Konflik Cabang: Ruang dan Slot Jam harus berada di cabang yang sama (Hari: ${hari}).`,
-              });
-            }
+            // --- BUAT JADWAL KELAS ---
+            const createdJadwal = await tx.jadwalKelas.create({
+              data: {
+                kelasId: kelasId,
+                ruangId: ruangId,
+                hari: hari,
+                jamSlotTetapId: jamSlotTetapId,
+                jamSlotCustomId: jamSlotCustomId,
+              },
+            });
 
-            checkJamMulai = slot.jamMulai;
-            checkJamSelesai = slot.jamSelesai;
+            createdSchedules.push(createdJadwal);
           }
 
-          const conflictingSchedule = await tx.jadwalKelas.findFirst({
-            where: {
-              hari: hari,
-              ruangId: ruangId,
-              // Logic overlapping:
-              // (StartA < EndB) AND (EndA > StartB)
-              // Kita cek apakah ada jadwal di DB (B) yang bertabrakan dengan input kita (A)
-              OR: [
-                // Cek tabrakan dengan jadwal yang pakai slot TETAP
-                {
-                  jamSlotTetap: {
-                    jamMulai: { lt: checkJamSelesai },
-                    jamSelesai: { gt: checkJamMulai },
-                  },
-                },
-                // Cek tabrakan dengan jadwal yang pakai slot CUSTOM
-                {
-                  jamSlotCustom: {
-                    jamMulai: { lt: checkJamSelesai },
-                    jamSelesai: { gt: checkJamMulai },
-                  },
-                },
-              ],
-            },
-            include: {
-              kelas: { select: { kodeKelas: true } },
-            },
-          });
+          return createdSchedules;
+        });
 
-          if (conflictingSchedule) {
+        return result;
+      } catch (error) {
+        // Handle Prisma Errors yang mungkin lolos dari validasi manual
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2003") {
+            // Foreign key violation (misal kelasId/ruangId tidak valid/dihapus saat proses)
             throw new TRPCError({
-              code: "CONFLICT",
-              message: `Bentrok Jadwal! Ruang ini sudah dipakai oleh kelas ${conflictingSchedule.kelas.kodeKelas} pada jam yang beririsan di hari ${hari}.`,
+              code: "BAD_REQUEST",
+              message:
+                "Terjadi kesalahan referensi data (Kelas atau Ruang mungkin tidak valid).",
             });
           }
-
-          // --- BUAT JADWAL KELAS ---
-          const createdJadwal = await tx.jadwalKelas.create({
-            data: {
-              kelasId: kelasId,
-              ruangId: ruangId,
-              hari: hari,
-              jamSlotTetapId: jamSlotTetapId,
-              jamSlotCustomId: jamSlotCustomId,
-            },
-          });
-
-          createdSchedules.push(createdJadwal);
         }
-
-        return createdSchedules;
-      });
-
-      return result;
+        // Lempar error TRPCError yang kita buat manual di atas (CONFLICT, NOT_FOUND)
+        throw error;
+      }
     }),
 
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -382,22 +397,29 @@ export const jadwalKelasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const jadwal = await db.jadwalKelas.findUnique({
-        where: { id: input.id },
-        select: { jamSlotCustomId: true },
-      });
-
-      if (!jadwal) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Jadwal tidak ditemukan",
+      try {
+        await db.jadwalKelas.delete({
+          where: { id: input.id },
         });
+        return { success: true };
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Jadwal tidak ditemukan atau sudah dihapus.",
+            });
+          }
+          // P2003: Jika suatu hari Anda mengubah relasi SesiPertemuan ke RESTRICT
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message:
+                "Jadwal ini sudah memiliki riwayat Sesi Pertemuan dan tidak dapat dihapus.",
+            });
+          }
+        }
+        throw error;
       }
-
-      // Hapus Jadwal
-      await db.jadwalKelas.delete({
-        where: { id: input.id },
-      });
-      return { success: true };
     }),
 });

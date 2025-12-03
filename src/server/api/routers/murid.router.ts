@@ -14,12 +14,16 @@ export const muridRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
 
-      const murid = await db.murid.create({
-        data: {
-          ...input,
-        },
-      });
-      return murid;
+      try {
+        const murid = await db.murid.create({
+          data: {
+            ...input,
+          },
+        });
+        return murid;
+      } catch (error) {
+        throw error;
+      }
     }),
 
   getAllMurid: protectedProcedure.query(async ({ ctx }) => {
@@ -124,13 +128,25 @@ export const muridRouter = createTRPCRouter({
     .input(updateStatusMuridSchema)
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
-      const updatedMurid = await db.murid.update({
-        where: { id: input.id },
-        data: {
-          statusMurid: input.statusMurid,
-        },
-      });
-      return updatedMurid;
+      try {
+        const updatedMurid = await db.murid.update({
+          where: { id: input.id },
+          data: {
+            statusMurid: input.statusMurid,
+          },
+        });
+        return updatedMurid;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Data murid tidak ditemukan.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 
   updateMurid: protectedProcedure
@@ -142,11 +158,23 @@ export const muridRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
       const { id, ...data } = input;
-      const updatedMurid = await db.murid.update({
-        where: { id },
-        data,
-      });
-      return updatedMurid;
+      try {
+        const updatedMurid = await db.murid.update({
+          where: { id },
+          data,
+        });
+        return updatedMurid;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Data murid tidak ditemukan.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 
   deleteMurid: protectedProcedure
@@ -157,9 +185,30 @@ export const muridRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
-      const deletedMurid = await db.murid.delete({
-        where: { id: input.id },
-      });
-      return deletedMurid;
+      try {
+        const deletedMurid = await db.murid.delete({
+          where: { id: input.id },
+        });
+        return deletedMurid;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Murid sudah dihapus atau tidak ditemukan.",
+            });
+          }
+          // P2003: Foreign Key (Jika murid punya data nilai/history yg restrict)
+          // Meski schema Anda 'Cascade', tetap baik di-handle jika suatu saat diubah
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message:
+                "Murid tidak bisa dihapus karena memiliki data terkait yang tidak bisa dihapus otomatis.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 });

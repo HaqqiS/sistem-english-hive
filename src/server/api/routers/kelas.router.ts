@@ -4,7 +4,7 @@ import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import dayjs from "@/utils/dateUtils";
-import { StatusMurid, StatusPembayaran } from "@prisma/client";
+import { Prisma, StatusMurid, StatusPembayaran } from "@prisma/client";
 
 export const kelasRouter = createTRPCRouter({
   getKelasAktif: protectedProcedure.query(async ({ ctx }) => {
@@ -190,28 +190,32 @@ export const kelasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const existingKodeKelas = await db.kelas.findFirst({
-        where: { kodeKelas: input.kodeKelas },
-      });
-      if (existingKodeKelas) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Kode Kelas sudah digunakan. Silakan gunakan kode lain.",
+      try {
+        const kelas = await db.kelas.create({
+          data: {
+            jenisKelas: input.jenisKelas,
+            level: input.level,
+            grup: input.grup,
+            tipe: input.tipe,
+            kodeKelas: input.kodeKelas,
+            bulanTahunAjar: input.bulanTahunAjar,
+            deskripsi: input.deskripsi,
+            hargaKelas: input.hargaKelas,
+          },
         });
+        return kelas;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          // P2002: Unique Constraint (Kode Kelas sudah ada)
+          if (error.code === "P2002") {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Kelas dengan kode "${input.kodeKelas}" sudah ada.`,
+            });
+          }
+        }
+        throw error;
       }
-      const kelas = await db.kelas.create({
-        data: {
-          jenisKelas: input.jenisKelas,
-          level: input.level,
-          grup: input.grup,
-          tipe: input.tipe,
-          kodeKelas: input.kodeKelas,
-          bulanTahunAjar: input.bulanTahunAjar,
-          deskripsi: input.deskripsi,
-          hargaKelas: input.hargaKelas,
-        },
-      });
-      return kelas;
     }),
 
   updateKelas: protectedProcedure
@@ -219,56 +223,74 @@ export const kelasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const oldKelas = await db.kelas.findUnique({
-        where: { id: input.id },
-        select: { hargaKelas: true },
-      });
-
-      if (!oldKelas) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Kelas tidak ditemukan",
-        });
-      }
-
-      // 2. Cek apakah User mencoba mengubah harga?
-      if (input.hargaKelas !== oldKelas.hargaKelas) {
-        // 3. Cek apakah sudah ada transaksi (Pembayaran) atau Sesi yang berjalan
-        const hasTransactions = await db.pembayaran.findFirst({
-          where: {
-            pendaftaranKelas: { kelasId: input.id },
-          },
-          select: { id: true }, // Cukup ambil ID untuk efisiensi
+      try {
+        const oldKelas = await db.kelas.findUnique({
+          where: { id: input.id },
+          select: { hargaKelas: true },
         });
 
-        // Opsi tambahan: Cek apakah sudah ada sesi berjalan
-        const hasSessions = await db.sesiPertemuanKelas.findFirst({
-          where: { kelasId: input.id },
-          select: { id: true },
-        });
-
-        if (hasTransactions || hasSessions) {
+        if (!oldKelas) {
           throw new TRPCError({
-            code: "PRECONDITION_FAILED", // 412 Precondition Failed
-            message:
-              "Tidak dapat mengubah harga kelas yang sudah memiliki riwayat transaksi atau sesi berjalan. Silakan buat kelas baru untuk harga baru.",
+            code: "NOT_FOUND",
+            message: "Kelas tidak ditemukan",
           });
         }
+
+        // 2. Cek apakah User mencoba mengubah harga?
+        if (input.hargaKelas !== oldKelas.hargaKelas) {
+          // 3. Cek apakah sudah ada transaksi (Pembayaran) atau Sesi yang berjalan
+          const hasPembayaran = await db.pembayaran.findFirst({
+            where: {
+              pendaftaranKelas: { kelasId: input.id },
+            },
+            select: { id: true }, // Cukup ambil ID untuk efisiensi
+          });
+
+          // Opsi tambahan: Cek apakah sudah ada sesi berjalan
+          const hasSesiPertemuan = await db.sesiPertemuanKelas.findFirst({
+            where: { kelasId: input.id },
+            select: { id: true },
+          });
+
+          if (hasPembayaran || hasSesiPertemuan) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED", // 412 Precondition Failed
+              message:
+                "Tidak dapat mengubah harga kelas yang sudah memiliki riwayat transaksi atau sesi berjalan. Silakan buat kelas baru untuk harga baru.",
+            });
+          }
+        }
+        const kelas = await db.kelas.update({
+          where: { id: input.id },
+          data: {
+            jenisKelas: input.jenisKelas,
+            level: input.level,
+            grup: input.grup,
+            tipe: input.tipe,
+            kodeKelas: input.kodeKelas,
+            bulanTahunAjar: input.bulanTahunAjar,
+            deskripsi: input.deskripsi,
+            hargaKelas: input.hargaKelas,
+          },
+        });
+        return kelas;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2002") {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Kelas dengan kode "${input.kodeKelas}" sudah ada.`,
+            });
+          }
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Kelas tidak ditemukan (mungkin sudah dihapus).",
+            });
+          }
+        }
+        throw error;
       }
-      const kelas = await db.kelas.update({
-        where: { id: input.id },
-        data: {
-          jenisKelas: input.jenisKelas,
-          level: input.level,
-          grup: input.grup,
-          tipe: input.tipe,
-          kodeKelas: input.kodeKelas,
-          bulanTahunAjar: input.bulanTahunAjar,
-          deskripsi: input.deskripsi,
-          hargaKelas: input.hargaKelas,
-        },
-      });
-      return kelas;
     }),
 
   deleteKelas: protectedProcedure
@@ -276,24 +298,36 @@ export const kelasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const existingMuridKelas = await db.pendaftaranKelas.findFirst({
-        where: { kelasId: input.id },
-        select: { muridId: true },
-      });
-
-      if (existingMuridKelas) {
-        await db.$transaction(async (tx) => {
-          // update status murid yang terkait menjadi 'NON-AKTIF'
-          await tx.murid.update({
-            where: { id: existingMuridKelas.muridId },
-            data: { statusMurid: StatusMurid.NON_AKTIF },
-          });
+      try {
+        const existingMuridKelas = await db.pendaftaranKelas.findFirst({
+          where: { kelasId: input.id },
+          select: { muridId: true },
         });
+
+        if (existingMuridKelas) {
+          await db.$transaction(async (tx) => {
+            // update status murid yang terkait menjadi 'NON-AKTIF'
+            await tx.murid.update({
+              where: { id: existingMuridKelas.muridId },
+              data: { statusMurid: StatusMurid.NON_AKTIF },
+            });
+          });
+        }
+        const kelas = await db.kelas.delete({
+          where: { id: input.id },
+        });
+        return kelas;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Kelas tidak ditemukan.",
+            });
+          }
+        }
+        throw error;
       }
-      const kelas = await db.kelas.delete({
-        where: { id: input.id },
-      });
-      return kelas;
     }),
 
   upLevelKelas: protectedProcedure
@@ -309,95 +343,108 @@ export const kelasRouter = createTRPCRouter({
         hargaKelas,
       } = input;
 
-      // 1. Ambil Data Kelas Lama
-      const oldKelas = await db.kelas.findUnique({
-        where: { id: oldKelasId },
-      });
-
-      if (!oldKelas) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Kelas lama tidak ditemukan.",
-        });
-      }
-
-      // 2. Ambil Siswa AKTIF di Kelas Lama
-      const activeStudents = await db.pendaftaranKelas.findMany({
-        where: {
-          kelasId: oldKelasId,
-          isAktif: true,
-        },
-      });
-
-      if (activeStudents.length === 0) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Tidak ada siswa aktif di kelas ini untuk dinaikkan.",
-        });
-      }
-
-      // 3. Jalankan Transaksi
-      return await db.$transaction(async (tx) => {
-        // A. Buat Kelas Baru (Salin data lama, override level & bulan)
-        const newKelas = await tx.kelas.create({
-          data: {
-            jenisKelas: oldKelas.jenisKelas,
-            tipe: oldKelas.tipe,
-            grup: oldKelas.grup,
-            deskripsi: oldKelas.deskripsi,
-            cohortId: oldKelas.cohortId,
-            // Override dengan input baru
-            hargaKelas: hargaKelas,
-            level: newLevel,
-            bulanTahunAjar: newBulanTahunAjar,
-            kodeKelas: newKodeKelas,
-          },
+      try {
+        // 1. Ambil Data Kelas Lama
+        const oldKelas = await db.kelas.findUnique({
+          where: { id: oldKelasId },
         });
 
-        // B. Non-aktifkan Pendaftaran di Kelas Lama
-        await tx.pendaftaranKelas.updateMany({
+        if (!oldKelas) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Kelas lama tidak ditemukan.",
+          });
+        }
+
+        // 2. Ambil Siswa AKTIF di Kelas Lama
+        const activeStudents = await db.pendaftaranKelas.findMany({
           where: {
             kelasId: oldKelasId,
             isAktif: true,
           },
-          data: {
-            isAktif: false,
-          },
         });
 
-        // C. Buat Pendaftaran Baru & Tagihan Awal untuk setiap siswa
-        const totalTagihan = newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
-        const jatuhTempo = dayjs(newTanggalMulai).toDate();
-
-        // Kita harus loop karena createMany tidak mengembalikan ID yang dibutuhkan untuk relasi Pembayaran
-        for (const student of activeStudents) {
-          // C.1 Buat Pendaftaran Baru
-          const newPendaftaran = await tx.pendaftaranKelas.create({
-            data: {
-              muridId: student.muridId,
-              kelasId: newKelas.id,
-              tanggalMulai: newTanggalMulai,
-              isAktif: true,
-            },
-          });
-
-          // C.2 Buat Tagihan Awal (8 Pertemuan)
-          await tx.pembayaran.create({
-            data: {
-              pendaftaranKelasId: newPendaftaran.id,
-              pembayaranKe: 1,
-              jumlahBayar: totalTagihan,
-              tanggalJatuhTempo: jatuhTempo,
-              statusBayar: StatusPembayaran.BELUM_LUNAS,
-              note: `Tagihan Kenaikan Kelas (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
-            },
+        if (activeStudents.length === 0) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Tidak ada siswa aktif di kelas ini untuk dinaikkan.",
           });
         }
 
-        return {
-          newKelasId: newKelas.id,
-          movedStudentCount: activeStudents.length,
-        };
-      });
+        // 3. Jalankan Transaksi
+        return await db.$transaction(async (tx) => {
+          // A. Buat Kelas Baru (Salin data lama, override level & bulan)
+          const newKelas = await tx.kelas.create({
+            data: {
+              jenisKelas: oldKelas.jenisKelas,
+              tipe: oldKelas.tipe,
+              grup: oldKelas.grup,
+              deskripsi: oldKelas.deskripsi,
+              cohortId: oldKelas.cohortId,
+              // Override dengan input baru
+              hargaKelas: hargaKelas,
+              level: newLevel,
+              bulanTahunAjar: newBulanTahunAjar,
+              kodeKelas: newKodeKelas,
+            },
+          });
+
+          // B. Non-aktifkan Pendaftaran di Kelas Lama
+          await tx.pendaftaranKelas.updateMany({
+            where: {
+              kelasId: oldKelasId,
+              isAktif: true,
+            },
+            data: {
+              isAktif: false,
+            },
+          });
+
+          // C. Buat Pendaftaran Baru & Tagihan Awal untuk setiap siswa
+          const totalTagihan = newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+          const jatuhTempo = dayjs(newTanggalMulai).toDate();
+
+          // Kita harus loop karena createMany tidak mengembalikan ID yang dibutuhkan untuk relasi Pembayaran
+          for (const student of activeStudents) {
+            // C.1 Buat Pendaftaran Baru
+            const newPendaftaran = await tx.pendaftaranKelas.create({
+              data: {
+                muridId: student.muridId,
+                kelasId: newKelas.id,
+                tanggalMulai: newTanggalMulai,
+                isAktif: true,
+              },
+            });
+
+            // C.2 Buat Tagihan Awal (8 Pertemuan)
+            await tx.pembayaran.create({
+              data: {
+                pendaftaranKelasId: newPendaftaran.id,
+                pembayaranKe: 1,
+                jumlahBayar: totalTagihan,
+                tanggalJatuhTempo: jatuhTempo,
+                statusBayar: StatusPembayaran.BELUM_LUNAS,
+                note: `Tagihan Kenaikan Kelas (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
+              },
+            });
+          }
+
+          return {
+            newKelasId: newKelas.id,
+            movedStudentCount: activeStudents.length,
+          };
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          // P2002: Kode Kelas Baru bentrok
+          if (error.code === "P2002") {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Gagal Up Level: Kelas dengan kode "${newKodeKelas}" sudah ada.`,
+            });
+          }
+        }
+        throw error;
+      }
     }),
 });

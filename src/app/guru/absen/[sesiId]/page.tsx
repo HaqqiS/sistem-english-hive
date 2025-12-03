@@ -1,5 +1,25 @@
 import DetailAbsenMuridClient from "@/app/_components/views/guru/absenMurid/detailAbsenMurid/detail-absen-murid-client";
-import { HydrateClient } from "@/trpc/server";
+import { api, HydrateClient } from "@/trpc/server";
+import type { Metadata } from "next";
+
+interface PageProps {
+  params: Promise<{ sesiId: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { sesiId } = await params;
+
+  // Fetch data ringkas untuk judul (pastikan ini cepat/cached)
+  const sesi = await api.sesiPertemuan
+    .getAll()
+    .then((data) => data.find((s) => s.id === sesiId));
+
+  return {
+    title: sesi ? `Absensi Murid | ${sesi.kelas.kodeKelas}` : "Absensi Murid",
+  };
+}
 
 export default function DetailAbsenMuridPage() {
   return (

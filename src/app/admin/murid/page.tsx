@@ -1,5 +1,10 @@
 import MuridClient from "@/app/_components/views/admin/murid/murid-client";
 import { api, HydrateClient } from "@/trpc/server";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Kelola Murid",
+};
 
 export default async function MuridPage() {
   await Promise.all([

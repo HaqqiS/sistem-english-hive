@@ -1,5 +1,10 @@
 import GuruClient from "@/app/_components/views/admin/guru/guru-client";
 import { api, HydrateClient } from "@/trpc/server";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Kelola Guru",
+};
 
 export default async function VerifikasiAbsenPage() {
   await Promise.all([

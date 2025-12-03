@@ -33,6 +33,18 @@ export const muridRouter = createTRPCRouter({
     return allMurid;
   }),
 
+  getMuridById: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().cuid(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      return await ctx.db.murid.findUnique({
+        where: { id: input.id },
+      });
+    }),
+
   getAllPaginated: protectedProcedure
     .input(paginationSchema)
     .query(async ({ ctx, input }) => {

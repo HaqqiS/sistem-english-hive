@@ -1,5 +1,10 @@
 import KelasClient from "@/app/_components/views/admin/kelas/kelas-client";
 import { api, HydrateClient } from "@/trpc/server";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Kelola Kelas",
+};
 
 export default async function KelasPage() {
   await Promise.all([

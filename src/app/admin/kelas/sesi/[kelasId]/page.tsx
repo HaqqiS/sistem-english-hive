@@ -1,11 +1,27 @@
 import DetailSesiClient from "@/app/_components/views/admin/sesi/detail-sesi-client";
 import { api, HydrateClient } from "@/trpc/server";
+import type { Metadata } from "next";
+
+interface PageProps {
+  params: Promise<{ kelasId: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { kelasId } = await params;
+
+  // Fetch data ringkas untuk judul (pastikan ini cepat/cached)
+  const kelas = await api.kelas.getKelasById({ id: kelasId });
+
+  return {
+    title: kelas ? `Detail Sesi | ${kelas.kodeKelas}` : "Detail Sesi Kelas",
+  };
+}
 
 export default async function DetailSesiPertemuanKelasPage({
   params,
-}: {
-  params: Promise<{ kelasId: string }>;
-}) {
+}: PageProps) {
   const { kelasId } = await params;
 
   await api.sesiPertemuan.getSesiSummaryByKelasId.prefetch({

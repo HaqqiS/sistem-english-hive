@@ -10,10 +10,13 @@ import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
-  title: "English Hive",
+  title: {
+    template: "%s | English Hive", // %s akan diganti dengan title dari setiap page
+    default: "English Hive", // Title default jika page tidak punya metadata
+  },
   description:
     "Kursus bahasa Inggris interaktif dengan tutor berpengalaman. Tingkatkan kemampuan speaking, listening, reading, dan writing Anda dengan metode pembelajaran yang menyenangkan.",
-  icons: [{ rel: "icon", url: "/logo_putih.webp" }],
+  icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
 const geist = Geist({

@@ -1,6 +1,11 @@
 import GuruDashboardClient from "@/app/_components/views/guru/dashboard/guru-dashboard-client";
 import { api, HydrateClient } from "@/trpc/server";
 import dayjs from "@/utils/dateUtils";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard Guru",
+};
 
 // Pastikan data selalu fresh untuk guru
 export const revalidate = 0;

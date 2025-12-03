@@ -1,7 +1,12 @@
 import PembayaranClient from "@/app/_components/views/admin/pembayaran/pembayaran-client";
 import { api, HydrateClient } from "@/trpc/server";
+import type { Metadata } from "next";
 
-export default async function KelasPage() {
+export const metadata: Metadata = {
+  title: "Kelola Pembayaran",
+};
+
+export default async function PembayaranPage() {
   // const dataPembayaran = await api.pembayaran.getAllPaginated({
   //   pageIndex: 0,
   //   pageSize: 10,

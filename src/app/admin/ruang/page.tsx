@@ -1,7 +1,10 @@
 import RuangClient from "@/app/_components/views/admin/ruang/ruang-client";
 import { api, HydrateClient } from "@/trpc/server";
+import type { Metadata } from "next";
 
-// const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+export const metadata: Metadata = {
+  title: "Kelola Ruang",
+};
 
 export default async function RuangPage() {
   await Promise.all([

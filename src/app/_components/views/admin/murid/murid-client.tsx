@@ -3,12 +3,7 @@
 import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import type {
-  TypeAllMurid,
-  TypeAllMuridPaginated,
-  TypeMuridNotRegistered,
-  TypeMuridNotRegisteredPaginated,
-} from "@/types/murid.type";
+import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
 import { columns as createColumnsMuridNotRegistered } from "./columns/columns-murid-not-registered";
 import { columns as createColumnsAllMurid } from "./columns/columns-murid";

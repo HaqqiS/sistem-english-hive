@@ -14,47 +14,12 @@ export const muridRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
 
-      try {
-        // Coba buat murid baru
-        const murid = await db.murid.create({
-          data: {
-            ...input,
-          },
-        });
-        return murid;
-      } catch (error) {
-        // --- INI ADALAH PENANGANAN ERROR YANG BARU ---
-
-        // 1. Cek apakah ini error yang diketahui dari Prisma
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          // 2. Cek apakah kodenya adalah 'P2002' (Unique constraint failed)
-          if (error.code === "P2002") {
-            // 3. Cari tahu field mana yang duplikat
-            const target = error.meta?.target as string[];
-
-            if (target.includes("email")) {
-              throw new TRPCError({
-                code: "CONFLICT", // 'CONFLICT' (409) adalah kode yang tepat
-                message:
-                  "Email ini sudah terdaftar. Silakan gunakan email lain.",
-              });
-            }
-            if (target.includes("noWA")) {
-              throw new TRPCError({
-                code: "CONFLICT",
-                message:
-                  "Nomor WhatsApp ini sudah terdaftar. Silakan gunakan nomor lain.",
-              });
-            }
-          }
-        }
-
-        // 4. Jika error lain, lempar error server internal
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Gagal mendaftarkan murid. Silakan coba lagi nanti.",
-        });
-      }
+      const murid = await db.murid.create({
+        data: {
+          ...input,
+        },
+      });
+      return murid;
     }),
 
   getAllMurid: protectedProcedure.query(async ({ ctx }) => {

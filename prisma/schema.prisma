@@ -98,7 +98,7 @@ model VerificationToken {
 
 model Cabang {
     id         String @id @default(cuid())
-    namaCabang String
+    namaCabang String @unique
     alamat     String
     noTelp     String
 
@@ -254,7 +254,7 @@ model Kelas {
     bulanTahunAjar String     @db.VarChar(7) // format: "MM/YYYY", e.g., "08/2025"
     deskripsi      String?
     hargaKelas     Int
-    kodeKelas      String // e.g., "TinyTods 1-A|reguler|03/2025"
+    kodeKelas      String     @unique // e.g., "TinyTods 1-A|reguler|03/2025"
 
     // cohortId Int @default(autoincrement())
     cohortId String @default(cuid())
@@ -415,6 +415,7 @@ model Pembayaran {
 
     pendaftaranKelas PendaftaranKelas @relation(fields: [pendaftaranKelasId], references: [id], onDelete: Cascade)
 
+    @@unique([pendaftaranKelasId, pembayaranKe])
     @@index([pendaftaranKelasId]) // <-- Index baru
     @@index([tanggalJatuhTempo]) // <-- Index baru untuk reminder
     @@index([statusBayar])

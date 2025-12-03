@@ -2,7 +2,7 @@ import { serverSesiPertemuanSchema } from "@/types/sesiPertemuan.type";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
-import type { StatusAbsenMurid } from "@prisma/client";
+import { Prisma, type StatusAbsenMurid } from "@prisma/client";
 
 export const sesiPertemuanRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -155,14 +155,26 @@ export const sesiPertemuanRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      // Implementasi pembuatan sesi pertemuan di database
-      const newSesiPertemuan = await db.sesiPertemuanKelas.create({
-        data: {
-          kelasId: input.kelasId,
-          ruangId: input.ruangId,
-          tanggalWaktu: input.tanggalWaktu,
-        },
-      });
-      return newSesiPertemuan;
+      try {
+        return await db.sesiPertemuanKelas.create({
+          data: {
+            kelasId: input.kelasId,
+            ruangId: input.ruangId,
+            tanggalWaktu: input.tanggalWaktu,
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          // P2003: Foreign Key (Kelas atau Ruang tidak valid)
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Gagal membuat sesi: Kelas atau Ruang yang dipilih tidak valid.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 });

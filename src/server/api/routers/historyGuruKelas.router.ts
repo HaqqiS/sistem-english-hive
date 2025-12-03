@@ -4,6 +4,8 @@ import {
 } from "@/types/historyGuruKelas.type";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
+import { Prisma } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 
 export const historyGuruKelasRouter = createTRPCRouter({
   getHistoryGuruByKelasId: protectedProcedure
@@ -25,28 +27,41 @@ export const historyGuruKelasRouter = createTRPCRouter({
     .input(serverHistoryGuruKelasSchema)
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
-      const existingGuruRecord = await db.historyGuruKelas.findFirst({
-        where: {
-          kelasId: input.kelasId,
-          statusGuru: "ACTIVE",
-        },
-      });
+      try {
+        const existingGuruRecord = await db.historyGuruKelas.findFirst({
+          where: {
+            kelasId: input.kelasId,
+            statusGuru: "ACTIVE",
+          },
+        });
 
-      if (existingGuruRecord) {
-        throw new Error(
-          "Sudah ada guru yang ditugaskan pada kelas ini dan masih aktif.",
-        );
+        if (existingGuruRecord) {
+          throw new Error(
+            "Sudah ada guru yang ditugaskan pada kelas ini dan masih aktif.",
+          );
+        }
+        const newHistoryGuruKelas = await db.historyGuruKelas.create({
+          data: {
+            kelasId: input.kelasId,
+            guruId: input.guruId,
+            statusGuru: input.statusGuru,
+            mulaiPada: input.mulaiPada,
+            selesaiPada: input.selesaiPada,
+          },
+        });
+        return newHistoryGuruKelas;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          // P2003: Foreign Key Violation (KelasId atau GuruId tidak ada di DB)
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Data Kelas atau Guru tidak valid/tidak ditemukan.",
+            });
+          }
+        }
+        throw error;
       }
-      const newHistoryGuruKelas = await db.historyGuruKelas.create({
-        data: {
-          kelasId: input.kelasId,
-          guruId: input.guruId,
-          statusGuru: input.statusGuru,
-          mulaiPada: input.mulaiPada,
-          selesaiPada: input.selesaiPada,
-        },
-      });
-      return newHistoryGuruKelas;
     }),
 
   updateHistoryGuruKelas: protectedProcedure
@@ -58,39 +73,57 @@ export const historyGuruKelasRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
 
-      const oldRecord = await db.historyGuruKelas.findUnique({
-        where: { id: input.id },
-      });
-
-      if (input.guruId === oldRecord?.guruId) {
-        const updatedRecord = await db.historyGuruKelas.update({
+      try {
+        const oldRecord = await db.historyGuruKelas.findUnique({
           where: { id: input.id },
-          data: {
-            // Hanya update fields selain guruId
-            mulaiPada: input.mulaiPada,
-          },
-        });
-        return updatedRecord;
-      } else {
-        // Tutup record lama
-        await db.historyGuruKelas.update({
-          where: { id: input.id },
-          data: {
-            selesaiPada: new Date().toISOString().split("T")[0], // format "YYYY-MM-DD"
-            statusGuru: "INACTIVE",
-          },
-        });
-        // Buat record baru
-        const newRecord = await db.historyGuruKelas.create({
-          data: {
-            kelasId: oldRecord?.kelasId ?? "",
-            guruId: input.guruId,
-            statusGuru: "ACTIVE",
-            mulaiPada: input.mulaiPada,
-          },
         });
 
-        return newRecord;
+        if (input.guruId === oldRecord?.guruId) {
+          const updatedRecord = await db.historyGuruKelas.update({
+            where: { id: input.id },
+            data: {
+              // Hanya update fields selain guruId
+              mulaiPada: input.mulaiPada,
+            },
+          });
+          return updatedRecord;
+        } else {
+          // Tutup record lama
+          await db.historyGuruKelas.update({
+            where: { id: input.id },
+            data: {
+              selesaiPada: new Date().toISOString().split("T")[0], // format "YYYY-MM-DD"
+              statusGuru: "INACTIVE",
+            },
+          });
+          // Buat record baru
+          const newRecord = await db.historyGuruKelas.create({
+            data: {
+              kelasId: oldRecord?.kelasId ?? "",
+              guruId: input.guruId,
+              statusGuru: "ACTIVE",
+              mulaiPada: input.mulaiPada,
+            },
+          });
+
+          return newRecord;
+        }
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Data history guru tidak ditemukan saat ingin diupdate.",
+            });
+          }
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Guru pengganti tidak valid.",
+            });
+          }
+        }
+        throw error;
       }
     }),
 
@@ -103,9 +136,20 @@ export const historyGuruKelasRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
-      const deleted = await db.historyGuruKelas.delete({
-        where: { id: input.id },
-      });
-      return deleted;
+      try {
+        return await db.historyGuruKelas.delete({
+          where: { id: input.id },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Data history sudah dihapus atau tidak ditemukan.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 });

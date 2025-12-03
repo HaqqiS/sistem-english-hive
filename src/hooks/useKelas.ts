@@ -12,12 +12,12 @@ import { skipToken } from "@tanstack/react-query";
 
 interface UseKelasOptions {
   // Query options
-  enableQueryGetAll?: boolean;
+  enableQueryGetKelasAktif?: boolean;
   enableQueryGetKelasCount?: boolean;
   enableQueryGetKelasId?: boolean;
   enableQueryGetKelasWithSesi?: boolean;
 
-  initialData?: TypeKelas[];
+  initialDataKelasAktif?: TypeKelas[];
   initialDataKelasCount?: TypeKelasWithSesiPertemuanCount[];
   initialDataKelasWithSesi?: TypeKelasByGuruId[];
   initialDataHistory?: TypeKelasHistory[];
@@ -38,17 +38,11 @@ export function useKelas(options?: UseKelasOptions) {
 
   const kelasId = options?.kelasId;
   const cohortId = options?.cohortId;
-  const isGetAllEnabled = (options?.enableQueryGetAll ?? true) && !kelasId;
   // ========== QUERIES ==========
 
-  const kelasQuery = api.kelas.getAll.useQuery(undefined, {
-    enabled: isGetAllEnabled,
-    initialData: options?.initialData,
-  });
-
   const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(undefined, {
-    enabled: options?.enableQueryGetKelasId ?? false,
-    initialData: options?.initialData,
+    enabled: options?.enableQueryGetKelasAktif ?? false,
+    initialData: options?.initialDataKelasAktif,
   });
 
   const kelasCountQuery = api.kelas.getKelasAndCount.useQuery(undefined, {
@@ -81,7 +75,6 @@ export function useKelas(options?: UseKelasOptions) {
   // CREATE
   const createMutation = api.kelas.createKelas.useMutation({
     onSuccess: async (newKelas) => {
-      await apiUtils.kelas.getAll.invalidate();
       await apiUtils.kelas.getKelasAndCount.invalidate();
       toast.success("Kelas berhasil ditambahkan");
       options?.onSuccessCreate?.(newKelas);
@@ -94,7 +87,6 @@ export function useKelas(options?: UseKelasOptions) {
   // UPDATE
   const updateMutation = api.kelas.updateKelas.useMutation({
     onSuccess: async () => {
-      await apiUtils.kelas.getAll.invalidate();
       await apiUtils.kelas.getKelasAndCount.invalidate();
       toast.success("Kelas berhasil diupdate");
       options?.onSuccessUpdate?.();
@@ -107,7 +99,6 @@ export function useKelas(options?: UseKelasOptions) {
   // DELETE
   const deleteMutation = api.kelas.deleteKelas.useMutation({
     onSuccess: async () => {
-      await apiUtils.kelas.getAll.invalidate();
       await apiUtils.kelas.getKelasAndCount.invalidate();
       toast.success("Kelas berhasil dihapus");
       options?.onSuccessDelete?.();
@@ -121,7 +112,6 @@ export function useKelas(options?: UseKelasOptions) {
   const upLevelMutation = api.kelas.upLevelKelas.useMutation({
     onSuccess: async () => {
       // Invalidate relevant queries
-      await apiUtils.kelas.getAll.invalidate();
       await apiUtils.kelas.getKelasAndCount.invalidate();
       await apiUtils.pembayaran.getAllPaginated.invalidate();
       await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
@@ -135,11 +125,6 @@ export function useKelas(options?: UseKelasOptions) {
   });
 
   return {
-    data: kelasQuery.data,
-    isLoading: kelasQuery.isLoading,
-    isError: kelasQuery.isError,
-    error: kelasQuery.error,
-
     dataKelasAktif: kelasAktifQuery.data,
     isLoadingKelasAktif: kelasAktifQuery.isLoading,
     isErrorKelasAktif: kelasAktifQuery.isError,
@@ -191,11 +176,10 @@ export function useKelas(options?: UseKelasOptions) {
     },
 
     // Utils untuk manual invalidation jika perlu
-    refetch: kelasQuery.refetch,
     refetchKelasAktif: kelasAktifQuery.refetch,
     refetchKelasCount: kelasCountQuery.refetch,
     refetchById: kelasByIdQuery.refetch,
     refetchHistory: kelasHistoryQuery.refetch,
-    invalidate: () => apiUtils.kelas.getAll.invalidate(),
+    invalidate: () => apiUtils.kelas.getKelasAktif.invalidate(),
   };
 }

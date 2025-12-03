@@ -169,6 +169,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
     dataJatuhTempo: getJatuhTempoQuery.data ?? [],
     isLoadingJatuhTempo: getJatuhTempoQuery.isLoading,
     isErrorJatuhTempo: getJatuhTempoQuery.isError,
+    isRefetchingJatuhTempo: getJatuhTempoQuery.isFetching,
     errorJatuhTempo: getJatuhTempoQuery.error,
     refetchJatuhTempo: getJatuhTempoQuery.refetch,
 

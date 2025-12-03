@@ -23,6 +23,7 @@ import type { TypeClientKelasSchema } from "@/types/kelas.type";
 import { TipeKelas, JenisKelas } from "@prisma/client";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
+import { toRupiah } from "@/utils/toRupiah";
 
 interface KelasFormProps {
   onSubmit: (data: TypeClientKelasSchema) => void;
@@ -250,9 +251,27 @@ export default function KelasForm({ onSubmit }: KelasFormProps) {
             <FormLabel>Harga Program Kelas</FormLabel>
             <FormControl>
               <Input
-                placeholder="Masukkan harga program kelas"
-                type="number"
+                placeholder="Rp 0"
                 {...field}
+                type="text" // 1. Ubah ke text agar bisa render "Rp" dan "."
+                // 2. Format value saat ditampilkan (display value)
+                // Jika nilainya 0 atau ada isinya, format ke Rupiah. Jika undefined/null, string kosong.
+                value={
+                  field.value !== undefined && field.value !== null
+                    ? toRupiah(Number(field.value))
+                    : ""
+                }
+                // 3. Handle perubahan input
+                onChange={(e) => {
+                  // Bersihkan semua karakter kecuali angka
+                  const rawValue = e.target.value.replace(/[^0-9]/g, "");
+
+                  // Konversi ke number (handling jika string kosong jadi 0)
+                  const numericValue = rawValue ? parseInt(rawValue, 10) : 0;
+
+                  // Kirim data number murni ke React Hook Form / Zod
+                  field.onChange(numericValue);
+                }}
                 required
               />
             </FormControl>

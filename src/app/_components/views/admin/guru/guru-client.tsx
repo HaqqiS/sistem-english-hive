@@ -4,10 +4,7 @@ import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
 import { columns as columnsAbsen } from "./columns/columns-absen-guru";
 import { columns as columnsGuru } from "./columns/columns-guru";
-import type {
-  TypeAbsensiGuru,
-  TypeAbsensiGuruPaginated,
-} from "@/types/absenGuru.type";
+import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser } from "@/hooks/useUser";
@@ -18,7 +15,6 @@ import { useState } from "react";
 import RegistrasiGuru from "./drawer/registrasi-guru";
 import EditGuru from "./drawer/edit-guru";
 import type { PaginationState } from "@tanstack/react-table";
-import type { TypeGuruComplete } from "@/types/user.type";
 
 export default function GuruClient() {
   // STATES
@@ -49,6 +45,8 @@ export default function GuruClient() {
   // HOOKS/MUTATIONS&QUERIES
   const {
     data: dataAbsensiGuru,
+    isLoading: isLoadingAbsensiGuru,
+    isFetching: isFetchingAbsensiGuru,
     pageCount,
     mutations: mutationsAbsenGuru,
   } = useAbsenGuru({
@@ -186,6 +184,7 @@ export default function GuruClient() {
         <DataTablePagination
           columns={columnsAbsensiGuru}
           data={dataAbsensiGuru ?? []}
+          isLoading={isLoadingAbsensiGuru || isFetchingAbsensiGuru}
           // Tambahkan props pagination ke DataTable
           pagination={pagination}
           onPaginationChange={setPagination}

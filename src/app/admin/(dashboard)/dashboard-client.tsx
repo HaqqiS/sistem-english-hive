@@ -21,7 +21,9 @@ export default function DashboardClientPage() {
   const {
     dataJatuhTempo,
     isLoadingJatuhTempo,
+    isRefetchingJatuhTempo,
     refetchJatuhTempo: refetch,
+
     mutations,
   } = usePembayaran({
     enableGetJatuhTempo: true, // Aktifkan query khusus dashboard
@@ -48,14 +50,19 @@ export default function DashboardClientPage() {
       <Card className="border-l-accent border-l-4 shadow-sm">
         <CardHeader className="flex items-center gap-4 space-y-0 pb-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             className="h-9 w-9 shrink-0"
             onClick={() => refetch()}
+            disabled={isLoadingJatuhTempo || isRefetchingJatuhTempo}
             title="Refresh Jadwal"
           >
             <RefreshCw
-              className={cn("h-4 w-4", isLoadingJatuhTempo && "animate-spin")}
+              className={cn(
+                "h-4 w-4",
+                (isLoadingJatuhTempo || isRefetchingJatuhTempo) &&
+                  "animate-spin",
+              )}
             />
           </Button>
           <div className="space-y-2">

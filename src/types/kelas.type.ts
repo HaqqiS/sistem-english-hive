@@ -2,7 +2,7 @@ import type { RouterOutputs } from "@/trpc/react";
 import { JenisKelas, TipeKelas } from "@prisma/client";
 import z from "zod";
 
-export type TypeKelas = RouterOutputs["kelas"]["getAll"][number];
+export type TypeKelas = RouterOutputs["kelas"]["getKelasAktif"][number];
 export type TypeCreateKelas = RouterOutputs["kelas"]["createKelas"];
 export type TypeKelasWithSesi =
   RouterOutputs["kelas"]["getKelasWithSesiForGuru"];

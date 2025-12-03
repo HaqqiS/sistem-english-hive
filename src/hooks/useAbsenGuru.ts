@@ -146,12 +146,14 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     pageCount: getAllAbsensiGuruQuery.data?.pageCount ?? 0,
     totalRows: getAllAbsensiGuruQuery.data?.total ?? 0,
     isLoading: getAllAbsensiGuruQuery.isLoading,
+    isFetching: getAllAbsensiGuruQuery.isFetching,
     isError: getAllAbsensiGuruQuery.isError,
     error: getAllAbsensiGuruQuery.error,
 
     dataHistory: getHistoryQuery.data,
     isLoadingHistory: getHistoryQuery.isLoading,
     isErrorHistory: getHistoryQuery.isError,
+    isFetchingHistory: getHistoryQuery.isFetching,
     errorHistory: getHistoryQuery.error,
 
     // Mutations

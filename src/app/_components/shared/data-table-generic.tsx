@@ -55,34 +55,25 @@ import z from "zod";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  // pageCount?: number;
-  // pagination?: PaginationState;
-  // onPaginationChange: OnChangeFn<PaginationState>;
+  filterColumnId?: string;
+  filterColumnPlaceholder?: string;
+  toolbar?: (table: ReturnType<typeof useReactTable<TData>>) => React.ReactNode;
+  isLoading?: boolean;
 }
-
-export const schema = z.object({
-  id: z.number(),
-  header: z.string(),
-  type: z.string(),
-  status: z.string(),
-  target: z.string(),
-  limit: z.string(),
-  reviewer: z.string(),
-});
 
 export function DataTable<TData, TValue>({
   columns,
-  // data: initialData,
   data,
-  // pageCount,
-  // pagination,
-  // onPaginationChange,
+  filterColumnId,
+  filterColumnPlaceholder,
+  toolbar,
+  isLoading,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({
-      keterangan: false,
-      "dibuat pada": false,
+      // keterangan: false,
+      // "dibuat pada": false,
     });
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
@@ -111,7 +102,7 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     // onPaginationChange: onPaginationChange, // Berikan handler dari props
-    manualPagination: true,
+    // manualPagination: true,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

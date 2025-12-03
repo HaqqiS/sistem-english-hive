@@ -7,49 +7,8 @@ import dayjs from "@/utils/dateUtils";
 import { StatusMurid, StatusPembayaran } from "@prisma/client";
 
 export const kelasRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const kelas = await ctx.db.kelas.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        jenisKelas: true,
-        level: true,
-        grup: true,
-        tipe: true,
-        kodeKelas: true,
-        bulanTahunAjar: true,
-        deskripsi: true,
-        hargaKelas: true,
-        cohortId: true,
-        historyGuruKelases: {
-          where: {
-            selesaiPada: null,
-          },
-          select: {
-            id: true,
-            kelasId: true,
-            guruId: true,
-            statusGuru: true,
-            mulaiPada: true,
-            selesaiPada: true,
-            guru: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-    return kelas;
-  }),
-
   getKelasAktif: protectedProcedure.query(async ({ ctx }) => {
     const kelas = await ctx.db.kelas.findMany({
-      // LOGIKA FILTER:
-      // 1. distinct: ['cohortId'] -> Pastikan hanya satu record per cohortId yang muncul
-      // 2. orderBy: { createdAt: 'desc' } -> Urutkan dari yang paling baru dibuat.
-      // Kombinasi ini memaksa Prisma mengambil record TERBARU untuk setiap cohortId.
       distinct: ["cohortId"],
       orderBy: { createdAt: "desc" },
 
@@ -230,6 +189,16 @@ export const kelasRouter = createTRPCRouter({
     .input(serverKelasSchema)
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+
+      const existingKodeKelas = await db.kelas.findFirst({
+        where: { kodeKelas: input.kodeKelas },
+      });
+      if (existingKodeKelas) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Kode Kelas sudah digunakan. Silakan gunakan kode lain.",
+        });
+      }
       const kelas = await db.kelas.create({
         data: {
           jenisKelas: input.jenisKelas,

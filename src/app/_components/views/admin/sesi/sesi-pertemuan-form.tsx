@@ -40,7 +40,7 @@ export default function SesiPertemuanForm({
 
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-  const { data: dataKelas } = useKelas();
+  const { dataKelasAktif: dataKelas } = useKelas();
   const { data: dataRuang } = useRuang();
 
   return (

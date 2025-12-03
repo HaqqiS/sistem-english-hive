@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import {
   serverStartSesiSchema,
@@ -89,88 +89,101 @@ export const absenGuruRouter = createTRPCRouter({
       const guruId = session.user.id;
       const { jadwalKelasId, status, overrideRuangId } = input;
 
-      // 1. Dapatkan data jadwal & kelas
-      const jadwal = await db.jadwalKelas.findUnique({
-        where: { id: jadwalKelasId },
-        select: {
-          kelasId: true,
-          ruangId: true,
-          kelas: {
-            select: {
-              level: true,
-              cohortId: true,
-              jenisKelas: true,
-              tipe: true,
-              grup: true,
-              hargaKelas: true,
-              deskripsi: true,
-              kodeKelas: true,
+      try {
+        // 1. Dapatkan data jadwal & kelas
+        const jadwal = await db.jadwalKelas.findUnique({
+          where: { id: jadwalKelasId },
+          select: {
+            kelasId: true,
+            ruangId: true,
+            kelas: {
+              select: {
+                level: true,
+                cohortId: true,
+                jenisKelas: true,
+                tipe: true,
+                grup: true,
+                hargaKelas: true,
+                deskripsi: true,
+                kodeKelas: true,
+              },
             },
           },
-        },
-      });
-
-      if (!jadwal)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Jadwal tidak ditemukan",
         });
 
-      // 2. Tentukan ruangId yang akan dipakai
-      // Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
-      const finalRuangId = overrideRuangId ?? jadwal.ruangId;
-      // 3. Tentukan tanggalWaktu (REALITA)
-      // Gunakan Waktu WITA saat ini
-      const tanggalWaktuSesi = dayjs().tz(TIMEZONE_BISNIS).toDate();
+        if (!jadwal)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Jadwal tidak ditemukan",
+          });
 
-      // 4. Transaction: Buat Sesi -> Cek Level Up -> Cek Finish
-      const result = await db.$transaction(async (tx) => {
-        // 4a. Buat SesiPertemuanKelas (Realisasi)
-        const newSesi = await tx.sesiPertemuanKelas.create({
-          data: {
-            kelasId: jadwal.kelasId,
-            ruangId: finalRuangId,
-            tanggalWaktu: tanggalWaktuSesi,
-            jadwalKelasId: jadwalKelasId,
-          },
-          select: { id: true },
+        // 2. Tentukan ruangId yang akan dipakai
+        // Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
+        const finalRuangId = overrideRuangId ?? jadwal.ruangId;
+        // 3. Tentukan tanggalWaktu (REALITA)
+        // Gunakan Waktu WITA saat ini
+        const tanggalWaktuSesi = dayjs().tz(TIMEZONE_BISNIS).toDate();
+
+        // 4. Transaction: Buat Sesi -> Cek Level Up -> Cek Finish
+        const result = await db.$transaction(async (tx) => {
+          // 4a. Buat SesiPertemuanKelas (Realisasi)
+          const newSesi = await tx.sesiPertemuanKelas.create({
+            data: {
+              kelasId: jadwal.kelasId,
+              ruangId: finalRuangId,
+              tanggalWaktu: tanggalWaktuSesi,
+              jadwalKelasId: jadwalKelasId,
+            },
+            select: { id: true },
+          });
+
+          // 4b. Buat AbsensiGuru
+          await tx.absensiGuru.create({
+            data: {
+              guruId,
+              sesiPertemuanKelasId: newSesi.id,
+              status,
+              isVerified: false,
+            },
+          });
+
+          // Hitung Total Sesi (Termasuk yang baru dibuat)
+          const totalSesi = await tx.sesiPertemuanKelas.count({
+            where: { kelasId: jadwal.kelasId },
+          });
+
+          // === SERVICE CALL: LEVEL UP (Trigger di Sesi 20) ===
+          if (totalSesi === 20) {
+            await handleAutoLevelUp({ tx, jadwal });
+          }
+
+          // === SERVICE CALL: CLASS COMPLETION (Trigger di Sesi 24) ===
+          const isFinished = await handleClassCompletion(
+            tx,
+            jadwal.kelasId,
+            totalSesi,
+          );
+
+          return {
+            newSesiId: newSesi.id,
+            absensiId: null,
+            isFinished: isFinished,
+          };
         });
 
-        // 4b. Buat AbsensiGuru
-        await tx.absensiGuru.create({
-          data: {
-            guruId,
-            sesiPertemuanKelasId: newSesi.id,
-            status,
-            isVerified: false,
-          },
-        });
-
-        // Hitung Total Sesi (Termasuk yang baru dibuat)
-        const totalSesi = await tx.sesiPertemuanKelas.count({
-          where: { kelasId: jadwal.kelasId },
-        });
-
-        // === SERVICE CALL: LEVEL UP (Trigger di Sesi 20) ===
-        if (totalSesi === 20) {
-          await handleAutoLevelUp({ tx, jadwal });
+        return result;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          // P2003: Referensi Ruang/Kelas tidak valid saat create
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Ruang atau Kelas tidak valid saat membuat sesi.",
+            });
+          }
         }
-
-        // === SERVICE CALL: CLASS COMPLETION (Trigger di Sesi 24) ===
-        const isFinished = await handleClassCompletion(
-          tx,
-          jadwal.kelasId,
-          totalSesi,
-        );
-
-        return {
-          newSesiId: newSesi.id,
-          absensiId: null,
-          isFinished: isFinished,
-        };
-      });
-
-      return result;
+        throw error;
+      }
     }),
 
   verifyAbsensi: protectedProcedure
@@ -185,16 +198,27 @@ export const absenGuruRouter = createTRPCRouter({
 
       if ((session.user.role as UserRole) !== UserRole.ADMIN)
         throw new Error("Unauthorized");
-
-      await db.absensiGuru.update({
-        where: {
-          id: input.absensiId,
-        },
-        data: {
-          verifiedById: session.user.id,
-          isVerified: input.isVerified,
-        },
-      });
+      try {
+        await db.absensiGuru.update({
+          where: {
+            id: input.absensiId,
+          },
+          data: {
+            verifiedById: session.user.id,
+            isVerified: input.isVerified,
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Absensi tidak ditemukan.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 
   getHistoryByGuruId: protectedProcedure
@@ -271,48 +295,74 @@ export const absenGuruRouter = createTRPCRouter({
         });
       }
 
-      // 2. Ambil data lama untuk pengecekan
-      const oldAbsensi = await db.absensiGuru.findUnique({
-        where: { id: absensiId },
-        select: { guruId: true, sesiPertemuanKelasId: true },
-      });
+      try {
+        // 2. Ambil data lama untuk pengecekan
+        // const oldAbsensi = await db.absensiGuru.findUnique({
+        //   where: { id: absensiId },
+        //   select: { guruId: true, sesiPertemuanKelasId: true },
+        // });
 
-      if (!oldAbsensi)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data tidak ditemukan",
-        });
+        // if (!oldAbsensi)
+        //   throw new TRPCError({
+        //     code: "NOT_FOUND",
+        //     message: "Data tidak ditemukan",
+        //   });
 
-      // 3. --- PERBAIKAN: Cek Duplikat jika Guru Diganti ---
-      if (guruId && guruId !== oldAbsensi.guruId) {
-        const exists = await db.absensiGuru.findUnique({
-          where: {
-            guruId_sesiPertemuanKelasId: {
-              guruId: guruId,
-              sesiPertemuanKelasId: oldAbsensi.sesiPertemuanKelasId,
-            },
+        // // 3. --- PERBAIKAN: Cek Duplikat jika Guru Diganti ---
+        // if (guruId && guruId !== oldAbsensi.guruId) {
+        //   const exists = await db.absensiGuru.findUnique({
+        //     where: {
+        //       guruId_sesiPertemuanKelasId: {
+        //         guruId: guruId,
+        //         sesiPertemuanKelasId: oldAbsensi.sesiPertemuanKelasId,
+        //       },
+        //     },
+        //   });
+
+        //   if (exists) {
+        //     throw new TRPCError({
+        //       code: "CONFLICT",
+        //       message: "Guru yang dipilih sudah memiliki absensi di sesi ini.",
+        //     });
+        //   }
+        // }
+
+        const updatedAbsensi = await db.absensiGuru.update({
+          where: { id: absensiId },
+          data: {
+            status: status,
+            isVerified: isVerified,
+            guruId: guruId,
+            verifiedById: isVerified ? session.user.id : null,
           },
         });
 
-        if (exists) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "Guru yang dipilih sudah memiliki absensi di sesi ini.",
-          });
+        return updatedAbsensi;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Absensi tidak ditemukan.",
+            });
+          }
+          // P2002: Jika guru diganti, cek apakah guru baru sudah absen di sesi yang sama?
+          if (error.code === "P2002") {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Guru yang dipilih sudah memiliki absensi di sesi ini.",
+            });
+          }
+          // P2003: Guru ID baru tidak valid
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Guru pengganti tidak valid.",
+            });
+          }
         }
+        throw error;
       }
-
-      const updatedAbsensi = await db.absensiGuru.update({
-        where: { id: input.absensiId },
-        data: {
-          status: status,
-          isVerified: isVerified,
-          guruId: guruId,
-          verifiedById: isVerified ? session.user.id : null,
-        },
-      });
-
-      return updatedAbsensi;
     }),
 
   deleteAbsenGuru: protectedProcedure
@@ -321,8 +371,20 @@ export const absenGuruRouter = createTRPCRouter({
       const { db } = ctx;
       const { id } = input;
 
-      await db.absensiGuru.delete({
-        where: { id },
-      });
+      try {
+        await db.absensiGuru.delete({
+          where: { id },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Absensi tidak ditemukan atau sudah dihapus.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 });

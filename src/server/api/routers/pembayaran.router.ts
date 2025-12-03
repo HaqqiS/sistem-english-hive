@@ -1,7 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import dayjs from "@/utils/dateUtils";
-import { StatusPembayaran, type Prisma } from "@prisma/client";
+import { Prisma, StatusPembayaran } from "@prisma/client";
 import { UserRole } from "@/server/auth/type";
 import { TRPCError } from "@trpc/server";
 import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
@@ -139,19 +139,19 @@ export const pembayaranRouter = createTRPCRouter({
 
   // 3. [BARU] GET SALDO SISWA (Real-time Calculation)
   // Digunakan di halaman detail pembayaran atau detail murid untuk melihat kesehatan akun
-  getSaldoSiswa: protectedProcedure
-    .input(z.object({ pendaftaranKelasId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+  // getSaldoSiswa: protectedProcedure
+  //   .input(z.object({ pendaftaranKelasId: z.string() }))
+  //   .query(async ({ ctx, input }) => {
+  //     const { db } = ctx;
 
-      // Panggil Helper Service yang sudah kita buat
-      const saldoInfo = await calculateSisaPertemuan(
-        db,
-        input.pendaftaranKelasId,
-      );
+  //     // Panggil Helper Service yang sudah kita buat
+  //     const saldoInfo = await calculateSisaPertemuan(
+  //       db,
+  //       input.pendaftaranKelasId,
+  //     );
 
-      return saldoInfo;
-    }),
+  //     return saldoInfo;
+  //   }),
 
   getSaldoByMuridId: protectedProcedure
     .input(z.object({ muridId: z.string() }))
@@ -190,53 +190,52 @@ export const pembayaranRouter = createTRPCRouter({
         });
       }
 
-      // 2. Retrieve existing data to handle conditional logic
-      const existingPayment = await db.pembayaran.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!existingPayment) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data pembayaran tidak ditemukan.",
+      try {
+        // 2. Retrieve existing data to handle conditional logic
+        const existingPayment = await db.pembayaran.findUnique({
+          where: { id: input.id },
         });
+
+        if (!existingPayment) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Data pembayaran tidak ditemukan.",
+          });
+        }
+
+        // 3. Prepare update data
+        const updateData: Prisma.PembayaranUpdateInput = {
+          jumlahBayar: input.jumlahBayar,
+          note: input.note,
+          statusBayar: input.statusBayar,
+        };
+
+        // Logic: Handling Status Changes
+        if (input.statusBayar === StatusPembayaran.LUNAS) {
+          updateData.verifiedBy = { connect: { id: session.user.id } };
+          updateData.tanggalBayar = input.tanggalBayar ?? new Date();
+        } else {
+          updateData.verifiedBy = { disconnect: true };
+          updateData.tanggalBayar = null;
+        }
+
+        const updated = await db.pembayaran.update({
+          where: { id: input.id },
+          data: updateData,
+        });
+
+        return updated;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Pembayaran tidak ditemukan atau sudah dihapus.",
+            });
+          }
+        }
+        throw error;
       }
-
-      // 3. Prepare update data
-      // Use 'any' temporarily to build the object dynamically if needed, or better, strict typing
-      const updateData: {
-        jumlahBayar: number;
-        note?: string | null;
-        statusBayar: StatusPembayaran;
-        tanggalBayar?: Date | null;
-        verifiedById?: string | null;
-      } = {
-        jumlahBayar: input.jumlahBayar,
-        note: input.note,
-        statusBayar: input.statusBayar,
-      };
-
-      // Logic: Handling Status Changes
-      if (input.statusBayar === StatusPembayaran.LUNAS) {
-        // If becoming LUNAS:
-        // - Set verifiedBy to current user
-        // - Set tanggalBayar (use input or default to now if missing)
-        updateData.verifiedById = session.user.id;
-        updateData.tanggalBayar = input.tanggalBayar ?? new Date();
-      } else {
-        // If changing to BELUM_LUNAS or PENDING:
-        // - Clear verification info? Usually yes, to indicate it's not valid yet.
-        // - Clear tanggalBayar? Yes.
-        updateData.verifiedById = null;
-        updateData.tanggalBayar = null;
-      }
-
-      const updated = await db.pembayaran.update({
-        where: { id: input.id },
-        data: updateData,
-      });
-
-      return updated;
     }),
 
   // 5. [BARU] CREATE TAGIHAN MANUAL
@@ -245,30 +244,49 @@ export const pembayaranRouter = createTRPCRouter({
     .input(createPembayaranSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
-
       const tanggalTransaksi = input.tanggalBayar ?? new Date();
 
-      let urutan = input.pembayaranKe;
-      if (!urutan) {
-        const lastBill = await db.pembayaran.findFirst({
-          where: { pendaftaranKelasId: input.pendaftaranKelasId },
-          orderBy: { pembayaranKe: "desc" },
-        });
-        urutan = (lastBill?.pembayaranKe ?? 0) + 1;
-      }
+      try {
+        let urutan = input.pembayaranKe;
+        if (!urutan) {
+          const lastBill = await db.pembayaran.findFirst({
+            where: { pendaftaranKelasId: input.pendaftaranKelasId },
+            orderBy: { pembayaranKe: "desc" },
+          });
+          urutan = (lastBill?.pembayaranKe ?? 0) + 1;
+        }
 
-      return db.pembayaran.create({
-        data: {
-          pendaftaranKelasId: input.pendaftaranKelasId,
-          jumlahBayar: input.jumlahBayar,
-          tanggalJatuhTempo: tanggalTransaksi,
-          tanggalBayar: tanggalTransaksi,
-          pembayaranKe: urutan,
-          statusBayar: StatusPembayaran.LUNAS,
-          verifiedById: session.user.id,
-          note: input.note ?? "Tagihan Manual Admin",
-        },
-      });
+        return db.pembayaran.create({
+          data: {
+            pendaftaranKelasId: input.pendaftaranKelasId,
+            jumlahBayar: input.jumlahBayar,
+            tanggalJatuhTempo: tanggalTransaksi,
+            tanggalBayar: tanggalTransaksi,
+            pembayaranKe: urutan,
+            statusBayar: StatusPembayaran.LUNAS,
+            verifiedById: session.user.id,
+            note: input.note ?? "Tagihan Manual Admin",
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          // P2002: Konflik pada [pendaftaranKelasId, pembayaranKe]
+          if (error.code === "P2002") {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Tagihan ke-${input.pembayaranKe ?? "?"} sudah ada untuk siswa ini. Harap cek kembali urutan pembayaran.`,
+            });
+          }
+          // P2003: Pendaftaran ID salah
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Data Pendaftaran Siswa tidak valid.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 
   // 6. DELETE TAGIHAN
@@ -278,16 +296,27 @@ export const pembayaranRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      // Proteksi ekstra
       if (session.user.role !== UserRole.ADMIN) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Unauthorized",
+          message: "Hanya Admin yang boleh menghapus data pembayaran.",
         });
       }
 
-      return db.pembayaran.delete({
-        where: { id: input.id },
-      });
+      try {
+        return await db.pembayaran.delete({
+          where: { id: input.id },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Pembayaran sudah dihapus atau tidak ditemukan.",
+            });
+          }
+        }
+        throw error;
+      }
     }),
 });

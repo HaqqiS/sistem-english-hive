@@ -62,6 +62,16 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     });
   };
 
+  const fetchHistoryExport = async () => {
+    if (!guruId || !month) return [];
+
+    // Menggunakan fetch() dari router yang sudah ada (getHistoryByGuruId)
+    return await apiUtils.absenGuru.getHistoryByGuruId.fetch({
+      guruId,
+      month,
+    });
+  };
+
   // ========== MUTATIONS ==========
 
   // CREATE
@@ -166,6 +176,7 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     errorHistory: getHistoryQuery.error,
 
     fetchExportData,
+    fetchHistoryExport,
 
     // Mutations
     mutations: {

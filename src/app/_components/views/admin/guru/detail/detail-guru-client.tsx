@@ -24,13 +24,22 @@ import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toRupiah } from "@/utils/toRupiah";
-import dayjs from "@/utils/dateUtils";
-import { AlertCircle, CalendarIcon, Users, CalendarDays } from "lucide-react";
+import dayjs, { formatToWITA } from "@/utils/dateUtils";
+import {
+  AlertCircle,
+  CalendarIcon,
+  Users,
+  CalendarDays,
+  FileSpreadsheet,
+} from "lucide-react";
 import {
   calculateTotalGaji,
   getPeriodeGaji,
   GAJI_PER_SESI,
 } from "@/server/services/gaji.service";
+import { downloadCSV } from "@/utils/exportUtils";
+import { toast } from "sonner";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 
 export default function DetailGuruClient() {
   const { guruId } = useParams<{ guruId: string }>();
@@ -58,6 +67,7 @@ export default function DetailGuruClient() {
     isErrorHistory,
     errorHistory,
     refetchHistory,
+    fetchHistoryExport,
   } = useAbsenGuru({
     guruId,
     month: selectedMonthYYYYMM,
@@ -77,6 +87,42 @@ export default function DetailGuruClient() {
 
     return { totalAbsen: totalHadir, totalGaji };
   }, [dataHistory]);
+
+  const handleExport = async () => {
+    const toastId = toast.loading("Menyiapkan slip gaji...");
+    try {
+      const data = await fetchHistoryExport();
+
+      if (!data || data.length === 0) {
+        toast.error("Tidak ada data kehadiran untuk bulan ini.", {
+          id: toastId,
+        });
+        return;
+      }
+
+      // Format Data untuk CSV (Slip Gaji)
+      const csvData = data.map((item) => ({
+        Tanggal: formatToWITA(
+          item.sesiPertemuanKelas.tanggalWaktu,
+          "DD/MM/YYYY",
+        ),
+        Jam: formatToWITA(item.sesiPertemuanKelas.tanggalWaktu, "HH:mm"),
+        Kelas: item.sesiPertemuanKelas.kelas.kodeKelas,
+        Ruang: item.sesiPertemuanKelas.ruang.namaRuang,
+        Status: item.status, // HADIR/SAKIT/IJIN
+        "Rate (Rp)": item.status === "HADIR" ? GAJI_PER_SESI : 0, // Honor per sesi
+        Verifikasi: item.isVerified ? "Terverifikasi" : "Pending",
+      }));
+
+      const filename = `SlipGaji-${guruName}-${selectedMonthYYYYMM}`;
+      downloadCSV(csvData, filename);
+
+      toast.success("Slip Gaji berhasil diunduh!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal mengunduh data.", { id: toastId });
+    }
+  };
 
   if (isLoadingGuru || isLoadingHistory) {
     return (
@@ -99,6 +145,13 @@ export default function DetailGuruClient() {
 
   return (
     <div className="space-y-4">
+      <HeaderActionPortal>
+        <Button variant="ghost" size="sm" onClick={handleExport}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          Export Slip Gaji
+        </Button>
+      </HeaderActionPortal>
+
       <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-xl font-bold">Gaji Guru: {guruName}</h1>

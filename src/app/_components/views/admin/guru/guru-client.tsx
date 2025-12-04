@@ -90,6 +90,7 @@ export default function GuruClient() {
     data: dataAbsensiGuru,
     isLoading: isLoadingAbsensiGuru,
     isFetching: isFetchingAbsensiGuru,
+    refetch: refetchAbsensiGuru,
     pageCount,
     fetchExportData,
     mutations: mutationsAbsenGuru,
@@ -231,14 +232,18 @@ export default function GuruClient() {
             <header className="flex w-full items-center justify-between">
               <div className="flex justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  {/* <Button
+                  <Button
                     variant="ghost"
                     size="icon"
                     className="h-9 w-9 shrink-0"
                     title="Refresh Data"
+                    disabled={isLoadingAbsensiGuru || isFetchingAbsensiGuru}
+                    onClick={() => refetchAbsensiGuru()}
                   >
-                    <RefreshCw className={`h-4 w-4`} />
-                  </Button> */}
+                    <RefreshCw
+                      className={`h-4 w-4 ${isLoadingAbsensiGuru || isFetchingAbsensiGuru ? "animate-spin" : ""}`}
+                    />
+                  </Button>
                   <div>
                     <h1 className="text-xl">Daftar Absen Guru</h1>
                     <p className="text-muted-foreground text-sm">

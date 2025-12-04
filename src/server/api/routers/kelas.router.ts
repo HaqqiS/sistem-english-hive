@@ -185,6 +185,58 @@ export const kelasRouter = createTRPCRouter({
     );
   }),
 
+  getForExport: protectedProcedure.query(async ({ ctx }) => {
+    const { db } = ctx;
+
+    // 1. Ambil data mentah
+    const allKelasData = await db.kelas.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        kodeKelas: true,
+        jenisKelas: true,
+        level: true,
+        grup: true,
+        tipe: true,
+        bulanTahunAjar: true,
+        hargaKelas: true,
+
+        // Info Guru Aktif
+        historyGuruKelases: {
+          where: { statusGuru: "ACTIVE" },
+          select: {
+            guru: { select: { name: true } },
+          },
+          take: 1,
+        },
+
+        // Info Jadwal (Hari)
+        jadwalKelas: {
+          select: { hari: true },
+        },
+
+        // Statistik (Murid & Sesi)
+        _count: {
+          select: {
+            pendaftaranKelases: { where: { isAktif: true } },
+            sesiPertemuanKelases: true,
+          },
+        },
+
+        // Untuk filter manual (sesi < 24)
+        sesiPertemuanKelases: {
+          select: { id: true },
+        },
+      },
+    });
+
+    // 2. Filter Konsistensi (Sama seperti tampilan tabel: Sesi < 24)
+    const filteredKelas = allKelasData.filter(
+      (kelas) => kelas._count.sesiPertemuanKelases < 24,
+    );
+
+    return filteredKelas;
+  }),
+
   createKelas: protectedProcedure
     .input(serverKelasSchema)
     .mutation(async ({ ctx, input }) => {

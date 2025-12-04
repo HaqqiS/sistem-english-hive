@@ -19,6 +19,7 @@ import {
   CalendarDays,
   Edit2,
   EllipsisVertical,
+  FileSpreadsheet,
   GraduationCap,
   RefreshCw,
   Trash,
@@ -44,6 +45,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { downloadCSV } from "@/utils/exportUtils";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 
 export default function KelasTab() {
   // 1. State Lokal untuk Delete Dialog
@@ -62,9 +65,11 @@ export default function KelasTab() {
     isRefetchingKelasCount,
     errorKelasCount,
     refetchKelasCount,
+    fetchExportData,
     mutations: kelasMutations,
   } = useKelas({
     enableQueryGetKelasCount: true,
+
     onSuccessDelete: () => {
       setDeleteKelasDialogOpen(false);
       setSelectedKelasToDelete(null);
@@ -102,6 +107,51 @@ export default function KelasTab() {
     await kelasMutations.delete.mutateAsync({ id: selectedKelasToDelete.id });
   };
 
+  const handleExport = async () => {
+    const toastId = toast.loading("Mengunduh data kelas...");
+    try {
+      const data = await fetchExportData();
+
+      if (!data || data.length === 0) {
+        toast.error("Tidak ada data kelas untuk diexport.", { id: toastId });
+        return;
+      }
+
+      // Format Data untuk CSV
+      const csvData = data.map((item) => {
+        // Ambil nama guru (jika ada)
+        const guru = item.historyGuruKelases[0]?.guru.name ?? "Belum Ada";
+
+        // Gabungkan hari jadwal (misal: "SENIN, RABU")
+        const jadwal =
+          item.jadwalKelas.length > 0
+            ? item.jadwalKelas.map((j) => j.hari).join(", ")
+            : "-";
+
+        return {
+          "Kode Kelas": item.kodeKelas,
+          Program: item.jenisKelas,
+          Level: item.level,
+          Tipe: item.tipe,
+          Grup: item.grup ?? "-",
+          Pengajar: guru,
+          Jadwal: jadwal,
+          "Jumlah Murid": item._count.pendaftaranKelases,
+          "Sesi Berjalan": item._count.sesiPertemuanKelases,
+          "Harga Kelas": item.hargaKelas, // Angka murni agar bisa diolah Excel
+        };
+      });
+
+      const filename = `Laporan-Kelas-Operasional-${new Date().toISOString().split("T")[0]}`;
+      downloadCSV(csvData, filename);
+
+      toast.success("Export berhasil!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal mengexport data.", { id: toastId });
+    }
+  };
+
   if (isLoadingKelasCount) {
     return (
       <div className="space-y-4 pt-4">
@@ -130,6 +180,13 @@ export default function KelasTab() {
 
   return (
     <div className="space-y-4">
+      <HeaderActionPortal>
+        <Button variant="ghost" size="sm" onClick={handleExport}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          Export CSV
+        </Button>
+      </HeaderActionPortal>
+
       <div className="flex items-center justify-between space-x-2 pt-4">
         <header className="flex items-center justify-between gap-4">
           <Button

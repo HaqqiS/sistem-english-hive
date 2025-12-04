@@ -70,6 +70,10 @@ export function useKelas(options?: UseKelasOptions) {
       initialData: options?.initialDataHistory,
     },
   );
+
+  const fetchExportData = async () => {
+    return await apiUtils.kelas.getForExport.fetch();
+  };
   // ========== MUTATIONS ==========
 
   // CREATE
@@ -150,6 +154,8 @@ export function useKelas(options?: UseKelasOptions) {
     isLoadingHistory: kelasHistoryQuery.isLoading,
     isErrorHistory: kelasHistoryQuery.isError,
     errorHistory: kelasHistoryQuery.error,
+
+    fetchExportData,
 
     // Mutations
     mutations: {

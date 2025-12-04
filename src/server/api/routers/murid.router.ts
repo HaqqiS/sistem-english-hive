@@ -4,7 +4,7 @@ import {
 } from "@/types/murid.type";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma, StatusMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { paginationSchema } from "@/types/pagination.type";
 
@@ -46,17 +46,35 @@ export const muridRouter = createTRPCRouter({
     }),
 
   getAllPaginated: protectedProcedure
-    .input(paginationSchema)
+    .input(
+      paginationSchema.extend({
+        search: z.string().optional(),
+        status: z.nativeEnum(StatusMurid).optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const { pageIndex, pageSize } = input;
+      const { pageIndex, pageSize, search, status } = input;
+
+      const whereClause: Prisma.MuridWhereInput = {};
+
+      if (search) {
+        whereClause.namaLengkap = {
+          contains: search,
+          mode: "insensitive",
+        };
+      }
+      if (status) {
+        whereClause.statusMurid = status;
+      }
 
       // Gunakan transaction untuk performa (count + findMany paralel)
       const [total, data] = await db.$transaction([
-        db.murid.count(),
+        db.murid.count({ where: whereClause }),
         db.murid.findMany({
           skip: pageIndex * pageSize,
           take: pageSize,
+          where: whereClause,
           orderBy: { createdAt: "desc" },
         }),
       ]);
@@ -91,6 +109,34 @@ export const muridRouter = createTRPCRouter({
     });
     return unregisteredMurid;
   }),
+
+  getForExport: protectedProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        status: z.nativeEnum(StatusMurid).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+
+      const whereClause: Prisma.MuridWhereInput = {};
+      if (input.search) {
+        whereClause.namaLengkap = {
+          contains: input.search,
+          mode: "insensitive",
+        };
+      }
+      if (input.status) {
+        whereClause.statusMurid = input.status;
+      }
+
+      // Ambil data untuk CSV (Pilih field yang relevan untuk marketing/db)
+      return await db.murid.findMany({
+        where: whereClause,
+        orderBy: { namaLengkap: "asc" },
+      });
+    }),
 
   getMuridNotRegisteredPaginated: protectedProcedure
     .input(paginationSchema) // Input: pageIndex, pageSize

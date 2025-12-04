@@ -2,7 +2,7 @@
 
 import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
 import { columns as createColumnsMuridNotRegistered } from "./columns/columns-murid-not-registered";
@@ -15,8 +15,21 @@ import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confir
 import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
 import type { PaginationState } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatusMurid } from "@prisma/client";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { downloadCSV } from "@/utils/exportUtils";
+import { toast } from "sonner";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function MuridClient() {
   // STATE
@@ -38,6 +51,17 @@ export default function MuridClient() {
     namaLengkap: string;
   } | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusMurid | "ALL">("ALL");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPaginationAllMurid((prev) => ({ ...prev, pageIndex: 0 }));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const { openDrawer } = useMuridStore();
 
   // HOOKS/QUERIES&MUTATIONS
@@ -49,7 +73,7 @@ export default function MuridClient() {
     isFetchingNotRegisteredPaginated,
     refetchNotRegisteredPaginated,
   } = useMurid({
-    pagination: paginationNotRegistered, // Pass pagination state ke hook
+    pagination: paginationNotRegistered,
   });
 
   const {
@@ -59,9 +83,12 @@ export default function MuridClient() {
     isLoadingAllMuridPaginated,
     isFetchingAllMuridPaginated,
     refetchPaginated,
+    fetchExportData,
     mutations,
   } = useMurid({
-    pagination: paginationAllMurid, // Pass pagination state ke hook
+    pagination: paginationAllMurid,
+    searchFilter: debouncedSearch,
+    filterStatus: statusFilter,
     onSuccessDelete: () => {
       setDeleteMuridDialogOpen(false);
       setSelectedMuridToDelete(null);
@@ -80,6 +107,41 @@ export default function MuridClient() {
     openDrawer("edit-status", item as unknown as TypeAllMurid);
   };
 
+  const handleExport = async () => {
+    const toastId = toast.loading("Mengunduh data murid...");
+    try {
+      const data = await fetchExportData();
+
+      if (!data || data.length === 0) {
+        toast.error("Tidak ada data murid yang sesuai filter.", {
+          id: toastId,
+        });
+        return;
+      }
+
+      // Format CSV
+      const csvData = data.map((m) => ({
+        "Nama Lengkap": m.namaLengkap,
+        "No. WA": m.noWA ? `'${m.noWA}` : "-", // Tambah kutip agar excel baca text (bukan angka ilmiah)
+        Email: m.email,
+        "Asal Sekolah": m.asalSekolah,
+        "Kelas Sekolah": m.kelasSekolah,
+        "Program Minat": m.pilihanProgram ?? "-",
+        Status: m.statusMurid,
+        "Tanggal Gabung": formatDateToYYYYMMDD(m.createdAt),
+      }));
+
+      const filename = `Database-Murid-${statusFilter}-${new Date().toISOString().split("T")[0]}`;
+      downloadCSV(csvData, filename);
+
+      toast.success("Export berhasil!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal export data.", { id: toastId });
+    }
+  };
+
+  // COLUMNS
   const columnsMuridNotRegistered = createColumnsMuridNotRegistered({
     onEditStatusClick: (item) => {
       handleEditNotRegistered(item);
@@ -159,40 +221,89 @@ export default function MuridClient() {
       </TabsContent>
 
       <TabsContent value="listMurid">
-        <div>
-          <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0"
-                disabled={
-                  isLoadingAllMuridPaginated || isFetchingAllMuridPaginated
-                }
-                onClick={() => refetchPaginated()}
-                title="Refresh Jadwal"
-              >
-                <RefreshCw
-                  className={cn(
-                    "h-4 w-4",
-                    (isLoadingAllMuridPaginated ||
-                      isFetchingAllMuridPaginated) &&
-                      "animate-spin",
-                  )}
-                />
-              </Button>
+        <HeaderActionPortal>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Export Database
+          </Button>
+        </HeaderActionPortal>
 
-              <div>
-                <h1 className="text-xl">Daftar Murid</h1>
-                <p className="text-muted-foreground text-sm">
-                  Halaman ini menampilkan daftar semua murid.
-                </p>
-                <div className="text-muted-foreground text-xs font-medium">
-                  Total Data:{" "}
-                  <span className="text-foreground">{totalRows}</span> Murid
+        <div>
+          <div className="mb-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <header className="flex w-full items-center justify-between">
+              <div className="flex flex-col justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    disabled={
+                      isLoadingAllMuridPaginated || isFetchingAllMuridPaginated
+                    }
+                    onClick={() => refetchPaginated()}
+                    title="Refresh Jadwal"
+                  >
+                    <RefreshCw
+                      className={cn(
+                        "h-4 w-4",
+                        (isLoadingAllMuridPaginated ||
+                          isFetchingAllMuridPaginated) &&
+                          "animate-spin",
+                      )}
+                    />
+                  </Button>
+
+                  <div>
+                    <h1 className="text-xl">Daftar Murid</h1>
+                    <p className="text-muted-foreground text-sm">
+                      Halaman ini menampilkan daftar semua murid. Total Data:{" "}
+                      <span className="text-foreground">{totalRows}</span> Murid
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                  <div className="relative w-full sm:w-60">
+                    <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+                    <Input
+                      placeholder="Cari nama murid..."
+                      className="pl-8"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Filter Status */}
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(val) => {
+                      setStatusFilter(val as StatusMurid | "ALL");
+                      setPaginationAllMurid((prev) => ({
+                        ...prev,
+                        pageIndex: 0,
+                      })); // Reset page
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-40">
+                      <div className="text-muted-foreground flex items-center gap-2">
+                        <Filter className="h-3.5 w-3.5" />
+                        <SelectValue placeholder="Status" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Semua Status</SelectItem>
+                      <SelectItem value={StatusMurid.AKTIF}>Aktif</SelectItem>
+                      <SelectItem value={StatusMurid.NON_AKTIF}>
+                        Non-Aktif
+                      </SelectItem>
+                      <SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
+                      <SelectItem value={StatusMurid.LULUS}>Lulus</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </header>
+
             <RegistrasiMurid />
 
             <EditMurid />

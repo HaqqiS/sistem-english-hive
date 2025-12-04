@@ -7,6 +7,7 @@ import type {
   TypeMuridNotRegisteredPaginated,
   TypeAllMuridPaginated,
 } from "@/types/murid.type";
+import type { StatusMurid } from "@prisma/client";
 import { keepPreviousData } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -20,6 +21,9 @@ interface useMuridOptions {
   initialDataAllPaginated?: TypeAllMuridPaginated;
 
   pagination?: PaginationState;
+
+  searchFilter?: string;
+  filterStatus?: StatusMurid | "ALL";
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -49,7 +53,7 @@ export function useMurid(options?: useMuridOptions) {
   const MuridNotRegisteredQuery = api.murid.getMuridWhereNotRegistered.useQuery(
     undefined,
     {
-      enabled: options?.enableQuery ?? true,
+      enabled: options?.enableQuery ?? false,
       initialData: options?.initialDataNotRegistered,
     },
   );
@@ -67,12 +71,18 @@ export function useMurid(options?: useMuridOptions) {
     );
 
   const MuridQuery = api.murid.getAllMurid.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
+    enabled: options?.enableQuery ?? false,
     initialData: options?.initialDataAllMurid,
   });
 
   const MuridPaginatedQuery = api.murid.getAllPaginated.useQuery(
-    { pageIndex, pageSize },
+    {
+      pageIndex,
+      pageSize,
+      search: options?.searchFilter,
+      status:
+        options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
+    },
     {
       enabled: !!options?.pagination,
       placeholderData: keepPreviousData,
@@ -81,6 +91,14 @@ export function useMurid(options?: useMuridOptions) {
         : undefined,
     },
   );
+
+  const fetchExportData = async () => {
+    return await apiUtils.murid.getForExport.fetch({
+      search: options?.searchFilter,
+      status:
+        options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
+    });
+  };
 
   // ========== MUTATIONS ==========
 
@@ -164,6 +182,8 @@ export function useMurid(options?: useMuridOptions) {
     isFetchingAllMuridPaginated: MuridPaginatedQuery.isFetching,
     isErrorAllMuridPaginated: MuridPaginatedQuery.isError,
     errorAllMuridPaginated: MuridPaginatedQuery.error,
+
+    fetchExportData,
 
     // Mutations
     mutations: {

@@ -2,7 +2,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useJamCustomStore } from "@/store/useCabangStore";
 import JamForm from "../forms/jam-custom-form";
@@ -18,20 +17,26 @@ export default function EditJam() {
 
   const editJamForm = useForm<TypeClientJamCustomSchema>({
     resolver: zodResolver(clientJamCustomSchema),
+    values: selectedJam
+      ? {
+          jamMulai: selectedJam.jamMulai,
+          jamSelesai: selectedJam.jamSelesai,
+        }
+      : undefined,
     defaultValues: {
       jamMulai: selectedJam?.jamMulai,
       jamSelesai: selectedJam?.jamSelesai,
     },
   });
 
-  useEffect(() => {
-    if (selectedJam) {
-      editJamForm.reset({
-        jamSelesai: selectedJam.jamSelesai,
-        jamMulai: selectedJam.jamMulai,
-      });
-    }
-  }, [selectedJam]);
+  // useEffect(() => {
+  //   if (selectedJam) {
+  //     editJamForm.reset({
+  //       jamSelesai: selectedJam.jamSelesai,
+  //       jamMulai: selectedJam.jamMulai,
+  //     });
+  //   }
+  // }, [selectedJam]);
 
   const isOpen = isDrawerOpen("edit");
 

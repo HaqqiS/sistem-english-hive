@@ -4,7 +4,6 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
 import {
   clientUpdatePembayaranSchema, // Use Client Schema
   type TypeClientUpdatePembayaranSchema,
@@ -23,6 +22,18 @@ export default function EditPembayaran() {
   // Use Client Schema type here
   const form = useForm<TypeClientUpdatePembayaranSchema>({
     resolver: zodResolver(clientUpdatePembayaranSchema),
+    values: selectedPembayaran
+      ? {
+          id: selectedPembayaran.id,
+          statusBayar: selectedPembayaran.statusBayar,
+          jumlahBayar: selectedPembayaran.jumlahBayar,
+          // Convert Date object to YYYY-MM-DD string for the form
+          tanggalBayar: selectedPembayaran.tanggalBayar
+            ? formatDateToYYYYMMDD(selectedPembayaran.tanggalBayar)
+            : undefined,
+          note: selectedPembayaran.note ?? "",
+        }
+      : undefined,
     defaultValues: {
       id: "",
       statusBayar: "BELUM_LUNAS",
@@ -33,20 +44,20 @@ export default function EditPembayaran() {
   });
 
   // Populate form when drawer opens
-  useEffect(() => {
-    if (selectedPembayaran && isOpen) {
-      form.reset({
-        id: selectedPembayaran.id,
-        statusBayar: selectedPembayaran.statusBayar,
-        jumlahBayar: selectedPembayaran.jumlahBayar,
-        // Convert Date object to YYYY-MM-DD string for the form
-        tanggalBayar: selectedPembayaran.tanggalBayar
-          ? formatDateToYYYYMMDD(selectedPembayaran.tanggalBayar)
-          : undefined,
-        note: selectedPembayaran.note ?? "",
-      });
-    }
-  }, [selectedPembayaran, isOpen, form]);
+  // useEffect(() => {
+  //   if (selectedPembayaran && isOpen) {
+  //     form.reset({
+  //       id: selectedPembayaran.id,
+  //       statusBayar: selectedPembayaran.statusBayar,
+  //       jumlahBayar: selectedPembayaran.jumlahBayar,
+  //       // Convert Date object to YYYY-MM-DD string for the form
+  //       tanggalBayar: selectedPembayaran.tanggalBayar
+  //         ? formatDateToYYYYMMDD(selectedPembayaran.tanggalBayar)
+  //         : undefined,
+  //       note: selectedPembayaran.note ?? "",
+  //     });
+  //   }
+  // }, [selectedPembayaran, isOpen, form]);
 
   const { mutations } = usePembayaran({
     onSuccessUpdate: () => {

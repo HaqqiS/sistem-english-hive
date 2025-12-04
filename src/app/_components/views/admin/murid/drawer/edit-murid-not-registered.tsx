@@ -3,7 +3,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMuridStore } from "@/store/useMuridStore";
 import { useMurid } from "@/hooks/useMurid";
@@ -22,21 +21,17 @@ export default function EditMuridNotRegistered() {
 
   const form = useForm<TypeUpdateStatusMuridSchema>({
     resolver: zodResolver(updateStatusMuridSchema),
+    values: selectedMurid
+      ? {
+          id: selectedMurid.id,
+          statusMurid: selectedMurid.statusMurid ?? StatusMurid.NON_AKTIF,
+        }
+      : undefined,
     defaultValues: {
       id: "",
       statusMurid: StatusMurid.NON_AKTIF,
     },
   });
-
-  // Populate form
-  useEffect(() => {
-    if (selectedMurid && isOpen) {
-      form.reset({
-        id: selectedMurid.id,
-        statusMurid: selectedMurid.statusMurid ?? StatusMurid.NON_AKTIF,
-      });
-    }
-  }, [selectedMurid, isOpen, form]);
 
   const { mutations } = useMurid({
     onSuccessUpdate: () => {

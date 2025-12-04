@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Hari } from "@prisma/client";
 import { useCabang } from "@/hooks/useCabang";
 import {
@@ -63,7 +63,7 @@ export default function ScheduleGrid() {
   });
 
   // Set default cabang
-  React.useEffect(() => {
+  useEffect(() => {
     if (!selectedCabangId && listCabang && listCabang.length > 0) {
       setSelectedCabangId(listCabang[0]!.id);
     }

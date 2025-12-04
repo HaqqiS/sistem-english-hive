@@ -2,7 +2,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useGuruKelasStore } from "@/store/useKelasStore";
 import {
@@ -18,6 +17,13 @@ export default function EditGuruKelas() {
 
   const guruKelasForm = useForm<TypeUpdateHistoryGuruKelasSchema>({
     resolver: zodResolver(updateHistoryGuruKelasSchema),
+    values: selectedHistoryGuruKelas
+      ? {
+          guruId: selectedHistoryGuruKelas.guruId ?? "",
+          mulaiPada: selectedHistoryGuruKelas.mulaiPada ?? "",
+          kelasId: selectedHistoryGuruKelas.kelasId ?? "",
+        }
+      : undefined,
     defaultValues: {
       guruId: selectedHistoryGuruKelas?.guruId,
       mulaiPada: selectedHistoryGuruKelas?.mulaiPada,
@@ -25,15 +31,15 @@ export default function EditGuruKelas() {
     },
   });
 
-  useEffect(() => {
-    if (selectedHistoryGuruKelas) {
-      guruKelasForm.reset({
-        guruId: selectedHistoryGuruKelas.guruId ?? "",
-        mulaiPada: selectedHistoryGuruKelas.mulaiPada ?? "",
-        kelasId: selectedHistoryGuruKelas.kelasId ?? "",
-      });
-    }
-  }, [selectedHistoryGuruKelas, guruKelasForm]);
+  // useEffect(() => {
+  //   if (selectedHistoryGuruKelas) {
+  //     guruKelasForm.reset({
+  //       guruId: selectedHistoryGuruKelas.guruId ?? "",
+  //       mulaiPada: selectedHistoryGuruKelas.mulaiPada ?? "",
+  //       kelasId: selectedHistoryGuruKelas.kelasId ?? "",
+  //     });
+  //   }
+  // }, [selectedHistoryGuruKelas, guruKelasForm]);
 
   const isOpen = isDrawerOpen("edit");
 

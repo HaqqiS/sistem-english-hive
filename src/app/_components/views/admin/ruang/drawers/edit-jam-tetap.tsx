@@ -2,7 +2,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useJamTetapStore } from "@/store/useCabangStore";
 import JamForm from "../forms/jam-tetap-form";
@@ -18,6 +17,14 @@ export default function EditJamTetap() {
 
   const editJamForm = useForm<TypeClientJamTetapSchema>({
     resolver: zodResolver(clientJamSchema),
+    values: selectedJam
+      ? {
+          cabangId: selectedJam.cabangId ?? "",
+          jamMulai: selectedJam.jamMulai ?? "",
+          jamSelesai: selectedJam.jamSelesai ?? "",
+          namaSlot: selectedJam.namaSlot ?? "",
+        }
+      : undefined,
     defaultValues: {
       cabangId: selectedJam?.cabangId,
       jamMulai: selectedJam?.jamMulai,
@@ -26,16 +33,16 @@ export default function EditJamTetap() {
     },
   });
 
-  useEffect(() => {
-    if (selectedJam) {
-      editJamForm.reset({
-        cabangId: selectedJam.cabangId,
-        jamMulai: selectedJam.jamMulai,
-        jamSelesai: selectedJam.jamSelesai,
-        namaSlot: selectedJam.namaSlot,
-      });
-    }
-  }, [selectedJam]);
+  // useEffect(() => {
+  //   if (selectedJam) {
+  //     editJamForm.reset({
+  //       cabangId: selectedJam.cabangId,
+  //       jamMulai: selectedJam.jamMulai,
+  //       jamSelesai: selectedJam.jamSelesai,
+  //       namaSlot: selectedJam.namaSlot,
+  //     });
+  //   }
+  // }, [selectedJam]);
 
   const isOpen = isDrawerOpen("edit");
 

@@ -3,7 +3,6 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { useAbsenGuruStore } from "@/store/useGuruStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import AbsenGuruForm from "../form/edit-absen-guru-form";
 import {
@@ -16,24 +15,31 @@ export default function EditVerifikasiAbsen() {
   const { isDrawerOpen, selectedAbsenGuru, closeDrawer, clearSelected } =
     useAbsenGuruStore();
 
-  useEffect(() => {
-    if (selectedAbsenGuru) {
-      editAbsensiGuruForm.reset({
-        guruId: selectedAbsenGuru.guruId,
-        isVerified: selectedAbsenGuru.isVerified,
-        status: selectedAbsenGuru.status,
-      });
-    }
-  }, [selectedAbsenGuru]);
+  // useEffect(() => {
+  //   if (selectedAbsenGuru) {
+  //     editAbsensiGuruForm.reset({
+  //       guruId: selectedAbsenGuru.guruId,
+  //       isVerified: selectedAbsenGuru.isVerified,
+  //       status: selectedAbsenGuru.status,
+  //     });
+  //   }
+  // }, [selectedAbsenGuru]);
 
   const isOpen = isDrawerOpen("edit");
 
   const editAbsensiGuruForm = useForm<TypeUpdateAbsensiGuruSchema>({
     resolver: zodResolver(updateAbsensiGuruSchema),
+    values: selectedAbsenGuru
+      ? {
+          guruId: selectedAbsenGuru.guruId,
+          isVerified: selectedAbsenGuru.isVerified,
+          status: selectedAbsenGuru.status,
+        }
+      : undefined,
     defaultValues: {
-      guruId: selectedAbsenGuru?.guruId ?? "",
-      isVerified: selectedAbsenGuru?.isVerified ?? false,
-      status: selectedAbsenGuru?.status ?? "HADIR",
+      guruId: "",
+      isVerified: undefined,
+      status: undefined,
     },
   });
 

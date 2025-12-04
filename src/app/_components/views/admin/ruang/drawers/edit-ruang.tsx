@@ -2,7 +2,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRuangStore } from "@/store/useCabangStore";
 import {
@@ -16,26 +15,31 @@ export default function EditRuang() {
   const { isDrawerOpen, selectedRuang, closeDrawer, clearSelected } =
     useRuangStore();
 
-  console.log(selectedRuang);
-
-  useEffect(() => {
-    if (selectedRuang) {
-      editRuangForm.reset({
-        namaRuang: selectedRuang.namaRuang,
-        cabangId: selectedRuang.cabangId,
-        isAktif: selectedRuang.isAktif,
-      });
-    }
-  }, [selectedRuang]);
+  // useEffect(() => {
+  //   if (selectedRuang) {
+  //     editRuangForm.reset({
+  //       namaRuang: selectedRuang.namaRuang,
+  //       cabangId: selectedRuang.cabangId,
+  //       isAktif: selectedRuang.isAktif,
+  //     });
+  //   }
+  // }, [selectedRuang]);
 
   const isOpen = isDrawerOpen("edit");
 
   const editRuangForm = useForm<TypeClientRuangSchema>({
     resolver: zodResolver(clientRuangSchema),
+    values: selectedRuang
+      ? {
+          namaRuang: selectedRuang.namaRuang,
+          cabangId: selectedRuang.cabangId,
+          isAktif: selectedRuang.isAktif,
+        }
+      : undefined,
     defaultValues: {
-      namaRuang: selectedRuang?.namaRuang,
-      cabangId: selectedRuang?.cabangId,
-      isAktif: selectedRuang?.isAktif,
+      namaRuang: "",
+      cabangId: "",
+      isAktif: undefined,
     },
   });
 

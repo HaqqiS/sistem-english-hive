@@ -3,7 +3,6 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { useGuruStore } from "@/store/useGuruStore";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   updateProfileFormSchema,
@@ -16,22 +15,29 @@ export default function EditGuru() {
   const { isDrawerOpen, selectedGuru, closeDrawer, clearSelected } =
     useGuruStore();
 
-  useEffect(() => {
-    if (selectedGuru) {
-      editGuruForm.reset({
-        name: selectedGuru.name ?? "",
-        email: selectedGuru.email ?? "",
-      });
-    }
-  }, [selectedGuru]);
+  // useEffect(() => {
+  //   if (selectedGuru) {
+  //     editGuruForm.reset({
+  //       name: selectedGuru.name ?? "",
+  //       email: selectedGuru.email ?? "",
+  //     });
+  //   }
+  // }, [selectedGuru]);
 
   const isOpen = isDrawerOpen("edit");
 
   const editGuruForm = useForm<UpdateProfileFormSchema>({
     resolver: zodResolver(updateProfileFormSchema),
+
+    values: selectedGuru
+      ? {
+          name: selectedGuru.name ?? "",
+          email: selectedGuru.email ?? "",
+        }
+      : undefined,
     defaultValues: {
-      name: selectedGuru?.name ?? "",
-      email: selectedGuru?.email ?? "",
+      name: "",
+      email: "",
     },
   });
 

@@ -6,7 +6,6 @@ import {
   type TypeClientCabangSchema,
 } from "@/types/cabang.type";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import CabangForm from "../forms/cabang-form";
 import { useCabangStore } from "@/store/useCabangStore";
@@ -18,6 +17,13 @@ export default function EditCabang() {
 
   const editCabangForm = useForm<TypeClientCabangSchema>({
     resolver: zodResolver(clientCabangSchema),
+    values: selectedCabang
+      ? {
+          namaCabang: selectedCabang.namaCabang,
+          alamat: selectedCabang.alamat,
+          noTelp: selectedCabang.noTelp,
+        }
+      : undefined,
     defaultValues: {
       namaCabang: selectedCabang?.namaCabang,
       alamat: selectedCabang?.alamat,
@@ -25,15 +31,15 @@ export default function EditCabang() {
     },
   });
 
-  useEffect(() => {
-    if (selectedCabang) {
-      editCabangForm.reset({
-        namaCabang: selectedCabang.namaCabang,
-        alamat: selectedCabang.alamat,
-        noTelp: selectedCabang.noTelp,
-      });
-    }
-  }, [selectedCabang]);
+  // useEffect(() => {
+  //   if (selectedCabang) {
+  //     editCabangForm.reset({
+  //       namaCabang: selectedCabang.namaCabang,
+  //       alamat: selectedCabang.alamat,
+  //       noTelp: selectedCabang.noTelp,
+  //     });
+  //   }
+  // }, [selectedCabang]);
 
   const isOpen = isDrawerOpen("edit");
 

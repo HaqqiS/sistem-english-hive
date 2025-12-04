@@ -3,7 +3,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMuridStore } from "@/store/useMuridStore";
 import {
@@ -19,6 +18,22 @@ export default function EditMurid() {
 
   const form = useForm<TypeClientRegisterMuridSchema>({
     resolver: zodResolver(RegisterMuridSchema),
+    values: selectedMurid
+      ? {
+          namaLengkap: selectedMurid.namaLengkap,
+          email: selectedMurid.email,
+          alamat: selectedMurid.alamat,
+          gender: selectedMurid.gender,
+          umur: selectedMurid.umur,
+          asalSekolah: selectedMurid.asalSekolah,
+          kelasSekolah: selectedMurid.kelasSekolah,
+          jamPulang: selectedMurid.jamPulang,
+          noWA: selectedMurid.noWA,
+          cabangId: selectedMurid.cabangId,
+          pilihanProgram: selectedMurid.pilihanProgram ?? "",
+          sumberInfo: selectedMurid.sumberInfo,
+        }
+      : undefined,
     defaultValues: {
       namaLengkap: "",
       email: "",
@@ -34,26 +49,6 @@ export default function EditMurid() {
       sumberInfo: "",
     },
   });
-
-  // Effect to pre-fill the form when a murid is selected
-  useEffect(() => {
-    if (selectedMurid) {
-      form.reset({
-        namaLengkap: selectedMurid.namaLengkap,
-        email: selectedMurid.email,
-        alamat: selectedMurid.alamat,
-        gender: selectedMurid.gender,
-        umur: selectedMurid.umur,
-        asalSekolah: selectedMurid.asalSekolah,
-        kelasSekolah: selectedMurid.kelasSekolah,
-        jamPulang: selectedMurid.jamPulang,
-        noWA: selectedMurid.noWA,
-        cabangId: selectedMurid.cabangId,
-        pilihanProgram: selectedMurid.pilihanProgram ?? "",
-        sumberInfo: selectedMurid.sumberInfo,
-      });
-    }
-  }, [selectedMurid, form]);
 
   const isOpen = isDrawerOpen("edit");
 

@@ -2,7 +2,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   clientUpdatePendaftaranKelasSchema,
@@ -15,10 +14,17 @@ import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 export default function EditMuridDetailKelas() {
   const { isDrawerOpen, selectedPendaftaran, closeDrawer, clearSelected } =
     usePendaftaranKelasStore();
-  console.log(selectedPendaftaran);
 
   const form = useForm<TypeClientUpdatePendaftaranKelasSchema>({
     resolver: zodResolver(clientUpdatePendaftaranKelasSchema),
+    values: selectedPendaftaran
+      ? {
+          muridId: selectedPendaftaran.muridId,
+          kelasId: selectedPendaftaran.kelasId,
+          tanggalMulai: selectedPendaftaran.tanggalMulai,
+          isAktif: selectedPendaftaran.isAktif,
+        }
+      : undefined,
     defaultValues: {
       muridId: selectedPendaftaran?.muridId ?? "",
       kelasId: selectedPendaftaran?.kelasId ?? "",
@@ -27,16 +33,16 @@ export default function EditMuridDetailKelas() {
     },
   });
 
-  useEffect(() => {
-    if (selectedPendaftaran) {
-      form.reset({
-        muridId: selectedPendaftaran.muridId,
-        kelasId: selectedPendaftaran.kelasId,
-        tanggalMulai: selectedPendaftaran.tanggalMulai,
-        isAktif: selectedPendaftaran.isAktif,
-      });
-    }
-  }, [selectedPendaftaran, form]);
+  // useEffect(() => {
+  //   if (selectedPendaftaran) {
+  //     form.reset({
+  //       muridId: selectedPendaftaran.muridId,
+  //       kelasId: selectedPendaftaran.kelasId,
+  //       tanggalMulai: selectedPendaftaran.tanggalMulai,
+  //       isAktif: selectedPendaftaran.isAktif,
+  //     });
+  //   }
+  // }, [selectedPendaftaran, form]);
 
   const isOpen = isDrawerOpen("edit");
 

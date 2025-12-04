@@ -2,7 +2,6 @@
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   clientKelasSchema,
@@ -18,6 +17,18 @@ export default function EditKelas() {
 
   const editKelasForm = useForm<TypeClientKelasSchema>({
     resolver: zodResolver(clientKelasSchema),
+    values: selectedKelas
+      ? {
+          jenisKelas: selectedKelas.jenisKelas,
+          level: selectedKelas.level,
+          tipe: selectedKelas.tipe,
+          grup: selectedKelas.grup ?? "",
+          bulanTahunAjar: selectedKelas.bulanTahunAjar,
+          deskripsi: selectedKelas.deskripsi ?? "",
+          hargaKelas: selectedKelas.hargaKelas,
+          kodeKelas: selectedKelas.kodeKelas,
+        }
+      : undefined,
     defaultValues: {
       jenisKelas: selectedKelas?.jenisKelas,
       level: selectedKelas?.level,
@@ -30,20 +41,20 @@ export default function EditKelas() {
     },
   });
 
-  useEffect(() => {
-    if (selectedKelas) {
-      editKelasForm.reset({
-        jenisKelas: selectedKelas.jenisKelas,
-        level: selectedKelas.level,
-        tipe: selectedKelas.tipe,
-        grup: selectedKelas.grup ?? "",
-        bulanTahunAjar: selectedKelas.bulanTahunAjar,
-        deskripsi: selectedKelas.deskripsi ?? "",
-        hargaKelas: selectedKelas.hargaKelas,
-        kodeKelas: selectedKelas.kodeKelas,
-      });
-    }
-  }, [selectedKelas, editKelasForm]);
+  // useEffect(() => {
+  //   if (selectedKelas) {
+  //     editKelasForm.reset({
+  //       jenisKelas: selectedKelas.jenisKelas,
+  //       level: selectedKelas.level,
+  //       tipe: selectedKelas.tipe,
+  //       grup: selectedKelas.grup ?? "",
+  //       bulanTahunAjar: selectedKelas.bulanTahunAjar,
+  //       deskripsi: selectedKelas.deskripsi ?? "",
+  //       hargaKelas: selectedKelas.hargaKelas,
+  //       kodeKelas: selectedKelas.kodeKelas,
+  //     });
+  //   }
+  // }, [selectedKelas, editKelasForm]);
 
   const isOpen = isDrawerOpen("edit");
 

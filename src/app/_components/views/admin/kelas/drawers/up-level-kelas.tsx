@@ -4,7 +4,6 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer"; // Using Edit
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
 import {
   type TypeUpLevelKelasSchema,
   upLevelKelasSchema,
@@ -21,6 +20,17 @@ export default function UpLevelKelas() {
 
   const form = useForm<TypeUpLevelKelasSchema>({
     resolver: zodResolver(upLevelKelasSchema),
+    values: selectedKelas
+      ? {
+          oldKelasId: selectedKelas.id,
+          // Auto-increment level
+          newLevel: selectedKelas.level + 1,
+          newBulanTahunAjar: "",
+          newKodeKelas: "",
+          newTanggalMulai: "",
+          hargaKelas: selectedKelas.hargaKelas,
+        }
+      : undefined,
     defaultValues: {
       oldKelasId: "",
       newLevel: undefined,
@@ -32,19 +42,19 @@ export default function UpLevelKelas() {
   });
 
   // Reset form and set oldKelasId when drawer opens or selectedKelas changes
-  useEffect(() => {
-    if (isOpen && selectedKelas) {
-      form.reset({
-        oldKelasId: selectedKelas.id,
-        // Auto-increment level
-        newLevel: selectedKelas.level + 1,
-        newBulanTahunAjar: "",
-        newKodeKelas: "",
-        newTanggalMulai: "",
-        hargaKelas: selectedKelas.hargaKelas,
-      });
-    }
-  }, [isOpen, selectedKelas, form]);
+  // useEffect(() => {
+  //   if (isOpen && selectedKelas) {
+  //     form.reset({
+  //       oldKelasId: selectedKelas.id,
+  //       // Auto-increment level
+  //       newLevel: selectedKelas.level + 1,
+  //       newBulanTahunAjar: "",
+  //       newKodeKelas: "",
+  //       newTanggalMulai: "",
+  //       hargaKelas: selectedKelas.hargaKelas,
+  //     });
+  //   }
+  // }, [isOpen, selectedKelas, form]);
 
   const { mutations: kelasMutations } = useKelas({
     onSuccessUpLevel: () => {

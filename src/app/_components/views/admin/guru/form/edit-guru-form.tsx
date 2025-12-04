@@ -39,7 +39,7 @@ export default function EditGuruForm({ onSubmit }: EditGuruFormProps) {
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="ahmad@mail.com"
+                    placeholder="guru@mail.com"
                     {...field}
                     autoFocus
                     required
@@ -58,7 +58,7 @@ export default function EditGuruForm({ onSubmit }: EditGuruFormProps) {
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ahmad" {...field} required />
+                  <Input placeholder="Guru Name" {...field} required />
                 </FormControl>
                 <FormMessage />
               </FormItem>

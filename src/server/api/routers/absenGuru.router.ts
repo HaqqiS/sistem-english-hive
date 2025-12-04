@@ -17,16 +17,43 @@ import {
 
 export const absenGuruRouter = createTRPCRouter({
   getAllAbsensi: protectedProcedure
-    .input(paginationSchema)
+    .input(
+      paginationSchema.extend({
+        search: z.string().optional(),
+        month: z
+          .string()
+          .regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM")
+          .optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const { db } = ctx;
-      const { pageIndex, pageSize } = input;
+      const { pageIndex, pageSize, month, search } = input;
+
+      const whereClause: Prisma.AbsensiGuruWhereInput = {};
+
+      if (search) {
+        whereClause.guru = {
+          name: { contains: search, mode: "insensitive" },
+        };
+      }
+      if (month && month !== "") {
+        const { startDate, endDate } = getPeriodeGaji(month);
+
+        whereClause.sesiPertemuanKelas = {
+          tanggalWaktu: {
+            gte: startDate,
+            lte: endDate,
+          },
+        };
+      }
 
       const [total, data] = await db.$transaction([
-        db.absensiGuru.count(),
+        db.absensiGuru.count({ where: whereClause }),
         db.absensiGuru.findMany({
           skip: pageIndex * pageSize,
           take: pageSize,
+          where: whereClause,
           orderBy: {
             updatedAt: "desc",
           },
@@ -75,6 +102,56 @@ export const absenGuruRouter = createTRPCRouter({
         pageCount,
         total,
       };
+    }),
+
+  getForExport: protectedProcedure
+    .input(
+      z.object({
+        search: z.string().optional(),
+        month: z
+          .string()
+          .regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM")
+          .optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      const { month, search } = input;
+
+      const whereClause: Prisma.AbsensiGuruWhereInput = {};
+      if (search) {
+        whereClause.guru = {
+          name: { contains: search, mode: "insensitive" },
+        };
+      }
+      if (month && month !== "") {
+        const { startDate, endDate } = getPeriodeGaji(month);
+
+        whereClause.sesiPertemuanKelas = {
+          tanggalWaktu: {
+            gte: startDate,
+            lte: endDate,
+          },
+        };
+      }
+
+      // Ambil SEMUA data (Tanpa Pagination)
+      return await db.absensiGuru.findMany({
+        where: whereClause,
+        orderBy: { sesiPertemuanKelas: { tanggalWaktu: "desc" } },
+        select: {
+          guru: { select: { name: true } },
+          status: true,
+          isVerified: true,
+          sesiPertemuanKelas: {
+            select: {
+              tanggalWaktu: true,
+              kelas: { select: { kodeKelas: true } },
+              ruang: { select: { namaRuang: true } },
+            },
+          },
+        },
+      });
     }),
 
   /**

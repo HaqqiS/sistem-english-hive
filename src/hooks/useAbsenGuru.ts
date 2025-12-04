@@ -24,6 +24,7 @@ interface UseGuruOptions {
   guruId?: string;
   month?: string;
   pagination?: PaginationState;
+  searchFilter?: string;
 }
 
 export function useAbsenGuru(options?: UseGuruOptions) {
@@ -32,11 +33,12 @@ export function useAbsenGuru(options?: UseGuruOptions) {
   const pageSize = options?.pagination?.pageSize ?? 10;
   const guruId = options?.guruId;
   const month = options?.month;
+  const searchFilter = options?.searchFilter;
 
   // ========== QUERIES ==========
 
   const getAllAbsensiGuruQuery = api.absenGuru.getAllAbsensi.useQuery(
-    { pageIndex, pageSize },
+    { pageIndex, pageSize, search: searchFilter, month },
     {
       enabled: !!options?.pagination,
       initialData: options?.initialDataAbsensi,
@@ -52,6 +54,13 @@ export function useAbsenGuru(options?: UseGuruOptions) {
       refetchOnWindowFocus: false,
     },
   );
+
+  const fetchExportData = async () => {
+    return await apiUtils.absenGuru.getForExport.fetch({
+      search: searchFilter,
+      month,
+    });
+  };
 
   // ========== MUTATIONS ==========
 
@@ -155,6 +164,8 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     isErrorHistory: getHistoryQuery.isError,
     isFetchingHistory: getHistoryQuery.isFetching,
     errorHistory: getHistoryQuery.error,
+
+    fetchExportData,
 
     // Mutations
     mutations: {

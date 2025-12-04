@@ -11,10 +11,30 @@ import { useUser } from "@/hooks/useUser";
 import EditVerifikasiAbsen from "./drawer/edit-verifikasi-absen";
 import { useAbsenGuruStore, useGuruStore } from "@/store/useGuruStore";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import RegistrasiGuru from "./drawer/registrasi-guru";
 import EditGuru from "./drawer/edit-guru";
 import type { PaginationState } from "@tanstack/react-table";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import {
+  CalendarIcon,
+  FileSpreadsheet,
+  RefreshCw,
+  Search,
+  XCircle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { toast } from "sonner";
+import dayjs, { formatToWITA } from "@/utils/dateUtils";
+import { downloadCSV } from "@/utils/exportUtils";
+import { getPeriodeGaji } from "@/server/services/gaji.service";
+import { Calendar } from "@/components/ui/calendar";
 
 export default function GuruClient() {
   // STATES
@@ -22,6 +42,29 @@ export default function GuruClient() {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState<Date | undefined>(undefined);
+  const selectedMonthYYYYMM = month
+    ? dayjs(month).format("YYYY-MM")
+    : undefined;
+
+  const periodeText = useMemo(() => {
+    if (!selectedMonthYYYYMM) return "Semua Periode";
+    const { startDate, endDate } = getPeriodeGaji(selectedMonthYYYYMM);
+    return `${dayjs(startDate).format("D MMM")} - ${dayjs(endDate).format("D MMM YYYY")}`;
+  }, [selectedMonthYYYYMM]);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      // Reset ke halaman 1 saat search berubah
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const [deleteAbsenGuruDialogOpen, setDeleteAbsenGuruDialogOpen] =
@@ -48,9 +91,11 @@ export default function GuruClient() {
     isLoading: isLoadingAbsensiGuru,
     isFetching: isFetchingAbsensiGuru,
     pageCount,
+    fetchExportData,
     mutations: mutationsAbsenGuru,
   } = useAbsenGuru({
-    // initialDataAbsensi: initialDataAbsensi,
+    month: selectedMonthYYYYMM,
+    searchFilter: debouncedSearch,
     pagination: pagination,
     onSuccessDelete: () => {
       setDeleteAbsenGuruDialogOpen(false);
@@ -112,6 +157,32 @@ export default function GuruClient() {
     mutationsGuru.resetPassword.mutate({ id: selectedGuruToDelete.id });
   };
 
+  const handleExport = async () => {
+    const toastId = toast.loading("Mengunduh data absensi...");
+    try {
+      const data = await fetchExportData();
+
+      // Flatten Data untuk CSV
+      const csvData = data.map((item) => ({
+        "Nama Guru": item.guru.name,
+        Kelas: item.sesiPertemuanKelas.kelas.kodeKelas,
+        Ruang: item.sesiPertemuanKelas.ruang.namaRuang,
+        "Tanggal Waktu": formatToWITA(item.sesiPertemuanKelas.tanggalWaktu),
+        "Status Kehadiran": item.status,
+        "Status Verifikasi": item.isVerified ? "Terverifikasi" : "Belum",
+      }));
+
+      downloadCSV(
+        csvData,
+        `Laporan-Absensi-Guru-${new Date().toISOString().split("T")[0]}`,
+      );
+      toast.success("Export berhasil!", { id: toastId });
+    } catch (e) {
+      toast.error("Gagal mengexport data", { id: toastId });
+      console.error(e);
+    }
+  };
+
   // COLUMNS
   const columnsAbsensiGuru = columnsAbsen({
     onEditClick: (item) => {
@@ -148,14 +219,103 @@ export default function GuruClient() {
         <TabsTrigger value="guru">List Guru</TabsTrigger>
       </TabsList>
       <TabsContent value="absen">
+        <HeaderActionPortal>
+          <Button variant="ghost" size="sm" onClick={handleExport}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </HeaderActionPortal>
+
         <div>
           <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl">List Absen Guru</h1>
-                <p className="text-muted-foreground text-sm">
-                  halaman ini mengatur verifikasi absen guru.
-                </p>
+            <header className="flex w-full items-center justify-between">
+              <div className="flex justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {/* <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    title="Refresh Data"
+                  >
+                    <RefreshCw className={`h-4 w-4`} />
+                  </Button> */}
+                  <div>
+                    <h1 className="text-xl">Daftar Absen Guru</h1>
+                    <p className="text-muted-foreground text-sm">
+                      halaman ini mengatur verifikasi absen guru {periodeText}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <div className="relative w-full sm:max-w-xs">
+                  <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                  <Input
+                    placeholder="Cari nama guru..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  {/* <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                      Pilih Bulan Gaji
+                    </span> */}
+                  <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal md:w-60"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {month
+                          ? dayjs(month).format("MMMM YYYY")
+                          : "Semua Periode"}{" "}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        month={month}
+                        onMonthChange={(newMonth) => {
+                          if (newMonth) {
+                            setMonth(newMonth);
+                            setOpen(false);
+                          }
+                        }}
+                        captionLayout="dropdown"
+                        startMonth={new Date(2024, 0)}
+                        endMonth={new Date(dayjs().year() + 1, 11)}
+                        classNames={{
+                          month: "space-y-0 space-x-5 h-8",
+                          caption:
+                            "relative flex justify-center items-center pt-1",
+                          day: "hidden",
+                          weekdays: "hidden",
+                        }}
+                      />
+                      <div className="bg-muted/10 border-t p-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-full text-xs"
+                          onClick={() => {
+                            setMonth(undefined);
+                            setOpen(false);
+                            setPagination((prev) => ({
+                              ...prev,
+                              pageIndex: 0,
+                            }));
+                          }}
+                        >
+                          <XCircle className="mr-2 h-3 w-3" />
+                          Tampilkan Semua Data
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </header>
 

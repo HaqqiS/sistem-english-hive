@@ -95,9 +95,17 @@ export function usePembayaran(options?: UsePembayaranOptions) {
     },
   );
 
-  // 3. Get Saldo Siswa (Helper wrapper)
-  // Usage: const { data: saldo } = usePembayaran().getSaldoSiswaQuery({ pendaftaranKelasId: "..." })
-  // Note: We expose the hook creator itself so components can call it with specific IDs
+  const fetchExportData = async () => {
+    return await apiUtils.pembayaran.getForExport.fetch({
+      // Reuse filter yang sudah ada di options hook ini!
+      status:
+        options?.statusFilter && options.statusFilter !== "ALL"
+          ? options.statusFilter
+          : undefined,
+      muridId: options?.muridIdFilter,
+      search: options?.searchFilter,
+    });
+  };
 
   const getSaldoByMuridIdQuery = api.pembayaran.getSaldoByMuridId.useQuery;
 
@@ -163,7 +171,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
     errorJatuhTempo: getJatuhTempoQuery.error,
     refetchJatuhTempo: getJatuhTempoQuery.refetch,
 
-    // Expose Query Hook for specific ID usage
+    fetchExportData,
 
     getSaldoByMuridIdQuery,
 

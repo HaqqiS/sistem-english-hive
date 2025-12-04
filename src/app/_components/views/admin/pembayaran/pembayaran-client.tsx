@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Search } from "lucide-react";
+import { FileSpreadsheet, RefreshCw, Search } from "lucide-react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import {
   type TypePembayaran,
@@ -25,6 +25,10 @@ import EditPembayaran from "./edit-pembayaran";
 import type { PaginationState } from "@tanstack/react-table";
 import TambahPembayaran from "./tambah-pembayaran";
 import { Input } from "@/components/ui/input";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { toast } from "sonner";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { downloadCSV } from "@/utils/exportUtils";
 
 interface PembayaranClientProps {
   initialDataPembayaran?: TypePembayaranPaginated;
@@ -67,6 +71,7 @@ export default function PembayaranClient({
     refetchGetAllPaginated: refetch,
     isFetchingGetAllPaginated: isRefetching,
     mutations,
+    fetchExportData,
   } = usePembayaran({
     initialDataPaginated: initialDataPembayaran,
     statusFilter: statusFilter,
@@ -113,6 +118,35 @@ export default function PembayaranClient({
   const handleEditClick = (item: TypePembayaran) => {
     openDrawer("edit", item);
   };
+
+  const handleExport = async () => {
+    const toastId = toast.loading("Sedang mengunduh data...");
+    try {
+      // 1. Panggil fungsi dari hook (tanpa perlu passing filter lagi!)
+      const rawData = await fetchExportData();
+
+      // 2. Format Data (Flattening)
+      const formattedData = rawData.map((item) => ({
+        "Nama Murid": item.pendaftaranKelas.murid.namaLengkap,
+        Kelas: item.pendaftaranKelas.Kelas.kodeKelas,
+        "Pembayaran Ke": item.pembayaranKe,
+        "Jumlah (Rp)": item.jumlahBayar,
+        Status: item.statusBayar === "LUNAS" ? "Lunas" : "Belum Lunas",
+        "Jatuh Tempo": formatDateToYYYYMMDD(item.tanggalJatuhTempo),
+      }));
+
+      // 3. Download CSV
+      downloadCSV(
+        formattedData,
+        `Laporan-Pembayaran-${new Date().toISOString().split("T")[0]}`,
+      );
+
+      toast.success("Export berhasil!", { id: toastId });
+    } catch (error) {
+      toast.error("Gagal mengexport data", { id: toastId });
+      console.error(error);
+    }
+  };
   // --- TABLE CONFIG ---
   const tableColumns = columns({
     onEditClick: handleEditClick,
@@ -122,8 +156,18 @@ export default function PembayaranClient({
 
   return (
     <div className="space-y-4">
+      <HeaderActionPortal>
+        <div className="flex items-center gap-2">
+          {/* Anda bisa taruh tombol Export di sini */}
+          <Button variant="ghost" size="sm" onClick={handleExport}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
+      </HeaderActionPortal>
+
       {/* --- TOOLBAR --- */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col items-start gap-2">
           <div className="flex items-center gap-2">
             <Button
@@ -138,7 +182,12 @@ export default function PembayaranClient({
                 className={`h-4 w-4 ${isLoading || isFetching ? "animate-spin" : ""}`}
               />
             </Button>
-            <h2 className="text-lg font-semibold">Data Pembayaran</h2>
+            <div>
+              <h1 className="text-xl">Data Pembayaran</h1>
+              <p className="text-muted-foreground text-sm">
+                halaman ini mengatur data pembayaran siswa.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -173,14 +222,11 @@ export default function PembayaranClient({
                 </SelectItem>
               </SelectContent>
             </Select>
-
-            {/* Tombol Tambah Manual (Opsional, nanti) */}
-            {/* <Button>+ Tagihan Manual</Button> */}
           </div>
         </div>
 
         <TambahPembayaran />
-      </div>
+      </header>
 
       {/* --- DATA TABLE --- */}
       <DataTable

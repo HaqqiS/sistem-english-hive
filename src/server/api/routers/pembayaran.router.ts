@@ -137,21 +137,60 @@ export const pembayaranRouter = createTRPCRouter({
     });
   }),
 
-  // 3. [BARU] GET SALDO SISWA (Real-time Calculation)
-  // Digunakan di halaman detail pembayaran atau detail murid untuk melihat kesehatan akun
-  // getSaldoSiswa: protectedProcedure
-  //   .input(z.object({ pendaftaranKelasId: z.string() }))
-  //   .query(async ({ ctx, input }) => {
-  //     const { db } = ctx;
+  getForExport: protectedProcedure
+    .input(
+      z.object({
+        status: z.nativeEnum(StatusPembayaran).optional(),
+        muridId: z.string().optional(),
+        search: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db } = ctx;
+      // 1. Reuse Logic "Where" dari getAllPaginated
+      const whereClause: Prisma.PembayaranWhereInput = {};
 
-  //     // Panggil Helper Service yang sudah kita buat
-  //     const saldoInfo = await calculateSisaPertemuan(
-  //       db,
-  //       input.pendaftaranKelasId,
-  //     );
+      if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
+        whereClause.statusBayar = input.status;
+      }
+      if (input.muridId || input.search) {
+        whereClause.pendaftaranKelas = {
+          ...(input.muridId ? { muridId: input.muridId } : {}),
 
-  //     return saldoInfo;
-  //   }),
+          // Jika ada search, filter partial match pada nama murid
+          ...(input.search
+            ? {
+                murid: {
+                  namaLengkap: {
+                    contains: input.search,
+                    mode: "insensitive", // Agar tidak case-sensitive (Huruf besar/kecil dianggap sama)
+                  },
+                },
+              }
+            : {}),
+        };
+      }
+
+      // 2. Ambil SEMUA data (tanpa skip/take)
+      const data = await db.pembayaran.findMany({
+        where: whereClause,
+        orderBy: { tanggalJatuhTempo: "desc" },
+        select: {
+          pembayaranKe: true,
+          jumlahBayar: true,
+          tanggalJatuhTempo: true,
+          statusBayar: true,
+          pendaftaranKelas: {
+            select: {
+              murid: { select: { namaLengkap: true } },
+              Kelas: { select: { kodeKelas: true } },
+            },
+          },
+        },
+      });
+
+      return data;
+    }),
 
   getSaldoByMuridId: protectedProcedure
     .input(z.object({ muridId: z.string() }))

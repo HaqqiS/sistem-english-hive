@@ -92,8 +92,8 @@ export const columns = ({
 
   {
     accessorKey: "sesiPertemuanKelas.tanggalWaktu",
-    id: "jadwal sesi",
-    header: "Jadwal Sesi",
+    id: "tanggal waktu",
+    header: "Tanggal Waktu",
     cell: ({ row }) => (
       <div
         className="max-w-[300px] truncate"

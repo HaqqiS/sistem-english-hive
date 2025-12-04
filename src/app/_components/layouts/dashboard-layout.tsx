@@ -49,6 +49,10 @@ export default function DashboardLayout({
 
             <DynamicBreadcrumb />
           </div>
+          <div
+            id="header-actions"
+            className="mr-4 ml-auto flex items-center gap-2 px-4"
+          />
         </header>
         <Suspense
           fallback={

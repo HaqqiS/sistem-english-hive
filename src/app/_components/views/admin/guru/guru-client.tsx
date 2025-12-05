@@ -228,191 +228,194 @@ export default function GuruClient() {
         </HeaderActionPortal>
 
         <div>
-          <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex w-full items-center justify-between">
-              <div className="flex justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    title="Refresh Data"
-                    disabled={isLoadingAbsensiGuru || isFetchingAbsensiGuru}
-                    onClick={() => refetchAbsensiGuru()}
-                  >
-                    <RefreshCw
-                      className={`h-4 w-4 ${isLoadingAbsensiGuru || isFetchingAbsensiGuru ? "animate-spin" : ""}`}
-                    />
-                  </Button>
-                  <div>
-                    <h1 className="text-xl">Daftar Absen Guru</h1>
-                    <p className="text-muted-foreground text-sm">
-                      halaman ini mengatur verifikasi absen guru {periodeText}.
-                    </p>
-                  </div>
+          <header className="flex w-full flex-col gap-4">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+              <div className="flex flex-1 items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  title="Refresh Data"
+                  disabled={isLoadingAbsensiGuru || isFetchingAbsensiGuru}
+                  onClick={() => refetchAbsensiGuru()}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isLoadingAbsensiGuru || isFetchingAbsensiGuru ? "animate-spin" : ""}`}
+                  />
+                </Button>
+                <div className="flex flex-col">
+                  <h1 className="text-xl">Daftar Absen Guru</h1>
+                  <p className="text-muted-foreground text-sm">
+                    halaman ini mengatur verifikasi absen guru {periodeText}.
+                  </p>
                 </div>
               </div>
+            </div>
 
-              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                <div className="relative w-full sm:max-w-xs">
-                  <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                  <Input
-                    placeholder="Cari nama guru..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  {/* <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+            {/* COMPONENT ADD */}
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:w-60">
+                <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+                <Input
+                  placeholder="Cari nama guru..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                {/* <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
                       Pilih Bulan Gaji
                     </span> */}
-                  <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal md:w-60"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {month
+                        ? dayjs(month).format("MMMM YYYY")
+                        : "Semua Periode"}{" "}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      month={month}
+                      onMonthChange={(newMonth) => {
+                        if (newMonth) {
+                          setMonth(newMonth);
+                          setOpen(false);
+                        }
+                      }}
+                      captionLayout="dropdown"
+                      startMonth={new Date(2024, 0)}
+                      endMonth={new Date(dayjs().year() + 1, 11)}
+                      classNames={{
+                        month: "space-y-0 space-x-5 h-8",
+                        caption:
+                          "relative flex justify-center items-center pt-1",
+                        day: "hidden",
+                        weekdays: "hidden",
+                      }}
+                    />
+                    <div className="bg-muted/10 border-t p-3">
                       <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal md:w-60"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-full text-xs"
+                        onClick={() => {
+                          setMonth(undefined);
+                          setOpen(false);
+                          setPagination((prev) => ({
+                            ...prev,
+                            pageIndex: 0,
+                          }));
+                        }}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {month
-                          ? dayjs(month).format("MMMM YYYY")
-                          : "Semua Periode"}{" "}
+                        <XCircle className="mr-2 h-3 w-3" />
+                        Tampilkan Semua Data
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="end">
-                      <Calendar
-                        mode="single"
-                        month={month}
-                        onMonthChange={(newMonth) => {
-                          if (newMonth) {
-                            setMonth(newMonth);
-                            setOpen(false);
-                          }
-                        }}
-                        captionLayout="dropdown"
-                        startMonth={new Date(2024, 0)}
-                        endMonth={new Date(dayjs().year() + 1, 11)}
-                        classNames={{
-                          month: "space-y-0 space-x-5 h-8",
-                          caption:
-                            "relative flex justify-center items-center pt-1",
-                          day: "hidden",
-                          weekdays: "hidden",
-                        }}
-                      />
-                      <div className="bg-muted/10 border-t p-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-full text-xs"
-                          onClick={() => {
-                            setMonth(undefined);
-                            setOpen(false);
-                            setPagination((prev) => ({
-                              ...prev,
-                              pageIndex: 0,
-                            }));
-                          }}
-                        >
-                          <XCircle className="mr-2 h-3 w-3" />
-                          Tampilkan Semua Data
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
-            </header>
+            </div>
+          </header>
 
-            <EditVerifikasiAbsen />
-            <DeleteConfirmationDialog
-              isOpen={deleteAbsenGuruDialogOpen}
-              onOpenChange={setDeleteAbsenGuruDialogOpen}
-              title="Hapus Absen Guru"
-              description={
-                <>
-                  Yakin ingin menghapus Absen Guru{" "}
-                  <span className="text-accent font-bold">
-                    {selectedAbsenGuruToDelete?.kodeKelasTanggalWaktu}
-                  </span>
-                  ? Tindakan ini tidak dapat dibatalkan.
-                </>
-              }
-              onConfirm={handleConfirmDeleteAbsenGuru}
-              isLoading={mutationsAbsenGuru.delete.isPending}
-              confirmText="Hapus"
-              cancelText="Batal"
-            />
-          </div>
+          <EditVerifikasiAbsen />
+          <DeleteConfirmationDialog
+            isOpen={deleteAbsenGuruDialogOpen}
+            onOpenChange={setDeleteAbsenGuruDialogOpen}
+            title="Hapus Absen Guru"
+            description={
+              <>
+                Yakin ingin menghapus Absen Guru{" "}
+                <span className="text-accent font-bold">
+                  {selectedAbsenGuruToDelete?.kodeKelasTanggalWaktu}
+                </span>
+                ? Tindakan ini tidak dapat dibatalkan.
+              </>
+            }
+            onConfirm={handleConfirmDeleteAbsenGuru}
+            isLoading={mutationsAbsenGuru.delete.isPending}
+            confirmText="Hapus"
+            cancelText="Batal"
+          />
+          <DataTablePagination
+            columns={columnsAbsensiGuru}
+            data={dataAbsensiGuru ?? []}
+            isLoading={isLoadingAbsensiGuru || isFetchingAbsensiGuru}
+            // Tambahkan props pagination ke DataTable
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            pageCount={pageCount}
+          />
         </div>
-
-        <DataTablePagination
-          columns={columnsAbsensiGuru}
-          data={dataAbsensiGuru ?? []}
-          isLoading={isLoadingAbsensiGuru || isFetchingAbsensiGuru}
-          // Tambahkan props pagination ke DataTable
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          pageCount={pageCount}
-        />
       </TabsContent>
 
       <TabsContent value="guru">
         <div>
-          <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl">List Guru</h1>
-                <p className="text-muted-foreground text-sm">
-                  halaman ini menampilkan daftar guru.
-                </p>
+          <header className="flex w-full flex-col gap-4">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+              <div className="flex flex-1 items-center gap-3">
+                <div className="flex flex-col">
+                  <h1 className="text-xl">List Guru</h1>
+                  <p className="text-muted-foreground text-sm">
+                    halaman ini menampilkan daftar guru.
+                  </p>
+                </div>
               </div>
-            </header>
 
-            <RegistrasiGuru />
-            <EditGuru />
-            <DeleteConfirmationDialog
-              isOpen={deleteGuruDialogOpen}
-              onOpenChange={setDeleteGuruDialogOpen}
-              title="Hapus Akun Guru"
-              description={
-                <>
-                  Yakin ingin menghapus Akun Guru{" "}
-                  <span className="text-accent font-bold">
-                    {selectedGuruToDelete?.namaGuru}
-                  </span>
-                  ? Tindakan ini tidak dapat dibatalkan.
-                </>
-              }
-              onConfirm={handleConfirmDeleteGuru}
-              isLoading={mutationsGuru.delete.isPending}
-              confirmText="Hapus"
-              cancelText="Batal"
-            />
-            <DeleteConfirmationDialog
-              isOpen={resetPasswordGuruDialogOpen}
-              onOpenChange={setResetPasswordGuruDialogOpen}
-              title="Reset Password Guru"
-              description={
-                <>
-                  Yakin ingin mereset password Akun Guru{" "}
-                  <span className="text-accent font-bold">
-                    {selectedGuruToDelete?.namaGuru}
-                  </span>
-                  ? Tindakan ini tidak dapat dibatalkan. password akan direset
-                  menjadi{" "}
-                  <span className="text-accent font-bold">password123</span>
-                </>
-              }
-              onConfirm={handleConfirmResetPasswordGuru}
-              isLoading={mutationsGuru.resetPassword.isPending}
-              confirmText="Reset Password"
-              cancelText="Batal"
-            />
-          </div>
+              <RegistrasiGuru />
+            </div>
+
+            {/* FILTER COMPONENT */}
+          </header>
+
+          <EditGuru />
+          <DeleteConfirmationDialog
+            isOpen={deleteGuruDialogOpen}
+            onOpenChange={setDeleteGuruDialogOpen}
+            title="Hapus Akun Guru"
+            description={
+              <>
+                Yakin ingin menghapus Akun Guru{" "}
+                <span className="text-accent font-bold">
+                  {selectedGuruToDelete?.namaGuru}
+                </span>
+                ? Tindakan ini tidak dapat dibatalkan.
+              </>
+            }
+            onConfirm={handleConfirmDeleteGuru}
+            isLoading={mutationsGuru.delete.isPending}
+            confirmText="Hapus"
+            cancelText="Batal"
+          />
+          <DeleteConfirmationDialog
+            isOpen={resetPasswordGuruDialogOpen}
+            onOpenChange={setResetPasswordGuruDialogOpen}
+            title="Reset Password Guru"
+            description={
+              <>
+                Yakin ingin mereset password Akun Guru{" "}
+                <span className="text-accent font-bold">
+                  {selectedGuruToDelete?.namaGuru}
+                </span>
+                ? Tindakan ini tidak dapat dibatalkan. password akan direset
+                menjadi{" "}
+                <span className="text-accent font-bold">password123</span>
+              </>
+            }
+            onConfirm={handleConfirmResetPasswordGuru}
+            isLoading={mutationsGuru.resetPassword.isPending}
+            confirmText="Reset Password"
+            cancelText="Batal"
+          />
+          <DataTable columns={columnsListGuru} data={dataGuru ?? []} />
         </div>
-
-        <DataTable columns={columnsListGuru} data={dataGuru ?? []} />
       </TabsContent>
     </Tabs>
   );

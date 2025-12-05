@@ -109,6 +109,7 @@ model Cabang {
     murids        Murid[]
     ruangs        Ruang[]
     jamSlotTetaps JamSlotTetap[]
+    kelas         Kelas[]
 }
 
 model Ruang {
@@ -258,6 +259,8 @@ model Kelas {
 
     // cohortId Int @default(autoincrement())
     cohortId String @default(cuid())
+    cabangId String
+    cabang   Cabang @relation(fields: [cabangId], references: [id])
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -270,6 +273,7 @@ model Kelas {
     @@index([kodeKelas])
     @@index([level])
     @@index([bulanTahunAjar])
+    @@index([cabangId])
 }
 
 enum EnumStatusGuru {

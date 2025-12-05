@@ -22,6 +22,7 @@ declare module "next-auth" {
       name: string;
       email: string;
       image: string | null;
+      cabangId?: string;
     } & DefaultSession["user"];
   }
 
@@ -31,6 +32,7 @@ declare module "next-auth" {
     name?: string | null;
     image?: string | null;
     role: UserRole;
+    cabangId?: string;
     password?: string;
   }
 }
@@ -42,6 +44,7 @@ declare module "next-auth/jwt" {
     email: string;
     image: string | null;
     role: UserRole;
+    cabangId?: string;
     accessToken?: string;
   }
 }
@@ -98,6 +101,7 @@ export const authConfig: NextAuthConfig = {
           name: user.name!,
           image: user.image,
           role: user.role as unknown as UserRole,
+          cabangId: user.cabangId ?? undefined,
         };
       },
     }),
@@ -121,12 +125,14 @@ export const authConfig: NextAuthConfig = {
         token.name = user.name ?? "";
         token.email = user.email ?? "";
         token.image = user.image ?? null;
+        token.cabangId = user.cabangId ?? undefined;
       }
 
       if (trigger === "update" && session?.user) {
         token.name = session.user.name ?? token.name;
         token.email = session.user.email ?? token.email;
         token.image = session.user.image ?? token.image;
+        token.cabangId = session.user.cabangId ?? token.cabangId;
       }
 
       return token;
@@ -139,6 +145,7 @@ export const authConfig: NextAuthConfig = {
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.image = token.image;
+        session.user.cabangId = token.cabangId;
       }
       return session;
     },

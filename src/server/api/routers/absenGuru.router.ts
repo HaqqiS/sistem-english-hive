@@ -183,6 +183,7 @@ export const absenGuruRouter = createTRPCRouter({
                 hargaKelas: true,
                 deskripsi: true,
                 kodeKelas: true,
+                cabangId: true,
               },
             },
           },

@@ -23,6 +23,7 @@ interface HandleLevelUpParams {
       hargaKelas: number;
       deskripsi: string | null;
       kodeKelas: string;
+      cabangId: string;
     };
   };
 }
@@ -77,6 +78,7 @@ export const handleAutoLevelUp = async ({
       deskripsi: jadwal.kelas.deskripsi,
       kodeKelas: newKodeKelas,
       cohortId: jadwal.kelas.cohortId, // PERTAHANKAN COHORT ID
+      cabangId: jadwal.kelas.cabangId,
     },
   });
 

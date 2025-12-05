@@ -174,40 +174,43 @@ export default function MuridClient() {
       </TabsList>
       <TabsContent value="daftarMurid">
         <div>
-          <div className="flex items-center justify-between space-x-2 pt-4">
-            <header className="flex items-center justify-between gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0"
-                disabled={
-                  isLoadingNotRegisteredPaginated ||
-                  isFetchingNotRegisteredPaginated
-                }
-                onClick={() => refetchNotRegisteredPaginated()}
-                title="Refresh Jadwal"
-              >
-                <RefreshCw
-                  className={cn(
-                    "h-4 w-4",
-                    (isLoadingNotRegisteredPaginated ||
-                      isFetchingNotRegisteredPaginated) &&
-                      "animate-spin",
-                  )}
-                />
-              </Button>
-              <div>
-                <h1 className="text-xl">
-                  Daftar Murid Belum Terdaftar ke Kelas
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  Halaman ini menampilkan daftar murid yang belum terdaftar ke
-                  kelas.
-                </p>
+          <header className="flex w-full flex-col gap-4">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+              <div className="flex flex-1 items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  disabled={
+                    isLoadingNotRegisteredPaginated ||
+                    isFetchingNotRegisteredPaginated
+                  }
+                  onClick={() => refetchNotRegisteredPaginated()}
+                  title="Refresh Jadwal"
+                >
+                  <RefreshCw
+                    className={cn(
+                      "h-4 w-4",
+                      (isLoadingNotRegisteredPaginated ||
+                        isFetchingNotRegisteredPaginated) &&
+                        "animate-spin",
+                    )}
+                  />
+                </Button>
+                <div className="flex flex-col">
+                  <h1 className="text-xl">
+                    Daftar Murid Belum Terdaftar ke Kelas
+                  </h1>
+                  <p className="text-muted-foreground text-sm">
+                    Halaman ini menampilkan daftar murid yang belum terdaftar ke
+                    kelas.
+                  </p>
+                </div>
               </div>
-            </header>
-            <TambahPendaftaranKelas />
-          </div>
+
+              <TambahPendaftaranKelas />
+            </div>
+          </header>
 
           <DataTablePagination
             columns={columnsMuridNotRegistered}
@@ -229,103 +232,105 @@ export default function MuridClient() {
         </HeaderActionPortal>
 
         <div>
-          <div className="mb-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <header className="flex w-full items-center justify-between">
-              <div className="flex flex-col justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    disabled={
-                      isLoadingAllMuridPaginated || isFetchingAllMuridPaginated
-                    }
-                    onClick={() => refetchPaginated()}
-                    title="Refresh Jadwal"
-                  >
-                    <RefreshCw
-                      className={cn(
-                        "h-4 w-4",
-                        (isLoadingAllMuridPaginated ||
-                          isFetchingAllMuridPaginated) &&
-                          "animate-spin",
-                      )}
-                    />
-                  </Button>
+          <header className="flex w-full flex-col gap-4">
+            {/* --- TOP ROW: Refresh + Title --- */}
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+              <div className="flex flex-1 items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  disabled={
+                    isLoadingAllMuridPaginated || isFetchingAllMuridPaginated
+                  }
+                  onClick={() => refetchPaginated()}
+                  title="Refresh"
+                >
+                  <RefreshCw
+                    className={cn(
+                      "h-4 w-4",
+                      (isLoadingAllMuridPaginated ||
+                        isFetchingAllMuridPaginated) &&
+                        "animate-spin",
+                    )}
+                  />
+                </Button>
 
-                  <div>
-                    <h1 className="text-xl">Daftar Murid</h1>
-                    <p className="text-muted-foreground text-sm">
-                      Halaman ini menampilkan daftar semua murid. Total Data:{" "}
-                      <span className="text-foreground">{totalRows}</span> Murid
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                  <div className="relative w-full sm:w-60">
-                    <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-                    <Input
-                      placeholder="Cari nama murid..."
-                      className="pl-8"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Filter Status */}
-                  <Select
-                    value={statusFilter}
-                    onValueChange={(val) => {
-                      setStatusFilter(val as StatusMurid | "ALL");
-                      setPaginationAllMurid((prev) => ({
-                        ...prev,
-                        pageIndex: 0,
-                      })); // Reset page
-                    }}
-                  >
-                    <SelectTrigger className="w-full sm:w-40">
-                      <div className="text-muted-foreground flex items-center gap-2">
-                        <Filter className="h-3.5 w-3.5" />
-                        <SelectValue placeholder="Status" />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">Semua Status</SelectItem>
-                      <SelectItem value={StatusMurid.AKTIF}>Aktif</SelectItem>
-                      <SelectItem value={StatusMurid.NON_AKTIF}>
-                        Non-Aktif
-                      </SelectItem>
-                      <SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
-                      <SelectItem value={StatusMurid.LULUS}>Lulus</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-col">
+                  <h1 className="text-xl">Daftar Murid</h1>
+                  <p className="text-muted-foreground text-sm leading-tight">
+                    Halaman ini menampilkan daftar semua murid. Total Data:{" "}
+                    <span className="text-foreground">{totalRows}</span> Murid
+                  </p>
                 </div>
               </div>
-            </header>
 
-            <RegistrasiMurid />
+              {/* Action button kanan (di desktop) */}
+              <RegistrasiMurid />
+            </div>
 
-            <EditMurid />
-            <DeleteConfirmationDialog
-              isOpen={deleteMuridDialogOpen}
-              onOpenChange={setDeleteMuridDialogOpen}
-              title="Hapus Murid"
-              description={
-                <>
-                  Yakin ingin menghapus Murid{" "}
-                  <span className="text-accent font-bold">
-                    {selectedMuridToDelete?.namaLengkap}
-                  </span>
-                  ? Tindakan ini tidak dapat dibatalkan.
-                </>
-              }
-              onConfirm={handleConfirmDeleteMurid}
-              isLoading={mutations.delete.isPending}
-              confirmText="Hapus"
-              cancelText="Batal"
-            />
-          </div>
+            {/* --- SEARCH + FILTER: mobile-first, turun ke bawah --- */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {/* Search */}
+              <div className="relative w-full sm:w-60">
+                <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+                <Input
+                  placeholder="Cari nama murid..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {/* Filter Status */}
+              <Select
+                value={statusFilter}
+                onValueChange={(val) => {
+                  setStatusFilter(val as StatusMurid | "ALL");
+                  setPaginationAllMurid((prev) => ({
+                    ...prev,
+                    pageIndex: 0,
+                  }));
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-40">
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <Filter className="h-3.5 w-3.5" />
+                    <SelectValue placeholder="Status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua Status</SelectItem>
+                  <SelectItem value={StatusMurid.AKTIF}>Aktif</SelectItem>
+                  <SelectItem value={StatusMurid.NON_AKTIF}>
+                    Non-Aktif
+                  </SelectItem>
+                  <SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
+                  <SelectItem value={StatusMurid.LULUS}>Lulus</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </header>
+
+          <EditMurid />
+          <DeleteConfirmationDialog
+            isOpen={deleteMuridDialogOpen}
+            onOpenChange={setDeleteMuridDialogOpen}
+            title="Hapus Murid"
+            description={
+              <>
+                Yakin ingin menghapus Murid{" "}
+                <span className="text-accent font-bold">
+                  {selectedMuridToDelete?.namaLengkap}
+                </span>
+                ? Tindakan ini tidak dapat dibatalkan.
+              </>
+            }
+            onConfirm={handleConfirmDeleteMurid}
+            isLoading={mutations.delete.isPending}
+            confirmText="Hapus"
+            cancelText="Batal"
+          />
 
           <DataTablePagination
             columns={columnsAllMurid}

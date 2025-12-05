@@ -240,7 +240,7 @@ export const kelasRouter = createTRPCRouter({
   createKelas: protectedProcedure
     .input(serverKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
 
       try {
         const kelas = await db.kelas.create({
@@ -253,6 +253,10 @@ export const kelasRouter = createTRPCRouter({
             bulanTahunAjar: input.bulanTahunAjar,
             deskripsi: input.deskripsi,
             hargaKelas: input.hargaKelas,
+            cabangId:
+              session.user.cabangId ??
+              input.cabangId ??
+              "cmhke9ea40000nx8823a9f0ds", //default gatsu
           },
         });
         return kelas;
@@ -433,6 +437,7 @@ export const kelasRouter = createTRPCRouter({
               grup: oldKelas.grup,
               deskripsi: oldKelas.deskripsi,
               cohortId: oldKelas.cohortId,
+              cabangId: oldKelas.cabangId,
               // Override dengan input baru
               hargaKelas: hargaKelas,
               level: newLevel,

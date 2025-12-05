@@ -30,6 +30,7 @@ const baseKelasSchema = z.object({
   deskripsi: z.string().optional(),
   hargaKelas: z.coerce.number().min(0, "Harga Kelas harus diisi"),
   kodeKelas: z.string().min(1, "Kode Kelas harus diisi").max(50), //e.g, TinyTods 1-A|reguler|03/2025
+  cabangId: z.string().cuid().optional(),
 });
 
 export const clientKelasSchema = baseKelasSchema.extend({});

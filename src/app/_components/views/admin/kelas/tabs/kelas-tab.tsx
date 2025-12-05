@@ -187,34 +187,36 @@ export default function KelasTab() {
         </Button>
       </HeaderActionPortal>
 
-      <div className="flex items-center justify-between space-x-2 pt-4">
-        <header className="flex items-center justify-between gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            disabled={isLoadingKelasCount || isRefetchingKelasCount}
-            onClick={() => refetchKelasCount()}
-            title="Refresh Jadwal"
-          >
-            <RefreshCw
-              className={cn(
-                "h-4 w-4",
-                (isLoadingKelasCount || isRefetchingKelasCount) &&
-                  "animate-spin",
-              )}
-            />
-          </Button>
-          <div>
-            <h1 className="text-xl">Daftar Kelas</h1>
-            <p className="text-muted-foreground text-sm">
-              {dataKelasCount?.length} kelas terdaftar
-            </p>
+      <header className="flex w-full flex-col gap-4">
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+          <div className="flex flex-1 items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              disabled={isLoadingKelasCount || isRefetchingKelasCount}
+              onClick={() => refetchKelasCount()}
+              title="Refresh Jadwal"
+            >
+              <RefreshCw
+                className={cn(
+                  "h-4 w-4",
+                  (isLoadingKelasCount || isRefetchingKelasCount) &&
+                    "animate-spin",
+                )}
+              />
+            </Button>
+            <div>
+              <h1 className="text-xl">Daftar Kelas</h1>
+              <p className="text-muted-foreground text-sm">
+                {dataKelasCount?.length} kelas terdaftar
+              </p>
+            </div>
           </div>
-        </header>
 
-        <TambahProgramKelas />
-      </div>
+          <TambahProgramKelas />
+        </div>
+      </header>
 
       <Accordion type="single" collapsible className="w-full space-y-4">
         {dataKelasCount && dataKelasCount.length > 0 ? (

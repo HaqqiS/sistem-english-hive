@@ -32,6 +32,7 @@ export default function RegistrasiMurid() {
       cabangId: "",
       pilihanProgram: "",
       sumberInfo: "",
+      deskripsi: "",
     },
   });
 
@@ -69,6 +70,7 @@ export default function RegistrasiMurid() {
           onSubmit={onSubmit}
           idPrefix="admin-add-murid"
           forceStacked
+          isAdmin={true} // Indikasikan ini form admin
         />
       </Form>
     </AddDrawer>

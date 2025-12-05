@@ -31,12 +31,14 @@ interface MuridFormProps {
   onSubmit: (data: TypeClientRegisterMuridSchema) => void;
   idPrefix?: string;
   forceStacked?: boolean; // New prop to force 1 column layout
+  isAdmin?: boolean;
 }
 
 export default function MuridForm({
   onSubmit,
   idPrefix = "murid",
   forceStacked = false, // Default false (Responsive)
+  isAdmin = false,
 }: MuridFormProps) {
   const form = useFormContext<TypeClientRegisterMuridSchema>();
   const { dataList: dataCabang, isLoading: isLoadingCabang } = useCabang({
@@ -370,6 +372,28 @@ export default function MuridForm({
               </FormItem>
             )}
           />
+
+          {isAdmin && (
+            <FormField
+              control={form.control}
+              name="deskripsi"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">
+                    Catatan Admin (Internal)
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Catatan khusus mengenai murid ini..."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
       </div>
     </form>

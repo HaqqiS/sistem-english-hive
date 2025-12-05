@@ -51,6 +51,7 @@ export const RegisterMuridSchema = z.object({
   cabangId: z.string().min(1, "Tempat kursus harus dipilih"),
   pilihanProgram: z.string().min(1, "Pilihan program harus diisi").max(100),
   sumberInfo: z.string().min(1, "Sumber informasi harus diisi").max(100),
+  deskripsi: z.string().optional(),
 });
 
 export const updateStatusMuridSchema = z.object({

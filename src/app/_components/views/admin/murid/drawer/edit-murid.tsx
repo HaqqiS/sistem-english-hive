@@ -32,6 +32,7 @@ export default function EditMurid() {
           cabangId: selectedMurid.cabangId,
           pilihanProgram: selectedMurid.pilihanProgram ?? "",
           sumberInfo: selectedMurid.sumberInfo,
+          deskripsi: selectedMurid.deskripsi ?? "",
         }
       : undefined,
     defaultValues: {
@@ -47,6 +48,7 @@ export default function EditMurid() {
       cabangId: "",
       pilihanProgram: "",
       sumberInfo: "",
+      deskripsi: "",
     },
   });
 
@@ -86,6 +88,7 @@ export default function EditMurid() {
           onSubmit={handleSubmitEdit}
           idPrefix="admin-edit-murid"
           forceStacked={true}
+          isAdmin={true}
         />
       </Form>
     </EditDrawer>

@@ -1,4 +1,5 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
+// import { PrismaAdapter } from "@auth/prisma-adapter";
+// import { UserRole } from "@prisma/client";
 import {
   type DefaultSession,
   type NextAuthConfig,
@@ -52,7 +53,7 @@ declare module "next-auth/jwt" {
 export const authConfig: NextAuthConfig = {
   // secret: process.env.NEXTAUTH_SECRET,
   secret: env.AUTH_SECRET,
-  adapter: PrismaAdapter(db) as unknown as Adapter,
+  // adapter: PrismaAdapter(db) as unknown as Adapter,
 
   session: {
     strategy: "jwt",
@@ -76,6 +77,7 @@ export const authConfig: NextAuthConfig = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials): Promise<User | null> {
+        const { db } = await import("@/server/db");
         const email = credentials?.email as string;
         const password = credentials?.password as string;
 
@@ -88,7 +90,6 @@ export const authConfig: NextAuthConfig = {
         });
 
         if (!user) throw new Error("Email atau password salah");
-
         if (!user.password) throw new Error("Email atau password salah");
 
         const valid = await compare(password, user.password);

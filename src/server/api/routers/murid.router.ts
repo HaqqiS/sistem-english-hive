@@ -7,6 +7,7 @@ import z from "zod";
 import { Prisma, StatusMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { paginationSchema } from "@/types/pagination.type";
+import { getCabangFilter } from "@/server/utils/permission";
 
 export const muridRouter = createTRPCRouter({
   registerMurid: publicProcedure
@@ -50,11 +51,14 @@ export const muridRouter = createTRPCRouter({
       paginationSchema.extend({
         search: z.string().optional(),
         status: z.nativeEnum(StatusMurid).optional(),
+        cabangId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { pageIndex, pageSize, search, status } = input;
+
+      const filterCabangId = getCabangFilter(session, input.cabangId);
 
       const whereClause: Prisma.MuridWhereInput = {};
 
@@ -64,9 +68,8 @@ export const muridRouter = createTRPCRouter({
           mode: "insensitive",
         };
       }
-      if (status) {
-        whereClause.statusMurid = status;
-      }
+      if (status) whereClause.statusMurid = status;
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
 
       // Gunakan transaction untuk performa (count + findMany paralel)
       const [total, data] = await db.$transaction([
@@ -115,10 +118,13 @@ export const muridRouter = createTRPCRouter({
       z.object({
         search: z.string().optional(),
         status: z.nativeEnum(StatusMurid).optional(),
+        cabangId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const filterCabangId = getCabangFilter(session, input.cabangId);
 
       const whereClause: Prisma.MuridWhereInput = {};
       if (input.search) {
@@ -127,9 +133,8 @@ export const muridRouter = createTRPCRouter({
           mode: "insensitive",
         };
       }
-      if (input.status) {
-        whereClause.statusMurid = input.status;
-      }
+      if (input.status) whereClause.statusMurid = input.status;
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
 
       // Ambil data untuk CSV (Pilih field yang relevan untuk marketing/db)
       return await db.murid.findMany({

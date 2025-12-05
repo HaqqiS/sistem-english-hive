@@ -24,6 +24,7 @@ interface useMuridOptions {
 
   searchFilter?: string;
   filterStatus?: StatusMurid | "ALL";
+  filterCabang?: string;
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -82,6 +83,8 @@ export function useMurid(options?: useMuridOptions) {
       search: options?.searchFilter,
       status:
         options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
+      cabangId:
+        options?.filterCabang !== "ALL" ? options?.filterCabang : undefined,
     },
     {
       enabled: !!options?.pagination,
@@ -97,6 +100,8 @@ export function useMurid(options?: useMuridOptions) {
       search: options?.searchFilter,
       status:
         options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
+      cabangId:
+        options?.filterCabang !== "ALL" ? options?.filterCabang : undefined,
     });
   };
 

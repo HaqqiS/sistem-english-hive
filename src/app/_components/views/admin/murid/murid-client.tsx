@@ -30,9 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function MuridClient() {
   // STATE
+  const { activeCabangId } = useGlobalCabangStore();
+  console.log("cabangID: ", activeCabangId);
   const [paginationAllMurid, setPaginationAllMurid] = useState<PaginationState>(
     {
       pageIndex: 0,
@@ -89,6 +92,7 @@ export default function MuridClient() {
     pagination: paginationAllMurid,
     searchFilter: debouncedSearch,
     filterStatus: statusFilter,
+    filterCabang: activeCabangId,
     onSuccessDelete: () => {
       setDeleteMuridDialogOpen(false);
       setSelectedMuridToDelete(null);

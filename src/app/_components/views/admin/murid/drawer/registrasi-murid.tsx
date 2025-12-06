@@ -13,9 +13,11 @@ import {
 } from "@/types/murid.type";
 import { useMurid } from "@/hooks/useMurid";
 import MuridForm from "../form/murid-form";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function RegistrasiMurid() {
   const [isOpen, setIsOpen] = useState(false);
+  const { activeCabangId } = useGlobalCabangStore();
 
   const form = useForm<TypeClientRegisterMuridSchema>({
     resolver: zodResolver(RegisterMuridSchema),
@@ -29,7 +31,7 @@ export default function RegistrasiMurid() {
       kelasSekolah: "",
       jamPulang: "",
       noWA: "",
-      cabangId: "",
+      cabangId: activeCabangId ?? "",
       pilihanProgram: "",
       sumberInfo: "",
       deskripsi: "",
@@ -70,7 +72,6 @@ export default function RegistrasiMurid() {
           onSubmit={onSubmit}
           idPrefix="admin-add-murid"
           forceStacked
-          isAdmin={true} // Indikasikan ini form admin
         />
       </Form>
     </AddDrawer>

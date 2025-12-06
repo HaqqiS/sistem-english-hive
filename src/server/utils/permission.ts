@@ -7,7 +7,7 @@ import { UserRole } from "../auth/type";
  * @param session Session user yang sedang login
  * @param requestedCabangId (Opsional) Cabang yang ingin dilihat oleh Manager
  */
-export const getCabangFilter = (
+export const getRestrictedCabangId = (
   session: Session | null,
   requestedCabangId?: string | null,
 ) => {

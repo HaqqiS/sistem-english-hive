@@ -31,6 +31,7 @@ interface UseKelasOptions {
   // ID untuk query by ID
   kelasId?: string;
   cohortId?: string;
+  filterCabang?: string;
 }
 
 export function useKelas(options?: UseKelasOptions) {
@@ -38,18 +39,26 @@ export function useKelas(options?: UseKelasOptions) {
 
   const kelasId = options?.kelasId;
   const cohortId = options?.cohortId;
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
   // ========== QUERIES ==========
 
-  const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(undefined, {
-    enabled: options?.enableQueryGetKelasAktif ?? false,
-    initialData: options?.initialDataKelasAktif,
-  });
+  const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQueryGetKelasAktif ?? false,
+      initialData: options?.initialDataKelasAktif,
+    },
+  );
 
-  const kelasCountQuery = api.kelas.getKelasAndCount.useQuery(undefined, {
-    enabled: options?.enableQueryGetKelasCount ?? false,
-    initialData: options?.initialDataKelasCount,
-    refetchOnWindowFocus: false,
-  });
+  const kelasCountQuery = api.kelas.getKelasAndCount.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQueryGetKelasCount ?? false,
+      initialData: options?.initialDataKelasCount,
+      refetchOnWindowFocus: false,
+    },
+  );
 
   const kelasByIdQuery = api.kelas.getKelasById.useQuery(
     kelasId ? { id: kelasId } : skipToken,
@@ -72,14 +81,24 @@ export function useKelas(options?: UseKelasOptions) {
   );
 
   const fetchExportData = async () => {
-    return await apiUtils.kelas.getForExport.fetch();
+    return await apiUtils.kelas.getForExport.fetch({
+      cabangId: cabangIdPayload,
+    });
+  };
+
+  const invalidateAll = async () => {
+    await Promise.all([
+      apiUtils.kelas.getKelasAktif.invalidate(),
+      apiUtils.kelas.getKelasAndCount.invalidate(),
+      apiUtils.kelas.getKelasById.invalidate(),
+    ]);
   };
   // ========== MUTATIONS ==========
 
   // CREATE
   const createMutation = api.kelas.createKelas.useMutation({
     onSuccess: async (newKelas) => {
-      await apiUtils.kelas.getKelasAndCount.invalidate();
+      await invalidateAll();
       toast.success("Kelas berhasil ditambahkan");
       options?.onSuccessCreate?.(newKelas);
     },
@@ -91,7 +110,7 @@ export function useKelas(options?: UseKelasOptions) {
   // UPDATE
   const updateMutation = api.kelas.updateKelas.useMutation({
     onSuccess: async () => {
-      await apiUtils.kelas.getKelasAndCount.invalidate();
+      await invalidateAll();
       toast.success("Kelas berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -103,7 +122,7 @@ export function useKelas(options?: UseKelasOptions) {
   // DELETE
   const deleteMutation = api.kelas.deleteKelas.useMutation({
     onSuccess: async () => {
-      await apiUtils.kelas.getKelasAndCount.invalidate();
+      await invalidateAll();
       toast.success("Kelas berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -116,7 +135,7 @@ export function useKelas(options?: UseKelasOptions) {
   const upLevelMutation = api.kelas.upLevelKelas.useMutation({
     onSuccess: async () => {
       // Invalidate relevant queries
-      await apiUtils.kelas.getKelasAndCount.invalidate();
+      await invalidateAll();
       await apiUtils.pembayaran.getAllPaginated.invalidate();
       await apiUtils.pembayaran.getTagihanJatuhTempo.invalidate();
 
@@ -186,6 +205,6 @@ export function useKelas(options?: UseKelasOptions) {
     refetchKelasCount: kelasCountQuery.refetch,
     refetchById: kelasByIdQuery.refetch,
     refetchHistory: kelasHistoryQuery.refetch,
-    invalidate: () => apiUtils.kelas.getKelasAktif.invalidate(),
+    invalidate: invalidateAll,
   };
 }

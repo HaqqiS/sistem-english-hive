@@ -9,8 +9,10 @@ import TambahJadwalKelas from "../jadwal/tambah-jadwal";
 import KelasTab from "./tabs/kelas-tab";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import ScheduleGrid from "../jadwal/schedule-view/schedule-grid";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function KelasClient() {
+  const { activeCabangId } = useGlobalCabangStore();
   const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
 
   const [deleteJadwalDialogOpen, setDeleteJadwalDialogOpen] = useState(false);

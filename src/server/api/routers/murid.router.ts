@@ -7,7 +7,7 @@ import z from "zod";
 import { Prisma, StatusMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { paginationSchema } from "@/types/pagination.type";
-import { getCabangFilter } from "@/server/utils/permission";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 import { UserRole } from "@/server/auth/type";
 
 export const muridRouter = createTRPCRouter({
@@ -16,20 +16,12 @@ export const muridRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { db, session } = ctx;
 
-      let finalCabangId = input.cabangId;
-
-      if (session) {
-        const { role, cabangId: userCabangId } = session.user;
-
-        if (role !== UserRole.MANAGER) {
-          if (!userCabangId) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "User tidak memiliki cabang.",
-            });
-          }
-          finalCabangId = userCabangId;
-        }
+      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+      if (!finalCabangId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cabang ID diperlukan untuk pendaftaran.",
+        });
       }
 
       try {
@@ -49,7 +41,7 @@ export const muridRouter = createTRPCRouter({
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
-      const filterCabangId = getCabangFilter(session, input?.cabangId);
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
 
       const whereClause: Prisma.MuridWhereInput = {};
       if (filterCabangId) whereClause.cabangId = filterCabangId;
@@ -85,7 +77,7 @@ export const muridRouter = createTRPCRouter({
       const { db, session } = ctx;
       const { pageIndex, pageSize, search, status } = input;
 
-      const filterCabangId = getCabangFilter(session, input.cabangId);
+      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
 
       const whereClause: Prisma.MuridWhereInput = {};
 
@@ -122,7 +114,7 @@ export const muridRouter = createTRPCRouter({
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
-      const filterCabangId = getCabangFilter(session, input?.cabangId);
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
 
       const whereClause: Prisma.MuridWhereInput = {
         OR: [
@@ -160,7 +152,7 @@ export const muridRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      const filterCabangId = getCabangFilter(session, input.cabangId);
+      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
 
       const whereClause: Prisma.MuridWhereInput = {};
       if (input.search) {
@@ -185,7 +177,7 @@ export const muridRouter = createTRPCRouter({
       const { db, session } = ctx;
       const { pageIndex, pageSize } = input;
 
-      const filterCabangId = getCabangFilter(session, input.cabangId);
+      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
 
       // Definisikan where clause agar konsisten untuk count dan findMany
       const whereClause: Prisma.MuridWhereInput = {
@@ -243,15 +235,13 @@ export const muridRouter = createTRPCRouter({
         });
       }
 
-      // 2. Validasi Cabang (Jika bukan Manager)
-      if (session.user.role !== UserRole.MANAGER) {
-        if (existingMurid.cabangId !== session.user.cabangId) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message:
-              "Anda tidak berhak mengubah status murid dari cabang lain.",
-          });
-        }
+      const allowedCabangId = getRestrictedCabangId(session, null);
+
+      if (allowedCabangId && existingMurid.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengubah murid dari cabang lain.",
+        });
       }
       try {
         const updatedMurid = await db.murid.update({
@@ -297,21 +287,22 @@ export const muridRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses Cabang
-      if (session.user.role !== UserRole.MANAGER) {
-        if (existingMurid.cabangId !== session.user.cabangId) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Anda tidak berhak mengedit murid dari cabang lain.",
-          });
-        }
-        // Safety: Jangan biarkan Admin mengubah cabang murid (transfer cabang)
-        // Kecuali kita punya fitur mutasi siswa khusus.
-        if (data.cabangId !== session.user.cabangId) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Admin tidak boleh memindahkan siswa ke cabang lain.",
-          });
-        }
+      const allowedCabangId = getRestrictedCabangId(session, null);
+
+      if (allowedCabangId && existingMurid.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengedit murid dari cabang lain.",
+        });
+      }
+
+      // 3. Validasi tambahan: Jangan biarkan Admin memindahkan siswa ke cabang lain
+      // (Manager boleh memindahkan jika perlu)
+      if (allowedCabangId && data.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak boleh memindahkan siswa ke cabang lain.",
+        });
       }
 
       try {
@@ -355,13 +346,13 @@ export const muridRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses
-      if (session.user.role !== UserRole.MANAGER) {
-        if (existingMurid.cabangId !== session.user.cabangId) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Anda tidak berhak menghapus murid dari cabang lain.",
-          });
-        }
+      const allowedCabangId = getRestrictedCabangId(session, null);
+
+      if (allowedCabangId && existingMurid.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menghapus murid dari cabang lain.",
+        });
       }
 
       try {

@@ -47,8 +47,10 @@ import {
 import { cn } from "@/lib/utils";
 import { downloadCSV } from "@/utils/exportUtils";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function KelasTab() {
+  const { activeCabangId } = useGlobalCabangStore();
   // 1. State Lokal untuk Delete Dialog
   const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
   const [selectedKelasToDelete, setSelectedKelasToDelete] =
@@ -68,6 +70,7 @@ export default function KelasTab() {
     fetchExportData,
     mutations: kelasMutations,
   } = useKelas({
+    filterCabang: activeCabangId,
     enableQueryGetKelasCount: true,
 
     onSuccessDelete: () => {

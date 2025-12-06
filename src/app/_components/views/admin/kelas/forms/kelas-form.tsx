@@ -24,6 +24,9 @@ import { TipeKelas, JenisKelas } from "@prisma/client";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { toRupiah } from "@/utils/toRupiah";
+import { useCabang } from "@/hooks/useCabang";
+import { useSession } from "next-auth/react";
+import { UserRole } from "@/server/auth/type";
 
 interface KelasFormProps {
   onSubmit: (data: TypeClientKelasSchema) => void;
@@ -47,7 +50,14 @@ const generateKodeKelas = (
 };
 
 export default function KelasForm({ onSubmit }: KelasFormProps) {
+  const session = useSession();
+  const isManager = session.data?.user?.role === UserRole.MANAGER;
   const form = useFormContext<TypeClientKelasSchema>();
+
+  const { dataList: dataCabang, isLoading: isLoadingCabang } = useCabang({
+    enableQuery: false,
+    enableQueryList: true,
+  });
 
   const { watch, setValue } = form;
 
@@ -221,6 +231,41 @@ export default function KelasForm({ onSubmit }: KelasFormProps) {
           </FormItem>
         )}
       />
+
+      {isManager && (
+        <FormField
+          control={form.control}
+          name="cabangId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm">Pilih Cabang</FormLabel>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={isLoadingCabang}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={
+                        isLoadingCabang ? "Loading..." : "Pilih Cabang"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dataCabang?.map((items) => (
+                      <SelectItem key={items.id} value={items.id}>
+                        {items.namaCabang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         control={form.control}

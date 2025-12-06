@@ -28,9 +28,11 @@ import TambahJamTetap from "./drawers/tambah-jam-tetap";
 import EditJamTetap from "./drawers/edit-jam-tetap";
 import TambahJamCustom from "./drawers/tambah-jam-custom";
 import EditJamCustom from "./drawers/edit-jam-custom";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function RuangClient() {
   // State management
+  const { activeCabangId } = useGlobalCabangStore();
 
   const { openDrawer: openCabangDrawer } = useCabangStore();
   const { openDrawer: openRuangDrawer } = useRuangStore();
@@ -63,7 +65,7 @@ export default function RuangClient() {
     },
   });
   const { data: dataRuang, mutations: ruangMutations } = useRuang({
-    // initialData: initialDataRuang,
+    filterCabang: activeCabangId,
     onSuccessDelete: () => {
       setDeleteRuangDialogOpen(false);
       setSelectedRuangToDelete(null);

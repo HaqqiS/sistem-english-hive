@@ -19,9 +19,11 @@ import {
   type TypeClientHistoryGuruKelasSchema,
 } from "@/types/historyGuruKelas.type";
 import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function TambahKelas() {
   const [isOpen, setIsOpen] = useState(false);
+  const { activeCabangId } = useGlobalCabangStore();
 
   const form = useForm<TypeClientKelasSchema>({
     resolver: zodResolver(clientKelasSchema),
@@ -34,6 +36,7 @@ export default function TambahKelas() {
       bulanTahunAjar: "",
       hargaKelas: 0,
       deskripsi: "",
+      cabangId: activeCabangId ?? "",
     },
   });
 

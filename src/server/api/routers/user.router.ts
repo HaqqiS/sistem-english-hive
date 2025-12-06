@@ -35,7 +35,15 @@ export const userRouter = createTRPCRouter({
   createGuru: protectedProcedure
     .input(registerGuruFormSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const cabangId = session.user.cabangId;
+      if (!cabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Cabang tidak ditemukan di sesi pengguna.",
+        });
+      }
 
       try {
         const hashPassword = await bcrypt.hash(input.password, 12);
@@ -45,6 +53,7 @@ export const userRouter = createTRPCRouter({
             name: input.name,
             email: input.email,
             password: hashPassword,
+            cabangId: cabangId,
           },
         });
         return newGuru;

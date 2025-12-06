@@ -49,7 +49,7 @@ export default function PendaftaranKelasForm({
 }: PendaftaranKelasFormProps) {
   const form = useFormContext<TypeClientBulkPendaftaranKelasSchema>();
   const { dataMuridNotRegistered } = useMurid({
-    enableQueryGetMuridNotRegistered: true,
+    enableNotRegisteredQuery: true,
   });
   const { dataKelasAktif: dataKelas } = useKelas({
     enableQueryGetKelasAktif: true,

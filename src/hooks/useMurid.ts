@@ -15,6 +15,8 @@ import { toast } from "sonner";
 interface useMuridOptions {
   // Query options
   enableQuery?: boolean;
+  enableNotRegisteredQuery?: boolean;
+
   initialDataNotRegistered?: TypeMuridNotRegistered[];
   initialDataNotRegisteredPaginated?: TypeMuridNotRegisteredPaginated;
   initialDataAllMurid?: TypeAllMurid[];
@@ -53,7 +55,7 @@ export function useMurid(options?: useMuridOptions) {
   const MuridNotRegisteredQuery = api.murid.getMuridWhereNotRegistered.useQuery(
     undefined,
     {
-      enabled: options?.enableQuery ?? false,
+      enabled: options?.enableNotRegisteredQuery ?? false,
       initialData: options?.initialDataNotRegistered,
     },
   );

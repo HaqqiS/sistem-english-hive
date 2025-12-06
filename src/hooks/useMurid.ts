@@ -15,6 +15,8 @@ import { toast } from "sonner";
 interface useMuridOptions {
   // Query options
   enableQuery?: boolean;
+  enableNotRegisteredQuery?: boolean;
+
   initialDataNotRegistered?: TypeMuridNotRegistered[];
   initialDataNotRegisteredPaginated?: TypeMuridNotRegisteredPaginated;
   initialDataAllMurid?: TypeAllMurid[];
@@ -49,19 +51,21 @@ export function useMurid(options?: useMuridOptions) {
   const pageIndex = options?.pagination?.pageIndex ?? 0;
   const pageSize = options?.pagination?.pageSize ?? 10;
   const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
   const MuridNotRegisteredQuery = api.murid.getMuridWhereNotRegistered.useQuery(
-    undefined,
+    { cabangId: cabangIdPayload },
     {
-      enabled: options?.enableQuery ?? false,
+      enabled: options?.enableNotRegisteredQuery ?? false,
       initialData: options?.initialDataNotRegistered,
     },
   );
 
   const MuridNotRegisteredPaginatedQuery =
     api.murid.getMuridNotRegisteredPaginated.useQuery(
-      { pageIndex, pageSize },
+      { pageIndex, pageSize, cabangId: cabangIdPayload },
       {
         enabled: !!options?.pagination,
         placeholderData: keepPreviousData,
@@ -71,10 +75,13 @@ export function useMurid(options?: useMuridOptions) {
       },
     );
 
-  const MuridQuery = api.murid.getAllMurid.useQuery(undefined, {
-    enabled: options?.enableQuery ?? false,
-    initialData: options?.initialDataAllMurid,
-  });
+  const MuridQuery = api.murid.getAllMurid.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQuery ?? false,
+      initialData: options?.initialDataAllMurid,
+    },
+  );
 
   const MuridPaginatedQuery = api.murid.getAllPaginated.useQuery(
     {
@@ -83,8 +90,7 @@ export function useMurid(options?: useMuridOptions) {
       search: options?.searchFilter,
       status:
         options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
-      cabangId:
-        options?.filterCabang !== "ALL" ? options?.filterCabang : undefined,
+      cabangId: cabangIdPayload,
     },
     {
       enabled: !!options?.pagination,
@@ -100,9 +106,16 @@ export function useMurid(options?: useMuridOptions) {
       search: options?.searchFilter,
       status:
         options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
-      cabangId:
-        options?.filterCabang !== "ALL" ? options?.filterCabang : undefined,
+      cabangId: cabangIdPayload,
     });
+  };
+
+  const invalidateMuridData = async () => {
+    await Promise.all([
+      apiUtils.murid.getMuridWhereNotRegistered.invalidate(),
+      apiUtils.murid.getAllPaginated.invalidate(),
+      apiUtils.murid.getAllMurid.invalidate(),
+    ]);
   };
 
   // ========== MUTATIONS ==========
@@ -110,8 +123,7 @@ export function useMurid(options?: useMuridOptions) {
   // CREATE
   const createMutation = api.murid.registerMurid.useMutation({
     onSuccess: async () => {
-      await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
-      await apiUtils.murid.getAllPaginated.invalidate();
+      await invalidateMuridData();
       toast.success("Murid berhasil didaftarkan");
       options?.onSuccessCreate?.();
     },
@@ -124,8 +136,7 @@ export function useMurid(options?: useMuridOptions) {
 
   const updateStatusMuridMutation = api.murid.updateStatusMurid.useMutation({
     onSuccess: async () => {
-      await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
-      await apiUtils.murid.getAllPaginated.invalidate();
+      await invalidateMuridData();
       toast.success("Status Murid berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -135,7 +146,7 @@ export function useMurid(options?: useMuridOptions) {
   });
   const updateMutation = api.murid.updateMurid.useMutation({
     onSuccess: async () => {
-      await apiUtils.murid.getAllPaginated.invalidate();
+      await invalidateMuridData();
       toast.success("Murid berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -147,8 +158,7 @@ export function useMurid(options?: useMuridOptions) {
   // DELETE
   const deleteMutation = api.murid.deleteMurid.useMutation({
     onSuccess: async () => {
-      await apiUtils.murid.getAllPaginated.invalidate();
-      await apiUtils.murid.getMuridWhereNotRegistered.invalidate();
+      await invalidateMuridData();
       toast.success("Murid berhasil dihapus");
       options?.onSuccessDelete?.();
     },

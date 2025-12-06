@@ -35,7 +35,6 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 export default function MuridClient() {
   // STATE
   const { activeCabangId } = useGlobalCabangStore();
-  console.log("cabangID: ", activeCabangId);
   const [paginationAllMurid, setPaginationAllMurid] = useState<PaginationState>(
     {
       pageIndex: 0,
@@ -77,6 +76,7 @@ export default function MuridClient() {
     refetchNotRegisteredPaginated,
   } = useMurid({
     pagination: paginationNotRegistered,
+    filterCabang: activeCabangId,
   });
 
   const {

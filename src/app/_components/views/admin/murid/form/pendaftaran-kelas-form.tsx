@@ -39,6 +39,7 @@ import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePic
 import { useMurid } from "@/hooks/useMurid";
 import { useKelas } from "@/hooks/useKelas";
 import type { TypeClientBulkPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 interface PendaftaranKelasFormProps {
   onSubmit: (data: TypeClientBulkPendaftaranKelasSchema) => void;
@@ -47,9 +48,15 @@ interface PendaftaranKelasFormProps {
 export default function PendaftaranKelasForm({
   onSubmit,
 }: PendaftaranKelasFormProps) {
+  const { activeCabangId } = useGlobalCabangStore();
   const form = useFormContext<TypeClientBulkPendaftaranKelasSchema>();
-  const { dataMuridNotRegistered } = useMurid();
-  const { dataKelasAktif: dataKelas } = useKelas();
+  const { dataMuridNotRegistered } = useMurid({
+    enableNotRegisteredQuery: true,
+    filterCabang: activeCabangId,
+  });
+  const { dataKelasAktif: dataKelas } = useKelas({
+    enableQueryGetKelasAktif: true,
+  });
 
   // State for MultiSelect Popover
   const [open, setOpen] = React.useState(false);

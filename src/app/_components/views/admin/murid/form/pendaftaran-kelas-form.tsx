@@ -48,8 +48,12 @@ export default function PendaftaranKelasForm({
   onSubmit,
 }: PendaftaranKelasFormProps) {
   const form = useFormContext<TypeClientBulkPendaftaranKelasSchema>();
-  const { dataMuridNotRegistered } = useMurid();
-  const { dataKelasAktif: dataKelas } = useKelas();
+  const { dataMuridNotRegistered } = useMurid({
+    enableQueryGetMuridNotRegistered: true,
+  });
+  const { dataKelasAktif: dataKelas } = useKelas({
+    enableQueryGetKelasAktif: true,
+  });
 
   // State for MultiSelect Popover
   const [open, setOpen] = React.useState(false);

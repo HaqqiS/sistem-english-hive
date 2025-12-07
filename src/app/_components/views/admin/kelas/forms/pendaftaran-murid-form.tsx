@@ -49,7 +49,9 @@ export default function PendaftaranMuridForm({
 
   const form = useFormContext<TypeClientTambahMuridSchema>();
 
-  const { dataMuridNotRegistered } = useMurid();
+  const { dataMuridNotRegistered } = useMurid({
+    enableNotRegisteredQuery: true,
+  });
 
   // const handleUnselect = (item: string) => {
   //   const current = form.getValues("muridId") || [];

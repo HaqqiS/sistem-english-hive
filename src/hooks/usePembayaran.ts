@@ -21,6 +21,8 @@ interface UsePembayaranOptions {
   muridIdFilter?: string;
   searchFilter?: string;
 
+  filterCabang?: string;
+
   // Mutation callbacks
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
@@ -32,6 +34,8 @@ interface UsePembayaranOptions {
  */
 export function usePembayaran(options?: UsePembayaranOptions) {
   const apiUtils = api.useUtils();
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   const pageIndex = options?.pagination?.pageIndex ?? 0;
   const pageSize = options?.pagination?.pageSize ?? 10;
@@ -51,18 +55,17 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 
   // 1. Get All Pembayaran (with optional filters)
   const getAllQuery = api.pembayaran.getAll.useQuery(
-    options?.statusFilter || options?.muridIdFilter
-      ? {
-          status:
-            options?.statusFilter && options.statusFilter !== "ALL"
-              ? options.statusFilter
-              : undefined,
-          muridId: options?.muridIdFilter,
-        }
-      : undefined,
+    {
+      status:
+        options?.statusFilter && options.statusFilter !== "ALL"
+          ? options.statusFilter
+          : undefined,
+      muridId: options?.muridIdFilter,
+      cabangId: cabangIdPayload,
+    },
     {
       enabled: options?.enableGetAll ?? false,
-      refetchOnWindowFocus: true, // Keep data fresh
+      refetchOnWindowFocus: true,
     },
   );
 
@@ -76,6 +79,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
           : undefined,
       muridId: options?.muridIdFilter,
       search: options?.searchFilter,
+      cabangId: cabangIdPayload,
     },
     {
       enabled: options?.enableGetAll ?? true,
@@ -88,7 +92,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 
   // 2. Get Tagihan Jatuh Tempo (Dashboard)
   const getJatuhTempoQuery = api.pembayaran.getTagihanJatuhTempo.useQuery(
-    undefined,
+    { cabangId: cabangIdPayload },
     {
       enabled: options?.enableGetJatuhTempo ?? false, // Default false unless requested
       refetchOnWindowFocus: true,

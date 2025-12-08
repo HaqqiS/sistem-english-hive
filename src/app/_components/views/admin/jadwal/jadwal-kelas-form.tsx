@@ -72,7 +72,9 @@ function ScheduleItemRow({
   const { data: dataRuang, isLoading: isLoadingRuang } = useRuang();
   const { dataJamTetap: dataJamSlot, isLoadingJamTetap: isLoadingJamSlot } =
     useJam();
-  const { dataKelasAktif: dataKelas } = useKelas();
+  const { dataKelasAktif: dataKelas } = useKelas({
+    enableQueryGetKelasAktif: true,
+  });
 
   // --- WATCH FIELDS ---
   const currentRuangId = useWatch({
@@ -364,8 +366,9 @@ export default function JadwalKelasForm({
 
   const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
     useKelas({
-      enableQueryGetKelasId: true,
+      enableQueryGetKelasId: false,
       enableQueryGetKelasCount: false,
+      enableQueryGetKelasAktif: true,
     });
 
   // --- GLOBAL STATE (KELAS) ---
@@ -414,7 +417,7 @@ export default function JadwalKelasForm({
           onValueChange={handleGlobalClassChange}
           disabled={isLoadingKelas}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Pilih kelas..." />
           </SelectTrigger>
           <SelectContent>

@@ -29,6 +29,7 @@ import { HeaderActionPortal } from "@/app/_components/shared/header-action-porta
 import { toast } from "sonner";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { downloadCSV } from "@/utils/exportUtils";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 interface PembayaranClientProps {
   initialDataPembayaran?: TypePembayaranPaginated;
@@ -37,6 +38,7 @@ export default function PembayaranClient({
   initialDataPembayaran,
 }: PembayaranClientProps) {
   // --- STATE ---
+  const { activeCabangId } = useGlobalCabangStore();
   const [statusFilter, setStatusFilter] = useState<StatusPembayaran | "ALL">(
     "ALL",
   );
@@ -78,6 +80,7 @@ export default function PembayaranClient({
     searchFilter: debouncedSearch,
     enableGetAll: true,
     pagination: pagination,
+    filterCabang: activeCabangId,
     onSuccessDelete: () => {
       setDeleteDialogOpen(false);
       setItemToDelete(null);

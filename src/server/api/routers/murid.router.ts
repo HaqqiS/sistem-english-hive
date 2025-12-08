@@ -8,7 +8,6 @@ import { Prisma, StatusMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { paginationSchema } from "@/types/pagination.type";
 import { getRestrictedCabangId } from "@/server/utils/permission";
-import { UserRole } from "@/server/auth/type";
 
 export const muridRouter = createTRPCRouter({
   registerMurid: publicProcedure

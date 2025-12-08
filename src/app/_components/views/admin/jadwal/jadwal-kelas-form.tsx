@@ -41,6 +41,7 @@ import type {
   TypeServerCreateBulkJadwalSchema,
   TypeServerCreateJadwalSchema,
 } from "@/types/jadwalKelas.type";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 // Tipe Schema Form Wrapper
 type FormSchemaType = {
@@ -356,6 +357,8 @@ export default function JadwalKelasForm({
 }: {
   onSubmit: (data: FormSchemaType["schedules"]) => void;
 }) {
+  const { activeCabangId } = useGlobalCabangStore();
+
   const form = useFormContext<FormSchemaType>();
   const { control, setValue, trigger, handleSubmit } = form;
 
@@ -366,6 +369,7 @@ export default function JadwalKelasForm({
 
   const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
     useKelas({
+      filterCabang: activeCabangId,
       enableQueryGetKelasId: false,
       enableQueryGetKelasCount: false,
       enableQueryGetKelasAktif: true,

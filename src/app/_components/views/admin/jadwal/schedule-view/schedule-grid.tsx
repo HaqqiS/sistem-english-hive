@@ -22,9 +22,11 @@ import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import dayjs from "dayjs";
 import { useIsMobile } from "@/hooks/use-mobile"; // Import hook
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function ScheduleGrid() {
   // --- STATE ---
+  const { activeCabangId } = useGlobalCabangStore();
   // Default hari ini (jika hari minggu/libur, bisa fallback ke SENIN jika mau)
   const [selectedHari, setSelectedHari] = useState<Hari>(
     (dayjs().format("dddd").toUpperCase() as Hari) in Hari
@@ -44,7 +46,7 @@ export default function ScheduleGrid() {
   } | null>(null);
 
   // --- DATA FETCHING ---
-  const { data: listCabang } = useCabang({ enableQuery: true });
+  // const { data: listCabang } = useCabang({ enableQuery: true });
   const {
     dataMatrix,
     isLoadingMatrix: isLoading,
@@ -54,7 +56,7 @@ export default function ScheduleGrid() {
     mutations,
   } = useJadwalKelas({
     enableQueryMatrix: true,
-    cabangId: selectedCabangId,
+    cabangId: activeCabangId,
     hari: selectedHari,
     onSuccessDelete: () => {
       setDeleteDialogOpen(false);
@@ -63,11 +65,11 @@ export default function ScheduleGrid() {
   });
 
   // Set default cabang
-  useEffect(() => {
-    if (!selectedCabangId && listCabang && listCabang.length > 0) {
-      setSelectedCabangId(listCabang[0]!.id);
-    }
-  }, [listCabang, selectedCabangId]);
+  // useEffect(() => {
+  //   if (!selectedCabangId && listCabang && listCabang.length > 0) {
+  //     setSelectedCabangId(listCabang[0]!.id);
+  //   }
+  // }, [listCabang, selectedCabangId]);
 
   // --- LOGIC MATRIKS ---
   const timeSlots = useMemo(() => {
@@ -124,8 +126,7 @@ export default function ScheduleGrid() {
             />
           </Button>
 
-          <Select value={selectedCabangId} onValueChange={setSelectedCabangId}>
-            {/* Lebar full di mobile, fixed di desktop */}
+          {/* <Select value={activeCabangId} onValueChange={setSelectedCabangId}>
             <SelectTrigger className="bg-background h-9 w-full lg:w-[200px]">
               <SelectValue placeholder="Pilih Cabang" />
             </SelectTrigger>
@@ -136,7 +137,7 @@ export default function ScheduleGrid() {
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
+          </Select> */}
         </div>
 
         {/* 1. FILTER HARI (Responsive) */}

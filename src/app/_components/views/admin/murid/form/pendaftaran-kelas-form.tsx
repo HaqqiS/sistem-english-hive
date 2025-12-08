@@ -56,6 +56,7 @@ export default function PendaftaranKelasForm({
   });
   const { dataKelasAktif: dataKelas } = useKelas({
     enableQueryGetKelasAktif: true,
+    filterCabang: activeCabangId,
   });
 
   // State for MultiSelect Popover

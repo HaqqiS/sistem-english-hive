@@ -1,4 +1,4 @@
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import {
   serverStartSesiSchema,
@@ -14,6 +14,8 @@ import {
   handleAutoLevelUp,
   handleClassCompletion,
 } from "@/server/services/kelas.service";
+import { getRestrictedCabangId } from "@/server/utils/permission";
+import { UserRole } from "@/server/auth/type";
 
 export const absenGuruRouter = createTRPCRouter({
   getAllAbsensi: protectedProcedure
@@ -24,19 +26,22 @@ export const absenGuruRouter = createTRPCRouter({
           .string()
           .regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM")
           .optional(),
+        cabangId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { pageIndex, pageSize, month, search } = input;
+
+      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
 
       const whereClause: Prisma.AbsensiGuruWhereInput = {};
 
-      if (search) {
-        whereClause.guru = {
-          name: { contains: search, mode: "insensitive" },
-        };
-      }
+      if (search)
+        whereClause.guru = { name: { contains: search, mode: "insensitive" } };
+
+      const sesiFilter: Prisma.SesiPertemuanKelasWhereInput = {};
+
       if (month && month !== "") {
         const { startDate, endDate } = getPeriodeGaji(month);
 
@@ -47,6 +52,10 @@ export const absenGuruRouter = createTRPCRouter({
           },
         };
       }
+
+      if (filterCabangId) sesiFilter.kelas = { cabangId: filterCabangId };
+      if (Object.keys(sesiFilter).length > 0)
+        whereClause.sesiPertemuanKelas = sesiFilter;
 
       const [total, data] = await db.$transaction([
         db.absensiGuru.count({ where: whereClause }),
@@ -112,28 +121,35 @@ export const absenGuruRouter = createTRPCRouter({
           .string()
           .regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM")
           .optional(),
+        cabangId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { month, search } = input;
 
+      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
+
       const whereClause: Prisma.AbsensiGuruWhereInput = {};
-      if (search) {
-        whereClause.guru = {
-          name: { contains: search, mode: "insensitive" },
-        };
-      }
+
+      if (search)
+        whereClause.guru = { name: { contains: search, mode: "insensitive" } };
+
+      const sesiFilter: Prisma.SesiPertemuanKelasWhereInput = {};
+
       if (month && month !== "") {
         const { startDate, endDate } = getPeriodeGaji(month);
 
-        whereClause.sesiPertemuanKelas = {
-          tanggalWaktu: {
-            gte: startDate,
-            lte: endDate,
-          },
+        sesiFilter.tanggalWaktu = {
+          gte: startDate,
+          lte: endDate,
         };
       }
+
+      if (filterCabangId) sesiFilter.kelas = { cabangId: filterCabangId };
+
+      if (Object.keys(sesiFilter).length > 0)
+        whereClause.sesiPertemuanKelas = sesiFilter;
 
       // Ambil SEMUA data (Tanpa Pagination)
       return await db.absensiGuru.findMany({
@@ -273,9 +289,45 @@ export const absenGuruRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
+      if (
+        session.user.role !== UserRole.ADMIN &&
+        session.user.role !== UserRole.MANAGER
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Hanya admin/manager yang dapat memverifikasi absensi.",
+        });
+      }
 
-      if ((session.user.role as UserRole) !== UserRole.ADMIN)
-        throw new Error("Unauthorized");
+      const existingAbsensi = await db.absensiGuru.findUnique({
+        where: { id: input.absensiId },
+        include: {
+          sesiPertemuanKelas: {
+            include: {
+              kelas: { select: { cabangId: true } }, // Ambil cabangId
+            },
+          },
+        },
+      });
+
+      if (!existingAbsensi) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Absensi tidak ditemukan.",
+        });
+      }
+
+      // 3. Security Filter (Cabang Check)
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      const dataCabangId = existingAbsensi.sesiPertemuanKelas.kelas.cabangId;
+
+      if (allowedCabangId && dataCabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak memverifikasi absensi cabang lain.",
+        });
+      }
+
       try {
         await db.absensiGuru.update({
           where: {
@@ -305,11 +357,24 @@ export const absenGuruRouter = createTRPCRouter({
         guruId: z.string().cuid(),
         /** Input bulan pembayaran (Gaji Bulan X) dalam format "YYYY-MM" */
         month: z.string().regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM"),
+        cabangId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const { guruId, month } = input;
+      const { db, session } = ctx;
+      const { guruId, month, cabangId } = input;
+
+      const filterCabangId = getRestrictedCabangId(session, cabangId);
+
+      if (
+        session.user.role !== UserRole.ADMIN &&
+        session.user.role !== UserRole.MANAGER
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Hanya Admin yang dapat mengakses history penggajian.",
+        });
+      }
 
       // 1. Gunakan Service untuk mendapatkan range tanggal (26 prev - 25 curr)
       const { startDate, endDate } = getPeriodeGaji(month);
@@ -324,6 +389,13 @@ export const absenGuruRouter = createTRPCRouter({
               gte: startDate,
               lte: endDate,
             },
+            ...(filterCabangId
+              ? {
+                  kelas: {
+                    cabangId: filterCabangId,
+                  },
+                }
+              : {}),
           },
         },
         select: {
@@ -336,6 +408,8 @@ export const absenGuruRouter = createTRPCRouter({
               kelas: {
                 select: {
                   kodeKelas: true,
+                  jenisKelas: true,
+                  tipe: true,
                 },
               },
               ruang: {
@@ -366,45 +440,46 @@ export const absenGuruRouter = createTRPCRouter({
       const { db, session } = ctx;
       const { status, isVerified, guruId, absensiId } = input;
 
-      if (isVerified && (session.user.role as UserRole) !== UserRole.ADMIN) {
+      if (
+        isVerified &&
+        (session.user.role as UserRole) !== UserRole.ADMIN &&
+        (session.user.role as UserRole) !== UserRole.MANAGER
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Hanya admin yang dapat memverifikasi absensi.",
+          message: "Hanya admin/manager yang dapat memverifikasi absensi.",
+        });
+      }
+
+      const existingAbsensi = await db.absensiGuru.findUnique({
+        where: { id: absensiId },
+        include: {
+          sesiPertemuanKelas: {
+            include: {
+              kelas: { select: { cabangId: true } },
+            },
+          },
+        },
+      });
+
+      if (!existingAbsensi) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Absensi tidak ditemukan.",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      const dataCabangId = existingAbsensi.sesiPertemuanKelas.kelas.cabangId;
+
+      if (allowedCabangId && dataCabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengubah absensi cabang lain.",
         });
       }
 
       try {
-        // 2. Ambil data lama untuk pengecekan
-        // const oldAbsensi = await db.absensiGuru.findUnique({
-        //   where: { id: absensiId },
-        //   select: { guruId: true, sesiPertemuanKelasId: true },
-        // });
-
-        // if (!oldAbsensi)
-        //   throw new TRPCError({
-        //     code: "NOT_FOUND",
-        //     message: "Data tidak ditemukan",
-        //   });
-
-        // // 3. --- PERBAIKAN: Cek Duplikat jika Guru Diganti ---
-        // if (guruId && guruId !== oldAbsensi.guruId) {
-        //   const exists = await db.absensiGuru.findUnique({
-        //     where: {
-        //       guruId_sesiPertemuanKelasId: {
-        //         guruId: guruId,
-        //         sesiPertemuanKelasId: oldAbsensi.sesiPertemuanKelasId,
-        //       },
-        //     },
-        //   });
-
-        //   if (exists) {
-        //     throw new TRPCError({
-        //       code: "CONFLICT",
-        //       message: "Guru yang dipilih sudah memiliki absensi di sesi ini.",
-        //     });
-        //   }
-        // }
-
         const updatedAbsensi = await db.absensiGuru.update({
           where: { id: absensiId },
           data: {
@@ -446,8 +521,38 @@ export const absenGuruRouter = createTRPCRouter({
   deleteAbsenGuru: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { id } = input;
+
+      const existingAbsensi = await db.absensiGuru.findUnique({
+        where: { id },
+        include: {
+          sesiPertemuanKelas: {
+            include: {
+              kelas: { select: { cabangId: true } },
+            },
+          },
+        },
+      });
+
+      if (!existingAbsensi) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Absensi tidak ditemukan.",
+        });
+      }
+
+      // 2. Security Filter
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (
+        allowedCabangId &&
+        existingAbsensi.sesiPertemuanKelas.kelas.cabangId !== allowedCabangId
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menghapus absensi cabang lain.",
+        });
+      }
 
       try {
         await db.absensiGuru.delete({

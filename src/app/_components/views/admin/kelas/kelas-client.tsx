@@ -24,7 +24,7 @@ export default function KelasClient() {
   const { dataJadwal, mutations: jadwalMutation } = useJadwalKelas({
     enableQueryAll: true,
     enableQueryHariIni: false,
-    cabangId: activeCabangId,
+    filterCabang: activeCabangId,
     onSuccessDelete: () => {
       setDeleteJadwalDialogOpen(false);
       setSelectedJadwalToDelete(null);

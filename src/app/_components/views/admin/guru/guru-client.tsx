@@ -135,7 +135,7 @@ export default function GuruClient() {
 
   const handleStatusChange = (item: TypeAbsensiGuru, status: boolean) => {
     setPendingId(item.id);
-    mutationsAbsenGuru.updateStatus.mutate(
+    mutationsAbsenGuru.verify.mutate(
       {
         absensiId: item.id,
         isVerified: status,

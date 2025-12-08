@@ -56,7 +56,7 @@ export default function ScheduleGrid() {
     mutations,
   } = useJadwalKelas({
     enableQueryMatrix: true,
-    cabangId: activeCabangId,
+    filterCabang: activeCabangId,
     hari: selectedHari,
     onSuccessDelete: () => {
       setDeleteDialogOpen(false);

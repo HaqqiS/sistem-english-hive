@@ -37,6 +37,7 @@ export const kelasRouter = createTRPCRouter({
           deskripsi: true,
           hargaKelas: true,
           cohortId: true,
+          cabangId: true,
           historyGuruKelases: {
             where: {
               selesaiPada: null,
@@ -87,6 +88,7 @@ export const kelasRouter = createTRPCRouter({
           deskripsi: true,
           hargaKelas: true,
           cohortId: true,
+          cabangId: true,
           historyGuruKelases: {
             where: {
               selesaiPada: null,

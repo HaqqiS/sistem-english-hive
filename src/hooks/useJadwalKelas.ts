@@ -22,7 +22,7 @@ interface useJadwalKelasOptions {
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
 
-  cabangId?: string;
+  filterCabang?: string;
   hari?: Hari;
   guruId?: string;
 }
@@ -41,6 +41,8 @@ interface useJadwalKelasOptions {
  */
 export function useJadwalKelas(options?: useJadwalKelasOptions) {
   const apiUtils = api.useUtils();
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
 
@@ -53,34 +55,41 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
     },
   );
 
-  const getAllJadwal = api.jadwalKelas.getAll.useQuery(undefined, {
-    enabled: options?.enableQueryAll ?? false,
-    initialData: options?.initialData,
-  });
+  const getAllJadwal = api.jadwalKelas.getAll.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQueryAll ?? false,
+      initialData: options?.initialData,
+    },
+  );
 
   const getScheduleMatrix = api.jadwalKelas.getScheduleMatrix.useQuery(
     {
-      cabangId: options?.cabangId ?? "",
+      cabangId: cabangIdPayload,
       hari: options?.hari ?? Hari.SENIN,
     },
     {
       // Hanya jalankan jika flag enable nyala DAN cabangId sudah terpilih
-      enabled: (options?.enableQueryMatrix ?? false) && !!options?.cabangId,
+      enabled: options?.enableQueryMatrix ?? false,
       refetchOnWindowFocus: false, // Tidak perlu refetch agresif untuk matrix besar
     },
   );
+
+  const invalidateJadwal = async () => {
+    await Promise.all([
+      apiUtils.jadwalKelas.getAll.invalidate(),
+      apiUtils.jadwalKelas.getScheduleMatrix.invalidate(),
+      // Invalidate sesi pertemuan juga karena perubahan jadwal mempengaruhi generate sesi
+      apiUtils.sesiPertemuan.getAll.invalidate(),
+    ]);
+  };
 
   // ========== MUTATIONS ==========
 
   // CREATE
   const createMutation = api.jadwalKelas.create.useMutation({
     onSuccess: async () => {
-      // Nanti jika ada query getAll, invalidate di sini
-      await apiUtils.jadwalKelas.getAll.invalidate();
-      await apiUtils.jadwalKelas.getScheduleMatrix.invalidate({
-        cabangId: options?.cabangId,
-        hari: options?.hari,
-      });
+      await invalidateJadwal();
       await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
       toast.success("Jadwal baru berhasil ditambahkan");
       options?.onSuccessCreate?.();
@@ -106,11 +115,7 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
   // DELETE
   const deleteMutationCustom = api.jadwalKelas.delete.useMutation({
     onSuccess: async () => {
-      await apiUtils.jadwalKelas.getAll.invalidate();
-      await apiUtils.jadwalKelas.getScheduleMatrix.invalidate({
-        cabangId: options?.cabangId,
-        hari: options?.hari,
-      });
+      await invalidateJadwal();
       await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
 
       toast.success("Jadwal berhasil dihapus");
@@ -162,7 +167,6 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 
     // Utils untuk manual invalidation jika perlu
     // refetchCustom: JamCustomQuery.refetch,
-    // invalidateTetap: () => apiUtils.jam.getAllJamTetap.invalidate(),
-    // invalidateCustom: () => apiUtils.jam.getAllJamCustom.invalidate(),
+    invalidate: invalidateJadwal,
   };
 }

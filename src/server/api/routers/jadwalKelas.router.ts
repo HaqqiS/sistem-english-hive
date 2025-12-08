@@ -4,23 +4,35 @@ import { TRPCError } from "@trpc/server";
 import { Hari, Prisma } from "@prisma/client";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import z from "zod";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const jadwalKelasRouter = createTRPCRouter({
   getScheduleMatrix: protectedProcedure
     .input(
       z.object({
-        cabangId: z.string().min(1, "Cabang harus dipilih"),
+        cabangId: z.string().optional(),
         hari: z.nativeEnum(Hari),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+
+      if (!finalCabangId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Harap pilih spesifik cabang untuk melihat Kalender Jadwal.",
+        });
+      }
+      const whereClause: Prisma.JadwalKelasWhereInput = {};
+      if (finalCabangId) whereClause.kelas = { cabangId: finalCabangId };
 
       // Optimasi: Jalankan 2 query secara paralel daripada nested deep include
       const [rooms, rawSchedules] = await Promise.all([
         // 1. Ambil Ruangan (Ringan)
         db.ruang.findMany({
-          where: { cabangId: input.cabangId, isAktif: true },
+          where: { cabangId: finalCabangId, isAktif: true },
           orderBy: { namaRuang: "asc" },
           select: { id: true, namaRuang: true },
         }),
@@ -30,8 +42,9 @@ export const jadwalKelasRouter = createTRPCRouter({
           where: {
             hari: input.hari,
             ruang: {
-              cabangId: input.cabangId,
+              cabangId: finalCabangId,
             },
+            ...whereClause,
           },
           select: {
             id: true,
@@ -97,8 +110,10 @@ export const jadwalKelasRouter = createTRPCRouter({
   create: protectedProcedure
     .input(serverCreateBulkJadwalSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       try {
+        const allowedCabangId = getRestrictedCabangId(session, null);
+
         // Gunakan transaction agar semua jadwal berhasil dibuat atau gagal semua
         const result = await db.$transaction(async (tx) => {
           const createdSchedules = [];
@@ -106,6 +121,39 @@ export const jadwalKelasRouter = createTRPCRouter({
           // Loop setiap item jadwal yang dikirim dari FE
           for (const scheduleData of input) {
             const { kelasId, ruangId, hari, tipeJam } = scheduleData;
+
+            const [kelas, ruang] = await Promise.all([
+              tx.kelas.findUnique({
+                where: { id: kelasId },
+                select: { cabangId: true, kodeKelas: true },
+              }),
+              tx.ruang.findUnique({
+                where: { id: ruangId },
+                select: { cabangId: true, namaRuang: true },
+              }),
+            ]);
+
+            if (!kelas || !ruang) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Kelas atau Ruang tidak ditemukan.",
+              });
+            }
+
+            if (kelas.cabangId !== ruang.cabangId) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Konflik Data: Kelas ${kelas.kodeKelas} dan Ruang ${ruang.namaRuang} berbeda cabang.`,
+              });
+            }
+
+            // B. Jika Admin, pastikan dia punya akses ke cabang tersebut
+            if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "Anda tidak berhak membuat jadwal di cabang lain.",
+              });
+            }
 
             let jamSlotCustomId: string | undefined = undefined;
             let jamSlotTetapId: string | undefined = undefined;
@@ -246,22 +294,38 @@ export const jadwalKelasRouter = createTRPCRouter({
       }
     }),
 
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
-    return db.jadwalKelas.findMany({
-      orderBy: {
-        hari: "asc",
-      },
-      include: {
-        kelas: { select: { kodeKelas: true, jenisKelas: true } },
-        ruang: {
-          select: { namaRuang: true, cabang: { select: { namaCabang: true } } },
+  getAll: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+
+      const whereClause: Prisma.JadwalKelasWhereInput = {};
+      if (filterCabangId) {
+        whereClause.kelas = {
+          cabangId: filterCabangId,
+        };
+      }
+
+      return db.jadwalKelas.findMany({
+        where: whereClause,
+        orderBy: {
+          hari: "asc",
         },
-        jamSlotTetap: true,
-        jamSlotCustom: true,
-      },
-    });
-  }),
+        include: {
+          kelas: { select: { kodeKelas: true, jenisKelas: true } },
+          ruang: {
+            select: {
+              namaRuang: true,
+              cabang: { select: { namaCabang: true } },
+            },
+          },
+          jamSlotTetap: true,
+          jamSlotCustom: true,
+        },
+      });
+    }),
 
   getJadwalHariIniForGuru: protectedProcedure
     .input(
@@ -395,7 +459,31 @@ export const jadwalKelasRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const existingJadwal = await db.jadwalKelas.findUnique({
+        where: { id: input.id },
+        include: { kelas: { select: { cabangId: true } } },
+      });
+
+      if (!existingJadwal) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Jadwal tidak ditemukan atau sudah dihapus.",
+        });
+      }
+
+      // 2. Validasi Akses
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (
+        allowedCabangId &&
+        existingJadwal.kelas.cabangId !== allowedCabangId
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menghapus jadwal dari cabang lain.",
+        });
+      }
 
       try {
         await db.jadwalKelas.delete({

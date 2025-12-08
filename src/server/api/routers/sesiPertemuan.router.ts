@@ -3,34 +3,48 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { Prisma, type StatusAbsenMurid } from "@prisma/client";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const sesiPertemuanRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
-    const sesiPertemuan = await db.sesiPertemuanKelas.findMany({
-      select: {
-        id: true,
-        kelasId: true,
-        kelas: {
-          select: {
-            kodeKelas: true,
-          },
-        },
-        // ruangId: true,
-        // ruang: { select: { namaRuang: true } },
-        tanggalWaktu: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+  getAll: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
 
-    return sesiPertemuan;
-  }),
+      // 1. Security Filter
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+
+      const whereClause: Prisma.SesiPertemuanKelasWhereInput = {};
+      if (filterCabangId) {
+        whereClause.kelas = {
+          cabangId: filterCabangId,
+        };
+      }
+      const sesiPertemuan = await db.sesiPertemuanKelas.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          kelasId: true,
+          kelas: {
+            select: {
+              kodeKelas: true,
+            },
+          },
+          // ruangId: true,
+          ruang: { select: { namaRuang: true } },
+          tanggalWaktu: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return sesiPertemuan;
+    }),
 
   getSesiSummaryByKelasId: protectedProcedure
     .input(z.object({ kelasId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { kelasId } = input;
 
       // 1. Dapatkan Info Kelas dan Guru Aktif
@@ -38,6 +52,7 @@ export const sesiPertemuanRouter = createTRPCRouter({
         where: { id: kelasId },
         select: {
           kodeKelas: true,
+          cabangId: true,
           historyGuruKelases: {
             where: { statusGuru: "ACTIVE" },
             select: {
@@ -55,11 +70,19 @@ export const sesiPertemuanRouter = createTRPCRouter({
         });
       }
 
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && kelasInfo.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Anda tidak berhak melihat data sesi kelas dari cabang lain.",
+        });
+      }
+
       // 2. Dapatkan Daftar Siswa yg pernah terdaftar di kelas ini
       const students = await db.pendaftaranKelas.findMany({
         where: {
           kelasId: kelasId,
-          //  isAktif: true
         },
         select: {
           murid: {
@@ -153,7 +176,41 @@ export const sesiPertemuanRouter = createTRPCRouter({
   createSesiPertemuan: protectedProcedure
     .input(serverSesiPertemuanSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      // 1. Validasi Kepemilikan & Konsistensi
+      const [kelas, ruang] = await Promise.all([
+        db.kelas.findUnique({
+          where: { id: input.kelasId },
+          select: { cabangId: true, kodeKelas: true },
+        }),
+        db.ruang.findUnique({
+          where: { id: input.ruangId },
+          select: { cabangId: true, namaRuang: true },
+        }),
+      ]);
+
+      if (!kelas || !ruang) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Kelas atau Ruang tidak ditemukan.",
+        });
+      }
+
+      if (kelas.cabangId !== ruang.cabangId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Konflik Cabang: Kelas ${kelas.kodeKelas} dan Ruang ${ruang.namaRuang} berbeda cabang.`,
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak membuat sesi di cabang lain.",
+        });
+      }
 
       try {
         return await db.sesiPertemuanKelas.create({

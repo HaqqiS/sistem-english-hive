@@ -19,29 +19,23 @@ interface UseSesiPertemuanOptions {
   onSuccessDelete?: () => void;
 
   kelasId?: string;
+  filterCabang?: string;
 }
 
-/**
- * Custom hook untuk mengelola Cabang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data cabang
- * const { data: cabangList } = useCabang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useCabang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
- */
 export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
   const apiUtils = api.useUtils();
   const kelasId = options?.kelasId;
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
-  const sesiPertemuanQuery = api.sesiPertemuan.getAll.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
-    initialData: options?.initialData,
-  });
+  const sesiPertemuanQuery = api.sesiPertemuan.getAll.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQuery ?? true,
+      initialData: options?.initialData,
+    },
+  );
 
   const sesiSummaryQuery = api.sesiPertemuan.getSesiSummaryByKelasId.useQuery(
     kelasId ? { kelasId: kelasId } : skipToken, // Gunakan skipToken jika kelasId belum siap
@@ -52,15 +46,21 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
     },
   );
 
+  const invalidateSesi = async () => {
+    await Promise.all([
+      apiUtils.sesiPertemuan.getAll.invalidate({ cabangId: cabangIdPayload }),
+      apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate(),
+      // Jika sesi terkait pembayaran (jumlah pertemuan), refresh pembayaran juga
+      apiUtils.pembayaran.getAllPaginated.invalidate(),
+    ]);
+  };
+
   // ========== MUTATIONS ==========
 
   // CREATE
   const createMutation = api.sesiPertemuan.createSesiPertemuan.useMutation({
     onSuccess: async () => {
-      await apiUtils.sesiPertemuan.getAll.invalidate();
-      await apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate({
-        kelasId: kelasId!,
-      });
+      await invalidateSesi();
       toast.success("Program Kelas berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -129,10 +129,6 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
     // Utils untuk manual invalidation jika perlu
     refetch: sesiPertemuanQuery.refetch,
     refetchSummary: sesiSummaryQuery.refetch,
-    invalidate: () => apiUtils.sesiPertemuan.getAll.invalidate(),
-    invalidateSummary: () =>
-      kelasId
-        ? apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate({ kelasId })
-        : undefined,
+    invalidate: invalidateSesi,
   };
 }

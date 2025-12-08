@@ -10,12 +10,35 @@ import { Prisma, StatusMurid, StatusPembayaran } from "@prisma/client";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import { calculateInitialBill } from "@/server/services/pembayaran.service";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const pendaftaranKelasRouter = createTRPCRouter({
   getPendaftarByKelasId: protectedProcedure
     .input(serverPendaftaranKelasSchema.pick({ kelasId: true }))
     .query(async ({ ctx, input }) => {
-      const pendaftaranKelas = await ctx.db.pendaftaranKelas.findMany({
+      const { db, session } = ctx;
+
+      const kelas = await db.kelas.findUnique({
+        where: { id: input.kelasId },
+        select: { cabangId: true },
+      });
+
+      if (!kelas) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Kelas tidak ditemukan",
+        });
+      }
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Anda tidak berhak melihat pendaftar kelas dari cabang lain.",
+        });
+      }
+
+      const pendaftaranKelas = await db.pendaftaranKelas.findMany({
         where: {
           kelasId: input.kelasId,
         },
@@ -24,6 +47,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
             select: {
               namaLengkap: true,
               email: true,
+              cabangId: true,
             },
           },
           Kelas: {
@@ -40,7 +64,64 @@ export const pendaftaranKelasRouter = createTRPCRouter({
   createPendaftaranKelas: protectedProcedure
     .input(serverPendaftaranKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const [murid, kelas] = await Promise.all([
+        db.murid.findUnique({
+          where: { id: input.muridId },
+          select: { cabangId: true, namaLengkap: true, statusMurid: true },
+        }),
+        db.kelas.findUnique({
+          where: { id: input.kelasId },
+          select: {
+            cabangId: true,
+            hargaKelas: true,
+            kodeKelas: true,
+            cohortId: true,
+            level: true,
+          },
+        }),
+      ]);
+
+      if (!murid || !kelas) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Murid atau Kelas tidak ditemukan.",
+        });
+      }
+
+      // 2. Validasi Konsistensi Data (Murid & Kelas harus satu cabang)
+      if (murid.cabangId !== kelas.cabangId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Konflik Cabang: Murid ${murid.namaLengkap} dan Kelas ${kelas.kodeKelas} berbeda cabang.`,
+        });
+      }
+
+      // 3. Security Check (Admin)
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mendaftarkan siswa di cabang lain.",
+        });
+      }
+
+      // 4. Cek Apakah Sudah Terdaftar di Kelas Ini (Aktif)
+      const existingRegistration = await db.pendaftaranKelas.findFirst({
+        where: {
+          muridId: input.muridId,
+          kelasId: input.kelasId,
+          isAktif: true,
+        },
+      });
+
+      if (existingRegistration) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Murid sudah terdaftar aktif di kelas ini.",
+        });
+      }
 
       try {
         // 1. Kita butuh harga kelas untuk tagihan
@@ -181,8 +262,55 @@ export const pendaftaranKelasRouter = createTRPCRouter({
   createBulkPendaftaranKelas: protectedProcedure
     .input(serverBulkPendaftaranKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { muridIds, kelasId, tanggalMulai } = input;
+
+      const kelas = await db.kelas.findUnique({
+        where: { id: kelasId },
+        select: { hargaKelas: true, cabangId: true },
+      });
+      if (!kelas)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Kelas tidak ditemukan",
+        });
+
+      // Security Check
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mendaftarkan siswa di cabang lain.",
+        });
+      }
+
+      // Validasi Bulk Murid (Semua harus di cabang yang sama)
+      const muridCount = await db.murid.count({
+        where: {
+          id: { in: muridIds },
+          cabangId: kelas.cabangId,
+        },
+      });
+
+      if (muridCount !== muridIds.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Beberapa murid tidak ditemukan atau berasal dari cabang berbeda.",
+        });
+      }
+
+      // Validasi Duplikat
+      const existingActive = await db.pendaftaranKelas.findMany({
+        where: { muridId: { in: muridIds }, isAktif: true },
+        include: { murid: true },
+      });
+      if (existingActive.length > 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Beberapa murid sudah aktif: ${existingActive.map((p) => p.murid.namaLengkap).join(", ")}`,
+        });
+      }
 
       try {
         const kelas = await db.kelas.findUnique({
@@ -249,7 +377,55 @@ export const pendaftaranKelasRouter = createTRPCRouter({
   updatePendaftaranKelas: protectedProcedure
     .input(serverUpdatePendaftaranKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const existingRecord = await db.pendaftaranKelas.findUnique({
+        where: { id: input.id },
+        include: {
+          Kelas: {
+            select: {
+              cabangId: true,
+              cohortId: true,
+              level: true,
+              hargaKelas: true,
+            },
+          },
+        },
+      });
+
+      if (!existingRecord) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Security Check
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (
+        allowedCabangId &&
+        existingRecord.Kelas.cabangId !== allowedCabangId
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengedit pendaftaran cabang lain.",
+        });
+      }
+
+      // Jika ganti kelas, pastikan kelas baru juga di cabang yang sama (kecuali Manager)
+      if (input.kelasId && input.kelasId !== existingRecord.kelasId) {
+        const targetKelas = await db.kelas.findUnique({
+          where: { id: input.kelasId },
+          select: { cabangId: true, hargaKelas: true },
+        });
+        if (!targetKelas)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Kelas tujuan tidak ditemukan",
+          });
+
+        if (allowedCabangId && targetKelas.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Tidak dapat memindahkan siswa ke kelas di cabang lain.",
+          });
+        }
+      }
 
       try {
         // 1. Ambil data lama
@@ -382,7 +558,31 @@ export const pendaftaranKelasRouter = createTRPCRouter({
   deletePendaftaranKelas: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const existingPendaftaran = await db.pendaftaranKelas.findUnique({
+        where: { id: input.id },
+        include: { Kelas: { select: { cabangId: true } } },
+      });
+
+      if (!existingPendaftaran) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Data pendaftaran tidak ditemukan.",
+        });
+      }
+
+      // Security Check
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (
+        allowedCabangId &&
+        existingPendaftaran.Kelas.cabangId !== allowedCabangId
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menghapus pendaftaran dari cabang lain.",
+        });
+      }
 
       try {
         const exists = await db.pendaftaranKelas.findUnique({
@@ -392,7 +592,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         if (!exists) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Data pendaftaran tidak ditemukan",
+            message: "Data pendaftaran tidak ditemukan.",
           });
         }
 

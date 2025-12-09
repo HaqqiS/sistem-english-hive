@@ -3,12 +3,20 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import z from "zod";
 import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const cabangRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
+    const { db, session } = ctx;
 
-    const cabang = await db.cabang.findMany({});
+    const allowedCabangId = getRestrictedCabangId(session, null);
+
+    const whereClause: Prisma.CabangWhereInput = {};
+    if (allowedCabangId) {
+      whereClause.id = allowedCabangId;
+    }
+
+    const cabang = await db.cabang.findMany({ where: whereClause });
 
     return cabang;
   }),
@@ -52,7 +60,16 @@ export const cabangRouter = createTRPCRouter({
   updateCabang: protectedProcedure
     .input(serverCabangSchema.extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+
+      if (allowedCabangId && input.id !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengubah data cabang lain."
+        });
+      }
 
       try {
         const cabang = await db.cabang.update({

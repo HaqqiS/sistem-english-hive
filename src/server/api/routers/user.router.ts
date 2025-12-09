@@ -204,7 +204,28 @@ export const userRouter = createTRPCRouter({
   changePasswordGuru: protectedProcedure
     .input(z.object({ id: z.string().cuid(), newPassword: z.string().min(8) }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const existingUser = await db.user.findUnique({
+        where: { id: input.id },
+        select: { cabangId: true }
+      });
+
+      if (!existingUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User tidak ditemukan."
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && existingUser.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengubah password user dari cabang lain."
+        });
+      }
+
       const hashPassword = await bcrypt.hash(input.newPassword, 10);
       const updatedGuru = await db.user.update({
         where: { id: input.id },

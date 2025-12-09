@@ -339,6 +339,8 @@ export const jadwalKelasRouter = createTRPCRouter({
       const { db, session } = ctx;
       const targetGuruId = input?.guruId ?? session.user.id;
 
+      const filterCabangId = getRestrictedCabangId(session, null);
+
       // const hariIni = "SABTU" as Hari;
       const now = dayjs().tz(TIMEZONE_BISNIS);
       const hariIni = now.format("dddd").toUpperCase() as Hari;
@@ -350,6 +352,7 @@ export const jadwalKelasRouter = createTRPCRouter({
           // Filter berdasarkan hari
           hari: hariIni,
           kelas: {
+            ...(filterCabangId ? { cabangId: filterCabangId } : {}),
             historyGuruKelases: {
               some: {
                 guruId: targetGuruId,

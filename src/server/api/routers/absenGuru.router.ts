@@ -211,6 +211,14 @@ export const absenGuruRouter = createTRPCRouter({
             message: "Jadwal tidak ditemukan",
           });
 
+        const allowedCabangId = getRestrictedCabangId(session, null);
+        if (allowedCabangId && jadwal.kelas.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak berhak memulai sesi untuk kelas di cabang lain."
+          });
+        }
+
         // 2. Tentukan ruangId yang akan dipakai
         // Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
         const finalRuangId = overrideRuangId ?? jadwal.ruangId;
@@ -391,10 +399,10 @@ export const absenGuruRouter = createTRPCRouter({
             },
             ...(filterCabangId
               ? {
-                  kelas: {
-                    cabangId: filterCabangId,
-                  },
-                }
+                kelas: {
+                  cabangId: filterCabangId,
+                },
+              }
               : {}),
           },
         },

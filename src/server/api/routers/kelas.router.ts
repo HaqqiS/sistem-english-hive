@@ -164,6 +164,26 @@ export const kelasRouter = createTRPCRouter({
   getKelasHistory: protectedProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      const sampleKelas = await db.kelas.findFirst({
+        where: { cohortId: input.cohortId },
+        select: { cabangId: true }
+      });
+
+      if (!sampleKelas) {
+        return [];
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && sampleKelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak melihat riwayat kelas dari cabang lain."
+        });
+      }
+
+
       const history = await ctx.db.kelas.findMany({
         where: { cohortId: input.cohortId },
         orderBy: { level: "asc" }, // Urutkan dari level terendah

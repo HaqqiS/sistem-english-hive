@@ -59,9 +59,23 @@ export const muridRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input, ctx }) => {
-      return await ctx.db.murid.findUnique({
+      const { db, session } = ctx;
+
+      const murid = await db.murid.findUnique({
         where: { id: input.id },
       });
+
+      if (!murid) return null;
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && murid.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak melihat detail murid dari cabang lain.",
+        });
+      }
+
+      return murid;
     }),
 
   getAllPaginated: protectedProcedure

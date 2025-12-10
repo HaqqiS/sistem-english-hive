@@ -76,7 +76,7 @@ export default function Hero() {
                     />
                   ))}
                 </div>
-                <p>Bergabung dengan 500+ siswa lainnya</p>
+                <p>Bergabung dengan 350+ siswa lainnya</p>
               </div>
             </ScrollAnimation>
           </div>

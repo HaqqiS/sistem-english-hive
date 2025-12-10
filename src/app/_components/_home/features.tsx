@@ -42,20 +42,6 @@ const features = [
       "Pilih waktu belajar yang sesuai dengan aktivitas Anda (Pagi/Siang/Malam).",
     color: "text-secondary",
   },
-  {
-    icon: MessageCircle,
-    title: "Speaking Practice",
-    description:
-      "Fokus pada kemampuan berbicara dengan sesi conversation club.",
-    color: "text-primary",
-  },
-  {
-    icon: Smartphone,
-    title: "Platform Online",
-    description:
-      "Akses materi dan latihan kapan saja melalui platform user-friendly.",
-    color: "text-secondary",
-  },
 ];
 
 export default function Features() {
@@ -110,7 +96,7 @@ export default function Features() {
         </ScrollAnimation>
 
         <motion.div
-          className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2, margin: "-50px" }}

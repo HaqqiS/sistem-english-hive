@@ -6,10 +6,10 @@ import Image from "next/image";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 const stats = [
-  { number: "300+", label: "Siswa Aktif" },
+  { number: "350+", label: "Siswa Aktif" },
   { number: "10+", label: "Tutor Ahli" },
   { number: "95%", label: "Puas" },
-  { number: "5+", label: "Tahun" },
+  { number: "2+", label: "Tahun" },
 ];
 
 export default function About() {

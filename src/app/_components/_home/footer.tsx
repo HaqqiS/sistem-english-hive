@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import {
-  Instagram,
-  Facebook,
-  Youtube,
-  Linkedin,
-  MapPin,
-  Phone,
-  Mail,
-  Clock,
-} from "lucide-react";
+  IconBrandFacebook,
+  IconBrandInstagram,
+  IconBrandTiktok,
+} from "@tabler/icons-react";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import Image from "next/image";
 
@@ -44,29 +40,32 @@ export default function Footer() {
             </p>
             <div className="flex gap-4">
               <Link
-                href="#"
+                href="https://www.instagram.com/englishhive_eh8/"
+                target="_blank"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
-                <Instagram className="h-5 w-5" />
+                <IconBrandInstagram stroke={1.5} />
               </Link>
               <Link
-                href="#"
+                href="https://www.facebook.com/people/English-Hive/61581964621366/"
+                target="_blank"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
-                <Facebook className="h-5 w-5" />
+                <IconBrandFacebook stroke={1.5} />
               </Link>
               <Link
-                href="#"
+                href="https://www.tiktok.com/@englishhive_eh8"
+                target="_blank"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
-                <Youtube className="h-5 w-5" />
+                <IconBrandTiktok stroke={1.5} />
               </Link>
-              <Link
+              {/* <Link
                 href="#"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 <Linkedin className="h-5 w-5" />
-              </Link>
+              </Link> */}
             </div>
           </ScrollAnimation>
 
@@ -186,25 +185,44 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3">
                 <MapPin className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-                <span className="text-muted-foreground">
-                  Jl. Pendidikan No. 123, Jakarta Selatan
-                </span>
+                <Link
+                  href={"https://maps.app.goo.gl/gei9mTQj4ao2rpxw6"}
+                  target="_blank"
+                >
+                  <span className="text-muted-foreground">
+                    Jl. Gunung Catur, Padang Sambian Kaja, Kec. Denpasar Barat,
+                    Kota Denpasar
+                  </span>
+                </Link>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                <Link
+                  href={"https://maps.app.goo.gl/ixpBYs5gMP2EW5N48"}
+                  target="_blank"
+                >
+                  <span className="text-muted-foreground">
+                    Jl. Raya Mambal, Ubud, Br. Samu No.8D, Mekar Bhuwana, Kec.
+                    Abiansemal, Kabupaten Badung
+                  </span>
+                </Link>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="text-primary h-4 w-4 shrink-0" />
-                <span className="text-muted-foreground">+62 812-3456-7890</span>
+                <span className="text-muted-foreground">
+                  +62 895-8035-12835
+                </span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="text-primary h-4 w-4 shrink-0" />
                 <span className="text-muted-foreground">
-                  info@englishhive.com
+                  englishhivelearn@gmail.com
                 </span>
               </li>
               <li className="flex items-start gap-3">
                 <Clock className="text-primary mt-0.5 h-4 w-4 shrink-0" />
                 <div className="text-muted-foreground">
-                  <div>Senin - Jumat: 08:00 - 21:00</div>
-                  <div>Sabtu - Minggu: 08:00 - 17:00</div>
+                  <div>Senin - Sabtu: 09:00 - 20:00</div>
                 </div>
               </li>
             </ul>

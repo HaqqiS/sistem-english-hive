@@ -21,19 +21,9 @@ const faqs = [
       "Waktu yang dibutuhkan berbeda untuk setiap individu tergantung level awal, intensitas belajar, dan praktik. Rata-rata siswa kami mengalami peningkatan signifikan dalam 3-6 bulan dengan konsisten mengikuti kelas.",
   },
   {
-    question: "Apakah bisa refund jika tidak cocok?",
-    answer:
-      "Kami menyediakan money-back guarantee dalam 7 hari pertama jika Anda merasa program tidak sesuai dengan ekspektasi.",
-  },
-  {
     question: "Bagaimana sistem pembayarannya?",
     answer:
-      "Pembayaran dapat dilakukan bulanan atau paket (3/6 bulan) dengan harga lebih hemat. Kami menerima transfer bank, e-wallet, dan cicilan melalui partner kami.",
-  },
-  {
-    question: "Apakah tutornya native speaker?",
-    answer:
-      "Kami memiliki kombinasi tutor native speaker dan tutor lokal berkualifikasi internasional (TESOL/CELTA certified). Semua tutor kami berpengalaman minimal 3 tahun dalam pengajaran bahasa Inggris.",
+      "Pembayaran dapat dilakukan bulanan atau paket (3/12 bulan) dengan harga lebih hemat. Kami menerima transfer bank, e-wallet.",
   },
   {
     question: "Apakah ada kelas online?",

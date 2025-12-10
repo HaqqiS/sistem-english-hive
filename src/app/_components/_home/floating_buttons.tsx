@@ -25,7 +25,7 @@ export default function FloatingButtons() {
   return (
     <>
       <a
-        href="https://wa.me/628123456790"
+        href="https://wa.me/+62895803512835"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed right-6 bottom-6 z-40"

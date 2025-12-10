@@ -1,47 +1,84 @@
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { registerGuruFormSchema } from "@/types/user.type";
 import z from "zod";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
+import { getRestrictedCabangId } from "@/server/utils/permission";
+import { UserRole } from "@/server/auth/type";
 
 export const userRouter = createTRPCRouter({
-  getAllGuruSimple: protectedProcedure.query(async ({ ctx }) => {
-    const gurus = await ctx.db.user.findMany({
-      where: { role: UserRole.GURU },
-      select: {
-        id: true,
-        name: true,
-      },
-    });
+  getAllGuruSimple: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
 
-    return gurus;
-  }),
+      // 1. Security Filter
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
 
-  getAllGuruComplete: protectedProcedure.query(async ({ ctx }) => {
-    const gurus = await ctx.db.user.findMany({
-      where: { role: UserRole.GURU },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
-    });
+      const whereClause: Prisma.UserWhereInput = {
+        role: UserRole.GURU,
+      };
 
-    return gurus;
-  }),
+      if (filterCabangId) {
+        whereClause.cabangId = filterCabangId;
+        // OPSI: Jika ingin menampilkan Guru Floating (cabangId null)
+        // whereClause.OR = [
+        //   { cabangId: filterCabangId },
+        //   { cabangId: null }
+        // ];
+      }
+
+      const gurus = await db.user.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      return gurus;
+    }),
+
+  getAllGuruComplete: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      // 1. Security Filter
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+
+      const whereClause: Prisma.UserWhereInput = {
+        role: UserRole.GURU,
+      };
+
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
+
+      const gurus = await db.user.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          cabang: { select: { namaCabang: true } },
+        },
+      });
+
+      return gurus;
+    }),
 
   createGuru: protectedProcedure
-    .input(registerGuruFormSchema)
+    .input(registerGuruFormSchema.extend({ cabangId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
-      const cabangId = session.user.cabangId;
-      if (!cabangId) {
+      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+
+      if (!finalCabangId) {
         throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Cabang tidak ditemukan di sesi pengguna.",
+          code: "BAD_REQUEST",
+          message: "Cabang harus ditentukan untuk mendaftarkan Guru.",
         });
       }
 
@@ -53,7 +90,8 @@ export const userRouter = createTRPCRouter({
             name: input.name,
             email: input.email,
             password: hashPassword,
-            cabangId: cabangId,
+            cabangId: finalCabangId,
+            role: UserRole.GURU,
           },
         });
         return newGuru;
@@ -80,7 +118,29 @@ export const userRouter = createTRPCRouter({
         .omit({ password: true }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      // 1. Cek Kepemilikan (Ownership Check)
+      const existingGuru = await db.user.findUnique({
+        where: { id: input.id },
+        select: { cabangId: true },
+      });
+
+      if (!existingGuru) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Data guru tidak ditemukan",
+        });
+      }
+
+      // 2. Validasi Akses Cabang
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && existingGuru.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengedit data guru dari cabang lain.",
+        });
+      }
 
       try {
         const updatedGuru = await db.user.update({
@@ -115,7 +175,20 @@ export const userRouter = createTRPCRouter({
   resetPasswordGuru: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      // 1. Cek Kepemilikan
+      const existingGuru = await db.user.findUnique({
+        where: { id: input.id },
+        select: { cabangId: true },
+      });
+
+      if (!existingGuru) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && existingGuru.cabangId !== allowedCabangId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Akses ditolak." });
+      }
       // Set password default to 'password123'
       const defaultPassword = "password123";
       const hashPassword = await bcrypt.hash(defaultPassword, 10);
@@ -131,7 +204,28 @@ export const userRouter = createTRPCRouter({
   changePasswordGuru: protectedProcedure
     .input(z.object({ id: z.string().cuid(), newPassword: z.string().min(8) }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const existingUser = await db.user.findUnique({
+        where: { id: input.id },
+        select: { cabangId: true },
+      });
+
+      if (!existingUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User tidak ditemukan.",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && existingUser.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengubah password user dari cabang lain.",
+        });
+      }
+
       const hashPassword = await bcrypt.hash(input.newPassword, 10);
       const updatedGuru = await db.user.update({
         where: { id: input.id },
@@ -145,7 +239,29 @@ export const userRouter = createTRPCRouter({
   deleteGuru: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      // 1. Cek Kepemilikan
+      const existingGuru = await db.user.findUnique({
+        where: { id: input.id },
+        select: { cabangId: true },
+      });
+
+      if (!existingGuru) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Guru sudah dihapus atau tidak ditemukan",
+        });
+      }
+
+      // 2. Validasi Akses
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && existingGuru.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menghapus guru dari cabang lain.",
+        });
+      }
 
       try {
         const result = await db.user.delete({

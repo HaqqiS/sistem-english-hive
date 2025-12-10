@@ -26,12 +26,14 @@ import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import type { TypeClientCreatePembayaranSchema } from "@/types/pembayaran.type";
 import { toRupiah } from "@/utils/toRupiah";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 interface PembayaranFormProps {
   onSubmit: (data: TypeClientCreatePembayaranSchema) => void;
 }
 
 export default function PembayaranForm({ onSubmit }: PembayaranFormProps) {
+  const { activeCabangId } = useGlobalCabangStore();
   const form = useFormContext<TypeClientCreatePembayaranSchema>();
   const { setValue } = form;
 
@@ -40,6 +42,7 @@ export default function PembayaranForm({ onSubmit }: PembayaranFormProps) {
 
   // 2. Ambil Data Kelas (Untuk Dropdown 1 & Harga)
   const { dataKelasAktif } = useKelas({
+    filterCabang: activeCabangId,
     enableQueryGetKelasId: true, // Mengambil list kelas aktif
   });
 

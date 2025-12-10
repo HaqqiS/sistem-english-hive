@@ -13,15 +13,17 @@ import {
 } from "@/types/ruang.type";
 import RuangForm from "../forms/ruang-form";
 import { useRuang } from "../../../../../../hooks/useRuang";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function TambahRuang() {
+  const { activeCabangId } = useGlobalCabangStore();
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<TypeClientRuangSchema>({
     resolver: zodResolver(clientRuangSchema),
     defaultValues: {
       namaRuang: "",
-      cabangId: "",
+      cabangId: activeCabangId ?? "",
     },
   });
 

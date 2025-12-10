@@ -21,6 +21,7 @@ import {
 import { useFormContext } from "react-hook-form";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import type { TypeClientUpdatePendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 interface EditPendaftaranKelasFormProps {
   onSubmit: (data: TypeClientUpdatePendaftaranKelasSchema) => void;
@@ -29,12 +30,18 @@ interface EditPendaftaranKelasFormProps {
 export default function EditPendaftaranKelasForm({
   onSubmit,
 }: EditPendaftaranKelasFormProps) {
+  const { activeCabangId } = useGlobalCabangStore();
   const form = useFormContext<TypeClientUpdatePendaftaranKelasSchema>();
 
-  // We use 'dataAllMurid' here because the current student is already registered
-  // and wouldn't appear in the 'NotRegistered' list.
-  const { dataAllMurid } = useMurid();
-  const { dataKelasAktif: dataKelas } = useKelas();
+  const { dataAllMurid } = useMurid({
+    filterCabang: activeCabangId,
+    enableQuery: true,
+  });
+  console.log("Data All Murid:", dataAllMurid);
+  const { dataKelasAktif: dataKelas } = useKelas({
+    filterCabang: activeCabangId,
+    enableQueryGetKelasAktif: true,
+  });
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

@@ -28,9 +28,11 @@ import TambahJamTetap from "./drawers/tambah-jam-tetap";
 import EditJamTetap from "./drawers/edit-jam-tetap";
 import TambahJamCustom from "./drawers/tambah-jam-custom";
 import EditJamCustom from "./drawers/edit-jam-custom";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function RuangClient() {
   // State management
+  const { activeCabangId } = useGlobalCabangStore();
 
   const { openDrawer: openCabangDrawer } = useCabangStore();
   const { openDrawer: openRuangDrawer } = useRuangStore();
@@ -63,13 +65,14 @@ export default function RuangClient() {
     },
   });
   const { data: dataRuang, mutations: ruangMutations } = useRuang({
-    // initialData: initialDataRuang,
+    filterCabang: activeCabangId,
     onSuccessDelete: () => {
       setDeleteRuangDialogOpen(false);
       setSelectedRuangToDelete(null);
     },
   });
   const { dataJamTetap, tetapMutations } = useJam({
+    filterCabang: activeCabangId,
     // initialDataJamTetap,
     onSuccessDelete: () => {
       setDeleteJamTetapDialogOpen(false);
@@ -78,6 +81,7 @@ export default function RuangClient() {
   });
 
   const { dataJamCustom, customMutations } = useJam({
+    filterCabang: activeCabangId,
     // initialDataJamCustom,
     onSuccessDelete: () => {
       setDeleteJamCustomDialogOpen(false);
@@ -228,29 +232,29 @@ export default function RuangClient() {
             // filterColumnPlaceholder="Filter Nama Ruang..."
             columns={columnsRuang}
             data={dataRuang ?? []}
-            // toolbar={(table) => (
-            //   <div className="flex items-center gap-2">
-            //     {/* <Select
-            //   onValueChange={(value) =>
-            //     table.getColumn("cabangId")?.setFilterValue(value)
-            //   }
-            // >
-            //   <SelectTrigger className="w-[180px]">
-            //     <SelectValue placeholder="Filter by Cabang" />
-            //   </SelectTrigger>
-            //   <SelectContent>
-            //     <SelectItem value="all">All</SelectItem>
-            //     {dataCabang?.map((cabang) => {
-            //       return (
-            //         <SelectItem key={cabang.id} value={cabang.id}>
-            //           {cabang.namaCabang}
-            //         </SelectItem>
-            //       );
-            //     })}
-            //   </SelectContent>
-            // </Select> */}
-            //   </div>
-            // )}
+          // toolbar={(table) => (
+          //   <div className="flex items-center gap-2">
+          //     {/* <Select
+          //   onValueChange={(value) =>
+          //     table.getColumn("cabangId")?.setFilterValue(value)
+          //   }
+          // >
+          //   <SelectTrigger className="w-[180px]">
+          //     <SelectValue placeholder="Filter by Cabang" />
+          //   </SelectTrigger>
+          //   <SelectContent>
+          //     <SelectItem value="all">All</SelectItem>
+          //     {dataCabang?.map((cabang) => {
+          //       return (
+          //         <SelectItem key={cabang.id} value={cabang.id}>
+          //           {cabang.namaCabang}
+          //         </SelectItem>
+          //       );
+          //     })}
+          //   </SelectContent>
+          // </Select> */}
+          //   </div>
+          // )}
           />
         </div>
       </TabsContent>

@@ -25,6 +25,7 @@ interface UseGuruOptions {
   month?: string;
   pagination?: PaginationState;
   searchFilter?: string;
+  filterCabang?: string;
 }
 
 export function useAbsenGuru(options?: UseGuruOptions) {
@@ -34,11 +35,19 @@ export function useAbsenGuru(options?: UseGuruOptions) {
   const guruId = options?.guruId;
   const month = options?.month;
   const searchFilter = options?.searchFilter;
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
 
   const getAllAbsensiGuruQuery = api.absenGuru.getAllAbsensi.useQuery(
-    { pageIndex, pageSize, search: searchFilter, month },
+    {
+      pageIndex,
+      pageSize,
+      search: searchFilter,
+      month,
+      cabangId: cabangIdPayload,
+    },
     {
       enabled: !!options?.pagination,
       initialData: options?.initialDataAbsensi,
@@ -47,7 +56,7 @@ export function useAbsenGuru(options?: UseGuruOptions) {
   );
 
   const getHistoryQuery = api.absenGuru.getHistoryByGuruId.useQuery(
-    guruId && month ? { guruId, month } : skipToken, // Hanya jalan jika guruId & month ada
+    guruId && month ? { guruId, month, cabangId: cabangIdPayload } : skipToken,
     {
       enabled: !!guruId && !!month,
       initialData: options?.initialDataHistory,
@@ -59,6 +68,7 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     return await apiUtils.absenGuru.getForExport.fetch({
       search: searchFilter,
       month,
+      cabangId: cabangIdPayload,
     });
   };
 
@@ -69,35 +79,17 @@ export function useAbsenGuru(options?: UseGuruOptions) {
     return await apiUtils.absenGuru.getHistoryByGuruId.fetch({
       guruId,
       month,
+      cabangId: cabangIdPayload,
     });
+  };
+
+  const invalidateData = async () => {
+    await apiUtils.absenGuru.getAllAbsensi.invalidate();
   };
 
   // ========== MUTATIONS ==========
 
   // CREATE
-  const createSesiAbsensiMutation =
-    api.absenGuru.createSesiAndAbsensi.useMutation({
-      onSuccess: async (data) => {
-        await apiUtils.absenGuru.getAllAbsensi.invalidate();
-        await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
-        // await apiUtils.sesiPertemuan..invalidate();
-        if (data.isFinished) {
-          toast.success(
-            "Selamat! Kelas ini telah menyelesaikan semua pertemuan (Lulus Level).",
-          );
-        } else {
-          toast.success("Sesi berhasil dimulai!");
-        }
-        if (options?.onSuccessStartSesi) {
-          options.onSuccessStartSesi(data.newSesiId, data.isFinished);
-        }
-        options?.onSuccessCreate?.();
-      },
-      onError: (error) => {
-        toast.error(`Gagal membuat Absensi: ${error.message}`);
-      },
-    });
-
   const startSesiMutation = api.absenGuru.createSesiAndAbsensi.useMutation({
     onSuccess: async (data) => {
       // Penting: Refresh jadwal di dashboard agar tombol berubah jadi "Lanjut Sesi"
@@ -180,21 +172,34 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 
     // Mutations
     mutations: {
-      create: {
-        mutate: createSesiAbsensiMutation.mutate,
-        mutateAsync: createSesiAbsensiMutation.mutateAsync,
-        isPending: createSesiAbsensiMutation.isPending,
+      startSesi: {
+        mutate: startSesiMutation.mutate,
+        mutateAsync: startSesiMutation.mutateAsync,
+        isPending: startSesiMutation.isPending,
+        variables: startSesiMutation.variables,
       },
-      startSesi: startSesiMutation,
-      updateStatus: updateStatusMutation,
-      update: updateAbsensiMutation,
-      delete: deleteMutation,
+      verify: {
+        mutate: updateStatusMutation.mutate,
+        mutateAsync: updateStatusMutation.mutateAsync,
+        isPending: updateStatusMutation.isPending,
+      },
+      update: {
+        mutate: updateAbsensiMutation.mutate,
+        mutateAsync: updateAbsensiMutation.mutateAsync,
+        isPending: updateAbsensiMutation.isPending,
+      },
+      delete: {
+        mutate: deleteMutation.mutate,
+        mutateAsync: deleteMutation.mutateAsync,
+        isPending: deleteMutation.isPending,
+      },
     },
 
     // Utils untuk manual invalidation jika perlu
     refetch: getAllAbsensiGuruQuery.refetch,
     refetchHistory: getHistoryQuery.refetch,
-    invalidate: () => apiUtils.absenGuru.getAllAbsensi.invalidate(),
+
+    invalidate: invalidateData,
     invalidateHistory: () =>
       guruId && month
         ? apiUtils.absenGuru.getHistoryByGuruId.invalidate({ guruId, month })

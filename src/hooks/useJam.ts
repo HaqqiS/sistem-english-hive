@@ -12,6 +12,8 @@ interface useJamOptions {
   initialDataJamTetap?: TypeJamTetap[];
   initialDataJamCustom?: TypeJamCustom[];
 
+  filterCabang?: string;
+
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
@@ -32,18 +34,30 @@ interface useJamOptions {
  */
 export function useJam(options?: useJamOptions) {
   const apiUtils = api.useUtils();
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
 
-  const JamTetapQuery = api.jam.getAllJamTetap.useQuery(undefined, {
-    enabled: options?.enableQueryJamTetap ?? true,
-    initialData: options?.initialDataJamTetap,
-  });
+  const JamTetapQuery = api.jam.getAllJamTetap.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQueryJamTetap ?? true,
+      initialData: options?.initialDataJamTetap,
+    },
+  );
 
   const JamCustomQuery = api.jam.getAllJamCustom.useQuery(undefined, {
     enabled: options?.enableQueryJamCustom ?? true,
     initialData: options?.initialDataJamCustom,
   });
+
+  const invalidateJam = async () => {
+    await Promise.all([
+      apiUtils.jam.getAllJamTetap.invalidate(),
+      apiUtils.jam.getAllJamCustom.invalidate(),
+    ]);
+  };
 
   // ========== MUTATIONS ==========
 
@@ -168,7 +182,6 @@ export function useJam(options?: useJamOptions) {
     // Utils untuk manual invalidation jika perlu
     refetchTetap: JamTetapQuery.refetch,
     refetchCustom: JamCustomQuery.refetch,
-    invalidateTetap: () => apiUtils.jam.getAllJamTetap.invalidate(),
-    invalidateCustom: () => apiUtils.jam.getAllJamCustom.invalidate(),
+    invalidate: invalidateJam,
   };
 }

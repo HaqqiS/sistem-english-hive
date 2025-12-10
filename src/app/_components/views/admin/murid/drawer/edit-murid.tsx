@@ -88,7 +88,6 @@ export default function EditMurid() {
           onSubmit={handleSubmitEdit}
           idPrefix="admin-edit-murid"
           forceStacked={true}
-          isAdmin={true}
         />
       </Form>
     </EditDrawer>

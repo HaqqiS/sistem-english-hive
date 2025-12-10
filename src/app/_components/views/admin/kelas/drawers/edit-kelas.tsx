@@ -27,6 +27,7 @@ export default function EditKelas() {
           deskripsi: selectedKelas.deskripsi ?? "",
           hargaKelas: selectedKelas.hargaKelas,
           kodeKelas: selectedKelas.kodeKelas,
+          cabangId: selectedKelas.cabangId,
         }
       : undefined,
     defaultValues: {

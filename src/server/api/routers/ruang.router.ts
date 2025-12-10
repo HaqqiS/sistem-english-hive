@@ -3,20 +3,18 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
 import { serverRuangSchema } from "@/types/ruang.type";
 import { TRPCError } from "@trpc/server";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const ruangRouter = createTRPCRouter({
   getRuangByCabangId: protectedProcedure
     .input(z.object({ cabangId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const cabangId = input.cabangId;
+      const { db, session } = ctx;
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
 
       const whereClause: Prisma.RuangWhereInput = {};
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
 
-      // Jika cabangId ada dan bukan "all", filter by cabangId
-      if (cabangId && cabangId !== "all") {
-        whereClause.cabangId = cabangId;
-      }
       const ruang = await db.ruang.findMany({
         where: whereClause,
         select: {
@@ -37,36 +35,53 @@ export const ruangRouter = createTRPCRouter({
       return ruang;
     }),
 
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
-    const ruang = await db.ruang.findMany({
-      select: {
-        id: true,
-        namaRuang: true,
-        cabangId: true,
-        isAktif: true,
-        createdAt: true,
-        updatedAt: true,
-        cabang: {
-          select: {
-            namaCabang: true,
+  getAll: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+
+      const whereClause: Prisma.RuangWhereInput = {};
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
+
+      const ruang = await db.ruang.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          namaRuang: true,
+          cabangId: true,
+          isAktif: true,
+          createdAt: true,
+          updatedAt: true,
+          cabang: {
+            select: {
+              namaCabang: true,
+            },
           },
         },
-      },
-    });
-    return ruang;
-  }),
+      });
+      return ruang;
+    }),
 
   createRuang: protectedProcedure
     .input(serverRuangSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+
+      if (!finalCabangId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cabang ID harus ditentukan.",
+        });
+      }
 
       try {
         const newRuang = await db.ruang.create({
           data: {
             namaRuang: input.namaRuang,
-            cabangId: input.cabangId,
+            cabangId: finalCabangId,
             isAktif: input.isAktif,
           },
         });
@@ -95,7 +110,27 @@ export const ruangRouter = createTRPCRouter({
   deleteRuang: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const existingRuang = await db.ruang.findUnique({
+        where: { id: input.id },
+        select: { cabangId: true },
+      });
+
+      if (!existingRuang) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Ruang tidak ditemukan",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && existingRuang.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menghapus ruang dari cabang lain.",
+        });
+      }
 
       try {
         const deletedRuang = await db.ruang.delete({
@@ -126,7 +161,34 @@ export const ruangRouter = createTRPCRouter({
   updateRuang: protectedProcedure
     .input(serverRuangSchema.extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const existingRuang = await db.ruang.findUnique({
+        where: { id: input.id },
+        select: { cabangId: true },
+      });
+
+      if (!existingRuang) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Ruang tidak ditemukan.",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && existingRuang.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengedit ruang dari cabang lain.",
+        });
+      }
+
+      if (allowedCabangId && input.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak boleh memindahkan ruang ke cabang lain.",
+        });
+      }
 
       try {
         const updatedRuang = await db.ruang.update({

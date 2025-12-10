@@ -22,14 +22,14 @@ export default function UpLevelKelas() {
     resolver: zodResolver(upLevelKelasSchema),
     values: selectedKelas
       ? {
-          oldKelasId: selectedKelas.id,
-          // Auto-increment level
-          newLevel: selectedKelas.level + 1,
-          newBulanTahunAjar: "",
-          newKodeKelas: "",
-          newTanggalMulai: "",
-          hargaKelas: selectedKelas.hargaKelas,
-        }
+        oldKelasId: selectedKelas.id,
+        // Auto-increment level
+        newLevel: selectedKelas.level + 1,
+        newBulanTahunAjar: "",
+        newKodeKelas: "",
+        newTanggalMulai: "",
+        hargaKelas: selectedKelas.hargaKelas,
+      }
       : undefined,
     defaultValues: {
       oldKelasId: "",
@@ -40,21 +40,6 @@ export default function UpLevelKelas() {
       hargaKelas: 0,
     },
   });
-
-  // Reset form and set oldKelasId when drawer opens or selectedKelas changes
-  // useEffect(() => {
-  //   if (isOpen && selectedKelas) {
-  //     form.reset({
-  //       oldKelasId: selectedKelas.id,
-  //       // Auto-increment level
-  //       newLevel: selectedKelas.level + 1,
-  //       newBulanTahunAjar: "",
-  //       newKodeKelas: "",
-  //       newTanggalMulai: "",
-  //       hargaKelas: selectedKelas.hargaKelas,
-  //     });
-  //   }
-  // }, [isOpen, selectedKelas, form]);
 
   const { mutations: kelasMutations } = useKelas({
     onSuccessUpLevel: () => {

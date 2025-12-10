@@ -15,8 +15,10 @@ import { usePembayaran } from "@/hooks/usePembayaran";
 import { columns as createColumns } from "../columns/columns-pembayaran";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function HistoryPembayaranMuridClient() {
+  const { activeCabangId } = useGlobalCabangStore();
   const { muridId } = useParams<{ muridId: string }>();
 
   // 1. Gunakan Hook Utama
@@ -29,11 +31,13 @@ export default function HistoryPembayaranMuridClient() {
   } = usePembayaran({
     enableGetAll: true,
     muridIdFilter: muridId,
+    filterCabang: activeCabangId,
   });
 
   // 2. Panggil Query Saldo (untuk Header & Cards)
   const { data: saldoInfo, isLoading: isLoadingSaldo } = getSaldoByMuridIdQuery(
     { muridId: muridId },
+
     { enabled: !!muridId },
   );
 

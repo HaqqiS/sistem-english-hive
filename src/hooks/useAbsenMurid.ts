@@ -48,6 +48,17 @@ export function useAbsenMurid(options?: UseAbsenMuridOptions) {
     },
   );
 
+  const invalidateAbsensi = async () => {
+    // Refresh data absensi murid di sesi ini
+    await apiUtils.absenMurid.getMuridForAbsensi.invalidate(
+      sesiId ? { sesiId } : undefined,
+    );
+    // Refresh juga data summary sesi di kelas (jika ada hook useSesiPertemuan aktif)
+    await apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate();
+    // Refresh pembayaran karena absen bisa trigger auto-bill
+    await apiUtils.pembayaran.getAllPaginated.invalidate();
+  };
+
   // ========== MUTATIONS ==========
 
   // Mutasi untuk membuat atau memperbarui absensi seorang murid
@@ -95,9 +106,6 @@ export function useAbsenMurid(options?: UseAbsenMuridOptions) {
 
     // Utils untuk manual invalidation jika perlu
     refetch: getMuridForAbsensiQuery.refetch,
-    invalidate: () =>
-      sesiId
-        ? apiUtils.absenMurid.getMuridForAbsensi.invalidate({ sesiId })
-        : undefined,
+    invalidate: invalidateAbsensi,
   };
 }

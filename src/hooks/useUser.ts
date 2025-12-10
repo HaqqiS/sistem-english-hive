@@ -9,6 +9,8 @@ interface UseGuruOptions {
   initialDataGuru?: TypeGuruSimple[];
   initialDataGuruComplete?: TypeGuruComplete[];
 
+  filterCabang?: string;
+
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
@@ -16,41 +18,40 @@ interface UseGuruOptions {
   onSuccessResetPassword?: () => void;
 }
 
-/**
- * Custom hook untuk mengelola Cabang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data cabang
- * const { data: cabangList } = useCabang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useCabang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
- */
 export function useUser(options?: UseGuruOptions) {
   const apiUtils = api.useUtils();
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
-  const getAllGuruQuery = api.user.getAllGuruSimple.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
-    initialData: options?.initialDataGuru,
-  });
+  const getAllGuruQuery = api.user.getAllGuruSimple.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQuery ?? true,
+      initialData: options?.initialDataGuru,
+    },
+  );
   const getAllGuruCompleteQuery = api.user.getAllGuruComplete.useQuery(
-    undefined,
+    { cabangId: cabangIdPayload },
     {
       enabled: options?.enableQuery ?? false,
       initialData: options?.initialDataGuruComplete,
     },
   );
 
+  const invalidateUsers = async () => {
+    await Promise.all([
+      apiUtils.user.getAllGuruSimple.invalidate(),
+      apiUtils.user.getAllGuruComplete.invalidate(),
+    ]);
+  };
+
   // ========== MUTATIONS ==========
 
   // CREATE
   const registrationMutation = api.user.createGuru.useMutation({
     onSuccess: async () => {
-      await apiUtils.user.getAllGuruSimple.invalidate();
-      await apiUtils.user.getAllGuruComplete.invalidate();
+      await invalidateUsers();
       toast.success("Guru berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -62,8 +63,7 @@ export function useUser(options?: UseGuruOptions) {
   // UPDATE
   const updateMutation = api.user.updateGuru.useMutation({
     onSuccess: async () => {
-      await apiUtils.user.getAllGuruSimple.invalidate();
-      await apiUtils.user.getAllGuruComplete.invalidate();
+      await invalidateUsers();
       toast.success("Guru berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -71,6 +71,7 @@ export function useUser(options?: UseGuruOptions) {
       toast.error(`Gagal mengupdate guru: ${error.message}`);
     },
   });
+
   const resetPasswordMutation = api.user.resetPasswordGuru.useMutation({
     onSuccess: async () => {
       await apiUtils.user.getAllGuruComplete.invalidate();
@@ -85,8 +86,7 @@ export function useUser(options?: UseGuruOptions) {
   // DELETE
   const deleteMutation = api.user.deleteGuru.useMutation({
     onSuccess: async () => {
-      await apiUtils.user.getAllGuruSimple.invalidate();
-      await apiUtils.user.getAllGuruComplete.invalidate();
+      await invalidateUsers();
       toast.success("Guru berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -134,7 +134,6 @@ export function useUser(options?: UseGuruOptions) {
     // Utils untuk manual invalidation jika perlu
     refetchGuru: getAllGuruQuery.refetch,
     refetchGuruComplete: getAllGuruCompleteQuery.refetch,
-    invalidateGuru: () => apiUtils.user.getAllGuruSimple.invalidate(),
-    invalidateGuruComplete: () => apiUtils.user.getAllGuruComplete.invalidate(),
+    invalidate: invalidateUsers,
   };
 }

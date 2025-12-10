@@ -20,6 +20,7 @@ import { useFormContext } from "react-hook-form";
 import type { TypeClientHistoryGuruKelasSchema } from "@/types/historyGuruKelas.type";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import { useUser } from "@/hooks/useUser";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 interface GuruKelasFormProps {
   // onSubmit: (data: TypeClientHistoryGuruKelasSchema) => void;
@@ -30,9 +31,12 @@ export default function GuruKelasForm({
   // onSubmit,
   isDisabled,
 }: GuruKelasFormProps) {
+  const { activeCabangId } = useGlobalCabangStore();
   const form = useFormContext<TypeClientHistoryGuruKelasSchema>();
 
-  const { data: dataGuru, isLoading: isLoadingGuru } = useUser();
+  const { data: dataGuru, isLoading: isLoadingGuru } = useUser({
+    filterCabang: activeCabangId,
+  });
 
   return (
     // <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

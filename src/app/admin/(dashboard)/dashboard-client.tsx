@@ -15,9 +15,11 @@ import { StatusPembayaran } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function DashboardClientPage() {
-  // Gunakan hook usePembayaran agar logika mutasi terpusat
+  const { activeCabangId } = useGlobalCabangStore();
+
   const {
     dataJatuhTempo,
     isLoadingJatuhTempo,
@@ -28,6 +30,7 @@ export default function DashboardClientPage() {
   } = usePembayaran({
     enableGetJatuhTempo: true, // Aktifkan query khusus dashboard
     enableGetAll: false, // Matikan query berat (getAll) di dashboard
+    filterCabang: activeCabangId,
   });
 
   // Handler Verifikasi Cepat

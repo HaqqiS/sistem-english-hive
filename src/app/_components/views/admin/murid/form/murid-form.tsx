@@ -26,21 +26,23 @@ import { Gender } from "@prisma/client";
 import { useCabang } from "@/hooks/useCabang";
 import type { TypeClientRegisterMuridSchema } from "@/types/murid.type";
 import { cn } from "@/lib/utils"; // Import cn for cleaner class merging
+import { UserRole } from "@/server/auth/type";
+import { useSession } from "next-auth/react";
 
 interface MuridFormProps {
   onSubmit: (data: TypeClientRegisterMuridSchema) => void;
   idPrefix?: string;
   forceStacked?: boolean; // New prop to force 1 column layout
-  isAdmin?: boolean;
 }
 
 export default function MuridForm({
   onSubmit,
   idPrefix = "murid",
   forceStacked = false, // Default false (Responsive)
-  isAdmin = false,
 }: MuridFormProps) {
   const form = useFormContext<TypeClientRegisterMuridSchema>();
+  const session = useSession();
+  const isAdmin = session.data?.user?.role === UserRole.ADMIN;
   const { dataList: dataCabang, isLoading: isLoadingCabang } = useCabang({
     enableQuery: false,
     enableQueryList: true,
@@ -225,38 +227,40 @@ export default function MuridForm({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="cabangId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">Pilih Cabang</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isLoadingCabang}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={
-                            isLoadingCabang ? "Loading..." : "Pilih Cabang"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dataCabang?.map((items) => (
-                          <SelectItem key={items.id} value={items.id}>
-                            {items.namaCabang}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isAdmin && (
+              <FormField
+                control={form.control}
+                name="cabangId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Pilih Cabang</FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isLoadingCabang}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              isLoadingCabang ? "Loading..." : "Pilih Cabang"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dataCabang?.map((items) => (
+                            <SelectItem key={items.id} value={items.id}>
+                              {items.namaCabang}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
         </div>
 

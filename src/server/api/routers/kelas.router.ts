@@ -5,127 +5,185 @@ import { TRPCError } from "@trpc/server";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import dayjs from "@/utils/dateUtils";
 import { Prisma, StatusMurid, StatusPembayaran } from "@prisma/client";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const kelasRouter = createTRPCRouter({
-  getKelasAktif: protectedProcedure.query(async ({ ctx }) => {
-    const kelas = await ctx.db.kelas.findMany({
-      distinct: ["cohortId"],
-      orderBy: { createdAt: "desc" },
+  getKelasAktif: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
 
-      // Select disamakan dengan getAll agar kompatibel dengan UI yang sudah ada
-      select: {
-        id: true,
-        jenisKelas: true,
-        level: true,
-        grup: true,
-        tipe: true,
-        kodeKelas: true,
-        bulanTahunAjar: true,
-        deskripsi: true,
-        hargaKelas: true,
-        cohortId: true,
-        historyGuruKelases: {
-          where: {
-            selesaiPada: null,
-          },
-          select: {
-            id: true,
-            kelasId: true,
-            guruId: true,
-            statusGuru: true,
-            mulaiPada: true,
-            selesaiPada: true,
-            guru: {
-              select: {
-                name: true,
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+
+      const whereClause: Prisma.KelasWhereInput = {};
+      if (filterCabangId) {
+        whereClause.cabangId = filterCabangId;
+      }
+
+      const kelas = await db.kelas.findMany({
+        where: whereClause,
+        distinct: ["cohortId"],
+        orderBy: { createdAt: "desc" },
+
+        // Select disamakan dengan getAll agar kompatibel dengan UI yang sudah ada
+        select: {
+          id: true,
+          jenisKelas: true,
+          level: true,
+          grup: true,
+          tipe: true,
+          kodeKelas: true,
+          bulanTahunAjar: true,
+          deskripsi: true,
+          hargaKelas: true,
+          cohortId: true,
+          cabangId: true,
+          historyGuruKelases: {
+            where: {
+              selesaiPada: null,
+            },
+            select: {
+              id: true,
+              kelasId: true,
+              guruId: true,
+              statusGuru: true,
+              mulaiPada: true,
+              selesaiPada: true,
+              guru: {
+                select: {
+                  name: true,
+                },
               },
             },
           },
         },
-      },
-    });
-    return kelas;
-  }),
+      });
+      return kelas;
+    }),
 
-  getKelasAndCount: protectedProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
-    const allKelasData = await db.kelas.findMany({
-      // distinct: ["cohortId"],
-      orderBy: { createdAt: "desc" },
+  getKelasAndCount: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
 
-      select: {
-        id: true,
-        jenisKelas: true,
-        level: true,
-        grup: true,
-        tipe: true,
-        kodeKelas: true,
-        bulanTahunAjar: true,
-        deskripsi: true,
-        hargaKelas: true,
-        cohortId: true,
-        historyGuruKelases: {
-          where: {
-            selesaiPada: null,
-            statusGuru: "ACTIVE",
-          },
-          select: {
-            id: true,
-            kelasId: true,
-            guruId: true,
-            statusGuru: true,
-            mulaiPada: true,
-            selesaiPada: true,
-            guru: {
-              select: {
-                name: true,
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+
+      const whereClause: Prisma.KelasWhereInput = {};
+      if (filterCabangId) {
+        whereClause.cabangId = filterCabangId;
+      }
+      const allKelasData = await db.kelas.findMany({
+        where: whereClause,
+        // distinct: ["cohortId"],
+        orderBy: { createdAt: "desc" },
+
+        select: {
+          id: true,
+          jenisKelas: true,
+          level: true,
+          grup: true,
+          tipe: true,
+          kodeKelas: true,
+          bulanTahunAjar: true,
+          deskripsi: true,
+          hargaKelas: true,
+          cohortId: true,
+          cabangId: true,
+          historyGuruKelases: {
+            where: {
+              selesaiPada: null,
+              statusGuru: "ACTIVE",
+            },
+            select: {
+              id: true,
+              kelasId: true,
+              guruId: true,
+              statusGuru: true,
+              mulaiPada: true,
+              selesaiPada: true,
+              guru: {
+                select: {
+                  name: true,
+                },
               },
             },
           },
-        },
-        sesiPertemuanKelases: {
-          orderBy: {
-            tanggalWaktu: "desc",
+          sesiPertemuanKelases: {
+            orderBy: {
+              tanggalWaktu: "desc",
+            },
+            take: 1,
+            select: {
+              tanggalWaktu: true,
+            },
           },
-          take: 1,
-          select: {
-            tanggalWaktu: true,
+          pendaftaranKelases: {
+            where: { isAktif: true },
+          },
+          jadwalKelas: {
+            select: {
+              id: true,
+              hari: true,
+            },
+          },
+          _count: {
+            select: { sesiPertemuanKelases: true, pendaftaranKelases: true },
           },
         },
-        pendaftaranKelases: {
-          where: { isAktif: true },
-        },
-        jadwalKelas: {
-          select: {
-            id: true,
-            hari: true,
-          },
-        },
-        _count: {
-          select: { sesiPertemuanKelases: true, pendaftaranKelases: true },
-        },
-      },
-    });
+      });
 
-    const filteredKelas = allKelasData.filter(
-      (kelas) => kelas._count.sesiPertemuanKelases < 24,
-    );
+      const filteredKelas = allKelasData.filter(
+        (kelas) => kelas._count.sesiPertemuanKelases < 24,
+      );
 
-    return filteredKelas;
-  }),
+      return filteredKelas;
+    }),
 
   getKelasById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const kelas = await ctx.db.kelas.findUnique({
+      const { db, session } = ctx;
+
+      const kelas = await db.kelas.findUnique({
         where: { id: input.id },
       });
+
+      if (!kelas) return null;
+
+      const userCabangId = getRestrictedCabangId(session, null);
+
+      if (userCabangId && kelas.cabangId !== userCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak memiliki akses ke data kelas dari cabang ini.",
+        });
+      }
       return kelas;
     }),
 
   getKelasHistory: protectedProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+
+      const sampleKelas = await db.kelas.findFirst({
+        where: { cohortId: input.cohortId },
+        select: { cabangId: true }
+      });
+
+      if (!sampleKelas) {
+        return [];
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && sampleKelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak melihat riwayat kelas dari cabang lain."
+        });
+      }
+
+
       const history = await ctx.db.kelas.findMany({
         where: { cohortId: input.cohortId },
         orderBy: { level: "asc" }, // Urutkan dari level terendah
@@ -185,62 +243,81 @@ export const kelasRouter = createTRPCRouter({
     );
   }),
 
-  getForExport: protectedProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
+  getForExport: protectedProcedure
+    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
 
-    // 1. Ambil data mentah
-    const allKelasData = await db.kelas.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        kodeKelas: true,
-        jenisKelas: true,
-        level: true,
-        grup: true,
-        tipe: true,
-        bulanTahunAjar: true,
-        hargaKelas: true,
+      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
 
-        // Info Guru Aktif
-        historyGuruKelases: {
-          where: { statusGuru: "ACTIVE" },
-          select: {
-            guru: { select: { name: true } },
+      const whereClause: Prisma.KelasWhereInput = {};
+      if (filterCabangId) {
+        whereClause.cabangId = filterCabangId;
+      }
+
+      // 1. Ambil data mentah
+      const allKelasData = await db.kelas.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        select: {
+          kodeKelas: true,
+          jenisKelas: true,
+          level: true,
+          grup: true,
+          tipe: true,
+          bulanTahunAjar: true,
+          hargaKelas: true,
+
+          // Info Guru Aktif
+          historyGuruKelases: {
+            where: { statusGuru: "ACTIVE" },
+            select: {
+              guru: { select: { name: true } },
+            },
+            take: 1,
           },
-          take: 1,
-        },
 
-        // Info Jadwal (Hari)
-        jadwalKelas: {
-          select: { hari: true },
-        },
+          // Info Jadwal (Hari)
+          jadwalKelas: {
+            select: { hari: true },
+          },
 
-        // Statistik (Murid & Sesi)
-        _count: {
-          select: {
-            pendaftaranKelases: { where: { isAktif: true } },
-            sesiPertemuanKelases: true,
+          // Statistik (Murid & Sesi)
+          _count: {
+            select: {
+              pendaftaranKelases: { where: { isAktif: true } },
+              sesiPertemuanKelases: true,
+            },
+          },
+
+          // Untuk filter manual (sesi < 24)
+          sesiPertemuanKelases: {
+            select: { id: true },
           },
         },
+      });
 
-        // Untuk filter manual (sesi < 24)
-        sesiPertemuanKelases: {
-          select: { id: true },
-        },
-      },
-    });
+      // 2. Filter Konsistensi (Sama seperti tampilan tabel: Sesi < 24)
+      const filteredKelas = allKelasData.filter(
+        (kelas) => kelas._count.sesiPertemuanKelases < 24,
+      );
 
-    // 2. Filter Konsistensi (Sama seperti tampilan tabel: Sesi < 24)
-    const filteredKelas = allKelasData.filter(
-      (kelas) => kelas._count.sesiPertemuanKelases < 24,
-    );
-
-    return filteredKelas;
-  }),
+      return filteredKelas;
+    }),
 
   createKelas: protectedProcedure
     .input(serverKelasSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, session } = ctx;
+
+      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+
+      if (!finalCabangId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cabang ID harus ditentukan untuk membuat kelas.",
+        });
+      }
 
       try {
         const kelas = await db.kelas.create({
@@ -253,10 +330,7 @@ export const kelasRouter = createTRPCRouter({
             bulanTahunAjar: input.bulanTahunAjar,
             deskripsi: input.deskripsi,
             hargaKelas: input.hargaKelas,
-            cabangId:
-              session.user.cabangId ??
-              input.cabangId ??
-              "cmhke9ea40000nx8823a9f0ds", //default gatsu
+            cabangId: finalCabangId,
           },
         });
         return kelas;
@@ -277,18 +351,38 @@ export const kelasRouter = createTRPCRouter({
   updateKelas: protectedProcedure
     .input(serverKelasSchema.extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
 
       try {
         const oldKelas = await db.kelas.findUnique({
           where: { id: input.id },
-          select: { hargaKelas: true },
+          select: { hargaKelas: true, cabangId: true },
         });
 
         if (!oldKelas) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Kelas tidak ditemukan",
+          });
+        }
+
+        const allowedCabangId = getRestrictedCabangId(session, null);
+
+        if (allowedCabangId && oldKelas.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak berhak mengedit kelas dari cabang lain.",
+          });
+        }
+
+        if (
+          input.cabangId &&
+          allowedCabangId &&
+          input.cabangId !== allowedCabangId
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak boleh memindahkan kelas ke cabang lain.",
           });
         }
 
@@ -352,9 +446,27 @@ export const kelasRouter = createTRPCRouter({
   deleteKelas: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
 
       try {
+        const existingKelas = await db.kelas.findUnique({
+          where: { id: input.id },
+          select: { cabangId: true },
+        });
+
+        if (!existingKelas) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Kelas tidak ditemukan.",
+          });
+        }
+        const allowedCabangId = getRestrictedCabangId(session, null);
+        if (allowedCabangId && existingKelas.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak berhak menghapus kelas dari cabang lain.",
+          });
+        }
         const existingMuridKelas = await db.pendaftaranKelas.findFirst({
           where: { kelasId: input.id },
           select: { muridId: true },
@@ -389,7 +501,7 @@ export const kelasRouter = createTRPCRouter({
   upLevelKelas: protectedProcedure
     .input(upLevelKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const {
         oldKelasId,
         newLevel,
@@ -409,6 +521,15 @@ export const kelasRouter = createTRPCRouter({
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Kelas lama tidak ditemukan.",
+          });
+        }
+
+        const allowedCabangId = getRestrictedCabangId(session, null);
+        if (allowedCabangId && oldKelas.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Anda tidak berhak melakukan Up Level pada kelas cabang lain.",
           });
         }
 

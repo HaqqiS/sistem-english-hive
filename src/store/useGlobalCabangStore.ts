@@ -1,4 +1,3 @@
-// src/store/useGlobalCabangStore.ts
 import { create } from "zustand";
 
 interface GlobalCabangState {
@@ -7,6 +6,6 @@ interface GlobalCabangState {
 }
 
 export const useGlobalCabangStore = create<GlobalCabangState>((set) => ({
-  activeCabangId: "ALL", // Default
+  activeCabangId: "ALL",
   setActiveCabangId: (cabangId) => set({ activeCabangId: cabangId }),
 }));

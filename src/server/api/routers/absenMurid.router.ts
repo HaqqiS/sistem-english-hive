@@ -8,12 +8,13 @@ import {
   BATAS_SISA_UNTUK_TAGIHAN,
   JUMLAH_PERTEMUAN_PER_BLOK,
 } from "@/constants/pembayaran";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const absenMuridRouter = createTRPCRouter({
   getMuridForAbsensi: protectedProcedure
     .input(z.object({ sesiId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { sesiId } = input;
 
       // 1. Dapatkan info sesi & kelasId
@@ -22,7 +23,12 @@ export const absenMuridRouter = createTRPCRouter({
         select: {
           kelasId: true,
           tanggalWaktu: true,
-          kelas: { select: { kodeKelas: true } },
+          kelas: {
+            select: {
+              kodeKelas: true,
+              cabangId: true, // Ambil cabangId
+            },
+          },
         },
       });
 
@@ -33,11 +39,18 @@ export const absenMuridRouter = createTRPCRouter({
         });
       }
 
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && sesi.kelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengakses data absensi dari cabang lain.",
+        });
+      }
+
       // 2. Dapatkan semua murid yang terdaftar & aktif di kelas ini
       const pendaftar = await db.pendaftaranKelas.findMany({
         where: {
           kelasId: sesi.kelasId,
-          // isAktif: true,
         },
         select: {
           id: true,
@@ -100,8 +113,31 @@ export const absenMuridRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
       const { sesiId, muridId, status } = input;
+
+      const sesiCheck = await db.sesiPertemuanKelas.findUnique({
+        where: { id: sesiId },
+        select: {
+          kelasId: true,
+          kelas: { select: { cabangId: true } },
+        },
+      });
+
+      if (!sesiCheck) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Sesi tidak ditemukan",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && sesiCheck.kelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak mengubah absensi di cabang lain.",
+        });
+      }
 
       try {
         // 1. Lakukan Update Absensi Terlebih Dahulu

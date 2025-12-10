@@ -35,9 +35,11 @@ import dayjs, { formatToWITA } from "@/utils/dateUtils";
 import { downloadCSV } from "@/utils/exportUtils";
 import { getPeriodeGaji } from "@/server/services/gaji.service";
 import { Calendar } from "@/components/ui/calendar";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function GuruClient() {
   // STATES
+  const { activeCabangId } = useGlobalCabangStore()
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -98,6 +100,7 @@ export default function GuruClient() {
     month: selectedMonthYYYYMM,
     searchFilter: debouncedSearch,
     pagination: pagination,
+    filterCabang: activeCabangId,
     onSuccessDelete: () => {
       setDeleteAbsenGuruDialogOpen(false);
       setSelectedAbsenGuruToDelete(null);
@@ -108,6 +111,7 @@ export default function GuruClient() {
   });
 
   const { dataComplete: dataGuru, mutations: mutationsGuru } = useUser({
+    filterCabang: activeCabangId,
     // initialDataGuruComplete: initialDataGuru,
     onSuccessDelete() {
       setDeleteGuruDialogOpen(false);
@@ -135,7 +139,7 @@ export default function GuruClient() {
 
   const handleStatusChange = (item: TypeAbsensiGuru, status: boolean) => {
     setPendingId(item.id);
-    mutationsAbsenGuru.updateStatus.mutate(
+    mutationsAbsenGuru.verify.mutate(
       {
         absensiId: item.id,
         isVerified: status,

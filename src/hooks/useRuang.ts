@@ -9,26 +9,18 @@ interface UseRuangOptions {
   enableQuery?: boolean;
   initialData?: RuangType[];
 
+  filterCabang?: string;
+
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
 }
 
-/**
- * Custom hook untuk mengelola Ruang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data Ruang
- * const { data: RuangList } = useRuang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useRuang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
- */
 export function useRuang(options?: UseRuangOptions) {
   const apiUtils = api.useUtils();
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
   // const RuangQuery = api.ruang.getRuangByCabangId.useQuery(undefined, {
@@ -36,17 +28,27 @@ export function useRuang(options?: UseRuangOptions) {
   //   initialData: options?.initialData,
   // });
 
-  const RuangQuery = api.ruang.getAll.useQuery(undefined, {
-    enabled: options?.enableQuery ?? true,
-    initialData: options?.initialData,
-  });
+  const RuangQuery = api.ruang.getAll.useQuery(
+    { cabangId: cabangIdPayload },
+    {
+      enabled: options?.enableQuery ?? true,
+      initialData: options?.initialData,
+    },
+  );
+
+  const invalidateAll = async () => {
+    await Promise.all([
+      apiUtils.ruang.getAll.invalidate(),
+      apiUtils.ruang.getRuangByCabangId.invalidate(),
+    ]);
+  };
 
   // ========== MUTATIONS ==========
 
   // CREATE
   const createMutation = api.ruang.createRuang.useMutation({
     onSuccess: async () => {
-      await apiUtils.ruang.getAll.invalidate();
+      await invalidateAll();
       toast.success("Ruang berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -58,7 +60,7 @@ export function useRuang(options?: UseRuangOptions) {
   // UPDATE
   const updateMutation = api.ruang.updateRuang.useMutation({
     onSuccess: async () => {
-      await apiUtils.ruang.getAll.invalidate();
+      await invalidateAll();
       toast.success("Ruang berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -70,7 +72,7 @@ export function useRuang(options?: UseRuangOptions) {
   // DELETE
   const deleteMutation = api.ruang.deleteRuang.useMutation({
     onSuccess: async () => {
-      await apiUtils.ruang.getAll.invalidate();
+      await invalidateAll();
       toast.success("Ruang berhasil dihapus");
       options?.onSuccessDelete?.();
     },
@@ -107,6 +109,6 @@ export function useRuang(options?: UseRuangOptions) {
 
     // Utils untuk manual invalidation jika perlu
     refetch: RuangQuery.refetch,
-    invalidate: () => apiUtils.ruang.getAll.invalidate(),
+    invalidate: invalidateAll,
   };
 }

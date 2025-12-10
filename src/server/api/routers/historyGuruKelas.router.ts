@@ -6,15 +6,40 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
 import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const historyGuruKelasRouter = createTRPCRouter({
   getHistoryGuruByKelasId: protectedProcedure
     .input(z.object({ kelasId: z.string().min(1, "Kelas ID harus diisi") }))
     .query(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const kelasCheck = await db.kelas.findUnique({
+        where: { id: input.kelasId },
+        select: { cabangId: true },
+      });
+
+      if (!kelasCheck) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Kelas tidak ditemukan.",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+
+      if (allowedCabangId && kelasCheck.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak melihat history guru dari cabang lain.",
+        });
+      }
       const historyGuruKelas = await db.historyGuruKelas.findMany({
         where: {
           kelasId: input.kelasId,
+        },
+        orderBy: {
+          mulaiPada: "desc",
         },
         include: {
           guru: true,
@@ -26,7 +51,28 @@ export const historyGuruKelasRouter = createTRPCRouter({
   createHistoryGuruKelas: protectedProcedure
     .input(serverHistoryGuruKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const kelasCheck = await db.kelas.findUnique({
+        where: { id: input.kelasId },
+        select: { cabangId: true },
+      });
+
+      if (!kelasCheck) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Kelas tidak ditemukan.",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && kelasCheck.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menugaskan guru di kelas cabang lain.",
+        });
+      }
+
       try {
         const existingGuruRecord = await db.historyGuruKelas.findFirst({
           where: {
@@ -71,12 +117,28 @@ export const historyGuruKelasRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
 
       try {
         const oldRecord = await db.historyGuruKelas.findUnique({
           where: { id: input.id },
+          include: { kelas: { select: { cabangId: true } } },
         });
+
+        if (!oldRecord) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "History tidak ditemukan.",
+          });
+        }
+
+        const allowedCabangId = getRestrictedCabangId(session, null);
+        if (allowedCabangId && oldRecord.kelas.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak berhak mengubah data cabang lain.",
+          });
+        }
 
         if (input.guruId === oldRecord?.guruId) {
           const updatedRecord = await db.historyGuruKelas.update({
@@ -135,7 +197,28 @@ export const historyGuruKelasRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
+      const { db, session } = ctx;
+
+      const record = await db.historyGuruKelas.findUnique({
+        where: { id: input.id },
+        include: { kelas: { select: { cabangId: true } } }
+      });
+
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Data tidak ditemukan.",
+        });
+      }
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && record.kelas.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak menghapus data dari cabang lain.",
+        });
+      }
+
       try {
         return await db.historyGuruKelas.delete({
           where: { id: input.id },

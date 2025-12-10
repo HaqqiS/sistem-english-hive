@@ -3,7 +3,6 @@
 import { NavCollapsible } from "@/app/_components/shared/nav-collapsible";
 import { NavMain } from "@/app/_components/shared/nav-main";
 import { NavUser } from "@/app/_components/shared/nav-user";
-import { TeamSwitcher } from "@/app/_components/shared/team-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -12,8 +11,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import type { NavItem } from "@/types/nav.type";
-// This is sample data.
-import { data } from "@/app/_components/shared/data";
+import { CabangSwitcher } from "./cabang-switcher";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   navItems: NavItem[];
@@ -23,7 +21,7 @@ export function AppSidebar({ navItems, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <CabangSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain projects={navItems} />

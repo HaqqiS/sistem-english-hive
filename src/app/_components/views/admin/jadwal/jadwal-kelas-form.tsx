@@ -41,6 +41,7 @@ import type {
   TypeServerCreateBulkJadwalSchema,
   TypeServerCreateJadwalSchema,
 } from "@/types/jadwalKelas.type";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 // Tipe Schema Form Wrapper
 type FormSchemaType = {
@@ -58,6 +59,7 @@ interface ScheduleItemRowProps {
   trigger: UseFormTrigger<FormSchemaType>;
   remove: (index: number) => void;
   firstItemKelasId: string | undefined; // ID Kelas dari parent
+  activeCabangId: string;
 }
 
 function ScheduleItemRow({
@@ -67,11 +69,16 @@ function ScheduleItemRow({
   trigger,
   remove,
   firstItemKelasId,
+  activeCabangId,
 }: ScheduleItemRowProps) {
   // --- DATA FETCHING ---
-  const { data: dataRuang, isLoading: isLoadingRuang } = useRuang();
+  const { data: dataRuang, isLoading: isLoadingRuang } = useRuang({
+    filterCabang: activeCabangId,
+  });
   const { dataJamTetap: dataJamSlot, isLoadingJamTetap: isLoadingJamSlot } =
-    useJam();
+    useJam({
+      filterCabang: activeCabangId,
+    });
   const { dataKelasAktif: dataKelas } = useKelas({
     enableQueryGetKelasAktif: true,
   });
@@ -356,6 +363,8 @@ export default function JadwalKelasForm({
 }: {
   onSubmit: (data: FormSchemaType["schedules"]) => void;
 }) {
+  const { activeCabangId } = useGlobalCabangStore();
+
   const form = useFormContext<FormSchemaType>();
   const { control, setValue, trigger, handleSubmit } = form;
 
@@ -366,6 +375,7 @@ export default function JadwalKelasForm({
 
   const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
     useKelas({
+      filterCabang: activeCabangId,
       enableQueryGetKelasId: false,
       enableQueryGetKelasCount: false,
       enableQueryGetKelasAktif: true,
@@ -448,6 +458,7 @@ export default function JadwalKelasForm({
             trigger={trigger}
             remove={remove}
             firstItemKelasId={firstItemKelasId}
+            activeCabangId={activeCabangId}
           />
         ))}
       </div>

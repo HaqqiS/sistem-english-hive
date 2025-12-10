@@ -1,4 +1,4 @@
-import DetailSesiClient from "@/app/_components/views/admin/sesi/detail-sesi-client";
+import DetailSesiClient from "@/app/_components/views/admin/kelas/sesi/detail-sesi-client";
 import { api, HydrateClient } from "@/trpc/server";
 import type { Metadata } from "next";
 

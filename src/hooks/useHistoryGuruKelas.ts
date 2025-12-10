@@ -16,25 +16,17 @@ interface useHistoryGuruKelasOptions {
 
   // ID untuk query by ID
   kelasId?: string;
+  filterCabang?: string;
 }
 
-/**
- * Custom hook untuk mengelola Cabang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data cabang
- * const { data: cabangList } = useCabang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useCabang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
- */
 export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   const apiUtils = api.useUtils();
 
-  // ========== QUERIES ==========
   const kelasId = options?.kelasId;
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
+  // ========== QUERIES ==========
+
   // const isGetAllEnabled = (options?.enableQuery ?? true) && !kelasId;
 
   const historyGuruKelasQuery =

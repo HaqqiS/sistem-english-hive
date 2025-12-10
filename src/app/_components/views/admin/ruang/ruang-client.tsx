@@ -72,6 +72,7 @@ export default function RuangClient() {
     },
   });
   const { dataJamTetap, tetapMutations } = useJam({
+    filterCabang: activeCabangId,
     // initialDataJamTetap,
     onSuccessDelete: () => {
       setDeleteJamTetapDialogOpen(false);
@@ -80,6 +81,7 @@ export default function RuangClient() {
   });
 
   const { dataJamCustom, customMutations } = useJam({
+    filterCabang: activeCabangId,
     // initialDataJamCustom,
     onSuccessDelete: () => {
       setDeleteJamCustomDialogOpen(false);
@@ -230,29 +232,29 @@ export default function RuangClient() {
             // filterColumnPlaceholder="Filter Nama Ruang..."
             columns={columnsRuang}
             data={dataRuang ?? []}
-            // toolbar={(table) => (
-            //   <div className="flex items-center gap-2">
-            //     {/* <Select
-            //   onValueChange={(value) =>
-            //     table.getColumn("cabangId")?.setFilterValue(value)
-            //   }
-            // >
-            //   <SelectTrigger className="w-[180px]">
-            //     <SelectValue placeholder="Filter by Cabang" />
-            //   </SelectTrigger>
-            //   <SelectContent>
-            //     <SelectItem value="all">All</SelectItem>
-            //     {dataCabang?.map((cabang) => {
-            //       return (
-            //         <SelectItem key={cabang.id} value={cabang.id}>
-            //           {cabang.namaCabang}
-            //         </SelectItem>
-            //       );
-            //     })}
-            //   </SelectContent>
-            // </Select> */}
-            //   </div>
-            // )}
+          // toolbar={(table) => (
+          //   <div className="flex items-center gap-2">
+          //     {/* <Select
+          //   onValueChange={(value) =>
+          //     table.getColumn("cabangId")?.setFilterValue(value)
+          //   }
+          // >
+          //   <SelectTrigger className="w-[180px]">
+          //     <SelectValue placeholder="Filter by Cabang" />
+          //   </SelectTrigger>
+          //   <SelectContent>
+          //     <SelectItem value="all">All</SelectItem>
+          //     {dataCabang?.map((cabang) => {
+          //       return (
+          //         <SelectItem key={cabang.id} value={cabang.id}>
+          //           {cabang.namaCabang}
+          //         </SelectItem>
+          //       );
+          //     })}
+          //   </SelectContent>
+          // </Select> */}
+          //   </div>
+          // )}
           />
         </div>
       </TabsContent>

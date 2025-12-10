@@ -197,7 +197,7 @@ export default function MuridClient() {
                       "h-4 w-4",
                       (isLoadingNotRegisteredPaginated ||
                         isFetchingNotRegisteredPaginated) &&
-                        "animate-spin",
+                      "animate-spin",
                     )}
                   />
                 </Button>
@@ -255,7 +255,7 @@ export default function MuridClient() {
                       "h-4 w-4",
                       (isLoadingAllMuridPaginated ||
                         isFetchingAllMuridPaginated) &&
-                        "animate-spin",
+                      "animate-spin",
                     )}
                   />
                 </Button>

@@ -12,26 +12,18 @@ interface UseCabangOptions {
   initialData?: CabangType[];
   initialDataList?: CabangType[];
 
+  filterCabang?: string;
+
   // Mutation callbacks
   onSuccessCreate?: () => void;
   onSuccessUpdate?: () => void;
   onSuccessDelete?: () => void;
 }
 
-/**
- * Custom hook untuk mengelola Cabang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data cabang
- * const { data: cabangList } = useCabang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useCabang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
- */
 export function useCabang(options?: UseCabangOptions) {
   const apiUtils = api.useUtils();
+  const cabangIdPayload =
+    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
   const cabangQuery = api.cabang.getAll.useQuery(undefined, {

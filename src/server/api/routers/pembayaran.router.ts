@@ -141,7 +141,6 @@ export const pembayaranRouter = createTRPCRouter({
           in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
         },
         tanggalJatuhTempo: {
-          gte: HARI_INI.toDate(),
           lte: DUA_MINGGU_LAGI.toDate(),
         },
       };

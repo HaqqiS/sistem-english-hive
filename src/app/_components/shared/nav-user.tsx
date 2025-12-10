@@ -21,13 +21,13 @@ import {
 import { signOut, useSession } from "next-auth/react";
 
 export function NavUser() {
-  const { data: session } = useSession(); // 3. Gunakan hook
+  const { data: session } = useSession();
   const { isMobile } = useSidebar();
 
   const user = {
     name: session?.user?.name ?? "Guest User",
     email: session?.user?.email ?? "guest@example.com",
-    avatar: session?.user?.image ?? "/default-avatar.png", // NextAuth pakai 'image'
+    avatar: session?.user?.image ?? "/default-avatar.png",
   };
 
   return (
@@ -68,27 +68,12 @@ export function NavUser() {
                 </div>
               </div>
             </DropdownMenuLabel>
-            {/* <DropdownMenuSeparator /> */}
-            {/* <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup> */}
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              {/* <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

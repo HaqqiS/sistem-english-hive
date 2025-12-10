@@ -59,6 +59,7 @@ interface ScheduleItemRowProps {
   trigger: UseFormTrigger<FormSchemaType>;
   remove: (index: number) => void;
   firstItemKelasId: string | undefined; // ID Kelas dari parent
+  activeCabangId: string;
 }
 
 function ScheduleItemRow({
@@ -68,11 +69,17 @@ function ScheduleItemRow({
   trigger,
   remove,
   firstItemKelasId,
+  activeCabangId,
 }: ScheduleItemRowProps) {
+
   // --- DATA FETCHING ---
-  const { data: dataRuang, isLoading: isLoadingRuang } = useRuang();
+  const { data: dataRuang, isLoading: isLoadingRuang } = useRuang({
+    filterCabang: activeCabangId,
+  });
   const { dataJamTetap: dataJamSlot, isLoadingJamTetap: isLoadingJamSlot } =
-    useJam();
+    useJam({
+      filterCabang: activeCabangId,
+    });
   const { dataKelasAktif: dataKelas } = useKelas({
     enableQueryGetKelasAktif: true,
   });
@@ -273,7 +280,7 @@ function ScheduleItemRow({
                           <Label
                             htmlFor={`slot-${index}-${slot.id}`}
                             className="hover:bg-accent has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 flex cursor-pointer items-center space-x-3 rounded-md border p-3 transition-all"
-                            // className="hover:bg-accent flex cursor-pointer items-center space-y-0 space-x-3 rounded-md border p-3"
+                          // className="hover:bg-accent flex cursor-pointer items-center space-y-0 space-x-3 rounded-md border p-3"
                           >
                             <FormControl>
                               <RadioGroupItem
@@ -452,6 +459,7 @@ export default function JadwalKelasForm({
             trigger={trigger}
             remove={remove}
             firstItemKelasId={firstItemKelasId}
+            activeCabangId={activeCabangId}
           />
         ))}
       </div>

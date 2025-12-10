@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Album,
   AlertCircle,
   ArrowRight,
   CalendarClock,
@@ -205,7 +206,7 @@ export default function KelasTab() {
                 className={cn(
                   "h-4 w-4",
                   (isLoadingKelasCount || isRefetchingKelasCount) &&
-                    "animate-spin",
+                  "animate-spin",
                 )}
               />
             </Button>
@@ -255,6 +256,12 @@ export default function KelasTab() {
                               <CalendarDays className="text-primary h-3.5 w-3.5" />
                               <span>{jadwalHari}</span>
                             </div>
+                            {kelas.deskripsi && (
+                              <div className="bg-muted/50 flex items-center gap-1.5 rounded-md px-2.5 py-1">
+                                <Album className="text-primary h-3.5 w-3.5" />
+                                <span>{kelas.deskripsi}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -281,35 +288,38 @@ export default function KelasTab() {
                     </AccordionTrigger>
 
                     <AccordionContent className="bg-muted/5 border-t px-6 py-5">
-                      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Info Harga */}
-                        <div className="space-y-1.5">
-                          <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                            Harga Kelas
-                          </p>
-                          <div className="text-foreground flex items-center gap-2 text-sm font-semibold">
-                            {toRupiah(kelas.hargaKelas)}
-                            <span className="text-muted-foreground text-xs font-normal">
-                              / Sesi
-                            </span>
-                          </div>
-                        </div>
+                        <div className="gap-4 justify-between flex ">
 
-                        <div className="space-y-1.5">
-                          <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                            Sesi Pertemuan Terakhir
-                          </p>
-                          <p className="text-sm">
-                            {lastSession ? (
-                              <span className="text-foreground font-medium">
-                                {formatToWITA(lastSession)}
+                          <div className="space-y-1.5">
+                            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                              Harga Kelas
+                            </p>
+                            <div className="text-foreground flex items-center gap-2 text-sm font-semibold">
+                              {toRupiah(kelas.hargaKelas)}
+                              <span className="text-muted-foreground text-xs font-normal">
+                                / Sesi
                               </span>
-                            ) : (
-                              <span className="text-muted-foreground italic">
-                                Belum ada sesi
-                              </span>
-                            )}
-                          </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                              Sesi Pertemuan Terakhir
+                            </p>
+                            <p className="text-sm">
+                              {lastSession ? (
+                                <span className="text-foreground font-medium">
+                                  {formatToWITA(lastSession)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground italic">
+                                  Belum ada sesi
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         </div>
 
                         {/* Tombol Aksi */}

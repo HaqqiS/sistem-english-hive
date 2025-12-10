@@ -13,14 +13,16 @@ import {
   type TypeClientJamTetapSchema,
 } from "@/types/jam.type";
 import { useJam } from "@/hooks/useJam";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function TambahJamTetap() {
+  const { activeCabangId } = useGlobalCabangStore()
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<TypeClientJamTetapSchema>({
     resolver: zodResolver(clientJamSchema),
     defaultValues: {
-      cabangId: "",
+      cabangId: activeCabangId,
       namaSlot: "",
       jamMulai: "",
       jamSelesai: "",

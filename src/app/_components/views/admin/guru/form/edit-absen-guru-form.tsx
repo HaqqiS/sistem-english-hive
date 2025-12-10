@@ -18,14 +18,18 @@ import { useUser } from "@/hooks/useUser";
 import { type TypeUpdateAbsensiGuruSchema } from "@/types/absenGuru.type";
 import { useFormContext } from "react-hook-form";
 import { StatusAbsenGuru } from "@prisma/client";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 interface AbsenGuruFormProps {
   onSubmit: (data: TypeUpdateAbsensiGuruSchema) => void;
 }
 
 export default function AbsenGuruForm({ onSubmit }: AbsenGuruFormProps) {
+  const { activeCabangId } = useGlobalCabangStore();
   const form = useFormContext<TypeUpdateAbsensiGuruSchema>();
-  const { data: dataUser, isLoading } = useUser();
+  const { data: dataUser, isLoading } = useUser(
+    { filterCabang: activeCabangId }
+  );
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

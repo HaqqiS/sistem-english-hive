@@ -26,23 +26,14 @@ export default function EditMuridDetailKelas() {
         }
       : undefined,
     defaultValues: {
-      muridId: selectedPendaftaran?.muridId ?? "",
-      kelasId: selectedPendaftaran?.kelasId ?? "",
+      muridId: selectedPendaftaran?.muridId,
+      kelasId: selectedPendaftaran?.kelasId,
       tanggalMulai: selectedPendaftaran?.tanggalMulai ?? "",
       isAktif: selectedPendaftaran?.isAktif ?? false,
     },
   });
 
-  // useEffect(() => {
-  //   if (selectedPendaftaran) {
-  //     form.reset({
-  //       muridId: selectedPendaftaran.muridId,
-  //       kelasId: selectedPendaftaran.kelasId,
-  //       tanggalMulai: selectedPendaftaran.tanggalMulai,
-  //       isAktif: selectedPendaftaran.isAktif,
-  //     });
-  //   }
-  // }, [selectedPendaftaran, form]);
+  console.log("DATAMURID edit:", selectedPendaftaran);
 
   const isOpen = isDrawerOpen("edit");
 

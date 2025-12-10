@@ -40,9 +40,11 @@ import {
 import { downloadCSV } from "@/utils/exportUtils";
 import { toast } from "sonner";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function DetailGuruClient() {
   const { guruId } = useParams<{ guruId: string }>();
+  const { activeCabangId } = useGlobalCabangStore();
   const [open, setOpen] = useState(false);
 
   // State untuk menyimpan bulan gaji yang dipilih (misal: November 2025)
@@ -58,7 +60,9 @@ export default function DetailGuruClient() {
   }, [selectedMonthYYYYMM]);
 
   // 1. Query untuk mendapatkan nama guru
-  const { data: dataGuru, isLoading: isLoadingGuru } = useUser();
+  const { data: dataGuru, isLoading: isLoadingGuru } = useUser({
+    filterCabang: activeCabangId,
+  });
 
   // 2. Query history (Backend sudah handle filter tgl 26-25)
   const {
@@ -69,6 +73,7 @@ export default function DetailGuruClient() {
     refetchHistory,
     fetchHistoryExport,
   } = useAbsenGuru({
+    filterCabang: activeCabangId,
     guruId,
     month: selectedMonthYYYYMM,
     enableQuery: !!guruId && !!month,

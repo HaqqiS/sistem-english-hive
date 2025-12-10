@@ -20,6 +20,7 @@ import {
 import type { TypeClientTambahMuridSchema } from "@/types/pendaftaranKelas.type";
 import { useFormContext } from "react-hook-form";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 // import {
 //   Popover,
 //   PopoverContent,
@@ -45,11 +46,13 @@ interface PendaftaranMuridFormProps {
 export default function PendaftaranMuridForm({
   onSubmit,
 }: PendaftaranMuridFormProps) {
+  const { activeCabangId } = useGlobalCabangStore();
   // const [open, setOpen] = useState(false);
 
   const form = useFormContext<TypeClientTambahMuridSchema>();
 
   const { dataMuridNotRegistered } = useMurid({
+    filterCabang: activeCabangId,
     enableNotRegisteredQuery: true,
   });
 

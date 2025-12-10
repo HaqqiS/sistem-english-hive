@@ -1,10 +1,11 @@
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma, } from "@prisma/client";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { registerGuruFormSchema } from "@/types/user.type";
 import z from "zod";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import { getRestrictedCabangId } from "@/server/utils/permission";
+import { UserRole } from "@/server/auth/type";
 
 export const userRouter = createTRPCRouter({
   getAllGuruSimple: protectedProcedure
@@ -51,9 +52,8 @@ export const userRouter = createTRPCRouter({
         role: UserRole.GURU,
       };
 
-      if (filterCabangId) {
-        whereClause.cabangId = filterCabangId;
-      }
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
+
       const gurus = await db.user.findMany({
         where: whereClause,
         select: {

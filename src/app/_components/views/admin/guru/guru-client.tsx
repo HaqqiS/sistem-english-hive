@@ -39,7 +39,7 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function GuruClient() {
   // STATES
-  const { activeCabangId } = useGlobalCabangStore()
+  const { activeCabangId } = useGlobalCabangStore();
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -112,6 +112,7 @@ export default function GuruClient() {
 
   const { dataComplete: dataGuru, mutations: mutationsGuru } = useUser({
     filterCabang: activeCabangId,
+    enableQuery: true,
     // initialDataGuruComplete: initialDataGuru,
     onSuccessDelete() {
       setDeleteGuruDialogOpen(false);

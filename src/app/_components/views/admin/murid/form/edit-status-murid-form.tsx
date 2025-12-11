@@ -44,10 +44,14 @@ export default function EditStatusMuridForm({
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value={StatusMurid.AKTIF}>Aktif</SelectItem>
-                <SelectItem value={StatusMurid.NON_AKTIF}>Non-Aktif</SelectItem>
-                <SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
-                <SelectItem value={StatusMurid.LULUS}>Lulus</SelectItem>
+                {Object.values(StatusMurid).map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status
+                      .replaceAll("_", " ")
+                      .toLowerCase()
+                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />

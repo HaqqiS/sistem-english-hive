@@ -9,6 +9,7 @@ import type {
   TypeKelasWithSesiPertemuanCount,
 } from "@/types/kelas.type";
 import { skipToken } from "@tanstack/react-query";
+import type { TipeKelas } from "@prisma/client";
 
 interface UseKelasOptions {
   // Query options
@@ -32,6 +33,7 @@ interface UseKelasOptions {
   kelasId?: string;
   cohortId?: string;
   filterCabang?: string;
+  tipeKelas?: TipeKelas | "ALL";
 }
 
 export function useKelas(options?: UseKelasOptions) {
@@ -41,6 +43,8 @@ export function useKelas(options?: UseKelasOptions) {
   const cohortId = options?.cohortId;
   const cabangIdPayload =
     options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
+  const tipeKelasPayload =
+    options?.tipeKelas !== "ALL" ? options?.tipeKelas : undefined;
   // ========== QUERIES ==========
 
   const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(
@@ -52,7 +56,7 @@ export function useKelas(options?: UseKelasOptions) {
   );
 
   const kelasCountQuery = api.kelas.getKelasAndCount.useQuery(
-    { cabangId: cabangIdPayload },
+    { cabangId: cabangIdPayload, tipeKelas: tipeKelasPayload },
     {
       enabled: options?.enableQueryGetKelasCount ?? false,
       initialData: options?.initialDataKelasCount,

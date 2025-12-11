@@ -108,9 +108,9 @@ export default function ScheduleGrid() {
   return (
     <div className="flex h-full flex-col gap-4">
       {/* --- FILTERS --- */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex gap-4 lg:flex-row lg:items-center lg:justify-between">
         {/* 2. FILTER CABANG & REFRESH */}
-        <div className="flex w-full items-center gap-2 lg:w-auto">
+        <div className="flex items-center gap-2 lg:w-auto">
           <Button
             variant="outline"
             size="icon"

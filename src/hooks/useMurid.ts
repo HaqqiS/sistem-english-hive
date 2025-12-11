@@ -27,6 +27,7 @@ interface useMuridOptions {
   searchFilter?: string;
   filterStatus?: StatusMurid | "ALL";
   filterCabang?: string;
+  tipeProgram?: "REGULER" | "PRIVAT" | "ALL";
 
   // Mutation callbacks
   onSuccessCreate?: () => void;
@@ -51,6 +52,10 @@ export function useMurid(options?: useMuridOptions) {
   const pageIndex = options?.pagination?.pageIndex ?? 0;
   const pageSize = options?.pagination?.pageSize ?? 10;
   const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
+  const tipeProgram =
+    options?.tipeProgram && options?.tipeProgram !== "ALL"
+      ? options?.tipeProgram
+      : undefined;
   const cabangIdPayload =
     options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
@@ -90,6 +95,7 @@ export function useMurid(options?: useMuridOptions) {
       search: options?.searchFilter,
       status:
         options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
+      tipeProgram: tipeProgram,
       cabangId: cabangIdPayload,
     },
     {

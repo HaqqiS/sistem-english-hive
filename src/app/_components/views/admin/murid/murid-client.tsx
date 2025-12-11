@@ -53,9 +53,12 @@ export default function MuridClient() {
     namaLengkap: string;
   } | null>(null);
 
+  const [statusFilter, setStatusFilter] = useState<StatusMurid | "ALL">("ALL");
+  const [tipeProgramFilter, setTipeProgramFilter] = useState<
+    "REGULER" | "PRIVAT" | "ALL"
+  >("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusMurid | "ALL">("ALL");
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -92,6 +95,7 @@ export default function MuridClient() {
     pagination: paginationAllMurid,
     searchFilter: debouncedSearch,
     filterStatus: statusFilter,
+    tipeProgram: tipeProgramFilter,
     filterCabang: activeCabangId,
     onSuccessDelete: () => {
       setDeleteMuridDialogOpen(false);
@@ -197,7 +201,7 @@ export default function MuridClient() {
                       "h-4 w-4",
                       (isLoadingNotRegisteredPaginated ||
                         isFetchingNotRegisteredPaginated) &&
-                      "animate-spin",
+                        "animate-spin",
                     )}
                   />
                 </Button>
@@ -255,7 +259,7 @@ export default function MuridClient() {
                       "h-4 w-4",
                       (isLoadingAllMuridPaginated ||
                         isFetchingAllMuridPaginated) &&
-                      "animate-spin",
+                        "animate-spin",
                     )}
                   />
                 </Button>
@@ -288,6 +292,30 @@ export default function MuridClient() {
 
               {/* Filter Status */}
               <Select
+                value={tipeProgramFilter}
+                onValueChange={(val) => {
+                  setTipeProgramFilter(val as "REGULER" | "PRIVAT" | "ALL");
+                  setPaginationAllMurid((prev) => ({
+                    ...prev,
+                    pageIndex: 0,
+                  }));
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-50">
+                  <div className="text-muted-foreground flex items-center gap-2">
+                    <Filter className="h-3.5 w-3.5" />
+                    <SelectValue placeholder="Status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua Tipe Program</SelectItem>
+                  <SelectItem value="REGULER">Reguler</SelectItem>
+                  <SelectItem value="PRIVAT">Privat</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filter Status */}
+              <Select
                 value={statusFilter}
                 onValueChange={(val) => {
                   setStatusFilter(val as StatusMurid | "ALL");
@@ -305,12 +333,14 @@ export default function MuridClient() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Semua Status</SelectItem>
-                  <SelectItem value={StatusMurid.AKTIF}>Aktif</SelectItem>
-                  <SelectItem value={StatusMurid.NON_AKTIF}>
-                    Non-Aktif
-                  </SelectItem>
-                  <SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
-                  <SelectItem value={StatusMurid.LULUS}>Lulus</SelectItem>
+                  {Object.values(StatusMurid).map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status
+                        .replaceAll("_", " ")
+                        .toLowerCase()
+                        .replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

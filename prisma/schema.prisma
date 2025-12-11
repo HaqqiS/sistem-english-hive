@@ -199,6 +199,8 @@ enum StatusMurid {
     NON_AKTIF // sudah tidak aktif(tidak kursus lagi)
     LULUS // sudah lulus semua kelas
     TRIAL //murid trial
+    PENDING //baru daftar, belum mulai kelas
+    PLACEMENT_TEST //sedang dalam tahap placement test
 }
 
 model Murid {

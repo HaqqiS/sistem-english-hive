@@ -20,12 +20,14 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, CalendarDays } from "lucide-react";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
+import Link from "next/link";
 
 // Data Jadwal Statis
 const scheduleData = {
   Gatsu: {
-    address: "Jl. Gatot Subroto No. 123, Denpasar",
-    mapLink: "https://maps.google.com/?q=English+Hive+Gatsu",
+    address:
+      "Jl. Gunung Catur, Padang Sambian Kaja, Kec. Denpasar Barat, Kota Denpasar",
+    mapLink: "https://maps.app.goo.gl/gei9mTQj4ao2rpxw6",
     schedules: [
       {
         days: "Senin & Kamis",
@@ -57,8 +59,9 @@ const scheduleData = {
     ],
   },
   Mambal: {
-    address: "Jl. Padang Luwih No. 88, Mambal",
-    mapLink: "https://maps.google.com/?q=English+Hive+Mambal",
+    address:
+      "Jl. Raya Mambal, Ubud, Br. Samu No.8D, Mekar Bhuwana, Kec.Abiansemal, Kabupaten Badung",
+    mapLink: "https://maps.app.goo.gl/ixpBYs5gMP2EW5N48",
     schedules: [
       {
         days: "Senin & Kamis",
@@ -160,10 +163,17 @@ export default function Schedule() {
                       <CardTitle className="flex items-center justify-center gap-2 text-2xl sm:justify-start">
                         Cabang {branchName}
                       </CardTitle>
-                      <CardDescription className="mt-2 flex items-center justify-center gap-2 sm:justify-start">
-                        <MapPin className="text-muted-foreground h-4 w-4" />
-                        {data.address}
-                      </CardDescription>
+                      <Link
+                        href={`${data.mapLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        <CardDescription className="mt-2 flex items-start justify-center gap-2 sm:justify-start">
+                          <MapPin className="text-muted-foreground h-5 w-5" />
+                          {data.address}
+                        </CardDescription>
+                      </Link>
                     </div>
                   </div>
                 </CardHeader>

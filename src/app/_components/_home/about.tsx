@@ -31,7 +31,7 @@ export default function About() {
               className="rounded-2xl object-cover shadow-xl"
             />
             <div className="bg-primary text-primary-foreground absolute -right-4 -bottom-4 animate-bounce rounded-lg px-6 py-3 text-sm font-semibold shadow-lg">
-              5+ Tahun Pengalaman
+              {stats[3]?.number} Tahun Pengalaman
             </div>
           </ScrollAnimation>
 

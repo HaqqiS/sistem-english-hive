@@ -49,6 +49,14 @@ import { cn } from "@/lib/utils";
 import { downloadCSV } from "@/utils/exportUtils";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TipeKelas } from "@prisma/client";
 
 export default function KelasTab() {
   const { activeCabangId } = useGlobalCabangStore();
@@ -56,6 +64,10 @@ export default function KelasTab() {
   const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
   const [selectedKelasToDelete, setSelectedKelasToDelete] =
     useState<TypeKelasWithSesiPertemuanCount | null>(null);
+
+  const [selectedTipeKelas, setSelectedTipeKelas] = useState<TipeKelas | "ALL">(
+    "ALL",
+  );
 
   // 2. Zustand Store Actions
   const { openDrawer: openKelasDrawer } = useKelasStore();
@@ -72,6 +84,7 @@ export default function KelasTab() {
     mutations: kelasMutations,
   } = useKelas({
     filterCabang: activeCabangId,
+    tipeKelas: selectedTipeKelas,
     enableQueryGetKelasCount: true,
 
     onSuccessDelete: () => {
@@ -206,7 +219,7 @@ export default function KelasTab() {
                 className={cn(
                   "h-4 w-4",
                   (isLoadingKelasCount || isRefetchingKelasCount) &&
-                  "animate-spin",
+                    "animate-spin",
                 )}
               />
             </Button>
@@ -219,6 +232,30 @@ export default function KelasTab() {
           </div>
 
           <TambahProgramKelas />
+        </div>
+
+        <div className="w-full md:max-w-xs">
+          <Select
+            value={selectedTipeKelas}
+            onValueChange={(v) => setSelectedTipeKelas(v as TipeKelas | "ALL")}
+          >
+            <SelectTrigger className="bg-background w-full">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="text-muted-foreground h-4 w-4" />
+                <span className="font-medium">
+                  <SelectValue />
+                </span>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua Tipe Kelas</SelectItem>
+              {Object.values(TipeKelas).map((tipe) => (
+                <SelectItem key={tipe} value={tipe}>
+                  {tipe.charAt(0).toUpperCase() + tipe.slice(1).toLowerCase()}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </header>
 
@@ -290,8 +327,7 @@ export default function KelasTab() {
                     <AccordionContent className="bg-muted/5 border-t px-6 py-5">
                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Info Harga */}
-                        <div className="gap-4 justify-between flex ">
-
+                        <div className="flex justify-between gap-4">
                           <div className="space-y-1.5">
                             <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                               Harga Kelas

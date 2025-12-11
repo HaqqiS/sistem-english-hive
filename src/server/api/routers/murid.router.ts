@@ -15,14 +15,6 @@ export const muridRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       const { db } = ctx;
 
-      // const finalCabangId = getRestrictedCabangId(session, input.cabangId);
-      // if (!finalCabangId) {
-      //   throw new TRPCError({
-      //     code: "BAD_REQUEST",
-      //     message: "Cabang ID diperlukan untuk pendaftaran.",
-      //   });
-      // }
-
       try {
         const murid = await db.murid.create({
           data: {
@@ -84,11 +76,12 @@ export const muridRouter = createTRPCRouter({
         search: z.string().optional(),
         status: z.nativeEnum(StatusMurid).optional(),
         cabangId: z.string().optional(),
+        tipeProgram: z.enum(["REGULER", "PRIVAT", "ALL"]).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
-      const { pageIndex, pageSize, search, status } = input;
+      const { pageIndex, pageSize, search, status, tipeProgram } = input;
 
       const filterCabangId = getRestrictedCabangId(session, input.cabangId);
 
@@ -102,6 +95,19 @@ export const muridRouter = createTRPCRouter({
       }
       if (status) whereClause.statusMurid = status;
       if (filterCabangId) whereClause.cabangId = filterCabangId;
+      if (tipeProgram && tipeProgram !== undefined) {
+        if (tipeProgram === "REGULER") {
+          whereClause.pilihanProgram = {
+            contains: "reguler",
+            mode: "insensitive",
+          };
+        } else if (tipeProgram === "PRIVAT") {
+          whereClause.pilihanProgram = {
+            contains: "privat",
+            mode: "insensitive",
+          };
+        }
+      }
 
       // Gunakan transaction untuk performa (count + findMany paralel)
       const [total, data] = await db.$transaction([

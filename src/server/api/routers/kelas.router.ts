@@ -4,7 +4,12 @@ import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import dayjs from "@/utils/dateUtils";
-import { Prisma, StatusMurid, StatusPembayaran } from "@prisma/client";
+import {
+  Prisma,
+  StatusMurid,
+  StatusPembayaran,
+  TipeKelas,
+} from "@prisma/client";
 import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const kelasRouter = createTRPCRouter({
@@ -62,16 +67,23 @@ export const kelasRouter = createTRPCRouter({
     }),
 
   getKelasAndCount: protectedProcedure
-    .input(z.object({ cabangId: z.string().optional() }).optional())
+    .input(
+      z
+        .object({
+          cabangId: z.string().optional(),
+          tipeKelas: z.nativeEnum(TipeKelas).optional(),
+        })
+        .optional(),
+    )
     .query(async ({ ctx, input }) => {
       const { db, session } = ctx;
 
       const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
 
       const whereClause: Prisma.KelasWhereInput = {};
-      if (filterCabangId) {
-        whereClause.cabangId = filterCabangId;
-      }
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
+      if (input?.tipeKelas) whereClause.tipe = input.tipeKelas as TipeKelas;
+
       const allKelasData = await db.kelas.findMany({
         where: whereClause,
         // distinct: ["cohortId"],
@@ -168,7 +180,7 @@ export const kelasRouter = createTRPCRouter({
 
       const sampleKelas = await db.kelas.findFirst({
         where: { cohortId: input.cohortId },
-        select: { cabangId: true }
+        select: { cabangId: true },
       });
 
       if (!sampleKelas) {
@@ -179,10 +191,9 @@ export const kelasRouter = createTRPCRouter({
       if (allowedCabangId && sampleKelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Anda tidak berhak melihat riwayat kelas dari cabang lain."
+          message: "Anda tidak berhak melihat riwayat kelas dari cabang lain.",
         });
       }
-
 
       const history = await ctx.db.kelas.findMany({
         where: { cohortId: input.cohortId },

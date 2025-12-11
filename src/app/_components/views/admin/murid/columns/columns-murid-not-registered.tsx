@@ -26,6 +26,7 @@ import {
 import type { TypeMuridNotRegistered } from "@/types/murid.type";
 import { toast } from "sonner";
 import Link from "next/link";
+import { getStatusColorBadge } from "./columns-murid";
 
 interface ColumnsConfig {
   onEditStatusClick: (item: TypeMuridNotRegistered) => void;
@@ -188,17 +189,31 @@ export const columns = ({
   // 5. Status
   {
     accessorKey: "statusMurid",
-    header: "Status",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="pl-0 hover:bg-transparent"
+      >
+        Status
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
     cell: ({ row }) => {
       const status = row.original.statusMurid;
-      // Mapping warna badge berdasarkan status (opsional, sesuaikan dengan enum Anda)
-      const variant = status === "AKTIF" ? "default" : "destructive";
-
       return (
-        <Badge variant={variant} className="capitalize">
-          {status.toLowerCase().replace("_", " ")}
+        <Badge className={`${getStatusColorBadge(status)} capitalize`}>
+          {status.replaceAll("_", " ").toLowerCase()}
         </Badge>
       );
+    },
+    filterFn: (row, id, value: unknown) => {
+      const cell = row.getValue(id);
+      if (Array.isArray(value)) {
+        const stringValues = value.map((v) => String(v));
+        return stringValues.includes(String(cell));
+      }
+      return String(cell) === String(value);
     },
   },
 

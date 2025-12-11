@@ -52,10 +52,10 @@ const jamRefine = <T extends { jamMulai: string; jamSelesai: string }>(
   const durasiMenit = tSelesai.diff(tMulai, "minute");
   // console.log("durasi menit: ", durasiMenit);
 
-  if (durasiMenit !== 90) {
+  if (durasiMenit !== 60 && durasiMenit !== 90) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: `Durasi harus 90 menit. (Saat ini: ${durasiMenit} menit)`,
+      message: `Durasi harus 60 atau 90 menit. (Saat ini: ${durasiMenit} menit)`,
       path: ["jamSelesai"],
     });
     return;

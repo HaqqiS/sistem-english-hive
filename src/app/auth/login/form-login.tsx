@@ -12,16 +12,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { loginFormSchema, type LoginFormSchema } from "@/types/user.type";
 import { useForm } from "react-hook-form";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import InputPassword from "@/app/_components/shared/input-password";
 import { useState } from "react";
+import { UserRole } from "@/server/auth/type";
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl =
+    rawCallbackUrl &&
+    rawCallbackUrl !== "/" &&
+    !rawCallbackUrl.includes("/auth")
+      ? rawCallbackUrl
+      : null;
   const [isPending, setIsPending] = useState(false);
 
   // HOOK FORMS
@@ -47,26 +54,34 @@ export default function LoginForm() {
         email: data.email,
         password: data.password,
         redirect: false,
-        callbackUrl,
       });
 
       if (result?.error) {
         throw new Error("Email atau password yang Anda masukkan salah.");
       }
-
-      toast.success("Login berhasil! Mengarahkan ke dashboard...", {
-        id: toastId,
-        duration: 3000,
-      });
-
       toast.success("Login berhasil! Mengarahkan ke dashboard...", {
         id: toastId,
         duration: 2000,
       });
 
+      const session = await getSession();
+      const role = session?.user?.role;
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      router.replace(result?.url ?? callbackUrl);
+      let targetUrl = "/";
+
+      if (callbackUrl) {
+        targetUrl = callbackUrl;
+      } else {
+        // B. Jika login normal, arahkan sesuai Role
+        if (role === UserRole.MANAGER || role === UserRole.ADMIN) {
+          targetUrl = "/admin";
+        } else if (role === UserRole.GURU) {
+          targetUrl = "/guru";
+        }
+      }
+      router.replace(targetUrl);
+      router.refresh();
     } catch (error) {
       if (toastId) {
         toast.dismiss(toastId);
@@ -141,12 +156,6 @@ export default function LoginForm() {
             </Button>
           </div>
         </div>
-        {/* <div className="mt-4 text-center text-sm">
-          Belum punya akun?{" "}
-          <Link href="/auth/register" className="underline underline-offset-4">
-            Daftar
-          </Link>
-        </div> */}
       </form>
     </Form>
   );

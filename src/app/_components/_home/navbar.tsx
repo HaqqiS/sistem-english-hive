@@ -118,7 +118,10 @@ export default function Navbar() {
               <Button variant="ghost" size="sm" asChild className="text-base">
                 <Link
                   href={
-                    session?.user.role === UserRole.ADMIN ? "/admin" : "/guru"
+                    session?.user.role === UserRole.ADMIN ||
+                    session?.user.role === UserRole.MANAGER
+                      ? "/admin"
+                      : "/guru"
                   }
                 >
                   Dashboard
@@ -216,7 +219,16 @@ export default function Navbar() {
                   asChild
                   onClick={() => setIsOpen(false)}
                 >
-                  <Link href="/guru">Ke Dashboard</Link>
+                  <Link
+                    href={
+                      session?.user.role === UserRole.ADMIN ||
+                      session?.user.role === UserRole.MANAGER
+                        ? "/admin"
+                        : "/guru"
+                    }
+                  >
+                    Ke Dashboard
+                  </Link>
                 </Button>
               )}
             </motion.div>

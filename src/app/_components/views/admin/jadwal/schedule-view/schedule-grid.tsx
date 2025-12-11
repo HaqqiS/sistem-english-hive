@@ -53,6 +53,7 @@ export default function ScheduleGrid() {
     isErrorMatrix: isError,
     refetchMatrix: refetch,
     isRefetchingMatrix: isRefetching,
+    errorMatrix: error,
     mutations,
   } = useJadwalKelas({
     enableQueryMatrix: true,
@@ -209,7 +210,9 @@ export default function ScheduleGrid() {
           <Alert variant="destructive" className="m-4">
             <Info className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
-            <AlertDescription>Gagal memuat data jadwal.</AlertDescription>
+            <AlertDescription>
+              {error?.message ?? "Gagal memuat data jadwal. Silakan coba lagi."}
+            </AlertDescription>
           </Alert>
         ) : dataMatrix.rooms.length === 0 ? (
           <div className="text-muted-foreground bg-muted/5 flex h-[200px] items-center justify-center">

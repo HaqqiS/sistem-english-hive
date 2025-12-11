@@ -13,21 +13,21 @@ export const muridRouter = createTRPCRouter({
   registerMurid: publicProcedure
     .input(RegisterMuridSchema)
     .mutation(async ({ input, ctx }) => {
-      const { db, session } = ctx;
+      const { db } = ctx;
 
-      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
-      if (!finalCabangId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Cabang ID diperlukan untuk pendaftaran.",
-        });
-      }
+      // const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+      // if (!finalCabangId) {
+      //   throw new TRPCError({
+      //     code: "BAD_REQUEST",
+      //     message: "Cabang ID diperlukan untuk pendaftaran.",
+      //   });
+      // }
 
       try {
         const murid = await db.murid.create({
           data: {
             ...input,
-            cabangId: finalCabangId,
+            cabangId: input.cabangId,
           },
         });
         return murid;

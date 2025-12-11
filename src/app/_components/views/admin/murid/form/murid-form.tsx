@@ -42,6 +42,9 @@ export default function MuridForm({
 }: MuridFormProps) {
   const form = useFormContext<TypeClientRegisterMuridSchema>();
   const session = useSession();
+  const isAuthorized =
+    session.data?.user?.role === UserRole.ADMIN ||
+    session.data?.user?.role === UserRole.MANAGER;
   const isAdmin = session.data?.user?.role === UserRole.ADMIN;
   const { dataList: dataCabang, isLoading: isLoadingCabang } = useCabang({
     enableQuery: false,
@@ -377,7 +380,7 @@ export default function MuridForm({
             )}
           />
 
-          {isAdmin && (
+          {isAuthorized && (
             <FormField
               control={form.control}
               name="deskripsi"

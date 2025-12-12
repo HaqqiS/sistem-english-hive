@@ -50,7 +50,6 @@ const jamRefine = <T extends { jamMulai: string; jamSelesai: string }>(
   }
 
   const durasiMenit = tSelesai.diff(tMulai, "minute");
-  // console.log("durasi menit: ", durasiMenit);
 
   if (durasiMenit !== 60 && durasiMenit !== 90) {
     ctx.addIssue({

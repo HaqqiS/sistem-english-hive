@@ -33,15 +33,15 @@ export default function EditPendaftaranKelasForm({
   const { activeCabangId } = useGlobalCabangStore();
   const form = useFormContext<TypeClientUpdatePendaftaranKelasSchema>();
 
-  const { dataAllMurid } = useMurid({
+  const { dataAllMurid, isLoadingAllMurid: isLoadingMurid } = useMurid({
     filterCabang: activeCabangId,
     enableQuery: true,
   });
-  console.log("Data All Murid:", dataAllMurid);
-  const { dataKelasAktif: dataKelas } = useKelas({
-    filterCabang: activeCabangId,
-    enableQueryGetKelasAktif: true,
-  });
+  const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
+    useKelas({
+      filterCabang: activeCabangId,
+      enableQueryGetKelasAktif: true,
+    });
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -53,7 +53,11 @@ export default function EditPendaftaranKelasForm({
           <FormItem>
             <FormLabel>Murid</FormLabel>
             <FormControl>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                disabled={isLoadingMurid}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih Murid" />
                 </SelectTrigger>
@@ -82,7 +86,11 @@ export default function EditPendaftaranKelasForm({
           <FormItem>
             <FormLabel>Program Kelas</FormLabel>
             <FormControl>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                disabled={isLoadingKelas}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih Program Kelas" />
                 </SelectTrigger>

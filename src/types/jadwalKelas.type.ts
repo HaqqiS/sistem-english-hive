@@ -72,7 +72,7 @@ const customJadwalSchema = baseJadwalSchema
       path: ["jamSelesai"],
     },
   )
-  // Validasi 2: Pastikan durasi maksimal 90 menit
+  // Validasi 2: Pastikan durasi maksimal 60/90 menit
   .refine(
     (data) => {
       const tMulai = dayjs(data.jamMulai, "HH:mm");
@@ -80,7 +80,7 @@ const customJadwalSchema = baseJadwalSchema
       if (!tMulai.isValid() || !tSelesai.isValid()) return true;
 
       const durasiMenit = tSelesai.diff(tMulai, "minute");
-      return durasiMenit === 90; // Durasi maksimal 90 menit
+      return durasiMenit === 60 || durasiMenit === 90; // Durasi maksimal 60 atau 90 menit
     },
     (data) => {
       // Pesan error dinamis
@@ -91,7 +91,7 @@ const customJadwalSchema = baseJadwalSchema
           ? tSelesai.diff(tMulai, "minute")
           : "N/A";
       return {
-        message: `Durasi kelas privat tidak boleh lebih dari 90 menit. (Saat ini: ${durasiMenit} menit)`,
+        message: `Durasi kelas privat harus 60 atau 90 menit. (Saat ini: ${durasiMenit} menit)`,
         path: ["jamSelesai"],
       };
     },
@@ -114,7 +114,14 @@ export const serverCreateBulkJadwalSchema = z
   .array(serverCreateJadwalSchema)
   .min(1, "Minimal satu jadwal harus diisi")
   .max(2, "Maksimal dua jadwal sekaligus");
-
 export type TypeServerCreateBulkJadwalSchema = z.infer<
   typeof serverCreateBulkJadwalSchema
+>;
+
+export const serverUpdateJadwalSchema = z.intersection(
+  z.object({ id: z.string().cuid("ID Jadwal tidak valid") }),
+  serverCreateJadwalSchema,
+);
+export type TypeServerUpdateJadwalSchema = z.infer<
+  typeof serverUpdateJadwalSchema
 >;

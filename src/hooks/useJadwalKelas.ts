@@ -101,16 +101,16 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 
   // UPDATE
 
-  // const updateMutationCustom = api.jam.updateJamCustom.useMutation({
-  //   onSuccess: async () => {
-  //     await apiUtils.jam.getAllJamCustom.invalidate();
-  //     toast.success("Jam berhasil diupdate");
-  //     options?.onSuccessUpdate?.();
-  //   },
-  //   onError: (error) => {
-  //     toast.error(`Gagal mengupdate Jam: ${error.message}`);
-  //   },
-  // });
+  const updateMutation = api.jadwalKelas.update.useMutation({
+    onSuccess: async () => {
+      await invalidateJadwal();
+      await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
+      options?.onSuccessUpdate?.();
+    },
+    onError: (error) => {
+      toast.error(`Gagal mengupdate Jadwal: ${error.message}`);
+    },
+  });
 
   // DELETE
   const deleteMutationCustom = api.jadwalKelas.delete.useMutation({
@@ -153,11 +153,11 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
         mutateAsync: createMutation.mutateAsync,
         isPending: createMutation.isPending,
       },
-      // update: {
-      //   mutate: updateMutationCustom.mutate,
-      //   mutateAsync: updateMutationCustom.mutateAsync,
-      //   isPending: updateMutationCustom.isPending,
-      // },
+      update: {
+        mutate: updateMutation.mutate,
+        mutateAsync: updateMutation.mutateAsync,
+        isPending: updateMutation.isPending,
+      },
       delete: {
         mutate: deleteMutationCustom.mutate,
         mutateAsync: deleteMutationCustom.mutateAsync,

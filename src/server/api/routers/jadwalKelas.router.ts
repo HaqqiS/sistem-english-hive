@@ -1,5 +1,8 @@
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { serverCreateBulkJadwalSchema } from "@/types/jadwalKelas.type";
+import {
+  serverCreateBulkJadwalSchema,
+  serverUpdateJadwalSchema,
+} from "@/types/jadwalKelas.type";
 import { TRPCError } from "@trpc/server";
 import { Hari, Prisma } from "@prisma/client";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
@@ -46,27 +49,35 @@ export const jadwalKelasRouter = createTRPCRouter({
             },
             ...whereClause,
           },
-          select: {
-            id: true,
-            ruangId: true,
-            kelasId: true,
-            jamSlotTetap: {
-              select: { jamMulai: true, jamSelesai: true },
-            },
-            jamSlotCustom: {
-              select: { jamMulai: true, jamSelesai: true },
+
+          include: {
+            jamSlotTetap: true, // Mengambil full object (id, namaSlot, dll)
+            jamSlotCustom: true, // Mengambil full object
+            ruang: {
+              select: {
+                namaRuang: true,
+                cabang: { select: { namaCabang: true } },
+              },
             },
             kelas: {
               select: {
                 kodeKelas: true,
+                jenisKelas: true,
                 tipe: true,
-                // Optimasi: Ambil jumlah murid aktif saja
+                // Field tambahan yang berguna untuk logic frontend
+                level: true,
+                grup: true,
+                hargaKelas: true,
+                bulanTahunAjar: true,
+                cohortId: true,
+                cabangId: true,
+
+                // Count & History untuk tampilan Matrix
                 _count: {
                   select: {
                     pendaftaranKelases: { where: { isAktif: true } },
                   },
                 },
-                // Optimasi: Ambil guru aktif saja
                 historyGuruKelases: {
                   where: { statusGuru: "ACTIVE" },
                   take: 1,
@@ -94,6 +105,8 @@ export const jadwalKelasRouter = createTRPCRouter({
           jamMulai: jam?.jamMulai ?? "00:00",
           jamSelesai: jam?.jamSelesai ?? "00:00",
           jumlahMurid: s.kelas._count.pendaftaranKelases,
+
+          originalData: s,
         };
       });
 
@@ -507,6 +520,187 @@ export const jadwalKelasRouter = createTRPCRouter({
               code: "PRECONDITION_FAILED",
               message:
                 "Jadwal ini sudah memiliki riwayat Sesi Pertemuan dan tidak dapat dihapus.",
+            });
+          }
+        }
+        throw error;
+      }
+    }),
+
+  update: protectedProcedure
+    .input(serverUpdateJadwalSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const { id, kelasId, ruangId, hari, tipeJam } = input;
+
+      try {
+        const allowedCabangId = getRestrictedCabangId(session, null);
+
+        const existingJadwal = await db.jadwalKelas.findUnique({
+          where: { id },
+          include: { kelas: { select: { cabangId: true } } },
+        });
+
+        if (!existingJadwal) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Jadwal tidak ditemukan.",
+          });
+        }
+        if (
+          allowedCabangId &&
+          existingJadwal.kelas.cabangId !== allowedCabangId
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak berhak mengubah jadwal dari cabang lain.",
+          });
+        }
+
+        const [kelasBaru, ruangBaru] = await Promise.all([
+          db.kelas.findUnique({
+            where: { id: kelasId },
+            select: { cabangId: true, kodeKelas: true },
+          }),
+          db.ruang.findUnique({
+            where: { id: ruangId },
+            select: { cabangId: true, namaRuang: true },
+          }),
+        ]);
+
+        if (!kelasBaru || !ruangBaru) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Kelas atau Ruang tujuan tidak ditemukan.",
+          });
+        }
+
+        // Cek Konsistensi Cabang (Kelas & Ruang harus satu cabang)
+        if (kelasBaru.cabangId !== ruangBaru.cabangId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Konflik Data: Kelas ${kelasBaru.kodeKelas} dan Ruang ${ruangBaru.namaRuang} berbeda cabang.`,
+          });
+        }
+
+        if (allowedCabangId && kelasBaru.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak berhak memindahkan jadwal ke cabang lain.",
+          });
+        }
+
+        // 4. Siapkan Data Waktu (Jam Mulai & Selesai) untuk Cek Bentrok
+        let jamSlotCustomId: string | null = null;
+        let jamSlotTetapId: string | null = null;
+        let checkJamMulai = "";
+        let checkJamSelesai = "";
+
+        await db.$transaction(async (tx) => {
+          if (tipeJam === "CUSTOM") {
+            // --- Logic CUSTOM ---
+            // Input sudah divalidasi Zod (jamMulai & jamSelesai pasti ada)
+            const { jamMulai, jamSelesai } = input;
+
+            checkJamMulai = jamMulai;
+            checkJamSelesai = jamSelesai;
+
+            // Cari atau Buat JamSlotCustom
+            const existingJamCustom = await tx.jamSlotCustom.findFirst({
+              where: { jamMulai, jamSelesai },
+            });
+
+            if (existingJamCustom) {
+              jamSlotCustomId = existingJamCustom.id;
+            } else {
+              const newJamCustom = await tx.jamSlotCustom.create({
+                data: { jamMulai, jamSelesai },
+              });
+              jamSlotCustomId = newJamCustom.id;
+            }
+          } else {
+            // --- Logic TETAP ---
+            jamSlotTetapId = input.jamSlotTetapId;
+
+            const slot = await tx.jamSlotTetap.findUnique({
+              where: { id: jamSlotTetapId },
+            });
+
+            if (!slot) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Slot Jam Tetap tidak ditemukan.",
+              });
+            }
+
+            // Validasi Cabang Slot (Harus sama dengan Ruang)
+            if (slot.cabangId !== ruangBaru.cabangId) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Slot Jam Tetap tidak valid untuk cabang ini.",
+              });
+            }
+
+            checkJamMulai = slot.jamMulai;
+            checkJamSelesai = slot.jamSelesai;
+          }
+
+          const conflictingSchedule = await tx.jadwalKelas.findFirst({
+            where: {
+              hari: hari,
+              ruangId: ruangId,
+              id: { not: id }, // PENTING: Jangan cek jadwal diri sendiri
+              OR: [
+                {
+                  jamSlotTetap: {
+                    jamMulai: { lt: checkJamSelesai },
+                    jamSelesai: { gt: checkJamMulai },
+                  },
+                },
+                {
+                  jamSlotCustom: {
+                    jamMulai: { lt: checkJamSelesai },
+                    jamSelesai: { gt: checkJamMulai },
+                  },
+                },
+              ],
+            },
+            include: {
+              kelas: { select: { kodeKelas: true } },
+            },
+          });
+
+          if (conflictingSchedule) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: `Bentrok! Ruang ini sudah dipakai kelas ${conflictingSchedule.kelas.kodeKelas} pada jam tersebut.`,
+            });
+          }
+
+          await tx.jadwalKelas.update({
+            where: { id },
+            data: {
+              kelasId,
+              ruangId,
+              hari,
+              // Update relasi jam (Set satu, null-kan yang lain)
+              jamSlotTetapId: jamSlotTetapId, // null jika tipeJam = CUSTOM
+              jamSlotCustomId: jamSlotCustomId, // null jika tipeJam = TETAP
+            },
+          });
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2003") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Referensi data tidak valid (Kelas/Ruang/Jam).",
+            });
+          }
+          if (error.code === "P2025") {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Jadwal tidak ditemukan atau sudah dihapus.",
             });
           }
         }

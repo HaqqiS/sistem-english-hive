@@ -25,7 +25,7 @@ export default function About() {
           >
             <div className="bg-primary/10 absolute inset-0 -z-10 scale-105 rotate-3 rounded-2xl" />
             <Image
-              src="/team-photo-classroom-environment-english-learning.jpg"
+              src="/about_team.webp"
               alt="English Hive Team"
               fill
               className="rounded-2xl object-cover shadow-xl"

@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Hari } from "@prisma/client";
-import { useCabang } from "@/hooks/useCabang";
 import {
   Select,
   SelectContent,
@@ -23,6 +22,8 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import dayjs from "dayjs";
 import { useIsMobile } from "@/hooks/use-mobile"; // Import hook
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
+import EditJadwalKelas from "../edit-jadwal";
 
 export default function ScheduleGrid() {
   // --- STATE ---
@@ -33,7 +34,8 @@ export default function ScheduleGrid() {
       ? (dayjs().format("dddd").toUpperCase() as Hari)
       : Hari.SENIN,
   );
-  const [selectedCabangId, setSelectedCabangId] = useState<string>("");
+
+  const { openDrawer } = useJadwalKelasStore();
 
   // Detect Mobile View
   const isMobile = useIsMobile();
@@ -288,7 +290,7 @@ export default function ScheduleGrid() {
                                 <ScheduleCard
                                   data={schedule}
                                   onDelete={handleDelete}
-                                  onEdit={(id) => console.log("Edit", id)}
+                                  onEdit={(item) => openDrawer("edit", item)}
                                 />
                               ) : (
                                 // Empty Cell
@@ -317,6 +319,8 @@ export default function ScheduleGrid() {
       </div>
 
       {/* Delete Dialog */}
+
+      <EditJadwalKelas />
       <DeleteConfirmationDialog
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

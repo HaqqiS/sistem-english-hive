@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, User, Clock, Trash, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
 
 interface ScheduleCardProps {
   data: {
@@ -26,9 +27,11 @@ interface ScheduleCardProps {
     jamMulai: string;
     jamSelesai: string;
     jumlahMurid: number;
+
+    originalData: TypeJadwalKelas;
   };
   onDelete: (id: string, kode: string) => void;
-  onEdit?: (id: string) => void;
+  onEdit?: (item: TypeJadwalKelas) => void;
 }
 
 export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
@@ -80,7 +83,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEdit?.(data.id);
+                    onEdit?.(data.originalData);
                   }}
                 >
                   <Pencil className="mr-2 h-3 w-3" />

@@ -10,6 +10,8 @@ import KelasTab from "./tabs/kelas-tab";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import ScheduleGrid from "../jadwal/schedule-view/schedule-grid";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
+import EditJadwalKelas from "../jadwal/edit-jadwal";
 
 export default function KelasClient() {
   const { activeCabangId } = useGlobalCabangStore();
@@ -20,6 +22,8 @@ export default function KelasClient() {
     id: string;
     deskripsi: string;
   } | null>(null);
+
+  const { openDrawer } = useJadwalKelasStore();
 
   const { dataJadwal, mutations: jadwalMutation } = useJadwalKelas({
     enableQueryAll: true,
@@ -40,6 +44,7 @@ export default function KelasClient() {
   const columnsJadwalTabel = jadwalColumns({
     onEditClick: (item) => {
       console.log("edit jadwal: ", item);
+      openDrawer("edit", item);
     },
     onDeleteClick: (id, deskripsi) => {
       setSelectedJadwalToDelete({ id, deskripsi });
@@ -93,6 +98,7 @@ export default function KelasClient() {
             <div>
               <DataTable columns={columnsJadwalTabel} data={dataJadwal ?? []} />
 
+              <EditJadwalKelas />
               <DeleteConfirmationDialog
                 isOpen={deleteJadwalDialogOpen}
                 onOpenChange={setDeleteJadwalDialogOpen}

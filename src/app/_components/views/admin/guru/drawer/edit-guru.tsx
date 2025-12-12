@@ -15,15 +15,6 @@ export default function EditGuru() {
   const { isDrawerOpen, selectedGuru, closeDrawer, clearSelected } =
     useGuruStore();
 
-  // useEffect(() => {
-  //   if (selectedGuru) {
-  //     editGuruForm.reset({
-  //       name: selectedGuru.name ?? "",
-  //       email: selectedGuru.email ?? "",
-  //     });
-  //   }
-  // }, [selectedGuru]);
-
   const isOpen = isDrawerOpen("edit");
 
   const editGuruForm = useForm<UpdateProfileFormSchema>({

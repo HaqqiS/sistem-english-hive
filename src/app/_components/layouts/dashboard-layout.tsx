@@ -6,7 +6,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import type { NavItem } from "@/types/nav.type";
+import type { NavCollapsibleItem, NavItem } from "@/types/nav.type";
 import { DynamicBreadcrumb } from "../shared/dynamic-breadcrumb";
 import { Suspense } from "react";
 import { SidebarMenuSkeleton } from "../shared/sidebar-menu-skeleton";
@@ -16,14 +16,13 @@ import { motion } from "framer-motion";
 interface DashboardLayoutProps {
   children: React.ReactNode;
   navItems: NavItem[];
-  // Anda bisa tambahkan props lain jika perlu
-  // userNavItems: UserNavItem[];
-  // teamSwitcherItems: TeamSwitcherItem[];
+  navCollapsibleItems?: NavCollapsibleItem[];
 }
 
 export default function DashboardLayout({
   children,
   navItems,
+  navCollapsibleItems,
 }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
@@ -34,7 +33,10 @@ export default function DashboardLayout({
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <AppSidebar navItems={navItems} />
+          <AppSidebar
+            navItems={navItems}
+            navCollapsibleItems={navCollapsibleItems}
+          />
         </motion.div>
       </Suspense>
 

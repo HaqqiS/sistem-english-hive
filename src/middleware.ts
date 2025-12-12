@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import auth from "@/server/auth/edge-config";
 import { UserRole } from "./server/auth/type";
+import { protectedRoutes } from "./constants/routes";
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -42,10 +43,10 @@ export default async function middleware(request: NextRequest) {
     }
 
     // Protected routes
-    const protectedRoutes = [
-      { path: "/admin", roles: ["ADMIN", "MANAGER"] },
-      { path: "/guru", roles: ["GURU", "ADMIN", "MANAGER"] },
-    ];
+    // const protectedRoutes = [
+    //   { path: "/admin", roles: ["ADMIN", "MANAGER"] },
+    //   { path: "/guru", roles: ["GURU", "ADMIN", "MANAGER"] },
+    // ];
 
     const matchedRoute = protectedRoutes.find((route) =>
       cleanPath.startsWith(route.path),

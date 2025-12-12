@@ -3,7 +3,7 @@ import { UserRole } from "@/server/auth/type";
 export const protectedRoutes = [
   {
     path: "/admin",
-    roles: [UserRole.ADMIN],
+    roles: [UserRole.ADMIN, UserRole.MANAGER],
     redirect: "/admin",
   },
   {

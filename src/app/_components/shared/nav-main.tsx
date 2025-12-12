@@ -17,11 +17,6 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 interface NavMainProps {
-  // projects: {
-  //   title: string;
-  //   href: string;
-  //   icon: LucideIcon;
-  // }[];
   projects: NavItem[];
 }
 const iconMap = Icons as unknown as Record<string, Icons.LucideIcon>;
@@ -31,7 +26,7 @@ export function NavMain({ projects }: NavMainProps) {
   const pathname = usePathname();
 
   return (
-    <SidebarGroup className="">
+    <SidebarGroup className="pb-0">
       <SidebarGroupLabel>Modules</SidebarGroupLabel>
       <SidebarMenu>
         {projects.map((item) => {

@@ -10,22 +10,30 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import type { NavItem } from "@/types/nav.type";
+import type { NavCollapsibleItem, NavItem } from "@/types/nav.type";
 import { CabangSwitcher } from "./cabang-switcher";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   navItems: NavItem[];
+  navCollapsibleItems?: NavCollapsibleItem[];
 }
 
-export function AppSidebar({ navItems, ...props }: AppSidebarProps) {
+export function AppSidebar({
+  navItems,
+  navCollapsibleItems,
+  ...props
+}: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <CabangSwitcher />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="space-y-0">
         <NavMain projects={navItems} />
-        {/* <NavCollapsible items={data.navMain} /> */}
+
+        {navCollapsibleItems && navCollapsibleItems.length > 0 && (
+          <NavCollapsible items={navCollapsibleItems} />
+        )}
       </SidebarContent>
       <SidebarFooter>
         {/* <NavUser user={data.user} /> */}

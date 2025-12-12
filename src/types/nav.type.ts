@@ -5,8 +5,16 @@ export type NavItem = {
   label?: string;
   disabled?: boolean;
 };
+export type NavCollapsibleItem = {
+  title: string;
+  isActive?: boolean;
+  items: {
+    title: string;
+    url: string;
+    icon: string;
+  }[];
+};
 
-// Anda mungkin juga perlu ini untuk user dropdown atau team switcher
 export type UserNavItem = {
   title: string;
 };

@@ -113,6 +113,85 @@ export const absenGuruRouter = createTRPCRouter({
       };
     }),
 
+  getHistoryByGuruId: protectedProcedure
+    .input(
+      z.object({
+        guruId: z.string().cuid(),
+        /** Input bulan pembayaran (Gaji Bulan X) dalam format "YYYY-MM" */
+        month: z.string().regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM"),
+        cabangId: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const { guruId, month, cabangId } = input;
+
+      const filterCabangId = getRestrictedCabangId(session, cabangId);
+
+      if (
+        session.user.role !== UserRole.ADMIN &&
+        session.user.role !== UserRole.MANAGER
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Hanya Admin yang dapat mengakses history penggajian.",
+        });
+      }
+
+      // 1. Gunakan Service untuk mendapatkan range tanggal (26 prev - 25 curr)
+      const { startDate, endDate } = getPeriodeGaji(month);
+
+      // 2. Query absensi guru berdasarkan range tanggal tersebut
+      const history = await db.absensiGuru.findMany({
+        where: {
+          guruId: guruId,
+          isVerified: true,
+          sesiPertemuanKelas: {
+            tanggalWaktu: {
+              gte: startDate,
+              lte: endDate,
+            },
+            ...(filterCabangId
+              ? {
+                  kelas: {
+                    cabangId: filterCabangId,
+                  },
+                }
+              : {}),
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+          isVerified: true,
+          sesiPertemuanKelas: {
+            select: {
+              tanggalWaktu: true,
+              kelas: {
+                select: {
+                  kodeKelas: true,
+                  jenisKelas: true,
+                  tipe: true,
+                },
+              },
+              ruang: {
+                select: {
+                  namaRuang: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          sesiPertemuanKelas: {
+            tanggalWaktu: "asc",
+          },
+        },
+      });
+
+      return history;
+    }),
+
   getForExport: protectedProcedure
     .input(
       z.object({
@@ -215,7 +294,8 @@ export const absenGuruRouter = createTRPCRouter({
         if (allowedCabangId && jadwal.kelas.cabangId !== allowedCabangId) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Anda tidak berhak memulai sesi untuk kelas di cabang lain."
+            message:
+              "Anda tidak berhak memulai sesi untuk kelas di cabang lain.",
           });
         }
 
@@ -357,85 +437,6 @@ export const absenGuruRouter = createTRPCRouter({
         }
         throw error;
       }
-    }),
-
-  getHistoryByGuruId: protectedProcedure
-    .input(
-      z.object({
-        guruId: z.string().cuid(),
-        /** Input bulan pembayaran (Gaji Bulan X) dalam format "YYYY-MM" */
-        month: z.string().regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM"),
-        cabangId: z.string().optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const { guruId, month, cabangId } = input;
-
-      const filterCabangId = getRestrictedCabangId(session, cabangId);
-
-      if (
-        session.user.role !== UserRole.ADMIN &&
-        session.user.role !== UserRole.MANAGER
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Admin yang dapat mengakses history penggajian.",
-        });
-      }
-
-      // 1. Gunakan Service untuk mendapatkan range tanggal (26 prev - 25 curr)
-      const { startDate, endDate } = getPeriodeGaji(month);
-
-      // 2. Query absensi guru berdasarkan range tanggal tersebut
-      const history = await db.absensiGuru.findMany({
-        where: {
-          guruId: guruId,
-          isVerified: true,
-          sesiPertemuanKelas: {
-            tanggalWaktu: {
-              gte: startDate,
-              lte: endDate,
-            },
-            ...(filterCabangId
-              ? {
-                kelas: {
-                  cabangId: filterCabangId,
-                },
-              }
-              : {}),
-          },
-        },
-        select: {
-          id: true,
-          status: true,
-          isVerified: true,
-          sesiPertemuanKelas: {
-            select: {
-              tanggalWaktu: true,
-              kelas: {
-                select: {
-                  kodeKelas: true,
-                  jenisKelas: true,
-                  tipe: true,
-                },
-              },
-              ruang: {
-                select: {
-                  namaRuang: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          sesiPertemuanKelas: {
-            tanggalWaktu: "asc",
-          },
-        },
-      });
-
-      return history;
     }),
 
   updateAbsenGuru: protectedProcedure

@@ -74,7 +74,7 @@ export default function PendaftaranMuridForm({
             <FormLabel>Murid</FormLabel>
             <FormControl>
               <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" size="lg">
                   <SelectValue placeholder="Select Murid" />
                 </SelectTrigger>
                 <SelectContent>
@@ -82,7 +82,7 @@ export default function PendaftaranMuridForm({
                     <SelectLabel>Pilih Murid</SelectLabel>
                     {dataMuridNotRegistered?.map((murid) => (
                       <SelectItem key={murid.id} value={murid.id}>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col items-start">
                           <span>{murid.namaLengkap}</span>
                           <span className="text-muted-foreground text-xs">
                             {murid.umur} tahun - Kelas: {murid.kelasSekolah}

@@ -267,7 +267,13 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
       const kelas = await db.kelas.findUnique({
         where: { id: kelasId },
-        select: { hargaKelas: true, cabangId: true },
+        select: {
+          hargaKelas: true,
+          cabangId: true,
+          kodeKelas: true,
+          level: true,
+          cohortId: true,
+        },
       });
       if (!kelas)
         throw new TRPCError({
@@ -305,6 +311,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         where: { muridId: { in: muridIds }, isAktif: true },
         include: { murid: true },
       });
+
       if (existingActive.length > 0) {
         throw new TRPCError({
           code: "CONFLICT",
@@ -312,52 +319,99 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         });
       }
 
+      const jumlahSesiBerlalu = await db.sesiPertemuanKelas.count({
+        where: { kelasId: input.kelasId },
+      });
+      // B. Hitung Bill Info (Menggunakan Service yang sama dengan Single Create)
+      let billInfo;
+
       try {
-        const kelas = await db.kelas.findUnique({
-          where: { id: kelasId },
-          select: { hargaKelas: true, kodeKelas: true },
+        billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
+      } catch (error) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            error instanceof Error ? error.message : "Gagal menghitung tagihan",
         });
-        if (!kelas) throw new TRPCError({ code: "NOT_FOUND" });
+      }
 
-        // Validasi Bulk
-        const existingActive = await db.pendaftaranKelas.findMany({
-          where: { muridId: { in: muridIds }, isAktif: true },
-          include: { murid: true },
+      let nextClassId: string | null = null;
+      let nextClassTagihan = 0;
+      let nextStartDateStr = "";
+      let nextStartDateDate: Date | undefined = undefined;
+
+      if (billInfo.sesiMasuk > 20) {
+        const nextClass = await db.kelas.findFirst({
+          where: {
+            cohortId: kelas.cohortId,
+            level: kelas.level + 1,
+          },
+          orderBy: { createdAt: "desc" },
         });
-        if (existingActive.length > 0) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: `Beberapa murid sudah aktif: ${existingActive.map((p) => p.murid.namaLengkap).join(", ")}`,
-          });
+
+        if (nextClass) {
+          nextClassId = nextClass.id;
+          nextClassTagihan = nextClass.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+          // Set tanggal mulai bulan depan
+          const nextDateDayjs = dayjs(tanggalMulai).add(1, "month");
+          nextStartDateStr = nextDateDayjs.format("YYYY-MM-DD");
+          nextStartDateDate = nextDateDayjs.toDate();
         }
+      }
 
-        // Transaction
-        await db.$transaction(async (tx) => {
-          const tglMulaiDate = dayjs(tanggalMulai).toDate();
-          const totalTagihan = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+      const tglMulaiDate = dayjs(tanggalMulai).toDate();
+      // Transaction
+      try {
+        await db.$transaction(
+          async (tx) => {
+            for (const muridId of muridIds) {
+              const pendaftaran = await tx.pendaftaranKelas.create({
+                data: {
+                  muridId,
+                  kelasId,
+                  tanggalMulai,
+                  isAktif: true,
+                },
+              });
 
-          for (const muridId of muridIds) {
-            const pendaftaran = await tx.pendaftaranKelas.create({
-              data: {
-                muridId,
-                kelasId,
-                tanggalMulai,
-                isAktif: true,
-              },
-            });
+              await tx.pembayaran.create({
+                data: {
+                  pendaftaranKelasId: pendaftaran.id,
+                  pembayaranKe: billInfo.pembayaranKe,
+                  jumlahBayar: billInfo.totalTagihan,
+                  tanggalJatuhTempo: tglMulaiDate,
+                  statusBayar: StatusPembayaran.BELUM_LUNAS,
+                  note: `${billInfo.note} (Bulk Reg)`,
+                },
+              });
 
-            await tx.pembayaran.create({
-              data: {
-                pendaftaranKelasId: pendaftaran.id,
-                pembayaranKe: 1,
-                jumlahBayar: totalTagihan,
-                tanggalJatuhTempo: tglMulaiDate,
-                statusBayar: StatusPembayaran.BELUM_LUNAS,
-                note: "Tagihan Awal (Bulk Registration)",
-              },
-            });
-          }
-        });
+              // C. Handle "Very Late Joiner" (Auto-Register Next Level)
+              if (nextClassId && nextStartDateDate) {
+                const nextReg = await tx.pendaftaranKelas.create({
+                  data: {
+                    muridId,
+                    kelasId: nextClassId,
+                    tanggalMulai: nextStartDateStr,
+                    isAktif: true,
+                  },
+                });
+
+                // Tagihan Pending Level Berikutnya
+                await tx.pembayaran.create({
+                  data: {
+                    pendaftaranKelasId: nextReg.id,
+                    pembayaranKe: 1,
+                    jumlahBayar: nextClassTagihan,
+                    tanggalJatuhTempo: nextStartDateDate,
+                    statusBayar: StatusPembayaran.PENDING,
+                    note: "Auto-Registration (Very Late Joiner Bulk)",
+                  },
+                });
+              }
+            }
+          },
+          { timeout: 20000 },
+        );
 
         return { success: true, count: muridIds.length };
       } catch (error) {
@@ -373,7 +427,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         throw error;
       }
     }),
-
   updatePendaftaranKelas: protectedProcedure
     .input(serverUpdatePendaftaranKelasSchema)
     .mutation(async ({ ctx, input }) => {

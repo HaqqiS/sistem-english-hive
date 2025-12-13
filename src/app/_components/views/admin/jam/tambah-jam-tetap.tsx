@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import JamForm from "../forms/jam-tetap-form";
+import JamForm from "./jam-tetap-form";
 import {
   clientJamSchema,
   type TypeClientJamTetapSchema,
@@ -16,7 +16,7 @@ import { useJam } from "@/hooks/useJam";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function TambahJamTetap() {
-  const { activeCabangId } = useGlobalCabangStore()
+  const { activeCabangId } = useGlobalCabangStore();
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<TypeClientJamTetapSchema>({

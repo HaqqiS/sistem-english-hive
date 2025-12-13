@@ -3,8 +3,8 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useJamTetapStore } from "@/store/useCabangStore";
-import JamForm from "../forms/jam-tetap-form";
+import { useJamTetapStore } from "@/store/useMasterDataStore";
+import JamForm from "./jam-tetap-form";
 import {
   clientJamSchema,
   type TypeClientJamTetapSchema,

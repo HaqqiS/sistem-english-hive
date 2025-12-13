@@ -8,11 +8,11 @@ import {
 } from "@/types/cabang.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import CabangForm from "../forms/cabang-form";
+import CabangForm from "./cabang-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useCabang } from "../../../../../../hooks/useCabang";
+import { useCabang } from "../../../../../hooks/useCabang";
 
 export default function TambahCabang() {
   const [isOpen, setIsOpen] = useState(false);

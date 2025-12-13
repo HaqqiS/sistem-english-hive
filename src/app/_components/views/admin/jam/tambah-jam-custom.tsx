@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import JamForm from "../forms/jam-custom-form";
+import JamForm from "./jam-custom-form";
 import {
   clientJamCustomSchema,
   type TypeClientJamCustomSchema,

@@ -3,12 +3,12 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useRuangStore } from "@/store/useCabangStore";
+import { useRuangStore } from "@/store/useMasterDataStore";
 import {
   clientRuangSchema,
   type TypeClientRuangSchema,
 } from "@/types/ruang.type";
-import RuangForm from "../forms/ruang-form";
+import RuangForm from "./ruang-form";
 import { useRuang } from "@/hooks/useRuang";
 
 export default function EditRuang() {

@@ -11,8 +11,8 @@ import {
   clientRuangSchema,
   type TypeClientRuangSchema,
 } from "@/types/ruang.type";
-import RuangForm from "../forms/ruang-form";
-import { useRuang } from "../../../../../../hooks/useRuang";
+import RuangForm from "./ruang-form";
+import { useRuang } from "../../../../../hooks/useRuang";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export default function TambahRuang() {

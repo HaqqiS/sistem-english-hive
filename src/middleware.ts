@@ -42,12 +42,6 @@ export default async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // Protected routes
-    // const protectedRoutes = [
-    //   { path: "/admin", roles: ["ADMIN", "MANAGER"] },
-    //   { path: "/guru", roles: ["GURU", "ADMIN", "MANAGER"] },
-    // ];
-
     const matchedRoute = protectedRoutes.find((route) =>
       cleanPath.startsWith(route.path),
     );

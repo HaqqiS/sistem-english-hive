@@ -3,8 +3,8 @@ import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useJamCustomStore } from "@/store/useCabangStore";
-import JamForm from "../forms/jam-custom-form";
+import { useJamCustomStore } from "@/store/useMasterDataStore";
+import JamForm from "./jam-custom-form";
 import {
   clientJamCustomSchema,
   type TypeClientJamCustomSchema,

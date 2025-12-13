@@ -46,8 +46,7 @@ export function useCabang(options?: UseCabangOptions) {
   // CREATE
   const createMutation = api.cabang.createCabang.useMutation({
     onSuccess: async () => {
-      await apiUtils.cabang.getAll.invalidate();
-      await apiUtils.cabang.getAllList.invalidate();
+      await invalidateAll();
       toast.success("Cabang berhasil ditambahkan");
       options?.onSuccessCreate?.();
     },
@@ -59,8 +58,7 @@ export function useCabang(options?: UseCabangOptions) {
   // UPDATE
   const updateMutation = api.cabang.updateCabang.useMutation({
     onSuccess: async () => {
-      await apiUtils.cabang.getAll.invalidate();
-      await apiUtils.cabang.getAllList.invalidate();
+      await invalidateAll();
       toast.success("Cabang berhasil diupdate");
       options?.onSuccessUpdate?.();
     },
@@ -72,9 +70,7 @@ export function useCabang(options?: UseCabangOptions) {
   // DELETE
   const deleteMutation = api.cabang.deleteCabang.useMutation({
     onSuccess: async () => {
-      await apiUtils.cabang.getAll.invalidate();
-      await apiUtils.cabang.getAllList.invalidate();
-
+      await invalidateAll();
       toast.success("Cabang berhasil dihapus");
       options?.onSuccessDelete?.();
     },

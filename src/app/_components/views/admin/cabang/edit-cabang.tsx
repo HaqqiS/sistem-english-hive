@@ -7,8 +7,8 @@ import {
 } from "@/types/cabang.type";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import CabangForm from "../forms/cabang-form";
-import { useCabangStore } from "@/store/useCabangStore";
+import CabangForm from "./cabang-form";
+import { useCabangStore } from "@/store/useMasterDataStore";
 import { useCabang } from "@/hooks/useCabang";
 
 export default function EditCabang() {
@@ -30,16 +30,6 @@ export default function EditCabang() {
       noTelp: selectedCabang?.noTelp,
     },
   });
-
-  // useEffect(() => {
-  //   if (selectedCabang) {
-  //     editCabangForm.reset({
-  //       namaCabang: selectedCabang.namaCabang,
-  //       alamat: selectedCabang.alamat,
-  //       noTelp: selectedCabang.noTelp,
-  //     });
-  //   }
-  // }, [selectedCabang]);
 
   const isOpen = isDrawerOpen("edit");
 

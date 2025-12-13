@@ -1,4 +1,4 @@
-import RuangClient from "@/app/_components/views/admin/ruang/ruang-client";
+import JamClient from "@/app/_components/views/admin/jam/jam-client";
 import { api, HydrateClient } from "@/trpc/server";
 import type { Metadata } from "next";
 
@@ -6,16 +6,17 @@ export const metadata: Metadata = {
   title: "Kelola Ruang",
 };
 
-export default async function RuangPage() {
+export default async function JamPage() {
   await Promise.all([
-    api.ruang.getRuangByCabangId.prefetch({ cabangId: "all" }),
+    api.jam.getAllJamTetap.prefetch(),
+    api.jam.getAllJamCustom.prefetch(),
   ]);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
       <main className="flex flex-1 flex-col gap-4 pt-0">
         <HydrateClient>
-          <RuangClient />
+          <JamClient />
         </HydrateClient>
       </main>
     </div>

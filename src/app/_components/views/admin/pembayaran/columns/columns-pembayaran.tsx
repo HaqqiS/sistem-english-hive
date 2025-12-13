@@ -227,6 +227,24 @@ export const columns = ({
     ),
   },
 
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="pl-0 hover:bg-transparent"
+      >
+        Dibuat
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const formattedDate = formatDateWITA(row.original.createdAt);
+      return <span className="text-sm">{formattedDate}</span>;
+    },
+  },
+
   // Aksi (WA & Menu)
   {
     id: "actions",

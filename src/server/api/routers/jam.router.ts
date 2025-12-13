@@ -21,6 +21,7 @@ export const jamRouter = createTRPCRouter({
 
       return await db.jamSlotTetap.findMany({
         where: whereClause,
+        orderBy: { jamMulai: "asc" },
         include: {
           cabang: { select: { namaCabang: true } },
         },

@@ -10,24 +10,6 @@ import { paginationSchema } from "@/types/pagination.type";
 import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const muridRouter = createTRPCRouter({
-  registerMurid: publicProcedure
-    .input(RegisterMuridSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { db } = ctx;
-
-      try {
-        const murid = await db.murid.create({
-          data: {
-            ...input,
-            cabangId: input.cabangId,
-          },
-        });
-        return murid;
-      } catch (error) {
-        throw error;
-      }
-    }),
-
   getAllMurid: protectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
@@ -42,32 +24,6 @@ export const muridRouter = createTRPCRouter({
         orderBy: { createdAt: "desc" },
       });
       return allMurid;
-    }),
-
-  getMuridById: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().cuid(),
-      }),
-    )
-    .query(async ({ input, ctx }) => {
-      const { db, session } = ctx;
-
-      const murid = await db.murid.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!murid) return null;
-
-      const allowedCabangId = getRestrictedCabangId(session, null);
-      if (allowedCabangId && murid.cabangId !== allowedCabangId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda tidak berhak melihat detail murid dari cabang lain.",
-        });
-      }
-
-      return murid;
     }),
 
   getAllPaginated: protectedProcedure
@@ -129,6 +85,32 @@ export const muridRouter = createTRPCRouter({
       };
     }),
 
+  getMuridById: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().cuid(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { db, session } = ctx;
+
+      const murid = await db.murid.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!murid) return null;
+
+      const allowedCabangId = getRestrictedCabangId(session, null);
+      if (allowedCabangId && murid.cabangId !== allowedCabangId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Anda tidak berhak melihat detail murid dari cabang lain.",
+        });
+      }
+
+      return murid;
+    }),
+
   getMuridWhereNotRegistered: protectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
@@ -146,6 +128,7 @@ export const muridRouter = createTRPCRouter({
 
       const unregisteredMurid = await db.murid.findMany({
         where: whereClause,
+        orderBy: { createdAt: "desc" },
         select: {
           id: true,
           kelasSekolah: true,
@@ -155,9 +138,58 @@ export const muridRouter = createTRPCRouter({
           statusMurid: true,
           noWA: true,
           jamPulang: true,
+          createdAt: true,
         },
       });
       return unregisteredMurid;
+    }),
+
+  getMuridNotRegisteredPaginated: protectedProcedure
+    .input(paginationSchema.extend({ cabangId: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const { db, session } = ctx;
+      const { pageIndex, pageSize } = input;
+
+      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
+
+      // Definisikan where clause agar konsisten untuk count dan findMany
+      const whereClause: Prisma.MuridWhereInput = {
+        OR: [
+          { pendaftaranKelases: { none: {} } },
+          { pendaftaranKelases: { every: { isAktif: false } } },
+        ],
+      };
+      if (filterCabangId) whereClause.cabangId = filterCabangId;
+
+      // Transaction untuk performa (count + query data paralel)
+      const [total, data] = await db.$transaction([
+        db.murid.count({ where: whereClause }),
+        db.murid.findMany({
+          skip: pageIndex * pageSize,
+          take: pageSize,
+          where: whereClause,
+          orderBy: { createdAt: "desc" }, // Urutkan berdasarkan nama
+          select: {
+            id: true,
+            kelasSekolah: true,
+            umur: true,
+            namaLengkap: true,
+            pilihanProgram: true,
+            statusMurid: true,
+            noWA: true,
+            jamPulang: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+      const pageCount = Math.ceil(total / pageSize);
+
+      return {
+        data,
+        pageCount,
+        total,
+      };
     }),
 
   getForExport: protectedProcedure
@@ -190,51 +222,22 @@ export const muridRouter = createTRPCRouter({
       });
     }),
 
-  getMuridNotRegisteredPaginated: protectedProcedure
-    .input(paginationSchema.extend({ cabangId: z.string().optional() }))
-    .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const { pageIndex, pageSize } = input;
+  registerMurid: publicProcedure
+    .input(RegisterMuridSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { db } = ctx;
 
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
-
-      // Definisikan where clause agar konsisten untuk count dan findMany
-      const whereClause: Prisma.MuridWhereInput = {
-        OR: [
-          { pendaftaranKelases: { none: {} } },
-          { pendaftaranKelases: { every: { isAktif: false } } },
-        ],
-      };
-      if (filterCabangId) whereClause.cabangId = filterCabangId;
-
-      // Transaction untuk performa (count + query data paralel)
-      const [total, data] = await db.$transaction([
-        db.murid.count({ where: whereClause }),
-        db.murid.findMany({
-          skip: pageIndex * pageSize,
-          take: pageSize,
-          where: whereClause,
-          orderBy: { namaLengkap: "asc" }, // Urutkan berdasarkan nama
-          select: {
-            id: true,
-            kelasSekolah: true,
-            umur: true,
-            namaLengkap: true,
-            pilihanProgram: true,
-            statusMurid: true,
-            noWA: true,
-            jamPulang: true,
+      try {
+        const murid = await db.murid.create({
+          data: {
+            ...input,
+            cabangId: input.cabangId,
           },
-        }),
-      ]);
-
-      const pageCount = Math.ceil(total / pageSize);
-
-      return {
-        data,
-        pageCount,
-        total,
-      };
+        });
+        return murid;
+      } catch (error) {
+        throw error;
+      }
     }),
 
   updateStatusMurid: protectedProcedure

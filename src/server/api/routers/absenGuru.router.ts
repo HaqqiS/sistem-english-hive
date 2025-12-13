@@ -64,7 +64,9 @@ export const absenGuruRouter = createTRPCRouter({
           take: pageSize,
           where: whereClause,
           orderBy: {
-            updatedAt: "desc",
+            sesiPertemuanKelas: {
+              tanggalWaktu: "desc",
+            },
           },
           select: {
             id: true,
@@ -184,7 +186,7 @@ export const absenGuruRouter = createTRPCRouter({
         },
         orderBy: {
           sesiPertemuanKelas: {
-            tanggalWaktu: "asc",
+            tanggalWaktu: "desc",
           },
         },
       });

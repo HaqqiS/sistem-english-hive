@@ -8,7 +8,6 @@ import {
   EllipsisVertical,
   MapPin,
   MessageCircle,
-  Notebook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StatusMurid } from "@prisma/client";
+import { formatDateWITA } from "@/utils/dateUtils";
 
 interface ColumnsConfig {
   onEditClick: (item: TypeAllMurid) => void;
@@ -309,6 +309,25 @@ export const columns = ({
         </Tooltip>
       </TooltipProvider>
     ),
+  },
+
+  // 9. Tanggal Dibuat
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="pl-0 hover:bg-transparent"
+      >
+        Dibuat
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const formattedDate = formatDateWITA(row.original.createdAt);
+      return <span className="text-sm">{formattedDate}</span>;
+    },
   },
 
   // Actions

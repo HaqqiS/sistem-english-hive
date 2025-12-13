@@ -46,6 +46,7 @@ export const ruangRouter = createTRPCRouter({
 
       const ruang = await db.ruang.findMany({
         where: whereClause,
+        orderBy: { namaRuang: "asc" },
         select: {
           id: true,
           namaRuang: true,

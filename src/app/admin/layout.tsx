@@ -33,7 +33,7 @@ export default async function AdminLayout({
   const adminCollapsibleItems: NavCollapsibleItem[] = [
     {
       title: "Master Data",
-      isActive: true,
+      isActive: false,
       items: masterDataItems,
     },
   ];

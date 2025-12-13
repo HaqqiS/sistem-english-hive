@@ -27,6 +27,7 @@ import type { TypeMuridNotRegistered } from "@/types/murid.type";
 import { toast } from "sonner";
 import Link from "next/link";
 import { getStatusColorBadge } from "./columns-murid";
+import { formatDateWITA } from "@/utils/dateUtils";
 
 interface ColumnsConfig {
   onEditStatusClick: (item: TypeMuridNotRegistered) => void;
@@ -214,6 +215,24 @@ export const columns = ({
         return stringValues.includes(String(cell));
       }
       return String(cell) === String(value);
+    },
+  },
+
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="pl-0 hover:bg-transparent"
+      >
+        Dibuat
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const formattedDate = formatDateWITA(row.original.createdAt);
+      return <span className="text-sm">{formattedDate}</span>;
     },
   },
 

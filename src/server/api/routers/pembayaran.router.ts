@@ -133,7 +133,7 @@ export const pembayaranRouter = createTRPCRouter({
       const { db, session } = ctx;
 
       const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
-      const HARI_INI = dayjs().startOf("day");
+      // const HARI_INI = dayjs().startOf("day");
       const DUA_MINGGU_LAGI = dayjs().add(14, "day").endOf("day");
 
       const whereClause: Prisma.PembayaranWhereInput = {

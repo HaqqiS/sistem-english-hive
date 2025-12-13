@@ -290,59 +290,61 @@ export default function MuridClient() {
                 />
               </div>
 
-              {/* Filter Status */}
-              <Select
-                value={tipeProgramFilter}
-                onValueChange={(val) => {
-                  setTipeProgramFilter(val as "REGULER" | "PRIVAT" | "ALL");
-                  setPaginationAllMurid((prev) => ({
-                    ...prev,
-                    pageIndex: 0,
-                  }));
-                }}
-              >
-                <SelectTrigger className="w-full sm:w-50">
-                  <div className="text-muted-foreground flex items-center gap-2">
-                    <Filter className="h-3.5 w-3.5" />
-                    <SelectValue placeholder="Status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Tipe Program</SelectItem>
-                  <SelectItem value="REGULER">Reguler</SelectItem>
-                  <SelectItem value="PRIVAT">Privat</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-2">
+                {/* Filter Tipe Program */}
+                <Select
+                  value={tipeProgramFilter}
+                  onValueChange={(val) => {
+                    setTipeProgramFilter(val as "REGULER" | "PRIVAT" | "ALL");
+                    setPaginationAllMurid((prev) => ({
+                      ...prev,
+                      pageIndex: 0,
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-50">
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <Filter className="h-3.5 w-3.5" />
+                      <SelectValue placeholder="Status" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Tipe Program</SelectItem>
+                    <SelectItem value="REGULER">Reguler</SelectItem>
+                    <SelectItem value="PRIVAT">Privat</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              {/* Filter Status */}
-              <Select
-                value={statusFilter}
-                onValueChange={(val) => {
-                  setStatusFilter(val as StatusMurid | "ALL");
-                  setPaginationAllMurid((prev) => ({
-                    ...prev,
-                    pageIndex: 0,
-                  }));
-                }}
-              >
-                <SelectTrigger className="w-full sm:w-40">
-                  <div className="text-muted-foreground flex items-center gap-2">
-                    <Filter className="h-3.5 w-3.5" />
-                    <SelectValue placeholder="Status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Status</SelectItem>
-                  {Object.values(StatusMurid).map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status
-                        .replaceAll("_", " ")
-                        .toLowerCase()
-                        .replace(/\b\w/g, (c) => c.toUpperCase())}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {/* Filter Status */}
+                <Select
+                  value={statusFilter}
+                  onValueChange={(val) => {
+                    setStatusFilter(val as StatusMurid | "ALL");
+                    setPaginationAllMurid((prev) => ({
+                      ...prev,
+                      pageIndex: 0,
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-40">
+                    <div className="text-muted-foreground flex items-center gap-2">
+                      <Filter className="h-3.5 w-3.5" />
+                      <SelectValue placeholder="Status" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Status</SelectItem>
+                    {Object.values(StatusMurid).map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status
+                          .replaceAll("_", " ")
+                          .toLowerCase()
+                          .replace(/\b\w/g, (c) => c.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </header>
 

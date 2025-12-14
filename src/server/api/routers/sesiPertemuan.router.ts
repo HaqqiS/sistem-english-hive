@@ -1,26 +1,27 @@
-import { serverSesiPertemuanSchema } from "@/types/sesiPertemuan.type";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { serverSesiPertemuanSchema } from "@/types/sesiPertemuan.schema";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { Prisma, type StatusAbsenMurid } from "@prisma/client";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const sesiPertemuanRouter = createTRPCRouter({
-  getAll: protectedProcedure
-    .input(z.object({ cabangId: z.string().optional() }).optional())
+  getById: cabangProtectedProcedure
+    .input(z.object({ id: z.string(), cabangId: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Security Filter
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
 
       const whereClause: Prisma.SesiPertemuanKelasWhereInput = {};
+      whereClause.id = input.id;
       if (filterCabangId) {
         whereClause.kelas = {
           cabangId: filterCabangId,
         };
       }
-      const sesiPertemuan = await db.sesiPertemuanKelas.findMany({
+
+      const sesiPertemuan = await db.sesiPertemuanKelas.findFirst({
         where: whereClause,
         select: {
           id: true,
@@ -41,10 +42,10 @@ export const sesiPertemuanRouter = createTRPCRouter({
       return sesiPertemuan;
     }),
 
-  getSesiSummaryByKelasId: protectedProcedure
+  getSesiSummaryByKelasId: cabangProtectedProcedure
     .input(z.object({ kelasId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { kelasId } = input;
 
       // 1. Dapatkan Info Kelas dan Guru Aktif
@@ -70,7 +71,6 @@ export const sesiPertemuanRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && kelasInfo.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -173,10 +173,10 @@ export const sesiPertemuanRouter = createTRPCRouter({
       };
     }),
 
-  createSesiPertemuan: protectedProcedure
+  createSesiPertemuan: cabangProtectedProcedure
     .input(serverSesiPertemuanSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Validasi Kepemilikan & Konsistensi
       const [kelas, ruang] = await Promise.all([
@@ -204,7 +204,6 @@ export const sesiPertemuanRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",

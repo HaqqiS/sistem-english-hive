@@ -8,51 +8,64 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {
-  registerGuruFormSchema,
-  type RegisterGuruFormSchema,
+	registerGuruFormSchema,
+	type RegisterGuruFormSchema,
 } from "@/types/user.type";
 import { useUser } from "@/hooks/useUser";
-import RegisterForm from "@/app/_components/shared/form-register";
+import RegisterForm from "@/app/_components/views/admin/guru/form/form-register";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { toast } from "sonner";
 
 export default function RegistrasiGuru() {
-  const [isOpen, setIsOpen] = useState(false);
+	const [isOpen, setIsOpen] = useState(false);
 
-  const registrationForm = useForm<RegisterGuruFormSchema>({
-    resolver: zodResolver(registerGuruFormSchema),
-    defaultValues: {},
-  });
+	const registrationForm = useForm<RegisterGuruFormSchema>({
+		resolver: zodResolver(registerGuruFormSchema),
+		defaultValues: {},
+	});
 
-  const { mutations: registrationMutations } = useUser({
-    onSuccessCreate: () => {
-      setIsOpen(false);
-      registrationForm.reset();
-    },
-  });
+	const { mutations: registrationMutations } = useUser({
+		onSuccessCreate: () => {
+			setIsOpen(false);
+			registrationForm.reset();
+		},
+	});
 
-  const onSubmit = (values: RegisterGuruFormSchema) => {
-    registrationMutations.registration.mutate(values);
-  };
+	const { activeCabangId } = useGlobalCabangStore();
 
-  return (
-    <AddDrawer
-      title="Buat Akun Guru Baru"
-      description="Tambahkan akun guru baru ke dalam sistem."
-      onSubmit={registrationForm.handleSubmit(onSubmit)}
-      isPending={registrationMutations.registration.isPending}
-      submitText="Tambah Guru Baru"
-      cancelText="Batal"
-      trigger={
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Buat Akun Guru
-        </Button>
-      }
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <Form {...registrationForm}>
-        <RegisterForm onSubmit={onSubmit} />
-      </Form>
-    </AddDrawer>
-  );
+	const onSubmit = (values: RegisterGuruFormSchema) => {
+		if (activeCabangId === "ALL") {
+			toast.error(
+				"Harus memilih salah satu cabang spesifik untuk mendaftarkan Guru.",
+			);
+			return;
+		}
+		registrationMutations.registration.mutate({
+			...values,
+			cabangId: activeCabangId,
+		});
+	};
+
+	return (
+		<AddDrawer
+			title="Buat Akun Guru Baru"
+			description="Tambahkan akun guru baru ke dalam sistem."
+			onSubmit={registrationForm.handleSubmit(onSubmit)}
+			isPending={registrationMutations.registration.isPending}
+			submitText="Tambah Guru Baru"
+			cancelText="Batal"
+			trigger={
+				<Button>
+					<Plus className="mr-2 h-4 w-4" />
+					Buat Akun Guru
+				</Button>
+			}
+			isOpen={isOpen}
+			onOpenChange={setIsOpen}
+		>
+			<Form {...registrationForm}>
+				<RegisterForm onSubmit={onSubmit} />
+			</Form>
+		</AddDrawer>
+	);
 }

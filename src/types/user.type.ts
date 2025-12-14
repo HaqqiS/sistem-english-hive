@@ -1,7 +1,7 @@
 import type { RouterOutputs } from "@/trpc/react";
 import { z } from "zod";
 
-export type TypeGuruSimple = RouterOutputs["user"]["getAllGuruSimple"][number];
+export type TypeGuruSimple = RouterOutputs["user"]["getGuruList"][number];
 export type TypeGuruComplete =
   RouterOutputs["user"]["getAllGuruComplete"][number];
 

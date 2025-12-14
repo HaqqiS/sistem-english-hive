@@ -23,11 +23,7 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
   const apiUtils = api.useUtils();
 
   const kelasId = options?.kelasId;
-  const cabangIdPayload =
-    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
   // ========== QUERIES ==========
-
-  // const isGetAllEnabled = (options?.enableQuery ?? true) && !kelasId;
 
   const historyGuruKelasQuery =
     api.historyGuruKelas.getHistoryGuruByKelasId.useQuery(
@@ -82,11 +78,6 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
     });
 
   return {
-    // data: kelasQuery.data,
-    // isLoading: kelasQuery.isLoading,
-    // isError: kelasQuery.isError,
-    // error: kelasQuery.error,
-
     dataById: historyGuruKelasQuery.data,
     isLoadingById: historyGuruKelasQuery.isLoading,
     isErrorById: historyGuruKelasQuery.isError,
@@ -112,7 +103,6 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
     },
 
     // Utils untuk manual invalidation jika perlu
-    // refetch: kelasQuery.refetch,
     refetchById: historyGuruKelasQuery.refetch,
     invalidate: () =>
       apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate(),

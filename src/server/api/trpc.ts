@@ -12,6 +12,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { auth } from "@/server/auth";
+import { UserRole } from "@/server/auth/type";
 import { db } from "@/server/db";
 
 /**
@@ -134,3 +135,57 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * Manager Only Procedure
+ */
+export const managerProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.session.user.role !== UserRole.MANAGER) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Akses ditolak. Khusus Manager.",
+    });
+  }
+  return next({ ctx });
+});
+
+/**
+ * Cabang Protected Procedure
+ * - Otomatis mendeteksi role user.
+ * - Jika Admin/Guru: Membatasi akses hanya ke cabang mereka sendiri via `ctx.allowedCabangId`.
+ * - Jika Manager: Mengecek input `cabangId` (jika ada) untuk filter, atau membiarkan null (All).
+ */
+export const cabangProtectedProcedure = protectedProcedure.use(async (opts) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const rawInput = (opts as any).rawInput;
+  const { ctx, next } = opts;
+  const { role, cabangId } = ctx.session.user;
+  let allowedCabangId: string | undefined = undefined;
+
+  if (role === UserRole.ADMIN || role === UserRole.GURU) {
+    // Enforce cabang mereka sendiri
+    if (!cabangId) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Akun Anda tidak terhubung dengan cabang manapun.",
+      });
+    }
+    allowedCabangId = cabangId;
+  } else if (role === UserRole.MANAGER) {
+    // Cek apakah input memiliki property cabangId
+    // Kita lakukan pengecekan loose pada rawInput karena tipe input belum divalidasi Zod di level middleware
+    if (rawInput && typeof rawInput === "object" && "cabangId" in rawInput) {
+      const inputArg = rawInput as { cabangId?: string | null };
+      if (inputArg.cabangId && inputArg.cabangId !== "ALL") {
+        allowedCabangId = inputArg.cabangId;
+      }
+    }
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      allowedCabangId,
+    },
+  });
+});

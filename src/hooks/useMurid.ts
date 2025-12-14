@@ -2,8 +2,6 @@
 
 import { api } from "@/trpc/react";
 import type {
-  TypeMuridNotRegistered,
-  TypeAllMurid,
   TypeMuridNotRegisteredPaginated,
   TypeAllMuridPaginated,
 } from "@/types/murid.type";
@@ -17,9 +15,7 @@ interface useMuridOptions {
   enableQuery?: boolean;
   enableNotRegisteredQuery?: boolean;
 
-  initialDataNotRegistered?: TypeMuridNotRegistered[];
   initialDataNotRegisteredPaginated?: TypeMuridNotRegisteredPaginated;
-  initialDataAllMurid?: TypeAllMurid[];
   initialDataAllPaginated?: TypeAllMuridPaginated;
 
   pagination?: PaginationState;
@@ -36,16 +32,6 @@ interface useMuridOptions {
 }
 
 /**
- * Custom hook untuk mengelola Ruang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data Ruang
- * const { data: RuangList } = useRuang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useRuang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
  */
 export function useMurid(options?: useMuridOptions) {
   const apiUtils = api.useUtils();
@@ -64,7 +50,7 @@ export function useMurid(options?: useMuridOptions) {
     { cabangId: cabangIdPayload },
     {
       enabled: options?.enableNotRegisteredQuery ?? false,
-      initialData: options?.initialDataNotRegistered,
+      // initialData: options?.initialDataNotRegistered,
     },
   );
 
@@ -79,14 +65,6 @@ export function useMurid(options?: useMuridOptions) {
           : undefined,
       },
     );
-
-  const MuridQuery = api.murid.getAllMurid.useQuery(
-    { cabangId: cabangIdPayload },
-    {
-      enabled: options?.enableQuery ?? false,
-      initialData: options?.initialDataAllMurid,
-    },
-  );
 
   const MuridPaginatedQuery = api.murid.getAllPaginated.useQuery(
     {
@@ -118,9 +96,8 @@ export function useMurid(options?: useMuridOptions) {
 
   const invalidateMuridData = async () => {
     await Promise.all([
-      apiUtils.murid.getMuridWhereNotRegistered.invalidate(),
+      apiUtils.murid.getMuridNotRegisteredPaginated.invalidate(),
       apiUtils.murid.getAllPaginated.invalidate(),
-      apiUtils.murid.getAllMurid.invalidate(),
     ]);
   };
 
@@ -190,11 +167,6 @@ export function useMurid(options?: useMuridOptions) {
       MuridNotRegisteredPaginatedQuery.isFetching,
     isErrorNotRegisteredPaginated: MuridNotRegisteredPaginatedQuery.isError,
     errorNotRegisteredPaginated: MuridNotRegisteredPaginatedQuery.error,
-
-    dataAllMurid: MuridQuery.data,
-    isLoadingAllMurid: MuridQuery.isLoading,
-    isErrorAllMurid: MuridQuery.isError,
-    errorAllMurid: MuridQuery.error,
 
     dataAllMuridPaginated: MuridPaginatedQuery.data?.data ?? [],
     pageCount: MuridPaginatedQuery.data?.pageCount ?? -1,

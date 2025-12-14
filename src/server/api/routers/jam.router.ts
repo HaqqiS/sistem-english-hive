@@ -1,22 +1,19 @@
 import { serverJamSchema } from "@/types/jam.type";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import z from "zod";
 import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const jamRouter = createTRPCRouter({
   // Jam Tetap
-  getAllJamTetap: protectedProcedure
+  getAllJamTetap: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
-    .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+    .query(async ({ ctx }) => {
+      const { db, allowedCabangId } = ctx;
 
       const whereClause: Prisma.JamSlotTetapWhereInput = {};
-      if (filterCabangId) {
-        whereClause.cabangId = filterCabangId;
+      if (allowedCabangId) {
+        whereClause.cabangId = allowedCabangId;
       }
 
       return await db.jamSlotTetap.findMany({
@@ -28,12 +25,13 @@ export const jamRouter = createTRPCRouter({
       });
     }),
 
-  createJamTetap: protectedProcedure
+  createJamTetap: cabangProtectedProcedure
     .input(serverJamSchema.omit({ id: true }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
-      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+      // Prioritas: Cabang user (jika ada) > Cabang input (jika Manager/Admin All)
+      const finalCabangId = allowedCabangId ?? input.cabangId;
 
       if (!finalCabangId) {
         throw new TRPCError({
@@ -66,10 +64,10 @@ export const jamRouter = createTRPCRouter({
       }
     }),
 
-  deleteJamTetap: protectedProcedure
+  deleteJamTetap: cabangProtectedProcedure
     .input(z.object({ id: z.string().min(1, "ID Jam harus diisi") }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       // 1. Cek Kepemilikan
       const existingJam = await db.jamSlotTetap.findUnique({
@@ -85,7 +83,6 @@ export const jamRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingJam.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -116,10 +113,10 @@ export const jamRouter = createTRPCRouter({
       }
     }),
 
-  updateJamTetap: protectedProcedure
+  updateJamTetap: cabangProtectedProcedure
     .input(serverJamSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       // 1. Cek Kepemilikan
       const existingJam = await db.jamSlotTetap.findUnique({
@@ -135,7 +132,6 @@ export const jamRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingJam.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -179,7 +175,7 @@ export const jamRouter = createTRPCRouter({
     }),
 
   // ================= JAM CUSTOM =================
-  getAllJamCustom: protectedProcedure.query(async ({ ctx }) => {
+  getAllJamCustom: cabangProtectedProcedure.query(async ({ ctx }) => {
     const { db } = ctx;
 
     return await db.jamSlotCustom.findMany({
@@ -187,7 +183,7 @@ export const jamRouter = createTRPCRouter({
     });
   }),
 
-  createJamCustom: protectedProcedure
+  createJamCustom: cabangProtectedProcedure
     .input(serverJamSchema.omit({ id: true, cabangId: true, namaSlot: true }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -214,7 +210,7 @@ export const jamRouter = createTRPCRouter({
       }
     }),
 
-  deleteJamCustom: protectedProcedure
+  deleteJamCustom: cabangProtectedProcedure
     .input(z.object({ id: z.string().min(1, "ID Jam harus diisi") }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -243,7 +239,7 @@ export const jamRouter = createTRPCRouter({
       }
     }),
 
-  updateJamCustom: protectedProcedure
+  updateJamCustom: cabangProtectedProcedure
     .input(serverJamSchema.omit({ cabangId: true, namaSlot: true }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;

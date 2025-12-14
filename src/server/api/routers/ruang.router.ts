@@ -1,48 +1,17 @@
 import { Prisma } from "@prisma/client";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import z from "zod";
 import { serverRuangSchema } from "@/types/ruang.type";
 import { TRPCError } from "@trpc/server";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const ruangRouter = createTRPCRouter({
-  getRuangByCabangId: protectedProcedure
-    .input(z.object({ cabangId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
-
-      const whereClause: Prisma.RuangWhereInput = {};
-      if (filterCabangId) whereClause.cabangId = filterCabangId;
-
-      const ruang = await db.ruang.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          namaRuang: true,
-          cabangId: true,
-          isAktif: true,
-          createdAt: true,
-          updatedAt: true,
-          cabang: {
-            select: {
-              namaCabang: true,
-            },
-          },
-        },
-      });
-
-      return ruang;
-    }),
-
-  getAll: protectedProcedure
+  getAll: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
-    .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+    .query(async ({ ctx }) => {
+      const { db, allowedCabangId } = ctx;
 
       const whereClause: Prisma.RuangWhereInput = {};
-      if (filterCabangId) whereClause.cabangId = filterCabangId;
+      if (allowedCabangId) whereClause.cabangId = allowedCabangId;
 
       const ruang = await db.ruang.findMany({
         where: whereClause,
@@ -64,12 +33,14 @@ export const ruangRouter = createTRPCRouter({
       return ruang;
     }),
 
-  createRuang: protectedProcedure
+  createRuang: cabangProtectedProcedure
     .input(serverRuangSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
-      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+      // Jika allowedCabangId ada (Admin/Guru), paksa pakai itu.
+      // Jika tidak ada (Manager), pakai input.
+      const finalCabangId = allowedCabangId ?? input.cabangId;
 
       if (!finalCabangId) {
         throw new TRPCError({
@@ -108,10 +79,10 @@ export const ruangRouter = createTRPCRouter({
       }
     }),
 
-  deleteRuang: protectedProcedure
+  deleteRuang: cabangProtectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const existingRuang = await db.ruang.findUnique({
         where: { id: input.id },
@@ -125,7 +96,6 @@ export const ruangRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingRuang.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -159,10 +129,10 @@ export const ruangRouter = createTRPCRouter({
       }
     }),
 
-  updateRuang: protectedProcedure
+  updateRuang: cabangProtectedProcedure
     .input(serverRuangSchema.extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const existingRuang = await db.ruang.findUnique({
         where: { id: input.id },
@@ -176,7 +146,6 @@ export const ruangRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingRuang.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",

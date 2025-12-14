@@ -6,15 +6,15 @@ import { db } from "@/server/db";
 import type { Adapter } from "next-auth/adapters";
 
 const serverAuthConfig = {
-  ...authConfig,
-  adapter: PrismaAdapter(db) as unknown as Adapter,
+	...authConfig,
+	adapter: PrismaAdapter(db) as unknown as Adapter,
 };
 
 const {
-  auth: uncachedAuth,
-  handlers,
-  signIn,
-  signOut,
+	auth: uncachedAuth,
+	handlers,
+	signIn,
+	signOut,
 } = NextAuth(serverAuthConfig);
 // const { auth: uncachedAuth, handlers, signIn, signOut } = NextAuth(authConfig);
 

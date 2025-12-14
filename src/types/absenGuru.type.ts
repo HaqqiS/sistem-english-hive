@@ -4,13 +4,13 @@ import z from "zod";
 
 /** Tipe tunggal absensi guru (biasanya untuk list/table) */
 export type TypeAbsensiGuru =
-  RouterOutputs["absenGuru"]["getAllAbsensi"]["data"][number];
+	RouterOutputs["absenGuru"]["getAllAbsensi"]["data"][number];
 export type TypeAbsensiGuruPaginated =
-  RouterOutputs["absenGuru"]["getAllAbsensi"];
+	RouterOutputs["absenGuru"]["getAllAbsensi"];
 
 /** Tipe history gaji/absensi guru */
 export type TypeAbsensiGuruHistory =
-  RouterOutputs["absenGuru"]["getHistoryByGuruId"];
+	RouterOutputs["absenGuru"]["getHistoryByGuruId"];
 
 /** Tipe item tunggal dalam history */
 export type TypeAbsensiGuruHistoryItem = TypeAbsensiGuruHistory[number];
@@ -24,14 +24,14 @@ export type TypeAbsensiGuruHistoryItem = TypeAbsensiGuruHistory[number];
  * Digunakan saat guru menekan tombol "Mulai Sesi" dari jadwal.
  */
 export const serverStartSesiSchema = z.object({
-  /** ID dari JadwalKelas (rencana) */
-  jadwalKelasId: z.string().cuid("ID Jadwal tidak valid"),
-  /** Status kehadiran saat memulai (default: HADIR) */
-  status: z.nativeEnum(StatusAbsenGuru, {
-    errorMap: () => ({ message: "Status absen guru tidak valid" }),
-  }),
-  /** ID Ruang override (opsional, jika pindah ruang) */
-  overrideRuangId: z.string().cuid("ID Ruang tidak valid").optional(),
+	/** ID dari JadwalKelas (rencana) */
+	jadwalKelasId: z.string().cuid("ID Jadwal tidak valid"),
+	/** Status kehadiran saat memulai (default: HADIR) */
+	status: z.nativeEnum(StatusAbsenGuru, {
+		errorMap: () => ({ message: "Status absen guru tidak valid" }),
+	}),
+	/** ID Ruang override (opsional, jika pindah ruang) */
+	overrideRuangId: z.string().cuid("ID Ruang tidak valid").optional(),
 });
 
 /**
@@ -39,23 +39,23 @@ export const serverStartSesiSchema = z.object({
  * Mengizinkan admin mengubah status, verifikasi, bahkan mengganti guru.
  */
 export const updateAbsensiGuruSchema = z.object({
-  status: z.nativeEnum(StatusAbsenGuru, {
-    required_error: "Status harus dipilih",
-  }),
+	status: z.nativeEnum(StatusAbsenGuru, {
+		required_error: "Status harus dipilih",
+	}),
 
-  isVerified: z.coerce.boolean({
-    required_error: "Status verifikasi harus ditentukan",
-  }),
+	isVerified: z.coerce.boolean({
+		required_error: "Status verifikasi harus ditentukan",
+	}),
 
-  /**
-   * Opsional: Jika ingin memindahkan absensi ini ke guru lain.
-   * (Misal: Admin salah input nama guru)
-   */
-  guruId: z.string().cuid("ID Guru tidak valid").optional(),
+	/**
+	 * Opsional: Jika ingin memindahkan absensi ini ke guru lain.
+	 * (Misal: Admin salah input nama guru)
+	 */
+	guruId: z.string().cuid("ID Guru tidak valid").optional(),
 });
 
 export type TypeUpdateAbsensiGuruSchema = z.infer<
-  typeof updateAbsensiGuruSchema
+	typeof updateAbsensiGuruSchema
 >;
 
 /**
@@ -63,6 +63,6 @@ export type TypeUpdateAbsensiGuruSchema = z.infer<
  * Digunakan di halaman verifikasi.
  */
 export const verifyAbsensiSchema = z.object({
-  absensiId: z.string().cuid(),
-  isVerified: z.boolean(),
+	absensiId: z.string().cuid(),
+	isVerified: z.boolean(),
 });

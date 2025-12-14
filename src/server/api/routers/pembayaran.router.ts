@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import { z } from "zod";
 import dayjs from "@/utils/dateUtils";
 import { Prisma, StatusPembayaran } from "@prisma/client";
@@ -8,57 +8,11 @@ import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
 import {
   createPembayaranSchema,
   updatePembayaranSchema,
-} from "@/types/pembayaran.type";
+} from "@/types/pembayaran.schema";
 import { paginationSchema } from "@/types/pagination.type";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const pembayaranRouter = createTRPCRouter({
-  // 1. GET ALL (Dengan Filter Opsional)
-  getAll: protectedProcedure
-    .input(
-      z
-        .object({
-          status: z.nativeEnum(StatusPembayaran).optional(),
-          muridId: z.string().optional(),
-          cabangId: z.string().optional(),
-        })
-        .optional(),
-    )
-    .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
-
-      const whereClause: Prisma.PembayaranWhereInput = {};
-      const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
-
-      // A. Filter Cabang
-      if (filterCabangId)
-        pendaftaranFilter.Kelas = { cabangId: filterCabangId };
-      // B. Filter Murid
-      if (input?.muridId) pendaftaranFilter.muridId = input.muridId;
-      // Pasang filter relasi jika ada
-      if (Object.keys(pendaftaranFilter).length > 0)
-        whereClause.pendaftaranKelas = pendaftaranFilter;
-      // Filter Status
-      if (input?.status) whereClause.statusBayar = input.status;
-
-      return db.pembayaran.findMany({
-        where: whereClause,
-        orderBy: { tanggalJatuhTempo: "desc" },
-        include: {
-          pendaftaranKelas: {
-            include: {
-              murid: { select: { namaLengkap: true, noWA: true } },
-              Kelas: { select: { kodeKelas: true, hargaKelas: true } },
-            },
-          },
-          verifiedBy: { select: { name: true } }, // Lihat siapa admin yang verifikasi
-        },
-      });
-    }),
-
-  getAllPaginated: protectedProcedure
+  getAllPaginated: cabangProtectedProcedure
     .input(
       paginationSchema.extend({
         status: z.nativeEnum(StatusPembayaran).optional(),
@@ -68,10 +22,10 @@ export const pembayaranRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { pageIndex, pageSize } = input;
 
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
+      const filterCabangId = allowedCabangId ?? input.cabangId;
 
       const whereClause: Prisma.PembayaranWhereInput = {};
       const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
@@ -127,12 +81,12 @@ export const pembayaranRouter = createTRPCRouter({
     }),
 
   // 2. GET TAGIHAN JATUH TEMPO (Untuk Dashboard)
-  getTagihanJatuhTempo: protectedProcedure
+  getTagihanJatuhTempo: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
       // const HARI_INI = dayjs().startOf("day");
       const DUA_MINGGU_LAGI = dayjs().add(14, "day").endOf("day");
 
@@ -165,7 +119,7 @@ export const pembayaranRouter = createTRPCRouter({
       });
     }),
 
-  getForExport: protectedProcedure
+  getForExport: cabangProtectedProcedure
     .input(
       z.object({
         status: z.nativeEnum(StatusPembayaran).optional(),
@@ -175,9 +129,9 @@ export const pembayaranRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
+      const filterCabangId = allowedCabangId ?? input.cabangId;
 
       const whereClause: Prisma.PembayaranWhereInput = {};
       const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
@@ -224,10 +178,10 @@ export const pembayaranRouter = createTRPCRouter({
       return data;
     }),
 
-  getSaldoByMuridId: protectedProcedure
+  getSaldoByMuridId: cabangProtectedProcedure
     .input(z.object({ muridId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const pendaftaranAktif = await db.pendaftaranKelas.findFirst({
         where: {
@@ -243,7 +197,6 @@ export const pembayaranRouter = createTRPCRouter({
         return null;
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (
         allowedCabangId &&
         pendaftaranAktif.Kelas.cabangId !== allowedCabangId
@@ -258,10 +211,10 @@ export const pembayaranRouter = createTRPCRouter({
       return await calculateSisaPertemuan(db, pendaftaranAktif.id);
     }),
 
-  updatePembayaran: protectedProcedure
+  updatePembayaran: cabangProtectedProcedure
     .input(updatePembayaranSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Authorization Check
       if (
@@ -293,7 +246,6 @@ export const pembayaranRouter = createTRPCRouter({
       }
 
       // Validasi Cabang
-      const allowedCabangId = getRestrictedCabangId(session, null);
       const paymentCabangId = existingPayment.pendaftaranKelas.Kelas.cabangId;
 
       if (allowedCabangId && paymentCabangId !== allowedCabangId) {
@@ -341,10 +293,10 @@ export const pembayaranRouter = createTRPCRouter({
 
   // 5. [BARU] CREATE TAGIHAN MANUAL
   // Jika admin perlu membuat tagihan di luar siklus otomatis
-  createManualTagihan: protectedProcedure
+  createManualTagihan: cabangProtectedProcedure
     .input(createPembayaranSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Validasi Kepemilikan Pendaftaran (Siswa)
       const pendaftaran = await db.pendaftaranKelas.findUnique({
@@ -360,7 +312,6 @@ export const pembayaranRouter = createTRPCRouter({
       }
 
       // 2. Security Check: Apakah user berhak membuat tagihan untuk siswa ini?
-      const allowedCabangId = getRestrictedCabangId(session, null);
 
       if (allowedCabangId && pendaftaran.Kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
@@ -417,10 +368,10 @@ export const pembayaranRouter = createTRPCRouter({
 
   // 6. DELETE TAGIHAN
   // Hati-hati, menghapus tagihan LUNAS akan mengurangi saldo pertemuan siswa!
-  deletePembayaran: protectedProcedure
+  deletePembayaran: cabangProtectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Role Check
       if (
@@ -451,7 +402,6 @@ export const pembayaranRouter = createTRPCRouter({
       }
 
       // Validasi Cabang
-      const allowedCabangId = getRestrictedCabangId(session, null);
       const paymentCabangId = existingPayment.pendaftaranKelas.Kelas.cabangId;
 
       if (allowedCabangId && paymentCabangId !== allowedCabangId) {

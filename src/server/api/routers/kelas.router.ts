@@ -1,5 +1,5 @@
 import { serverKelasSchema, upLevelKelasSchema } from "@/types/kelas.type";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
@@ -10,15 +10,14 @@ import {
   StatusPembayaran,
   TipeKelas,
 } from "@prisma/client";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const kelasRouter = createTRPCRouter({
-  getKelasAktif: protectedProcedure
+  getKelasAktif: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
 
       const whereClause: Prisma.KelasWhereInput = {};
       if (filterCabangId) {
@@ -30,7 +29,6 @@ export const kelasRouter = createTRPCRouter({
         distinct: ["cohortId"],
         orderBy: { createdAt: "desc" },
 
-        // Select disamakan dengan getAll agar kompatibel dengan UI yang sudah ada
         select: {
           id: true,
           jenisKelas: true,
@@ -66,7 +64,7 @@ export const kelasRouter = createTRPCRouter({
       return kelas;
     }),
 
-  getKelasAndCount: protectedProcedure
+  getKelasAndCount: cabangProtectedProcedure
     .input(
       z
         .object({
@@ -76,9 +74,9 @@ export const kelasRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
 
       const whereClause: Prisma.KelasWhereInput = {};
       if (filterCabangId) whereClause.cabangId = filterCabangId;
@@ -151,10 +149,10 @@ export const kelasRouter = createTRPCRouter({
       return filteredKelas;
     }),
 
-  getKelasById: protectedProcedure
+  getKelasById: cabangProtectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const kelas = await db.kelas.findUnique({
         where: { id: input.id },
@@ -162,9 +160,7 @@ export const kelasRouter = createTRPCRouter({
 
       if (!kelas) return null;
 
-      const userCabangId = getRestrictedCabangId(session, null);
-
-      if (userCabangId && kelas.cabangId !== userCabangId) {
+      if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Anda tidak memiliki akses ke data kelas dari cabang ini.",
@@ -173,10 +169,10 @@ export const kelasRouter = createTRPCRouter({
       return kelas;
     }),
 
-  getKelasHistory: protectedProcedure
+  getKelasHistory: cabangProtectedProcedure
     .input(z.object({ cohortId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const sampleKelas = await db.kelas.findFirst({
         where: { cohortId: input.cohortId },
@@ -187,7 +183,6 @@ export const kelasRouter = createTRPCRouter({
         return [];
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && sampleKelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -215,7 +210,7 @@ export const kelasRouter = createTRPCRouter({
    * Query ini dirancang untuk halaman absensi guru.
    * Mengambil semua kelas, dan untuk setiap kelas, mengambil daftar sesi pertemuannya.
    */
-  getKelasWithSesiForGuru: protectedProcedure.query(async ({ ctx }) => {
+  getKelasWithSesiForGuru: cabangProtectedProcedure.query(async ({ ctx }) => {
     const { db, session } = ctx;
     const guruId = session.user.id;
 
@@ -254,12 +249,12 @@ export const kelasRouter = createTRPCRouter({
     );
   }),
 
-  getForExport: protectedProcedure
+  getForExport: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
 
       const whereClause: Prisma.KelasWhereInput = {};
       if (filterCabangId) {
@@ -316,12 +311,12 @@ export const kelasRouter = createTRPCRouter({
       return filteredKelas;
     }),
 
-  createKelas: protectedProcedure
+  createKelas: cabangProtectedProcedure
     .input(serverKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
-      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+      const finalCabangId = allowedCabangId ?? input.cabangId;
 
       if (!finalCabangId) {
         throw new TRPCError({
@@ -359,10 +354,10 @@ export const kelasRouter = createTRPCRouter({
       }
     }),
 
-  updateKelas: protectedProcedure
+  updateKelas: cabangProtectedProcedure
     .input(serverKelasSchema.extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       try {
         const oldKelas = await db.kelas.findUnique({
@@ -376,8 +371,6 @@ export const kelasRouter = createTRPCRouter({
             message: "Kelas tidak ditemukan",
           });
         }
-
-        const allowedCabangId = getRestrictedCabangId(session, null);
 
         if (allowedCabangId && oldKelas.cabangId !== allowedCabangId) {
           throw new TRPCError({
@@ -454,10 +447,10 @@ export const kelasRouter = createTRPCRouter({
       }
     }),
 
-  deleteKelas: protectedProcedure
+  deleteKelas: cabangProtectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       try {
         const existingKelas = await db.kelas.findUnique({
@@ -471,7 +464,6 @@ export const kelasRouter = createTRPCRouter({
             message: "Kelas tidak ditemukan.",
           });
         }
-        const allowedCabangId = getRestrictedCabangId(session, null);
         if (allowedCabangId && existingKelas.cabangId !== allowedCabangId) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -509,10 +501,10 @@ export const kelasRouter = createTRPCRouter({
       }
     }),
 
-  upLevelKelas: protectedProcedure
+  upLevelKelas: cabangProtectedProcedure
     .input(upLevelKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const {
         oldKelasId,
         newLevel,
@@ -535,7 +527,6 @@ export const kelasRouter = createTRPCRouter({
           });
         }
 
-        const allowedCabangId = getRestrictedCabangId(session, null);
         if (allowedCabangId && oldKelas.cabangId !== allowedCabangId) {
           throw new TRPCError({
             code: "FORBIDDEN",

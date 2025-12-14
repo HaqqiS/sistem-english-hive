@@ -1,52 +1,40 @@
 import { Prisma } from "@prisma/client";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import { registerGuruFormSchema } from "@/types/user.type";
 import z from "zod";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
-import { getRestrictedCabangId } from "@/server/utils/permission";
+
 import { UserRole } from "@/server/auth/type";
 
 export const userRouter = createTRPCRouter({
-  getAllGuruSimple: protectedProcedure
+  getGuruList: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
 
-      // 1. Security Filter
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
-
-      const whereClause: Prisma.UserWhereInput = {
-        role: UserRole.GURU,
-      };
-
-      if (filterCabangId) {
-        whereClause.cabangId = filterCabangId;
-        // OPSI: Jika ingin menampilkan Guru Floating (cabangId null)
-        // whereClause.OR = [
-        //   { cabangId: filterCabangId },
-        //   { cabangId: null }
-        // ];
-      }
-
-      const gurus = await db.user.findMany({
-        where: whereClause,
+      return await db.user.findMany({
+        where: {
+          role: UserRole.GURU,
+          ...(filterCabangId ? { cabangId: filterCabangId } : {}),
+        },
+        orderBy: { name: "asc" },
         select: {
           id: true,
           name: true,
+          cabangId: true, // Opsional: untuk validasi di frontend
         },
       });
-
-      return gurus;
     }),
 
-  getAllGuruComplete: protectedProcedure
+  getAllGuruComplete: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Security Filter
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
 
       const whereClause: Prisma.UserWhereInput = {
         role: UserRole.GURU,
@@ -68,12 +56,12 @@ export const userRouter = createTRPCRouter({
       return gurus;
     }),
 
-  createGuru: protectedProcedure
+  createGuru: cabangProtectedProcedure
     .input(registerGuruFormSchema.extend({ cabangId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
-      const finalCabangId = getRestrictedCabangId(session, input.cabangId);
+      const finalCabangId = allowedCabangId ?? input.cabangId;
 
       if (!finalCabangId) {
         throw new TRPCError({
@@ -109,7 +97,7 @@ export const userRouter = createTRPCRouter({
       }
     }),
 
-  updateGuru: protectedProcedure
+  updateGuru: cabangProtectedProcedure
     .input(
       registerGuruFormSchema
         .extend({
@@ -118,7 +106,7 @@ export const userRouter = createTRPCRouter({
         .omit({ password: true }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Cek Kepemilikan (Ownership Check)
       const existingGuru = await db.user.findUnique({
@@ -134,7 +122,6 @@ export const userRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses Cabang
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingGuru.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -172,10 +159,10 @@ export const userRouter = createTRPCRouter({
       }
     }),
 
-  resetPasswordGuru: protectedProcedure
+  resetPasswordGuru: cabangProtectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Cek Kepemilikan
       const existingGuru = await db.user.findUnique({
@@ -185,7 +172,6 @@ export const userRouter = createTRPCRouter({
 
       if (!existingGuru) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingGuru.cabangId !== allowedCabangId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Akses ditolak." });
       }
@@ -201,10 +187,10 @@ export const userRouter = createTRPCRouter({
       return updatedGuru;
     }),
 
-  changePasswordGuru: protectedProcedure
+  changePasswordGuru: cabangProtectedProcedure
     .input(z.object({ id: z.string().cuid(), newPassword: z.string().min(8) }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const existingUser = await db.user.findUnique({
         where: { id: input.id },
@@ -218,7 +204,6 @@ export const userRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingUser.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -236,10 +221,10 @@ export const userRouter = createTRPCRouter({
       return updatedGuru;
     }),
 
-  deleteGuru: protectedProcedure
+  deleteGuru: cabangProtectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       // 1. Cek Kepemilikan
       const existingGuru = await db.user.findUnique({
@@ -255,7 +240,6 @@ export const userRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && existingGuru.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",

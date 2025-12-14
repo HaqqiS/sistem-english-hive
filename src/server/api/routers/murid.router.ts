@@ -2,31 +2,18 @@ import {
   RegisterMuridSchema,
   updateStatusMuridSchema,
 } from "@/types/murid.type";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  cabangProtectedProcedure,
+  publicProcedure,
+} from "../trpc";
 import z from "zod";
 import { Prisma, StatusMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { paginationSchema } from "@/types/pagination.type";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const muridRouter = createTRPCRouter({
-  getAllMurid: protectedProcedure
-    .input(z.object({ cabangId: z.string().optional() }).optional())
-    .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
-
-      const whereClause: Prisma.MuridWhereInput = {};
-      if (filterCabangId) whereClause.cabangId = filterCabangId;
-
-      const allMurid = await db.murid.findMany({
-        where: whereClause,
-        orderBy: { createdAt: "desc" },
-      });
-      return allMurid;
-    }),
-
-  getAllPaginated: protectedProcedure
+  getAllPaginated: cabangProtectedProcedure
     .input(
       paginationSchema.extend({
         search: z.string().optional(),
@@ -36,10 +23,8 @@ export const muridRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
       const { pageIndex, pageSize, search, status, tipeProgram } = input;
-
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
 
       const whereClause: Prisma.MuridWhereInput = {};
 
@@ -50,6 +35,7 @@ export const muridRouter = createTRPCRouter({
         };
       }
       if (status) whereClause.statusMurid = status;
+      const filterCabangId = allowedCabangId ?? input.cabangId;
       if (filterCabangId) whereClause.cabangId = filterCabangId;
       if (tipeProgram && tipeProgram !== undefined) {
         if (tipeProgram === "REGULER") {
@@ -85,14 +71,14 @@ export const muridRouter = createTRPCRouter({
       };
     }),
 
-  getMuridById: protectedProcedure
+  getMuridById: cabangProtectedProcedure
     .input(
       z.object({
         id: z.string().cuid(),
       }),
     )
     .query(async ({ input, ctx }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const murid = await db.murid.findUnique({
         where: { id: input.id },
@@ -100,7 +86,6 @@ export const muridRouter = createTRPCRouter({
 
       if (!murid) return null;
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && murid.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -111,11 +96,10 @@ export const muridRouter = createTRPCRouter({
       return murid;
     }),
 
-  getMuridWhereNotRegistered: protectedProcedure
+  getMuridWhereNotRegistered: cabangProtectedProcedure
     .input(z.object({ cabangId: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-      const filterCabangId = getRestrictedCabangId(session, input?.cabangId);
+      const { db, allowedCabangId } = ctx;
 
       const whereClause: Prisma.MuridWhereInput = {
         OR: [
@@ -124,6 +108,7 @@ export const muridRouter = createTRPCRouter({
         ],
       };
 
+      const filterCabangId = allowedCabangId ?? input?.cabangId;
       if (filterCabangId) whereClause.cabangId = filterCabangId;
 
       const unregisteredMurid = await db.murid.findMany({
@@ -144,13 +129,11 @@ export const muridRouter = createTRPCRouter({
       return unregisteredMurid;
     }),
 
-  getMuridNotRegisteredPaginated: protectedProcedure
+  getMuridNotRegisteredPaginated: cabangProtectedProcedure
     .input(paginationSchema.extend({ cabangId: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
       const { pageIndex, pageSize } = input;
-
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
 
       // Definisikan where clause agar konsisten untuk count dan findMany
       const whereClause: Prisma.MuridWhereInput = {
@@ -159,6 +142,7 @@ export const muridRouter = createTRPCRouter({
           { pendaftaranKelases: { every: { isAktif: false } } },
         ],
       };
+      const filterCabangId = allowedCabangId ?? input.cabangId;
       if (filterCabangId) whereClause.cabangId = filterCabangId;
 
       // Transaction untuk performa (count + query data paralel)
@@ -192,7 +176,7 @@ export const muridRouter = createTRPCRouter({
       };
     }),
 
-  getForExport: protectedProcedure
+  getForExport: cabangProtectedProcedure
     .input(
       z.object({
         search: z.string().optional(),
@@ -201,9 +185,7 @@ export const muridRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
-
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
+      const { db, allowedCabangId } = ctx;
 
       const whereClause: Prisma.MuridWhereInput = {};
       if (input.search) {
@@ -213,6 +195,7 @@ export const muridRouter = createTRPCRouter({
         };
       }
       if (input.status) whereClause.statusMurid = input.status;
+      const filterCabangId = allowedCabangId ?? input.cabangId;
       if (filterCabangId) whereClause.cabangId = filterCabangId;
 
       // Ambil data untuk CSV (Pilih field yang relevan untuk marketing/db)
@@ -240,10 +223,10 @@ export const muridRouter = createTRPCRouter({
       }
     }),
 
-  updateStatusMurid: protectedProcedure
+  updateStatusMurid: cabangProtectedProcedure
     .input(updateStatusMuridSchema)
     .mutation(async ({ input, ctx }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const existingMurid = await db.murid.findUnique({
         where: { id: input.id },
@@ -256,8 +239,6 @@ export const muridRouter = createTRPCRouter({
           message: "Data murid tidak ditemukan.",
         });
       }
-
-      const allowedCabangId = getRestrictedCabangId(session, null);
 
       if (allowedCabangId && existingMurid.cabangId !== allowedCabangId) {
         throw new TRPCError({
@@ -286,14 +267,14 @@ export const muridRouter = createTRPCRouter({
       }
     }),
 
-  updateMurid: protectedProcedure
+  updateMurid: cabangProtectedProcedure
     .input(
       RegisterMuridSchema.extend({
         id: z.string().cuid(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
       const { id, ...data } = input;
 
       const existingMurid = await db.murid.findUnique({
@@ -309,8 +290,6 @@ export const muridRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses Cabang
-      const allowedCabangId = getRestrictedCabangId(session, null);
-
       if (allowedCabangId && existingMurid.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -346,14 +325,14 @@ export const muridRouter = createTRPCRouter({
       }
     }),
 
-  deleteMurid: protectedProcedure
+  deleteMurid: cabangProtectedProcedure
     .input(
       z.object({
         id: z.string().cuid(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const existingMurid = await db.murid.findUnique({
         where: { id: input.id },
@@ -368,8 +347,6 @@ export const muridRouter = createTRPCRouter({
       }
 
       // 2. Validasi Akses
-      const allowedCabangId = getRestrictedCabangId(session, null);
-
       if (allowedCabangId && existingMurid.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",

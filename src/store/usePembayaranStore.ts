@@ -4,29 +4,29 @@ import { create } from "zustand";
 type DrawerType = "none" | "edit" | "create";
 
 interface PembayaranStore {
-  activeDrawer: DrawerType;
-  selectedPembayaran: TypePembayaran | null;
+	activeDrawer: DrawerType;
+	selectedPembayaran: TypePembayaran | null;
 
-  openDrawer: (drawer: DrawerType, item?: TypePembayaran) => void;
-  closeDrawer: () => void;
+	openDrawer: (drawer: DrawerType, item?: TypePembayaran) => void;
+	closeDrawer: () => void;
 
-  isDrawerOpen: (drawer: DrawerType) => boolean;
-  clearSelected: () => void;
+	isDrawerOpen: (drawer: DrawerType) => boolean;
+	clearSelected: () => void;
 }
 
 export const usePembayaranStore = create<PembayaranStore>((set, get) => ({
-  activeDrawer: "none",
-  selectedPembayaran: null,
+	activeDrawer: "none",
+	selectedPembayaran: null,
 
-  openDrawer: (drawer, item) =>
-    set({
-      activeDrawer: drawer,
-      selectedPembayaran: item ?? null,
-    }),
+	openDrawer: (drawer, item) =>
+		set({
+			activeDrawer: drawer,
+			selectedPembayaran: item ?? null,
+		}),
 
-  closeDrawer: () => set({ activeDrawer: "none", selectedPembayaran: null }),
+	closeDrawer: () => set({ activeDrawer: "none", selectedPembayaran: null }),
 
-  isDrawerOpen: (drawer) => get().activeDrawer === drawer,
+	isDrawerOpen: (drawer) => get().activeDrawer === drawer,
 
-  clearSelected: () => set({ selectedPembayaran: null }),
+	clearSelected: () => set({ selectedPembayaran: null }),
 }));

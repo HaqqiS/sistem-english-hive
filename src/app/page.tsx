@@ -17,41 +17,41 @@ import Footer from "./_components/_home/footer";
 import FloatingButtons from "@/app/_components/_home/floating_buttons";
 
 export default async function Home() {
-  await Promise.all([
-    api.cabang.getAllList.prefetch(),
-    // api.jadwalKelas.getAll.prefetch(),
-  ]);
+	await Promise.all([
+		api.cabang.getCabangList.prefetch(),
+		// api.jadwalKelas.getAll.prefetch(),
+	]);
 
-  return (
-    <HydrateClient>
-      <main className="bg-background selection:bg-accent selection:text-accent-foreground min-h-screen overflow-x-hidden">
-        <Navbar />
+	return (
+		<HydrateClient>
+			<main className="bg-background selection:bg-accent selection:text-accent-foreground min-h-screen overflow-x-hidden">
+				<Navbar />
 
-        <Hero />
+				<Hero />
 
-        <Features />
+				<Features />
 
-        <Programs />
+				<Programs />
 
-        <Pricing />
+				<Pricing />
 
-        <Schedule />
+				<Schedule />
 
-        <Testimonials />
+				<Testimonials />
 
-        <About />
+				<About />
 
-        <FAQ />
+				<FAQ />
 
-        <div id="registration">
-          <Registration />
-        </div>
+				<div id="registration">
+					<Registration />
+				</div>
 
-        <CTA />
+				<CTA />
 
-        <Footer />
-        <FloatingButtons />
-      </main>
-    </HydrateClient>
-  );
+				<Footer />
+				<FloatingButtons />
+			</main>
+		</HydrateClient>
+	);
 }

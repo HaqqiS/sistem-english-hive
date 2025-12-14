@@ -1,15 +1,17 @@
 import { serverCabangSchema } from "@/types/cabang.type";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  cabangProtectedProcedure,
+  managerProcedure,
+  publicProcedure,
+} from "../trpc";
 import z from "zod";
 import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const cabangRouter = createTRPCRouter({
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const { db, session } = ctx;
-
-    const allowedCabangId = getRestrictedCabangId(session, null);
+  getAll: cabangProtectedProcedure.query(async ({ ctx }) => {
+    const { db, allowedCabangId } = ctx;
 
     const whereClause: Prisma.CabangWhereInput = {};
     if (allowedCabangId) {
@@ -21,15 +23,17 @@ export const cabangRouter = createTRPCRouter({
     return cabang;
   }),
 
-  getAllList: publicProcedure.query(async ({ ctx }) => {
-    const { db } = ctx;
-    const cabang = await db.cabang.findMany({
-      select: { id: true, namaCabang: true },
+  getCabangList: publicProcedure.query(async ({ ctx }) => {
+    return await ctx.db.cabang.findMany({
+      orderBy: { namaCabang: "asc" },
+      select: {
+        id: true,
+        namaCabang: true,
+      },
     });
-    return cabang;
   }),
 
-  createCabang: protectedProcedure
+  createCabang: managerProcedure
     .input(serverCabangSchema)
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
@@ -57,19 +61,13 @@ export const cabangRouter = createTRPCRouter({
       }
     }),
 
-  updateCabang: protectedProcedure
+  updateCabang: managerProcedure
     .input(serverCabangSchema.extend({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db } = ctx;
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
-
-      if (allowedCabangId && input.id !== allowedCabangId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda tidak berhak mengubah data cabang lain."
-        });
-      }
+      // Manager Procedure sudah menjamin hanya Manager yang bisa akses
+      // Dan Manager berhak edit cabang manapun.
 
       try {
         const cabang = await db.cabang.update({
@@ -100,7 +98,7 @@ export const cabangRouter = createTRPCRouter({
       }
     }),
 
-  deleteCabang: protectedProcedure
+  deleteCabang: managerProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;

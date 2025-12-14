@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import z from "zod";
 import { Prisma, StatusAbsenMurid, StatusPembayaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
@@ -8,13 +8,12 @@ import {
   BATAS_SISA_UNTUK_TAGIHAN,
   JUMLAH_PERTEMUAN_PER_BLOK,
 } from "@/constants/pembayaran";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const absenMuridRouter = createTRPCRouter({
-  getMuridForAbsensi: protectedProcedure
+  getMuridForAbsensi: cabangProtectedProcedure
     .input(z.object({ sesiId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { sesiId } = input;
 
       // 1. Dapatkan info sesi & kelasId
@@ -39,7 +38,6 @@ export const absenMuridRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && sesi.kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -104,7 +102,7 @@ export const absenMuridRouter = createTRPCRouter({
       };
     }),
 
-  createOrUpdateAbsensi: protectedProcedure
+  createOrUpdateAbsensi: cabangProtectedProcedure
     .input(
       z.object({
         sesiId: z.string(),
@@ -113,7 +111,7 @@ export const absenMuridRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { sesiId, muridId, status } = input;
 
       const sesiCheck = await db.sesiPertemuanKelas.findUnique({
@@ -131,7 +129,6 @@ export const absenMuridRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && sesiCheck.kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",

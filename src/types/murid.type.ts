@@ -2,12 +2,13 @@ import type { RouterOutputs } from "@/trpc/react";
 import { Gender, StatusMurid } from "@prisma/client";
 import z from "zod";
 
+export type TypeAllMurid =
+  RouterOutputs["murid"]["getAllPaginated"]["data"][number];
+export type TypeAllMuridPaginated = RouterOutputs["murid"]["getAllPaginated"];
 export type TypeMuridNotRegistered =
-  RouterOutputs["murid"]["getMuridWhereNotRegistered"][number];
+  RouterOutputs["murid"]["getMuridNotRegisteredPaginated"]["data"][number];
 export type TypeMuridNotRegisteredPaginated =
   RouterOutputs["murid"]["getMuridNotRegisteredPaginated"];
-export type TypeAllMurid = RouterOutputs["murid"]["getAllMurid"][number];
-export type TypeAllMuridPaginated = RouterOutputs["murid"]["getAllPaginated"];
 
 export const RegisterMuridSchema = z.object({
   namaLengkap: z.string().trim().min(1, "Nama lengkap harus diisi").max(200),

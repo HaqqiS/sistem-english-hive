@@ -3,32 +3,30 @@ import { api, HydrateClient } from "@/trpc/server";
 import type { Metadata } from "next";
 
 interface PageProps {
-  params: Promise<{ sesiId: string }>;
+	params: Promise<{ sesiId: string }>;
 }
 
 export async function generateMetadata({
-  params,
+	params,
 }: PageProps): Promise<Metadata> {
-  const { sesiId } = await params;
+	const { sesiId } = await params;
 
-  // Fetch data ringkas untuk judul (pastikan ini cepat/cached)
-  const sesi = await api.sesiPertemuan
-    .getAll()
-    .then((data) => data.find((s) => s.id === sesiId));
+	// Fetch data ringkas untuk judul (pastikan ini cepat/cached)
+	const sesi = await api.sesiPertemuan.getById({ id: sesiId });
 
-  return {
-    title: sesi ? `Absensi Murid | ${sesi.kelas.kodeKelas}` : "Absensi Murid",
-  };
+	return {
+		title: sesi ? `Absensi Murid | ${sesi.kelas.kodeKelas}` : "Absensi Murid",
+	};
 }
 
 export default function DetailAbsenMuridPage() {
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
-      <main className="flex flex-1 flex-col gap-4 pt-0">
-        <HydrateClient>
-          <DetailAbsenMuridClient />
-        </HydrateClient>
-      </main>
-    </div>
-  );
+	return (
+		<div className="flex flex-1 flex-col gap-4 p-4">
+			<main className="flex flex-1 flex-col gap-4 pt-0">
+				<HydrateClient>
+					<DetailAbsenMuridClient />
+				</HydrateClient>
+			</main>
+		</div>
+	);
 }

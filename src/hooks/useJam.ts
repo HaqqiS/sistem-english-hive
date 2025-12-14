@@ -23,14 +23,6 @@ interface useJamOptions {
 /**
  * Custom hook untuk mengelola Ruang (Queries + Mutations)
  *
- * @example
- * // Hanya butuh data Ruang
- * const { data: RuangList } = useRuang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useRuang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
  */
 export function useJam(options?: useJamOptions) {
   const apiUtils = api.useUtils();

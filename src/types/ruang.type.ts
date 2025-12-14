@@ -4,9 +4,9 @@ import z from "zod";
 export type RuangType = RouterOutputs["ruang"]["getAll"][number];
 
 const baseRuangSchema = z.object({
-  namaRuang: z.string().min(1, "Nama Ruang harus diisi").max(100),
-  cabangId: z.string().min(1, "Cabang ID harus diisi"),
-  isAktif: z.coerce.boolean(),
+	namaRuang: z.string().min(1, "Nama Ruang harus diisi").max(100),
+	cabangId: z.string().min(1, "Cabang ID harus diisi"),
+	isAktif: z.coerce.boolean(),
 });
 
 export const clientRuangSchema = baseRuangSchema.extend({});

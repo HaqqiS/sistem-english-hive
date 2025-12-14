@@ -3,20 +3,22 @@ import {
   serverPendaftaranKelasSchema,
   serverUpdatePendaftaranKelasSchema,
 } from "@/types/pendaftaranKelas.type";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import dayjs from "dayjs";
 import { TRPCError } from "@trpc/server";
 import { Prisma, StatusMurid, StatusPembayaran } from "@prisma/client";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
-import { calculateInitialBill } from "@/server/services/pembayaran.service";
-import { getRestrictedCabangId } from "@/server/utils/permission";
+import {
+  createBulkPendaftaran,
+  createPendaftaran,
+} from "@/server/services/pendaftaran.service";
 
 export const pendaftaranKelasRouter = createTRPCRouter({
-  getPendaftarByKelasId: protectedProcedure
+  getPendaftarByKelasId: cabangProtectedProcedure
     .input(serverPendaftaranKelasSchema.pick({ kelasId: true }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const kelas = await db.kelas.findUnique({
         where: { id: input.kelasId },
@@ -29,7 +31,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
           message: "Kelas tidak ditemukan",
         });
       }
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -61,10 +62,10 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       return pendaftaranKelas;
     }),
 
-  createPendaftaranKelas: protectedProcedure
+  createPendaftaranKelas: cabangProtectedProcedure
     .input(serverPendaftaranKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const [murid, kelas] = await Promise.all([
         db.murid.findUnique({
@@ -99,7 +100,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       }
 
       // 3. Security Check (Admin)
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -159,90 +159,14 @@ export const pendaftaranKelasRouter = createTRPCRouter({
           where: { kelasId: input.kelasId },
         });
 
-        // 3. Kalkulasi Tagihan (Menggunakan Service)
-        let billInfo;
-        try {
-          billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            message: error.message,
-          });
-        }
-
-        // Sesi dimana murid ini akan mulai masuk (Sesi Berikutnya)
-
         // 4. EKSEKUSI TRANSACTION
         const result = await db.$transaction(async (tx) => {
-          // A. Create Pendaftaran Utama (Level Ini)
-          const pendaftaran = await tx.pendaftaranKelas.create({
-            data: {
-              ...input,
-              isAktif: true,
-            },
+          return createPendaftaran({
+            tx,
+            input,
+            kelas,
+            jumlahSesiBerlalu,
           });
-
-          // B. Create Tagihan Utama
-          await tx.pembayaran.create({
-            data: {
-              pendaftaranKelasId: pendaftaran.id,
-              pembayaranKe: billInfo.pembayaranKe,
-              jumlahBayar: billInfo.totalTagihan,
-              tanggalJatuhTempo: dayjs(input.tanggalMulai).toDate(),
-              statusBayar: StatusPembayaran.BELUM_LUNAS,
-              note: billInfo.note,
-            },
-          });
-
-          // C. CEK "VERY LATE JOINER" (Sesi 21-24)
-          // Jika murid masuk setelah trigger level up (Sesi 20),
-          // Cek apakah kelas masa depan sudah dibuat?
-          let nextLevelRegistrationId: string | null = null;
-
-          if (billInfo.sesiMasuk > 20) {
-            const nextClass = await tx.kelas.findFirst({
-              where: {
-                cohortId: kelas.cohortId,
-                level: kelas.level + 1,
-              },
-              orderBy: { createdAt: "desc" },
-            });
-
-            if (nextClass) {
-              const nextStartDate = dayjs(input.tanggalMulai)
-                .add(1, "month")
-                .format("YYYY-MM-DD");
-
-              const nextReg = await tx.pendaftaranKelas.create({
-                data: {
-                  muridId: input.muridId,
-                  kelasId: nextClass.id,
-                  tanggalMulai: nextStartDate,
-                  isAktif: true,
-                },
-              });
-              nextLevelRegistrationId = nextReg.id;
-
-              // Tagihan Pending Level Berikutnya
-              const tagihanNext =
-                nextClass.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
-
-              await tx.pembayaran.create({
-                data: {
-                  pendaftaranKelasId: nextReg.id,
-                  pembayaranKe: 1,
-                  jumlahBayar: tagihanNext,
-                  tanggalJatuhTempo: dayjs(nextStartDate).toDate(),
-                  statusBayar: StatusPembayaran.PENDING,
-                  note: "Auto-Registration (Very Late Joiner Lvl Sebelumnya)",
-                },
-              });
-            }
-          }
-
-          return { pendaftaran, nextLevelRegistrationId };
         });
 
         return result.pendaftaran;
@@ -259,10 +183,10 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       }
     }),
 
-  createBulkPendaftaranKelas: protectedProcedure
+  createBulkPendaftaranKelas: cabangProtectedProcedure
     .input(serverBulkPendaftaranKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { muridIds, kelasId, tanggalMulai } = input;
 
       const kelas = await db.kelas.findUnique({
@@ -282,7 +206,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         });
 
       // Security Check
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -322,93 +245,17 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       const jumlahSesiBerlalu = await db.sesiPertemuanKelas.count({
         where: { kelasId: input.kelasId },
       });
-      // B. Hitung Bill Info (Menggunakan Service yang sama dengan Single Create)
-      let billInfo;
 
-      try {
-        billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
-      } catch (error) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message:
-            error instanceof Error ? error.message : "Gagal menghitung tagihan",
-        });
-      }
-
-      let nextClassId: string | null = null;
-      let nextClassTagihan = 0;
-      let nextStartDateStr = "";
-      let nextStartDateDate: Date | undefined = undefined;
-
-      if (billInfo.sesiMasuk > 20) {
-        const nextClass = await db.kelas.findFirst({
-          where: {
-            cohortId: kelas.cohortId,
-            level: kelas.level + 1,
-          },
-          orderBy: { createdAt: "desc" },
-        });
-
-        if (nextClass) {
-          nextClassId = nextClass.id;
-          nextClassTagihan = nextClass.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
-          // Set tanggal mulai bulan depan
-          const nextDateDayjs = dayjs(tanggalMulai).add(1, "month");
-          nextStartDateStr = nextDateDayjs.format("YYYY-MM-DD");
-          nextStartDateDate = nextDateDayjs.toDate();
-        }
-      }
-
-      const tglMulaiDate = dayjs(tanggalMulai).toDate();
       // Transaction
       try {
         await db.$transaction(
           async (tx) => {
-            for (const muridId of muridIds) {
-              const pendaftaran = await tx.pendaftaranKelas.create({
-                data: {
-                  muridId,
-                  kelasId,
-                  tanggalMulai,
-                  isAktif: true,
-                },
-              });
-
-              await tx.pembayaran.create({
-                data: {
-                  pendaftaranKelasId: pendaftaran.id,
-                  pembayaranKe: billInfo.pembayaranKe,
-                  jumlahBayar: billInfo.totalTagihan,
-                  tanggalJatuhTempo: tglMulaiDate,
-                  statusBayar: StatusPembayaran.BELUM_LUNAS,
-                  note: `${billInfo.note} (Bulk Reg)`,
-                },
-              });
-
-              // C. Handle "Very Late Joiner" (Auto-Register Next Level)
-              if (nextClassId && nextStartDateDate) {
-                const nextReg = await tx.pendaftaranKelas.create({
-                  data: {
-                    muridId,
-                    kelasId: nextClassId,
-                    tanggalMulai: nextStartDateStr,
-                    isAktif: true,
-                  },
-                });
-
-                // Tagihan Pending Level Berikutnya
-                await tx.pembayaran.create({
-                  data: {
-                    pendaftaranKelasId: nextReg.id,
-                    pembayaranKe: 1,
-                    jumlahBayar: nextClassTagihan,
-                    tanggalJatuhTempo: nextStartDateDate,
-                    statusBayar: StatusPembayaran.PENDING,
-                    note: "Auto-Registration (Very Late Joiner Bulk)",
-                  },
-                });
-              }
-            }
+            return createBulkPendaftaran({
+              tx,
+              input,
+              kelas,
+              jumlahSesiBerlalu,
+            });
           },
           { timeout: 20000 },
         );
@@ -427,10 +274,10 @@ export const pendaftaranKelasRouter = createTRPCRouter({
         throw error;
       }
     }),
-  updatePendaftaranKelas: protectedProcedure
+  updatePendaftaranKelas: cabangProtectedProcedure
     .input(serverUpdatePendaftaranKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const existingRecord = await db.pendaftaranKelas.findUnique({
         where: { id: input.id },
@@ -449,7 +296,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       if (!existingRecord) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Security Check
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (
         allowedCabangId &&
         existingRecord.Kelas.cabangId !== allowedCabangId
@@ -608,10 +454,10 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       }
     }),
 
-  deletePendaftaranKelas: protectedProcedure
+  deletePendaftaranKelas: cabangProtectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
 
       const existingPendaftaran = await db.pendaftaranKelas.findUnique({
         where: { id: input.id },
@@ -626,7 +472,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
       }
 
       // Security Check
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (
         allowedCabangId &&
         existingPendaftaran.Kelas.cabangId !== allowedCabangId

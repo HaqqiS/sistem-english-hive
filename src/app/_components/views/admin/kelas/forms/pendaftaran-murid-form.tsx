@@ -2,20 +2,20 @@
 
 import { useMurid } from "@/hooks/useMurid";
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
 } from "@/components/ui/form";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 import type { TypeClientTambahMuridSchema } from "@/types/pendaftaranKelas.type";
 import { useFormContext } from "react-hook-form";
@@ -40,66 +40,66 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 // import { Badge } from "@/components/ui/badge";
 
 interface PendaftaranMuridFormProps {
-  onSubmit: (data: TypeClientTambahMuridSchema) => void;
+	onSubmit: (data: TypeClientTambahMuridSchema) => void;
 }
 
 export default function PendaftaranMuridForm({
-  onSubmit,
+	onSubmit,
 }: PendaftaranMuridFormProps) {
-  const { activeCabangId } = useGlobalCabangStore();
-  // const [open, setOpen] = useState(false);
+	const { activeCabangId } = useGlobalCabangStore();
+	// const [open, setOpen] = useState(false);
 
-  const form = useFormContext<TypeClientTambahMuridSchema>();
+	const form = useFormContext<TypeClientTambahMuridSchema>();
 
-  const { dataMuridNotRegistered } = useMurid({
-    filterCabang: activeCabangId,
-    enableNotRegisteredQuery: true,
-  });
+	const { dataMuridNotRegistered } = useMurid({
+		filterCabang: activeCabangId,
+		enableNotRegisteredQuery: true,
+	});
 
-  // const handleUnselect = (item: string) => {
-  //   const current = form.getValues("muridId") || [];
-  //   form.setValue(
-  //     "muridId",
-  //     current.filter((i) => i !== item),
-  //   );
-  // };
+	// const handleUnselect = (item: string) => {
+	//   const current = form.getValues("muridId") || [];
+	//   form.setValue(
+	//     "muridId",
+	//     current.filter((i) => i !== item),
+	//   );
+	// };
 
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <FormField
-        control={form.control}
-        name="muridId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Murid</FormLabel>
-            <FormControl>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <SelectTrigger className="w-full" size="lg">
-                  <SelectValue placeholder="Select Murid" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Pilih Murid</SelectLabel>
-                    {dataMuridNotRegistered?.map((murid) => (
-                      <SelectItem key={murid.id} value={murid.id}>
-                        <div className="flex flex-col items-start">
-                          <span>{murid.namaLengkap}</span>
-                          <span className="text-muted-foreground text-xs">
-                            {murid.umur} tahun - Kelas: {murid.kelasSekolah}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+	return (
+		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+			<FormField
+				control={form.control}
+				name="muridId"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Murid</FormLabel>
+						<FormControl>
+							<Select onValueChange={field.onChange} value={field.value}>
+								<SelectTrigger className="w-full" size="lg">
+									<SelectValue placeholder="Select Murid" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectGroup>
+										<SelectLabel>Pilih Murid</SelectLabel>
+										{dataMuridNotRegistered?.map((murid) => (
+											<SelectItem key={murid.id} value={murid.id}>
+												<div className="flex flex-col items-start">
+													<span>{murid.namaLengkap}</span>
+													<span className="text-muted-foreground text-xs">
+														{murid.umur} tahun - Kelas: {murid.kelasSekolah}
+													</span>
+												</div>
+											</SelectItem>
+										))}
+									</SelectGroup>
+								</SelectContent>
+							</Select>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
 
-      {/* <FormField
+			{/* <FormField
         control={form.control}
         name="muridId"
         render={({ field }) => (
@@ -170,7 +170,7 @@ export default function PendaftaranMuridForm({
             </Popover>
 
             {/* Selected Badges Area */}
-      {/* <div className="mt-2 flex flex-wrap gap-1">
+			{/* <div className="mt-2 flex flex-wrap gap-1">
               {field.value?.map((muridId) => {
                 const murid = dataMuridNotRegistered?.find(
                   (m) => m.id === muridId,
@@ -205,11 +205,11 @@ export default function PendaftaranMuridForm({
         )}
       /> */}
 
-      <FormStringDatePicker
-        control={form.control}
-        name="tanggalMulai"
-        label="Tanggal Mulai"
-      />
-    </form>
-  );
+			<FormStringDatePicker
+				control={form.control}
+				name="tanggalMulai"
+				label="Tanggal Mulai"
+			/>
+		</form>
+	);
 }

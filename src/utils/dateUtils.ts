@@ -36,11 +36,11 @@ export const JAM_MULAI_KELAS = ["14:30", "16:00", "17:30"];
  * @returns String yang sudah diformat (e.g., "5 Nov 2025, 16:00")
  */
 export const formatToWITA = (
-  date: Date | string | undefined | null,
-  format = "D MMM YYYY, HH:mm",
+	date: Date | string | undefined | null,
+	format = "D MMM YYYY, HH:mm",
 ) => {
-  if (!date) return "-"; // Kembalikan placeholder jika tanggal tidak ada
-  return dayjs(date).tz(TIMEZONE_BISNIS).format(format);
+	if (!date) return "-"; // Kembalikan placeholder jika tanggal tidak ada
+	return dayjs(date).tz(TIMEZONE_BISNIS).format(format);
 };
 
 /**
@@ -52,11 +52,11 @@ export const formatToWITA = (
  * @returns String yang sudah diformat (e.g., "5 November 2025")
  */
 export const formatDateWITA = (date: Date | string | undefined | null) => {
-  if (!date) return "-";
-  // 'dayjs(date)' akan menangani string "YYYY-MM-DD" dengan benar
-  // Kita tidak perlu .tz() karena kita tidak peduli pergeseran jam
-  // tapi kita pakai untuk konsistensi jika inputnya Date object
-  return dayjs(date).tz(TIMEZONE_BISNIS).format("D MMMM YYYY");
+	if (!date) return "-";
+	// 'dayjs(date)' akan menangani string "YYYY-MM-DD" dengan benar
+	// Kita tidak perlu .tz() karena kita tidak peduli pergeseran jam
+	// tapi kita pakai untuk konsistensi jika inputnya Date object
+	return dayjs(date).tz(TIMEZONE_BISNIS).format("D MMMM YYYY");
 };
 
 /**
@@ -68,7 +68,7 @@ export const formatDateWITA = (date: Date | string | undefined | null) => {
  * @returns Date object (UTC)
  */
 export const convertWITAtoUTC = (localDateTimeString: string): Date => {
-  return dayjs.tz(localDateTimeString, TIMEZONE_BISNIS).toDate();
+	return dayjs.tz(localDateTimeString, TIMEZONE_BISNIS).toDate();
 };
 
 /**
@@ -76,7 +76,7 @@ export const convertWITAtoUTC = (localDateTimeString: string): Date => {
  * (Diambil dari file dateUtils lama Anda)
  */
 export function isValidDate(date: unknown): date is Date {
-  return date instanceof Date && !isNaN(date.getTime());
+	return date instanceof Date && !isNaN(date.getTime());
 }
 
 /**
@@ -88,9 +88,9 @@ export function isValidDate(date: unknown): date is Date {
  * @returns String "YYYY-MM-DD"
  */
 export const formatDateToYYYYMMDD = (date: Date | string): string => {
-  // Gunakan dayjs untuk memformat, tidak perlu .tz()
-  // karena kita hanya ingin tanggal "lokal" dari kalender
-  return dayjs(date).format("YYYY-MM-DD");
+	// Gunakan dayjs untuk memformat, tidak perlu .tz()
+	// karena kita hanya ingin tanggal "lokal" dari kalender
+	return dayjs(date).format("YYYY-MM-DD");
 };
 
 /**
@@ -98,7 +98,7 @@ export const formatDateToYYYYMMDD = (date: Date | string): string => {
  * (Diambil dari file dateUtils lama Anda)
  */
 export const standardDate = (time: number) =>
-  time < 10 ? `0${time}` : `${time}`;
+	time < 10 ? `0${time}` : `${time}`;
 
 // Ekspor 'dayjs' yang sudah dikonfigurasi jika Anda membutuhkannya secara langsung
 export default dayjs;

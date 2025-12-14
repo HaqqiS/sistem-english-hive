@@ -3,31 +3,31 @@ import DashboardLayout from "../_components/layouts/dashboard-layout";
 
 // Tentukan navigasi khusus untuk Teacher
 const teacherNavItems: NavItem[] = [
-  {
-    title: "Dashboard",
-    url: "/guru",
-    icon: "Home",
-  },
-  {
-    title: "Absensi Murid",
-    url: "/guru/absen",
-    icon: "Users",
-  },
+	{
+		title: "Dashboard",
+		url: "/guru",
+		icon: "Home",
+	},
+	{
+		title: "Absensi Murid",
+		url: "/guru/absen",
+		icon: "Users",
+	},
 ];
 
 export default async function TeacherLayout({
-  children,
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  // Ambil sesi di server
-  // const session = await auth();
-  // Proteksi route: Cek jika user adalah ADMIN
-  // if (session?.user?.role !== "ADMIN") {
-  //   redirect("/unauthorized"); // atau halaman login
-  // }
+	// Ambil sesi di server
+	// const session = await auth();
+	// Proteksi route: Cek jika user adalah ADMIN
+	// if (session?.user?.role !== "ADMIN") {
+	//   redirect("/unauthorized"); // atau halaman login
+	// }
 
-  return (
-    <DashboardLayout navItems={teacherNavItems}> {children} </DashboardLayout>
-  );
+	return (
+		<DashboardLayout navItems={teacherNavItems}> {children} </DashboardLayout>
+	);
 }

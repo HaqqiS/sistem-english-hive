@@ -6,69 +6,63 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import {
-  clientTambahMuridSchema,
-  type TypeClientTambahMuridSchema,
+	clientTambahMuridSchema,
+	type TypeClientTambahMuridSchema,
 } from "@/types/pendaftaranKelas.type";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useMurid } from "@/hooks/useMurid";
 
 interface TambahMuridDetailKelasProps {
-  kelasId?: string;
+	kelasId?: string;
 }
 
 export default function TambahMuridDetailKelas({
-  kelasId,
+	kelasId,
 }: TambahMuridDetailKelasProps) {
-  const [isOpen, setIsOpen] = useState(false);
+	const [isOpen, setIsOpen] = useState(false);
 
-  const form = useForm<TypeClientTambahMuridSchema>({
-    resolver: zodResolver(clientTambahMuridSchema),
-    defaultValues: {
-      muridId: "",
-    },
-  });
+	const form = useForm<TypeClientTambahMuridSchema>({
+		resolver: zodResolver(clientTambahMuridSchema),
+		defaultValues: {
+			muridId: "",
+		},
+	});
 
-  const { mutations } = usePendaftaranKelas({
-    onSuccessCreate: () => {
-      form.reset();
-      setIsOpen(false);
-    },
-  });
-  const { mutations: muridMutations } = useMurid();
+	const { mutations } = usePendaftaranKelas({
+		onSuccessCreate: () => {
+			form.reset();
+			setIsOpen(false);
+		},
+	});
 
-  const onSubmit = (values: TypeClientTambahMuridSchema) => {
-    // console.log("values:", values);
-    mutations.create.mutate({
-      ...values,
-      kelasId: kelasId ?? "",
-    });
-    muridMutations.updateStatus.mutate({
-      id: values.muridId,
-      statusMurid: "AKTIF",
-    });
-  };
+	const onSubmit = (values: TypeClientTambahMuridSchema) => {
+		// console.log("values:", values);
+		mutations.create.mutate({
+			...values,
+			kelasId: kelasId ?? "",
+		});
+	};
 
-  return (
-    <AddDrawer
-      title="Tambah Murid ke Kelas"
-      description="Tambahkan murid baru ke kelas ini"
-      onSubmit={form.handleSubmit(onSubmit)}
-      isPending={mutations.create.isPending}
-      submitText="Tambah Murid"
-      cancelText="Batal"
-      trigger={
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Murid
-        </Button>
-      }
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <Form {...form}>
-        <PendaftaranMuridForm onSubmit={onSubmit} />
-      </Form>
-    </AddDrawer>
-  );
+	return (
+		<AddDrawer
+			title="Tambah Murid ke Kelas"
+			description="Tambahkan murid baru ke kelas ini"
+			onSubmit={form.handleSubmit(onSubmit)}
+			isPending={mutations.create.isPending}
+			submitText="Tambah Murid"
+			cancelText="Batal"
+			trigger={
+				<Button>
+					<Plus className="mr-2 h-4 w-4" />
+					Tambah Murid
+				</Button>
+			}
+			isOpen={isOpen}
+			onOpenChange={setIsOpen}
+		>
+			<Form {...form}>
+				<PendaftaranMuridForm onSubmit={onSubmit} />
+			</Form>
+		</AddDrawer>
+	);
 }

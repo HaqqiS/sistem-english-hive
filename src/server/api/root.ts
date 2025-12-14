@@ -1,4 +1,3 @@
-import { postRouter } from "@/server/api/routers/post.router";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { cabangRouter } from "./routers/cabang.router";
 import { ruangRouter } from "./routers/ruang.router";
@@ -20,7 +19,6 @@ import { jadwalKelasRouter } from "./routers/jadwalKelas.router";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  post: postRouter,
   user: userRouter,
   absenGuru: absenGuruRouter,
   cabang: cabangRouter,

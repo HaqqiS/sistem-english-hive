@@ -17,16 +17,6 @@ interface UseProgramKelasOptions {
 }
 
 /**
- * Custom hook untuk mengelola Cabang (Queries + Mutations)
- *
- * @example
- * // Hanya butuh data cabang
- * const { data: cabangList } = useCabang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useCabang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
  */
 export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
   const apiUtils = api.useUtils();

@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import {
   serverStartSesiSchema,
   updateAbsensiGuruSchema,
@@ -14,11 +14,10 @@ import {
   handleAutoLevelUp,
   handleClassCompletion,
 } from "@/server/services/kelas.service";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 import { UserRole } from "@/server/auth/type";
 
 export const absenGuruRouter = createTRPCRouter({
-  getAllAbsensi: protectedProcedure
+  getAllAbsensi: cabangProtectedProcedure
     .input(
       paginationSchema.extend({
         search: z.string().optional(),
@@ -30,10 +29,10 @@ export const absenGuruRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { pageIndex, pageSize, month, search } = input;
 
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
+      const filterCabangId = allowedCabangId ?? input.cabangId;
 
       const whereClause: Prisma.AbsensiGuruWhereInput = {};
 
@@ -115,7 +114,7 @@ export const absenGuruRouter = createTRPCRouter({
       };
     }),
 
-  getHistoryByGuruId: protectedProcedure
+  getHistoryByGuruId: cabangProtectedProcedure
     .input(
       z.object({
         guruId: z.string().cuid(),
@@ -125,10 +124,10 @@ export const absenGuruRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { guruId, month, cabangId } = input;
 
-      const filterCabangId = getRestrictedCabangId(session, cabangId);
+      const filterCabangId = allowedCabangId ?? cabangId;
 
       if (
         session.user.role !== UserRole.ADMIN &&
@@ -140,7 +139,29 @@ export const absenGuruRouter = createTRPCRouter({
         });
       }
 
-      // 1. Gunakan Service untuk mendapatkan range tanggal (26 prev - 25 curr)
+      // 1. Security Check: Pastikan Guru yang diminta ada di cabang yang diizinkan
+      if (allowedCabangId) {
+        const guru = await db.user.findUnique({
+          where: { id: guruId },
+          select: { cabangId: true },
+        });
+
+        if (!guru) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Guru tidak ditemukan.",
+          });
+        }
+
+        if (guru.cabangId !== allowedCabangId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Anda tidak berhak melihat data guru dari cabang lain.",
+          });
+        }
+      }
+
+      // 2. Gunakan Service untuk mendapatkan range tanggal (26 prev - 25 curr)
       const { startDate, endDate } = getPeriodeGaji(month);
 
       // 2. Query absensi guru berdasarkan range tanggal tersebut
@@ -194,7 +215,7 @@ export const absenGuruRouter = createTRPCRouter({
       return history;
     }),
 
-  getForExport: protectedProcedure
+  getForExport: cabangProtectedProcedure
     .input(
       z.object({
         search: z.string().optional(),
@@ -206,10 +227,10 @@ export const absenGuruRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { month, search } = input;
 
-      const filterCabangId = getRestrictedCabangId(session, input.cabangId);
+      const filterCabangId = allowedCabangId ?? input.cabangId;
 
       const whereClause: Prisma.AbsensiGuruWhereInput = {};
 
@@ -256,10 +277,10 @@ export const absenGuruRouter = createTRPCRouter({
    * Membuat SesiPertemuanKelas (realisasi) DAN AbsensiGuru (catatan hadir guru).
    * Mengembalikan ID SesiPertemuanKelas yang baru dibuat untuk redirect.
    */
-  createSesiAndAbsensi: protectedProcedure
+  createSesiAndAbsensi: cabangProtectedProcedure
     .input(serverStartSesiSchema) // <-- Gunakan skema baru
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const guruId = session.user.id;
       const { jadwalKelasId, status, overrideRuangId } = input;
 
@@ -292,7 +313,6 @@ export const absenGuruRouter = createTRPCRouter({
             message: "Jadwal tidak ditemukan",
           });
 
-        const allowedCabangId = getRestrictedCabangId(session, null);
         if (allowedCabangId && jadwal.kelas.cabangId !== allowedCabangId) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -370,7 +390,7 @@ export const absenGuruRouter = createTRPCRouter({
       }
     }),
 
-  verifyAbsensi: protectedProcedure
+  verifyAbsensi: cabangProtectedProcedure
     .input(
       z.object({
         absensiId: z.string(),
@@ -378,7 +398,7 @@ export const absenGuruRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       if (
         session.user.role !== UserRole.ADMIN &&
         session.user.role !== UserRole.MANAGER
@@ -408,7 +428,6 @@ export const absenGuruRouter = createTRPCRouter({
       }
 
       // 3. Security Filter (Cabang Check)
-      const allowedCabangId = getRestrictedCabangId(session, null);
       const dataCabangId = existingAbsensi.sesiPertemuanKelas.kelas.cabangId;
 
       if (allowedCabangId && dataCabangId !== allowedCabangId) {
@@ -441,14 +460,14 @@ export const absenGuruRouter = createTRPCRouter({
       }
     }),
 
-  updateAbsenGuru: protectedProcedure
+  updateAbsenGuru: cabangProtectedProcedure
     .input(
       updateAbsensiGuruSchema.extend({
         absensiId: z.string().cuid("ID absensi tidak valid"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { status, isVerified, guruId, absensiId } = input;
 
       if (
@@ -480,7 +499,6 @@ export const absenGuruRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       const dataCabangId = existingAbsensi.sesiPertemuanKelas.kelas.cabangId;
 
       if (allowedCabangId && dataCabangId !== allowedCabangId) {
@@ -529,10 +547,10 @@ export const absenGuruRouter = createTRPCRouter({
       }
     }),
 
-  deleteAbsenGuru: protectedProcedure
+  deleteAbsenGuru: cabangProtectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, session, allowedCabangId } = ctx;
       const { id } = input;
 
       const existingAbsensi = await db.absensiGuru.findUnique({
@@ -554,7 +572,6 @@ export const absenGuruRouter = createTRPCRouter({
       }
 
       // 2. Security Filter
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (
         allowedCabangId &&
         existingAbsensi.sesiPertemuanKelas.kelas.cabangId !== allowedCabangId

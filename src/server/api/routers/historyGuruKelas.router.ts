@@ -2,17 +2,16 @@ import {
   serverHistoryGuruKelasSchema,
   updateHistoryGuruKelasSchema,
 } from "@/types/historyGuruKelas.type";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
 import z from "zod";
 import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { getRestrictedCabangId } from "@/server/utils/permission";
 
 export const historyGuruKelasRouter = createTRPCRouter({
-  getHistoryGuruByKelasId: protectedProcedure
+  getHistoryGuruByKelasId: cabangProtectedProcedure
     .input(z.object({ kelasId: z.string().min(1, "Kelas ID harus diisi") }))
     .query(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const kelasCheck = await db.kelas.findUnique({
         where: { id: input.kelasId },
@@ -25,8 +24,6 @@ export const historyGuruKelasRouter = createTRPCRouter({
           message: "Kelas tidak ditemukan.",
         });
       }
-
-      const allowedCabangId = getRestrictedCabangId(session, null);
 
       if (allowedCabangId && kelasCheck.cabangId !== allowedCabangId) {
         throw new TRPCError({
@@ -39,7 +36,7 @@ export const historyGuruKelasRouter = createTRPCRouter({
           kelasId: input.kelasId,
         },
         orderBy: {
-          mulaiPada: "desc",
+          createdAt: "desc",
         },
         include: {
           guru: true,
@@ -48,10 +45,10 @@ export const historyGuruKelasRouter = createTRPCRouter({
       return historyGuruKelas;
     }),
 
-  createHistoryGuruKelas: protectedProcedure
+  createHistoryGuruKelas: cabangProtectedProcedure
     .input(serverHistoryGuruKelasSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const kelasCheck = await db.kelas.findUnique({
         where: { id: input.kelasId },
@@ -65,7 +62,6 @@ export const historyGuruKelasRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && kelasCheck.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -110,14 +106,14 @@ export const historyGuruKelasRouter = createTRPCRouter({
       }
     }),
 
-  updateHistoryGuruKelas: protectedProcedure
+  updateHistoryGuruKelas: cabangProtectedProcedure
     .input(
       updateHistoryGuruKelasSchema.extend({
         id: z.string().min(1, "ID harus diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       try {
         const oldRecord = await db.historyGuruKelas.findUnique({
@@ -132,7 +128,6 @@ export const historyGuruKelasRouter = createTRPCRouter({
           });
         }
 
-        const allowedCabangId = getRestrictedCabangId(session, null);
         if (allowedCabangId && oldRecord.kelas.cabangId !== allowedCabangId) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -189,7 +184,7 @@ export const historyGuruKelasRouter = createTRPCRouter({
       }
     }),
 
-  deleteHistoryGuruKelas: protectedProcedure
+  deleteHistoryGuruKelas: cabangProtectedProcedure
     .input(
       z.object({
         id: z.string().cuid("Id Tidak Valid"),
@@ -197,11 +192,11 @@ export const historyGuruKelasRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, session } = ctx;
+      const { db, allowedCabangId } = ctx;
 
       const record = await db.historyGuruKelas.findUnique({
         where: { id: input.id },
-        include: { kelas: { select: { cabangId: true } } }
+        include: { kelas: { select: { cabangId: true } } },
       });
 
       if (!record) {
@@ -211,7 +206,6 @@ export const historyGuruKelasRouter = createTRPCRouter({
         });
       }
 
-      const allowedCabangId = getRestrictedCabangId(session, null);
       if (allowedCabangId && record.kelas.cabangId !== allowedCabangId) {
         throw new TRPCError({
           code: "FORBIDDEN",

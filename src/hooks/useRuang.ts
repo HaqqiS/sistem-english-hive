@@ -23,11 +23,6 @@ export function useRuang(options?: UseRuangOptions) {
     options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
-  // const RuangQuery = api.ruang.getRuangByCabangId.useQuery(undefined, {
-  //   enabled: options?.enableQuery ?? true,
-  //   initialData: options?.initialData,
-  // });
-
   const RuangQuery = api.ruang.getAll.useQuery(
     { cabangId: cabangIdPayload },
     {
@@ -37,10 +32,7 @@ export function useRuang(options?: UseRuangOptions) {
   );
 
   const invalidateAll = async () => {
-    await Promise.all([
-      apiUtils.ruang.getAll.invalidate(),
-      apiUtils.ruang.getRuangByCabangId.invalidate(),
-    ]);
+    await Promise.all([apiUtils.ruang.getAll.invalidate()]);
   };
 
   // ========== MUTATIONS ==========

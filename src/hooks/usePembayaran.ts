@@ -46,7 +46,6 @@ export function usePembayaran(options?: UsePembayaranOptions) {
       apiUtils.pembayaran.getAllPaginated.invalidate(),
       apiUtils.pembayaran.getTagihanJatuhTempo.invalidate(),
       // TAMBAHAN: Invalidate list detail & saldo siswa
-      apiUtils.pembayaran.getAll.invalidate(),
       apiUtils.pembayaran.getSaldoByMuridId.invalidate(),
     ]);
   };
@@ -54,20 +53,6 @@ export function usePembayaran(options?: UsePembayaranOptions) {
   // ========== QUERIES ==========
 
   // 1. Get All Pembayaran (with optional filters)
-  const getAllQuery = api.pembayaran.getAll.useQuery(
-    {
-      status:
-        options?.statusFilter && options.statusFilter !== "ALL"
-          ? options.statusFilter
-          : undefined,
-      muridId: options?.muridIdFilter,
-      cabangId: cabangIdPayload,
-    },
-    {
-      enabled: options?.enableGetAll ?? false,
-      refetchOnWindowFocus: true,
-    },
-  );
 
   const getAllPaginatedQuery = api.pembayaran.getAllPaginated.useQuery(
     {
@@ -153,12 +138,6 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 
   return {
     // Query Results
-    dataGetAll: getAllQuery.data ?? [],
-    isLoadingGetAll: getAllQuery.isLoading,
-    isErrorGetAll: getAllQuery.isError,
-    errorGetAll: getAllQuery.error,
-    refetchGetAll: getAllQuery.refetch,
-
     dataGetAllPaginated: getAllPaginatedQuery.data?.data ?? [],
     pageCount: getAllPaginatedQuery.data?.pageCount ?? -1,
     totalRows: getAllPaginatedQuery.data?.total ?? 0,

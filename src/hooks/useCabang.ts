@@ -22,8 +22,6 @@ interface UseCabangOptions {
 
 export function useCabang(options?: UseCabangOptions) {
   const apiUtils = api.useUtils();
-  const cabangIdPayload =
-    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
   // ========== QUERIES ==========
   const cabangQuery = api.cabang.getAll.useQuery(undefined, {
@@ -32,7 +30,7 @@ export function useCabang(options?: UseCabangOptions) {
     placeholderData: keepPreviousData,
   });
 
-  const listQuery = api.cabang.getAllList.useQuery(undefined, {
+  const listQuery = api.cabang.getCabangList.useQuery(undefined, {
     enabled: options?.enableQueryList ?? false,
     initialData: options?.initialDataList,
     refetchOnWindowFocus: false,
@@ -40,7 +38,7 @@ export function useCabang(options?: UseCabangOptions) {
   // ========== MUTATIONS ==========
   const invalidateAll = async () => {
     await apiUtils.cabang.getAll.invalidate();
-    await apiUtils.cabang.getAllList.invalidate();
+    await apiUtils.cabang.getCabangList.invalidate();
   };
 
   // CREATE

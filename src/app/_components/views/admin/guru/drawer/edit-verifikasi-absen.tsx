@@ -6,74 +6,74 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import AbsenGuruForm from "../form/edit-absen-guru-form";
 import {
-  updateAbsensiGuruSchema,
-  type TypeUpdateAbsensiGuruSchema,
+	updateAbsensiGuruSchema,
+	type TypeUpdateAbsensiGuruSchema,
 } from "@/types/absenGuru.type";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 
 export default function EditVerifikasiAbsen() {
-  const { isDrawerOpen, selectedAbsenGuru, closeDrawer, clearSelected } =
-    useAbsenGuruStore();
+	const { isDrawerOpen, selectedAbsenGuru, closeDrawer, clearSelected } =
+		useAbsenGuruStore();
 
-  // useEffect(() => {
-  //   if (selectedAbsenGuru) {
-  //     editAbsensiGuruForm.reset({
-  //       guruId: selectedAbsenGuru.guruId,
-  //       isVerified: selectedAbsenGuru.isVerified,
-  //       status: selectedAbsenGuru.status,
-  //     });
-  //   }
-  // }, [selectedAbsenGuru]);
+	// useEffect(() => {
+	//   if (selectedAbsenGuru) {
+	//     editAbsensiGuruForm.reset({
+	//       guruId: selectedAbsenGuru.guruId,
+	//       isVerified: selectedAbsenGuru.isVerified,
+	//       status: selectedAbsenGuru.status,
+	//     });
+	//   }
+	// }, [selectedAbsenGuru]);
 
-  const isOpen = isDrawerOpen("edit");
+	const isOpen = isDrawerOpen("edit");
 
-  const editAbsensiGuruForm = useForm<TypeUpdateAbsensiGuruSchema>({
-    resolver: zodResolver(updateAbsensiGuruSchema),
-    values: selectedAbsenGuru
-      ? {
-          guruId: selectedAbsenGuru.guruId,
-          isVerified: selectedAbsenGuru.isVerified,
-          status: selectedAbsenGuru.status,
-        }
-      : undefined,
-    defaultValues: {
-      guruId: "",
-      isVerified: undefined,
-      status: undefined,
-    },
-  });
+	const editAbsensiGuruForm = useForm<TypeUpdateAbsensiGuruSchema>({
+		resolver: zodResolver(updateAbsensiGuruSchema),
+		values: selectedAbsenGuru
+			? {
+					guruId: selectedAbsenGuru.guruId,
+					isVerified: selectedAbsenGuru.isVerified,
+					status: selectedAbsenGuru.status,
+				}
+			: undefined,
+		defaultValues: {
+			guruId: "",
+			isVerified: undefined,
+			status: undefined,
+		},
+	});
 
-  const { mutations } = useAbsenGuru({
-    onSuccessUpdate: () => {
-      closeDrawer();
-      clearSelected();
-      editAbsensiGuruForm.reset();
-    },
-  });
+	const { mutations } = useAbsenGuru({
+		onSuccessUpdate: () => {
+			closeDrawer();
+			clearSelected();
+			editAbsensiGuruForm.reset();
+		},
+	});
 
-  const handleSubmitEdit = async (data: TypeUpdateAbsensiGuruSchema) => {
-    if (!selectedAbsenGuru) return;
+	const handleSubmitEdit = async (data: TypeUpdateAbsensiGuruSchema) => {
+		if (!selectedAbsenGuru) return;
 
-    await mutations.update.mutateAsync({
-      absensiId: selectedAbsenGuru.id,
-      ...data,
-    });
-  };
+		await mutations.update.mutateAsync({
+			absensiId: selectedAbsenGuru.id,
+			...data,
+		});
+	};
 
-  return (
-    <EditDrawer
-      isOpen={isOpen}
-      onOpenChange={(open) => !open && closeDrawer()}
-      title="Edit Absensi Guru"
-      description="Ubah informasi absensi guru yang sudah ada"
-      onSubmit={editAbsensiGuruForm.handleSubmit(handleSubmitEdit)}
-      isPending={mutations.update.isPending}
-      submitText="Simpan Perubahan"
-      cancelText="Batal"
-    >
-      <Form {...editAbsensiGuruForm}>
-        <AbsenGuruForm onSubmit={handleSubmitEdit} />
-      </Form>
-    </EditDrawer>
-  );
+	return (
+		<EditDrawer
+			isOpen={isOpen}
+			onOpenChange={(open) => !open && closeDrawer()}
+			title="Edit Absensi Guru"
+			description="Ubah informasi absensi guru yang sudah ada"
+			onSubmit={editAbsensiGuruForm.handleSubmit(handleSubmitEdit)}
+			isPending={mutations.update.isPending}
+			submitText="Simpan Perubahan"
+			cancelText="Batal"
+		>
+			<Form {...editAbsensiGuruForm}>
+				<AbsenGuruForm onSubmit={handleSubmitEdit} />
+			</Form>
+		</EditDrawer>
+	);
 }

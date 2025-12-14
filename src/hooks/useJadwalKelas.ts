@@ -30,14 +30,6 @@ interface useJadwalKelasOptions {
 /**
  * Custom hook untuk mengelola Ruang (Queries + Mutations)
  *
- * @example
- * // Hanya butuh data Ruang
- * const { data: RuangList } = useRuang();
- *
- * // Butuh data + mutations
- * const { data, mutations } = useRuang({
- *   onSuccessCreate: () => console.log("Created!")
- * });
  */
 export function useJadwalKelas(options?: useJadwalKelasOptions) {
   const apiUtils = api.useUtils();
@@ -79,8 +71,6 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
     await Promise.all([
       apiUtils.jadwalKelas.getAll.invalidate(),
       apiUtils.jadwalKelas.getScheduleMatrix.invalidate(),
-      // Invalidate sesi pertemuan juga karena perubahan jadwal mempengaruhi generate sesi
-      apiUtils.sesiPertemuan.getAll.invalidate(),
     ]);
   };
 
@@ -166,7 +156,6 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
     },
 
     // Utils untuk manual invalidation jika perlu
-    // refetchCustom: JamCustomQuery.refetch,
     invalidate: invalidateJadwal,
   };
 }

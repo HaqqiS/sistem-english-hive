@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import AbsenMuridClient from "@/app/_components/views/guru/absenMurid/absen-murid-client";
 import { api, HydrateClient } from "@/trpc/server";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Absensi Murid",

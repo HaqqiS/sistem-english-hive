@@ -1,17 +1,18 @@
 "use client";
 
-import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { columns as jadwalColumns } from "./columns/columns-jadwal";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import TambahJadwalKelas from "../jadwal/tambah-jadwal";
-import KelasTab from "./tabs/kelas-tab";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
-import ScheduleGrid from "../jadwal/schedule-view/schedule-grid";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
 import EditJadwalKelas from "../jadwal/edit-jadwal";
+import ScheduleGrid from "../jadwal/schedule-view/schedule-grid";
+import TambahJadwalKelas from "../jadwal/tambah-jadwal";
+import { columns as jadwalColumns } from "./columns/columns-jadwal";
+import KelasTab from "./tabs/kelas-tab";
 
 export default function KelasClient() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -71,18 +72,18 @@ export default function KelasClient() {
 						<h1 className="text-xl font-semibold">Penjadwalan</h1>
 						{/* Toggle View Mode (Opsional) */}
 						<div className="bg-muted/20 flex items-center rounded-md border p-1">
-							<button
+							<Button
 								onClick={() => setViewMode("GRID")}
 								className={`rounded-sm px-3 py-1 text-xs transition-all ${viewMode === "GRID" ? "bg-background font-medium shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
 							>
 								Kalender
-							</button>
-							<button
+							</Button>
+							<Button
 								onClick={() => setViewMode("TABLE")}
 								className={`rounded-sm px-3 py-1 text-xs transition-all ${viewMode === "TABLE" ? "bg-background font-medium shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
 							>
 								Tabel
-							</button>
+							</Button>
 						</div>
 					</div>
 

@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { DataTable as DataTableGeneric } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { columns as createCabangColumns } from "./cabang-columns";
-import TambahCabang from "./tambah-cabang";
-import { type CabangType } from "@/types/cabang.type";
-import EditCabang from "./edit-cabang";
-import { useCabangStore } from "@/store/useMasterDataStore";
-import { useCabang } from "@/hooks/useCabang";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useCabang } from "@/hooks/useCabang";
+import { useCabangStore } from "@/store/useMasterDataStore";
+import type { CabangType } from "@/types/cabang.type";
+import { columns as createCabangColumns } from "./cabang-columns";
+import EditCabang from "./edit-cabang";
+import TambahCabang from "./tambah-cabang";
 
 export default function CabangClient() {
 	// State management

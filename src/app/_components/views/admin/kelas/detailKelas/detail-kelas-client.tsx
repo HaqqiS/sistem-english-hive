@@ -1,25 +1,11 @@
 "use client";
 
-import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { useKelas } from "@/hooks/useKelas";
-import { useParams } from "next/navigation";
-import { columns as murid } from "../columns/columns-list-murid";
-import { columns as guru } from "../columns/columns-list-guru";
-import TambahMuridDetailKelas from "../drawers/tambah-murid";
-import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
-import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
-import TambahGuruKelas from "../drawers/tambah-guru-kelas";
-import EditGuruKelas from "../drawers/edit-guru-kelas";
-import {
-	useGuruKelasStore,
-	usePendaftaranKelasStore,
-} from "@/store/useKelasStore";
-import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Edit, History } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import EditMuridDetailKelas from "../drawers/edit-murid";
+import { Button } from "@/components/ui/button";
 import {
 	Sheet,
 	SheetContent,
@@ -28,6 +14,20 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
+import { useKelas } from "@/hooks/useKelas";
+import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
+import {
+	useGuruKelasStore,
+	usePendaftaranKelasStore,
+} from "@/store/useKelasStore";
+import { columns as guru } from "../columns/columns-list-guru";
+import { columns as murid } from "../columns/columns-list-murid";
+import EditGuruKelas from "../drawers/edit-guru-kelas";
+import EditMuridDetailKelas from "../drawers/edit-murid";
+import TambahGuruKelas from "../drawers/tambah-guru-kelas";
+import TambahMuridDetailKelas from "../drawers/tambah-murid";
 import { ClassHistoryTimeline } from "./class-history-timeline";
 
 export default function DetailKelasClient() {

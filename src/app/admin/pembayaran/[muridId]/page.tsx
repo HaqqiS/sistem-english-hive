@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import HistoryPembayaranMuridClient from "@/app/_components/views/admin/pembayaran/historyPembayaranMurid/history-pembayaran-murid-client";
 import { api, HydrateClient } from "@/trpc/server";
-import type { Metadata } from "next";
 
 interface PageProps {
 	params: Promise<{ muridId: string }>;

@@ -1,8 +1,14 @@
 "use client";
 
-import * as React from "react";
-import { type ColumnDef } from "@tanstack/react-table";
-
+import type { ColumnDef } from "@tanstack/react-table";
+import {
+	ArrowUpDown,
+	Copy,
+	EllipsisVertical,
+	MessageCircle,
+} from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,8 +19,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { RouterOutputs } from "@/trpc/react";
-import { ArrowUpDown, EllipsisVertical } from "lucide-react";
 import { formatDateWITA } from "@/utils/dateUtils";
+import { formatWhatsAppLink } from "@/utils/noWAUtils";
 
 export type DaftarMuridType =
 	RouterOutputs["pendaftaranKelas"]["getPendaftarByKelasId"][number];
@@ -52,6 +58,42 @@ export const columns = ({
 			</Button>
 		),
 		enableHiding: false,
+	},
+
+	{
+		accessorKey: "murid.noWA",
+		header: ({ column }) => (
+			<Button
+				variant="ghost"
+				onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+			>
+				Kontak
+				<ArrowUpDown className="ml-2 h-4 w-4" />
+			</Button>
+		),
+		cell: ({ row }) => {
+			const noWA = row.original.murid.noWA;
+			return (
+				<div className="flex items-center gap-2">
+					<Link
+						href={formatWhatsAppLink(noWA)}
+						target="_blank"
+						className="flex items-center gap-1 font-medium text-green-600 hover:underline"
+						title="Chat WhatsApp"
+					>
+						<MessageCircle className="h-4 w-4" />
+						<span className="text-sm text-green-600">{noWA}</span>
+					</Link>
+					<Copy
+						className="text-muted-foreground hover:text-foreground h-3 w-3 cursor-pointer"
+						onClick={async () => {
+							await navigator.clipboard.writeText(row.original.murid.noWA);
+							toast.success("Nomor WA disalin");
+						}}
+					/>
+				</div>
+			);
+		},
 	},
 
 	{
@@ -93,30 +135,6 @@ export const columns = ({
 		),
 	},
 
-	// {
-	//   accessorKey: "dibuat oleh",
-	//   header: "Dibuat oleh",
-	//   cell: ({ row }) => {
-	//     return row.original.createdBy.name;
-	//   },
-	// },
-	// {
-	//   accessorKey: "keterangan",
-	//   header: "Keterangan",
-
-	//   cell: ({ row }) => {
-	//     return row.original.keterangan;
-	//   },
-	// },
-	// {
-	//   accessorKey: "dibuat pada",
-	//   header: "Dibuat pada",
-
-	//   cell: ({ row }) => {
-	//     const formattedDate = dateFormatter(row.original.createdAt);
-	//     return formattedDate;
-	//   },
-	// },
 	{
 		id: "actions",
 		cell: ({ row }) => {

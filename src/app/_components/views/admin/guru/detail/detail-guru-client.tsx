@@ -1,11 +1,20 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import {
+	AlertCircle,
+	CalendarDays,
+	CalendarIcon,
+	FileSpreadsheet,
+	Users,
+} from "lucide-react";
 import { useParams } from "next/navigation";
-import { useAbsenGuru } from "@/hooks/useAbsenGuru";
-import { useUser } from "@/hooks/useUser";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { columns } from "../columns/columns-detail-absen-guru";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Card,
 	CardContent,
@@ -14,33 +23,24 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toRupiah } from "@/utils/toRupiah";
-import dayjs, { formatToWITA } from "@/utils/dateUtils";
-import {
-	AlertCircle,
-	CalendarIcon,
-	Users,
-	CalendarDays,
-	FileSpreadsheet,
-} from "lucide-react";
+import { useAbsenGuru } from "@/hooks/useAbsenGuru";
+import { useUser } from "@/hooks/useUser";
 import {
 	calculateTotalGaji,
-	getPeriodeGaji,
 	GAJI_PER_SESI,
+	getPeriodeGaji,
 } from "@/server/services/gaji.service";
-import { downloadCSV } from "@/utils/exportUtils";
-import { toast } from "sonner";
-import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import dayjs, { formatToWITA } from "@/utils/dateUtils";
+import { downloadCSV } from "@/utils/exportUtils";
+import { toRupiah } from "@/utils/toRupiah";
+import { columns } from "../columns/columns-detail-absen-guru";
 
 export default function DetailGuruClient() {
 	const { guruId } = useParams<{ guruId: string }>();
@@ -269,7 +269,7 @@ export default function DetailGuruClient() {
 						Data detail pertemuan yang masuk dalam periode {periodeText}.
 					</CardDescription>
 				</CardHeader>
-				<CardContent>	
+				<CardContent>
 					{isErrorHistory ? (
 						<Alert variant="destructive">
 							<AlertCircle className="h-4 w-4" />
@@ -277,9 +277,9 @@ export default function DetailGuruClient() {
 							<AlertDescription>{errorHistory?.message}</AlertDescription>
 						</Alert>
 					) : (
-       <DataTable columns={columns} data={dataHistory ?? []} />
-    )}
-					</CardContent>
+						<DataTable columns={columns} data={dataHistory ?? []} />
+					)}
+				</CardContent>
 			</Card>
 		</div>
 	);

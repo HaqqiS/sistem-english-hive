@@ -1,6 +1,8 @@
 "use client";
-import { api } from "@/trpc/react";
+import type { TipeKelas } from "@prisma/client";
+import { skipToken } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { api } from "@/trpc/react";
 import type {
 	TypeCreateKelas,
 	TypeKelas,
@@ -8,8 +10,6 @@ import type {
 	TypeKelasHistory,
 	TypeKelasWithSesiPertemuanCount,
 } from "@/types/kelas.type";
-import { skipToken } from "@tanstack/react-query";
-import type { TipeKelas } from "@prisma/client";
 
 interface UseKelasOptions {
 	// Query options

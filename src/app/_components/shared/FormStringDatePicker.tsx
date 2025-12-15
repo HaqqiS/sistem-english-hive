@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
+import { useState } from "react";
+import type { Control, FieldValues, Path } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	FormControl,
 	FormField,
@@ -9,36 +12,30 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import {
 	Popover,
-	PopoverTrigger,
 	PopoverContent,
+	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import type { Control } from "react-hook-form";
 import { cn } from "@/lib/utils"; // Pastikan Anda punya 'cn'
-
 // --- Impor helper baru kita dari dateUtils ---
-import { formatDateToYYYYMMDD, formatDateWITA } from "@/utils/dateUtils";
-import dayjs from "@/utils/dateUtils"; // Impor dayjs dari util
+import dayjs, { formatDateToYYYYMMDD, formatDateWITA } from "@/utils/dateUtils";
 
-interface FormStringDatePickerProps {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	control: Control<any>; // Tipe Control dari react-hook-form
-	name: string; // Nama field
+interface FormStringDatePickerProps<TFieldValues extends FieldValues> {
+	control: Control<TFieldValues>;
+	name: Path<TFieldValues>;
 	label: string; // Label untuk FormLabel
 	placeholder?: string;
 	disabled?: boolean;
 }
 
-export function FormStringDatePicker({
+export function FormStringDatePicker<TFieldValues extends FieldValues>({
 	control,
 	name,
 	label,
 	placeholder = "Pilih tanggal",
 	disabled,
-}: FormStringDatePickerProps) {
+}: FormStringDatePickerProps<TFieldValues>) {
 	const [open, setOpen] = useState(false);
 
 	// 'field.value' sekarang adalah string "YYYY-MM-DD"
@@ -64,8 +61,8 @@ export function FormStringDatePicker({
 									{field.value ? (
 										// Ensure we pass a string (or Date) to formatDateWITA instead of an unsafe any
 										typeof field.value === "string" ||
-										field.value instanceof Date ? (
-											formatDateWITA(field.value)
+										(field.value as unknown) instanceof Date ? (
+											formatDateWITA(field.value as string | Date)
 										) : (
 											formatDateWITA(String(field.value))
 										)
@@ -82,7 +79,7 @@ export function FormStringDatePicker({
 								// 'selected' butuh Date, jadi kita konversi string "YYYY-MM-DD"
 								selected={
 									field.value
-										? field.value instanceof Date
+										? (field.value as unknown) instanceof Date
 											? field.value
 											: dayjs(String(field.value)).toDate()
 										: undefined

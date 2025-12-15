@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusMurid } from "@prisma/client";
 import { useFormContext } from "react-hook-form";
 import {
 	FormControl,
@@ -16,7 +17,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import type { TypeUpdateStatusMuridSchema } from "@/types/murid.type";
-import { StatusMurid } from "@prisma/client";
 
 // Simple schema for status update
 

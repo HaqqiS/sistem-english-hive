@@ -1,7 +1,7 @@
+import type { Metadata } from "next";
 import GuruDashboardClient from "@/app/_components/views/guru/dashboard/guru-dashboard-client";
 import { api, HydrateClient } from "@/trpc/server";
 import dayjs from "@/utils/dateUtils";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Dashboard Guru",
@@ -13,8 +13,8 @@ export const revalidate = 0;
 export default async function GuruDashboard() {
 	// 1. Prefetch data yang dibutuhkan di server
 	await Promise.all([
-		api.jadwalKelas.getJadwalHariIniForGuru.prefetch(),
-		api.ruang.getAll.prefetch(), // Dibutuhkan untuk dialog "Ganti Ruang"
+		api.jadwalKelas.getJadwalHariIniForGuru.prefetch({}),
+		api.ruang.getAll.prefetch({}), // Dibutuhkan untuk dialog "Ganti Ruang"
 	]);
 
 	return (

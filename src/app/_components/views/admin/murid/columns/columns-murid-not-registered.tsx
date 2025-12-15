@@ -8,15 +8,17 @@ import {
 	MessageCircle,
 	School,
 } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
 	Tooltip,
 	TooltipContent,
@@ -24,26 +26,14 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { TypeMuridNotRegistered } from "@/types/murid.type";
-import { toast } from "sonner";
-import Link from "next/link";
-import { getStatusColorBadge } from "./columns-murid";
 import { formatDateWITA } from "@/utils/dateUtils";
+import { formatWhatsAppLink } from "@/utils/noWAUtils";
+import { getStatusColorBadge } from "./columns-murid";
 
 interface ColumnsConfig {
 	onEditStatusClick: (item: TypeMuridNotRegistered) => void;
 	onDeleteClick: (pendaftaranId: string) => void;
 }
-
-// Helper untuk format link WA
-const formatWhatsAppLink = (noWA: string) => {
-	let formatted = noWA.trim();
-	if (formatted.startsWith("0")) {
-		formatted = "62" + formatted.substring(1);
-	} else if (formatted.startsWith("+62")) {
-		formatted = formatted.substring(1);
-	}
-	return `https://wa.me/${formatted}`;
-};
 
 export const columns = ({
 	onEditStatusClick,
@@ -127,22 +117,13 @@ export const columns = ({
 						<MessageCircle className="h-4 w-4" />
 					</Link>
 					<span className="text-sm text-green-600">{noWA}</span>
-					<button
+					<Copy
+						className="text-muted-foreground hover:text-foreground h-3 w-3 cursor-pointer"
 						onClick={async () => {
-							await navigator.clipboard.writeText(noWA);
+							await navigator.clipboard.writeText(row.original.noWA);
 							toast.success("Nomor WA disalin");
 						}}
-						className="text-muted-foreground hover:text-foreground ml-1"
-						title="Copy Nomor"
-					>
-						<Copy
-							className="text-muted-foreground hover:text-foreground h-3 w-3 cursor-pointer"
-							onClick={async () => {
-								await navigator.clipboard.writeText(row.original.noWA);
-								toast.success("Nomor WA disalin");
-							}}
-						/>
-					</button>
+					/>
 				</div>
 			);
 		},

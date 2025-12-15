@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import DetailAbsenMuridClient from "@/app/_components/views/guru/absenMurid/detailAbsenMurid/detail-absen-murid-client";
 import { api, HydrateClient } from "@/trpc/server";
-import type { Metadata } from "next";
 
 interface PageProps {
 	params: Promise<{ sesiId: string }>;

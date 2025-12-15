@@ -2,7 +2,9 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, EllipsisVertical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -10,10 +12,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
 // Ambil tipe untuk satu item, bukan seluruh array
 import type { TypeJamTetap } from "@/types/jam.type";
-import { Badge } from "@/components/ui/badge";
 
 // Tipe untuk satu baris data
 

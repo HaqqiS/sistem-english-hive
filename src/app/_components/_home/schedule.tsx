@@ -1,26 +1,26 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarDays, Clock, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Badge } from "@/components/ui/badge";
 import {
 	Card,
 	CardContent,
+	CardDescription,
 	CardHeader,
 	CardTitle,
-	CardDescription,
 } from "@/components/ui/card";
 import {
 	Table,
+	TableCell,
 	TableHead,
 	TableHeader,
 	TableRow,
-	TableCell,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, CalendarDays } from "lucide-react";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
-import Link from "next/link";
 
 // Data Jadwal Statis
 const scheduleData = {
@@ -206,10 +206,10 @@ export default function Schedule() {
 												custom={scrollDirection}
 												variants={containerVariants}
 											>
-												{data.schedules.map((item, idx) => (
+												{data.schedules.map((item) => (
 													// Gunakan motion.tr pengganti TableRow untuk animasi item
 													<motion.tr
-														key={idx}
+														key={item.days}
 														variants={itemVariants}
 														className="hover:bg-muted/20 border-b transition-colors"
 													>
@@ -223,9 +223,9 @@ export default function Schedule() {
 														</TableCell>
 														<TableCell className="py-6">
 															<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-																{item.sessions.map((session, sIdx) => (
+																{item.sessions.map((session) => (
 																	<div
-																		key={sIdx}
+																		key={session}
 																		className="border-border bg-card text-card-foreground flex items-center gap-2 rounded-md border px-3 py-2 text-sm shadow-sm"
 																	>
 																		<div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />

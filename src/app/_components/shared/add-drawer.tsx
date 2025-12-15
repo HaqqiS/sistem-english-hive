@@ -1,18 +1,8 @@
 // src/app/_components/shared/add-drawer.tsx
 "use client";
 
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-	Drawer,
-	DrawerClose,
-	DrawerContent,
-	DrawerDescription,
-	DrawerFooter,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
 import {
 	Dialog,
 	DialogClose,
@@ -23,7 +13,17 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus } from "lucide-react";
+import {
+	Drawer,
+	DrawerClose,
+	DrawerContent,
+	DrawerDescription,
+	DrawerFooter,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AddDrawerProps {
 	trigger?: React.ReactNode;

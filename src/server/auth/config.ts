@@ -1,17 +1,11 @@
 // import { PrismaAdapter } from "@auth/prisma-adapter";
 // import { UserRole } from "@prisma/client";
-import {
-	type DefaultSession,
-	type NextAuthConfig,
-	type User,
-	type Session,
-} from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+
 import { compare } from "bcryptjs";
+import type { DefaultSession, NextAuthConfig, Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import { db } from "@/server/db";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { env } from "@/env";
-import type { Adapter } from "next-auth/adapters";
 import { UserRole } from "./type";
 
 declare module "next-auth" {
@@ -98,7 +92,9 @@ export const authConfig: NextAuthConfig = {
 				// Return sesuai tipe User NextAuth (harus lengkap)
 				return {
 					id: user.id,
+					// biome-ignore lint/style/noNonNullAssertion: guaranteed by database check above
 					email: user.email!,
+					// biome-ignore lint/style/noNonNullAssertion: guaranteed by database check above
 					name: user.name!,
 					image: user.image,
 					role: user.role as unknown as UserRole,

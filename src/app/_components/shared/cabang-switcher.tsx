@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronsUpDown, LayoutDashboard, Lock, Square } from "lucide-react";
-
+import { useSession } from "next-auth/react";
+import { useEffect, useMemo } from "react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -15,11 +16,9 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useCabang } from "@/hooks/useCabang";
-import { useSession } from "next-auth/react";
-import { useEffect, useMemo } from "react";
 import { UserRole } from "@/server/auth/type";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 export function CabangSwitcher() {
 	const { isMobile } = useSidebar();

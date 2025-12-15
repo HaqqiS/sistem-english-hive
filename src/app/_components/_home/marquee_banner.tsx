@@ -9,8 +9,8 @@ export default function MarqueeBanner() {
 
 			<div className="animate-marquee flex whitespace-nowrap">
 				{/* Kita duplikasi konten beberapa kali agar looping mulus */}
-				{Array.from({ length: 4 }).map((_, i) => (
-					<div key={i} className="mx-4 flex items-center">
+				{[1, 2, 3, 4].map((id) => (
+					<div key={id} className="mx-4 flex items-center">
 						<span className="text-muted-foreground/70 mx-6 flex items-center gap-2 text-sm font-bold tracking-widest uppercase">
 							✨ FLUENT NOW
 						</span>

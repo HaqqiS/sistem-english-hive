@@ -1,5 +1,7 @@
 "use client";
 
+import { Gender } from "@prisma/client";
+import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import {
@@ -10,6 +12,8 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
 	Select,
 	SelectContent,
@@ -19,15 +23,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Gender } from "@prisma/client";
 import { useCabang } from "@/hooks/useCabang";
-import type { TypeClientRegisterMuridSchema } from "@/types/murid.type";
 import { cn } from "@/lib/utils"; // Import cn for cleaner class merging
 import { UserRole } from "@/server/auth/type";
-import { useSession } from "next-auth/react";
+import type { TypeClientRegisterMuridSchema } from "@/types/murid.type";
 
 interface MuridFormProps {
 	onSubmit: (data: TypeClientRegisterMuridSchema) => void;

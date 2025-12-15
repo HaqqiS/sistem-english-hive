@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import GuruClient from "@/app/_components/views/admin/guru/guru-client";
 import { api, HydrateClient } from "@/trpc/server";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Kelola Guru",
@@ -12,7 +12,7 @@ export default async function VerifikasiAbsenPage() {
 			pageIndex: 0,
 			pageSize: 10,
 		}),
-		api.user.getAllGuruComplete.prefetch(),
+		api.user.getAllGuruComplete.prefetch({}),
 	]);
 
 	return (

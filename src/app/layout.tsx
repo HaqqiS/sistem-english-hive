@@ -1,13 +1,12 @@
 import "@/styles/globals.css";
 
-import { type Metadata } from "next";
+import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-
+import { SessionProvider } from "next-auth/react";
+import { Toaster } from "@/components/ui/sonner";
+import { auth } from "@/server/auth";
 import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "./_components/providers/theme-provider";
-import { auth } from "@/server/auth";
-import { Toaster } from "@/components/ui/sonner";
-import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
 	title: {

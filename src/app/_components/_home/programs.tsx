@@ -1,18 +1,18 @@
 "use client";
 
+import { motion, type Variants } from "framer-motion";
 import {
 	BookOpen,
+	GraduationCap,
+	Rocket,
+	Sparkles,
 	Star,
 	Sun,
-	GraduationCap,
-	Sparkles,
-	Rocket,
 	Trophy,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { motion, type Variants } from "framer-motion";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 const programs = [
@@ -131,10 +131,10 @@ export default function Programs() {
 					custom={scrollDirection}
 					variants={containerVariants}
 				>
-					{programs.map((program, index) => {
+					{programs.map((program) => {
 						const Icon = program.icon;
 						return (
-							<motion.div key={index} variants={itemVariants}>
+							<motion.div key={program.title} variants={itemVariants}>
 								<Card className="hover:border-t-primary h-full border-t-4 border-t-transparent transition-all hover:-translate-y-1 hover:shadow-lg">
 									<CardHeader className="pb-2">
 										<div className="mb-2 flex items-center justify-between">

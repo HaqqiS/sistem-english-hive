@@ -1,16 +1,9 @@
 "use client";
 
-import {
-	Users,
-	BookOpen,
-	Award,
-	Clock,
-	MessageCircle,
-	Smartphone,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import { motion, type Variants } from "framer-motion";
+import { Award, BookOpen, Clock, Users } from "lucide-react";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 const features = [
@@ -103,10 +96,10 @@ export default function Features() {
 					custom={scrollDirection}
 					variants={containerVariants}
 				>
-					{features.map((feature, index) => {
+					{features.map((feature) => {
 						const Icon = feature.icon;
 						return (
-							<motion.div key={index} variants={itemVariants}>
+							<motion.div key={feature.title} variants={itemVariants}>
 								<Card className="border-t-primary h-full border-t-4 transition-all duration-300 hover:scale-105 hover:shadow-lg">
 									<CardHeader>
 										<Icon className={`mb-2 h-8 w-8 ${feature.color}`} />

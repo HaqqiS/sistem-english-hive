@@ -3,8 +3,8 @@
  * Impor 'dayjs' dan fungsi helper dari file ini di seluruh aplikasi Anda.
  */
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
 import "dayjs/locale/id"; // impor locale indonesia
 
 // Muat plugin HANYA SEKALI di sini
@@ -76,7 +76,7 @@ export const convertWITAtoUTC = (localDateTimeString: string): Date => {
  * (Diambil dari file dateUtils lama Anda)
  */
 export function isValidDate(date: unknown): date is Date {
-	return date instanceof Date && !isNaN(date.getTime());
+	return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
 /**

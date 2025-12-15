@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { DataTable as DataTableGeneric } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { columns as createRuangColumns } from "./ruang-columns";
-import TambahRuang from "./tambah-ruang";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useRuang } from "@/hooks/useRuang";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useRuangStore } from "@/store/useMasterDataStore";
 import type { RuangType } from "@/types/ruang.type";
 import EditRuang from "./edit-ruang";
-import { useRuang } from "@/hooks/useRuang";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { columns as createRuangColumns } from "./ruang-columns";
+import TambahRuang from "./tambah-ruang";
 
 export default function RuangClient() {
 	// State management

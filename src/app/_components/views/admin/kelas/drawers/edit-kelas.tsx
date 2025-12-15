@@ -1,19 +1,18 @@
 "use client";
-import { EditDrawer } from "@/app/_components/shared/edit-drawer";
-import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { EditDrawer } from "@/app/_components/shared/edit-drawer";
+import { Form } from "@/components/ui/form";
+import { useKelas } from "@/hooks/useKelas";
+import { useKelasStore } from "@/store/useKelasStore";
 import {
 	clientKelasSchema,
 	type TypeClientKelasSchema,
 } from "@/types/kelas.type";
-import { useKelasStore } from "@/store/useKelasStore";
-import { useKelas } from "@/hooks/useKelas";
 import KelasForm from "../forms/kelas-form";
 
 export default function EditKelas() {
-	const { isDrawerOpen, selectedKelas, closeDrawer, clearSelected } =
-		useKelasStore();
+	const { isDrawerOpen, selectedKelas, closeDrawer } = useKelasStore();
 
 	const editKelasForm = useForm<TypeClientKelasSchema>({
 		resolver: zodResolver(clientKelasSchema),

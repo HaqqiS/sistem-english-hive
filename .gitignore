@@ -45,3 +45,11 @@ yarn-error.log*
 # idea files
 .idea
 .vercel
+
+# logs
+*.log
+biome_error_log.txt
+
+# os
+Thumbs.db
+

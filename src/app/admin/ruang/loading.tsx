@@ -25,9 +25,9 @@ export default function AdminRuangLoading() {
 
 			{/* Table Content Skeleton */}
 			<div className="mt-4 space-y-4">
-				{Array.from({ length: 5 }).map((_, i) => (
+				{Array.from({ length: 5 }, (_, i) => i).map((id) => (
 					<div
-						key={i}
+						key={id}
 						className="flex items-center justify-between border-b pb-4 last:border-0"
 					>
 						<div className="space-y-2">

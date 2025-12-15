@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import { Hari, TipeKelas } from "@prisma/client";
+import { Clock, Info } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
 	FormControl,
 	FormField,
@@ -10,6 +14,8 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
 	Select,
 	SelectContent,
@@ -19,19 +25,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Clock, Info } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-
+import { useJam } from "@/hooks/useJam";
 import { useKelas } from "@/hooks/useKelas";
 import { useRuang } from "@/hooks/useRuang";
-import { useJam } from "@/hooks/useJam";
-import { Hari, TipeKelas } from "@prisma/client";
-import type { TypeServerUpdateJadwalSchema } from "@/types/jadwalKelas.type";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import type { TypeServerUpdateJadwalSchema } from "@/types/jadwalKelas.type";
 
 export default function EditJadwalKelasForm() {
 	// 1. Global Filter untuk Dropdown

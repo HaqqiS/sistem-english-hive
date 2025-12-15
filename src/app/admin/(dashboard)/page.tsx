@@ -1,13 +1,13 @@
+import type { Metadata } from "next";
 import { api, HydrateClient } from "@/trpc/server";
 import DashboardClientPage from "./dashboard-client";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Dashboard Admin",
 };
 
 export default async function AdminDashboardPage() {
-	await api.pembayaran.getTagihanJatuhTempo.prefetch();
+	await api.pembayaran.getTagihanJatuhTempo.prefetch({});
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">

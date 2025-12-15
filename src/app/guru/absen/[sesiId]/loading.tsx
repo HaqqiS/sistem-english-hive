@@ -12,9 +12,9 @@ export default function GuruDetailAbsenLoading() {
 			{/* Table List Murid */}
 			<div className="mt-4 space-y-6 rounded-md border p-4">
 				{/* Table Rows */}
-				{Array.from({ length: 5 }).map((_, i) => (
+				{Array.from({ length: 5 }, (_, i) => i).map((id) => (
 					<div
-						key={i}
+						key={id}
 						className="flex flex-col items-start justify-between gap-4 border-b pb-4 last:border-0 sm:flex-row sm:items-center"
 					>
 						<Skeleton className="h-5 w-40" /> {/* Nama Murid */}

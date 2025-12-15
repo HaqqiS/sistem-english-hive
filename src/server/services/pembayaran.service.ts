@@ -1,15 +1,28 @@
 import {
-	StatusPembayaran,
-	StatusAbsenMurid,
+	type Prisma,
 	type PrismaClient,
+	StatusAbsenMurid,
+	StatusPembayaran,
 } from "@prisma/client";
+
 import {
-	JUMLAH_PERTEMUAN_PER_BLOK,
-	BATAS_SISA_UNTUK_TAGIHAN,
 	BATAS_SESI,
+	BATAS_SISA_UNTUK_TAGIHAN,
+	JUMLAH_PERTEMUAN_PER_BLOK,
 } from "@/constants/pembayaran";
 
 // Definisi tipe kembalian agar TypeScript tidak bingung
+type PendaftaranWithRelations = Prisma.PendaftaranKelasGetPayload<{
+	include: {
+		Kelas: {
+			select: { hargaKelas: true; id: true; kodeKelas: true };
+		};
+		murid: {
+			select: { id: true; namaLengkap: true };
+		};
+	};
+}>;
+
 type BillingStatus = {
 	muridName: string;
 	kodeKelas: string;
@@ -18,8 +31,7 @@ type BillingStatus = {
 	sisaPertemuan: number;
 	needNewBill: boolean;
 	nextBillPembayaranKe: number;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	pendaftaranData: any;
+	pendaftaranData: PendaftaranWithRelations;
 	hargaPerSesi: number;
 	paketPertemuan: number;
 };

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { IMaskInput } from "react-imask";
+import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import {
 	FormControl,
 	FormField,
@@ -11,8 +12,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
-import type { TypeUpLevelKelasSchema, TypeKelas } from "@/types/kelas.type";
+import type { TypeKelas, TypeUpLevelKelasSchema } from "@/types/kelas.type";
 
 interface UpLevelKelasFormProps {
 	onSubmit: (data: TypeUpLevelKelasSchema) => void;

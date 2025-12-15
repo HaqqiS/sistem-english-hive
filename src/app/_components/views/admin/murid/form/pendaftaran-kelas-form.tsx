@@ -1,9 +1,10 @@
 "use client";
 
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import * as React from "react";
 import { useFormContext } from "react-hook-form";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -14,18 +15,17 @@ import {
 	CommandList,
 } from "@/components/ui/command";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import {
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	Select,
 	SelectContent,
@@ -35,11 +35,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
-import { useMurid } from "@/hooks/useMurid";
 import { useKelas } from "@/hooks/useKelas";
-import type { TypeClientBulkPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
+import { useMurid } from "@/hooks/useMurid";
+import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import type { TypeClientBulkPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
 
 interface PendaftaranKelasFormProps {
 	onSubmit: (data: TypeClientBulkPendaftaranKelasSchema) => void;
@@ -158,7 +158,7 @@ export default function PendaftaranKelasForm({
 										className="mr-1 mb-1"
 									>
 										{murid.namaLengkap}
-										<button
+										<Button
 											className="ring-offset-background focus:ring-ring ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-2"
 											onKeyDown={(e) => {
 												if (e.key === "Enter") handleUnselect(muridId);
@@ -170,7 +170,7 @@ export default function PendaftaranKelasForm({
 											onClick={() => handleUnselect(muridId)}
 										>
 											<X className="text-muted-foreground hover:text-foreground h-3 w-3" />
-										</button>
+										</Button>
 									</Badge>
 								);
 							})}

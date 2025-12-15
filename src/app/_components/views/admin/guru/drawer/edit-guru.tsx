@@ -1,14 +1,14 @@
 "use client";
-import { EditDrawer } from "@/app/_components/shared/edit-drawer";
-import { Form } from "@/components/ui/form";
-import { useGuruStore } from "@/store/useGuruStore";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import {
-	updateProfileFormSchema,
-	type UpdateProfileFormSchema,
-} from "@/types/user.type";
+import { EditDrawer } from "@/app/_components/shared/edit-drawer";
+import { Form } from "@/components/ui/form";
 import { useUser } from "@/hooks/useUser";
+import { useGuruStore } from "@/store/useGuruStore";
+import {
+	type UpdateProfileFormSchema,
+	updateProfileFormSchema,
+} from "@/types/user.type";
 import EditGuruForm from "../form/edit-guru-form";
 
 export default function EditGuru() {

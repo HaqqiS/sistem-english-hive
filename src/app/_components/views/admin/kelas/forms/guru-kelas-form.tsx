@@ -34,7 +34,7 @@ export default function GuruKelasForm({
 	const { activeCabangId } = useGlobalCabangStore();
 	const form = useFormContext<TypeClientHistoryGuruKelasSchema>();
 
-	const { dataGuruList: dataGuru	, isLoadingGuruList: isLoadingGuru } = useUser({
+	const { dataGuruList: dataGuru, isLoadingGuruList: isLoadingGuru } = useUser({
 		filterCabang: activeCabangId,
 	});
 

@@ -20,8 +20,8 @@ export default function AdminPembayaranLoading() {
 			<div className="mt-4 rounded-md border">
 				<div className="bg-muted/50 h-10 border-b" />
 				<div className="space-y-6 p-4">
-					{Array.from({ length: 5 }).map((_, i) => (
-						<div key={i} className="flex items-center justify-between">
+					{Array.from({ length: 5 }, (_, i) => i).map((id) => (
+						<div key={id} className="flex items-center justify-between">
 							<div className="space-y-2">
 								<Skeleton className="h-5 w-48" />
 								<Skeleton className="h-3 w-24" />

@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import JamClient from "@/app/_components/views/admin/jam/jam-client";
 import { api, HydrateClient } from "@/trpc/server";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Kelola Ruang",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default async function JamPage() {
 	await Promise.all([
-		api.jam.getAllJamTetap.prefetch(),
+		api.jam.getAllJamTetap.prefetch({}),
 		api.jam.getAllJamCustom.prefetch(),
 	]);
 

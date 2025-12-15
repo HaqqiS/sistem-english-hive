@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { type ColumnDef } from "@tanstack/react-table";
-
+import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, EllipsisVertical } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -11,10 +11,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, EllipsisVertical } from "lucide-react";
-import { formatDateWITA } from "@/utils/dateUtils";
 import type { TypeHistoryGuruKelasByKelasId } from "@/types/historyGuruKelas.type";
-import { Badge } from "@/components/ui/badge";
+import { formatDateWITA } from "@/utils/dateUtils";
 
 export const columns = ({
 	onEditClick,

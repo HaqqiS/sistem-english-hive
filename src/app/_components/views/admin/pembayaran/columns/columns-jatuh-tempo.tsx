@@ -1,43 +1,19 @@
 "use client";
 
+import { StatusPembayaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, CheckCircle, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TypePembayaranJatuhTempo } from "@/types/pembayaran.type";
 import { formatDateWITA } from "@/utils/dateUtils";
+import { formatWhatsAppReminder } from "@/utils/noWAUtils";
 import { toRupiah } from "@/utils/toRupiah";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { StatusPembayaran } from "@prisma/client";
 
 interface ColumnsJatuhTempoConfig {
 	onVerifyClick: (item: TypePembayaranJatuhTempo) => void;
 }
-
-// Helper untuk membuat Link WA dengan Template Pesan
-const formatWhatsAppReminder = (
-	noWA: string,
-	namaMurid: string,
-	jatuhTempo: Date,
-	jumlah: number,
-) => {
-	if (!noWA) return "#";
-
-	// Format nomor HP
-	let formatted = noWA.trim();
-	if (formatted.startsWith("0")) {
-		formatted = "62" + formatted.substring(1);
-	} else if (!formatted.startsWith("62")) {
-		formatted = "62" + formatted;
-	}
-
-	// Template Pesan
-	const text = `Halo Kak/Bapak/Ibu, kami dari *English Hive*.\n\nKami ingin mengingatkan tagihan kursus untuk:\nNama: *${namaMurid}*\nNominal: *${toRupiah(jumlah)}*\nJatuh Tempo: *${formatDateWITA(jatuhTempo)}*\n\nMohon segera melakukan pembayaran. Terima kasih 🙏`;
-
-	const encodedText = encodeURIComponent(text);
-
-	return `https://wa.me/${formatted.replace(/[^0-9]/g, "")}?text=${encodedText}`;
-};
 
 const getStatusBadgeVariant = (
 	status: StatusPembayaran,

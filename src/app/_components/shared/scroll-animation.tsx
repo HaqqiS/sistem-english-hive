@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, type Variants, type HTMLMotionProps } from "framer-motion";
-import { type ReactNode } from "react";
+import { type HTMLMotionProps, motion, type Variants } from "framer-motion";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface ScrollAnimationProps extends HTMLMotionProps<"div"> {
@@ -102,6 +102,20 @@ export function ScrollAnimation({
 					},
 				};
 			case "fadeUp":
+				return {
+					hidden: { opacity: 0, y: 40 },
+					visible: {
+						opacity: 1,
+						y: 0,
+						transition: {
+							type: "spring",
+							damping: 25,
+							stiffness: 100,
+							duration,
+							delay,
+						},
+					},
+				};
 			default:
 				return {
 					hidden: { opacity: 0, y: 40 },

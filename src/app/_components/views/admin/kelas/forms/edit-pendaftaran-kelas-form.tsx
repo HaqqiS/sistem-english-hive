@@ -1,7 +1,7 @@
 "use client";
 
-import { useMurid } from "@/hooks/useMurid";
-import { useKelas } from "@/hooks/useKelas";
+import { useFormContext } from "react-hook-form";
+import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import {
 	FormControl,
 	FormField,
@@ -18,10 +18,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useFormContext } from "react-hook-form";
-import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
-import type { TypeClientUpdatePendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
+import { useKelas } from "@/hooks/useKelas";
+import { useMurid } from "@/hooks/useMurid";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import type { TypeClientUpdatePendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
 
 interface EditPendaftaranKelasFormProps {
 	onSubmit: (data: TypeClientUpdatePendaftaranKelasSchema) => void;
@@ -33,7 +33,10 @@ export default function EditPendaftaranKelasForm({
 	const { activeCabangId } = useGlobalCabangStore();
 	const form = useFormContext<TypeClientUpdatePendaftaranKelasSchema>();
 
-	const { dataAllMuridPaginated: dataAllMurid, isLoadingAllMuridPaginated: isLoadingMurid } = useMurid({
+	const {
+		dataAllMuridPaginated: dataAllMurid,
+		isLoadingAllMuridPaginated: isLoadingMurid,
+	} = useMurid({
 		pagination: {
 			pageSize: 20,
 			pageIndex: 0,

@@ -1,114 +1,114 @@
 "use client";
 
-import { api } from "@/trpc/react";
-import { toast } from "sonner";
-import type { CabangType } from "@/types/cabang.type";
 import { keepPreviousData } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { api } from "@/trpc/react";
+import type { CabangType } from "@/types/cabang.type";
 
 interface UseCabangOptions {
-  // Query options
-  enableQuery?: boolean;
-  enableQueryList?: boolean;
-  initialData?: CabangType[];
-  initialDataList?: CabangType[];
+	// Query options
+	enableQuery?: boolean;
+	enableQueryList?: boolean;
+	initialData?: CabangType[];
+	initialDataList?: CabangType[];
 
-  filterCabang?: string;
+	filterCabang?: string;
 
-  // Mutation callbacks
-  onSuccessCreate?: () => void;
-  onSuccessUpdate?: () => void;
-  onSuccessDelete?: () => void;
+	// Mutation callbacks
+	onSuccessCreate?: () => void;
+	onSuccessUpdate?: () => void;
+	onSuccessDelete?: () => void;
 }
 
 export function useCabang(options?: UseCabangOptions) {
-  const apiUtils = api.useUtils();
+	const apiUtils = api.useUtils();
 
-  // ========== QUERIES ==========
-  const cabangQuery = api.cabang.getAll.useQuery(undefined, {
-    enabled: options?.enableQuery ?? false,
-    initialData: options?.initialData,
-    placeholderData: keepPreviousData,
-  });
+	// ========== QUERIES ==========
+	const cabangQuery = api.cabang.getAll.useQuery(undefined, {
+		enabled: options?.enableQuery ?? false,
+		initialData: options?.initialData,
+		placeholderData: keepPreviousData,
+	});
 
-  const listQuery = api.cabang.getCabangList.useQuery(undefined, {
-    enabled: options?.enableQueryList ?? false,
-    initialData: options?.initialDataList,
-    refetchOnWindowFocus: false,
-  });
-  // ========== MUTATIONS ==========
-  const invalidateAll = async () => {
-    await apiUtils.cabang.getAll.invalidate();
-    await apiUtils.cabang.getCabangList.invalidate();
-  };
+	const listQuery = api.cabang.getCabangList.useQuery(undefined, {
+		enabled: options?.enableQueryList ?? false,
+		initialData: options?.initialDataList,
+		refetchOnWindowFocus: false,
+	});
+	// ========== MUTATIONS ==========
+	const invalidateAll = async () => {
+		await apiUtils.cabang.getAll.invalidate();
+		await apiUtils.cabang.getCabangList.invalidate();
+	};
 
-  // CREATE
-  const createMutation = api.cabang.createCabang.useMutation({
-    onSuccess: async () => {
-      await invalidateAll();
-      toast.success("Cabang berhasil ditambahkan");
-      options?.onSuccessCreate?.();
-    },
-    onError: (error) => {
-      toast.error(`Gagal membuat cabang: ${error.message}`);
-    },
-  });
+	// CREATE
+	const createMutation = api.cabang.createCabang.useMutation({
+		onSuccess: async () => {
+			await invalidateAll();
+			toast.success("Cabang berhasil ditambahkan");
+			options?.onSuccessCreate?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal membuat cabang: ${error.message}`);
+		},
+	});
 
-  // UPDATE
-  const updateMutation = api.cabang.updateCabang.useMutation({
-    onSuccess: async () => {
-      await invalidateAll();
-      toast.success("Cabang berhasil diupdate");
-      options?.onSuccessUpdate?.();
-    },
-    onError: (error) => {
-      toast.error(`Gagal mengupdate cabang: ${error.message}`);
-    },
-  });
+	// UPDATE
+	const updateMutation = api.cabang.updateCabang.useMutation({
+		onSuccess: async () => {
+			await invalidateAll();
+			toast.success("Cabang berhasil diupdate");
+			options?.onSuccessUpdate?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal mengupdate cabang: ${error.message}`);
+		},
+	});
 
-  // DELETE
-  const deleteMutation = api.cabang.deleteCabang.useMutation({
-    onSuccess: async () => {
-      await invalidateAll();
-      toast.success("Cabang berhasil dihapus");
-      options?.onSuccessDelete?.();
-    },
-    onError: (error) => {
-      toast.error(`Gagal menghapus cabang: ${error.message}`);
-    },
-  });
+	// DELETE
+	const deleteMutation = api.cabang.deleteCabang.useMutation({
+		onSuccess: async () => {
+			await invalidateAll();
+			toast.success("Cabang berhasil dihapus");
+			options?.onSuccessDelete?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal menghapus cabang: ${error.message}`);
+		},
+	});
 
-  return {
-    // Query results
-    data: cabangQuery.data,
-    isLoading: cabangQuery.isLoading,
-    isError: cabangQuery.isError,
-    error: cabangQuery.error,
+	return {
+		// Query results
+		data: cabangQuery.data,
+		isLoading: cabangQuery.isLoading,
+		isError: cabangQuery.isError,
+		error: cabangQuery.error,
 
-    dataList: listQuery.data,
-    isLoadingList: listQuery.isLoading,
-    isErrorList: listQuery.isError,
-    errorList: listQuery.error,
-    // Mutations
-    mutations: {
-      create: {
-        mutate: createMutation.mutate,
-        mutateAsync: createMutation.mutateAsync,
-        isPending: createMutation.isPending,
-      },
-      update: {
-        mutate: updateMutation.mutate,
-        mutateAsync: updateMutation.mutateAsync,
-        isPending: updateMutation.isPending,
-      },
-      delete: {
-        mutate: deleteMutation.mutate,
-        mutateAsync: deleteMutation.mutateAsync,
-        isPending: deleteMutation.isPending,
-      },
-    },
+		dataList: listQuery.data,
+		isLoadingList: listQuery.isLoading,
+		isErrorList: listQuery.isError,
+		errorList: listQuery.error,
+		// Mutations
+		mutations: {
+			create: {
+				mutate: createMutation.mutate,
+				mutateAsync: createMutation.mutateAsync,
+				isPending: createMutation.isPending,
+			},
+			update: {
+				mutate: updateMutation.mutate,
+				mutateAsync: updateMutation.mutateAsync,
+				isPending: updateMutation.isPending,
+			},
+			delete: {
+				mutate: deleteMutation.mutate,
+				mutateAsync: deleteMutation.mutateAsync,
+				isPending: deleteMutation.isPending,
+			},
+		},
 
-    // Utils untuk manual invalidation jika perlu
-    refetch: cabangQuery.refetch,
-    invalidate: invalidateAll,
-  };
+		// Utils untuk manual invalidation jika perlu
+		refetch: cabangQuery.refetch,
+		invalidate: invalidateAll,
+	};
 }

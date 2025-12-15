@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { type TypeJadwalKelas } from "@/types/jadwalKelas.type";
+import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
 
 type DrawerType = "none" | "edit" | "tambah";
 

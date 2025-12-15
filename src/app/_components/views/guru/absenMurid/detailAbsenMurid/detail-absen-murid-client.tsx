@@ -1,15 +1,15 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { DataTable } from "@/app/_components/shared/data-table-generic"; //
-import { createDetailAbsenMuridColumns } from "./columns-detail-absen";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatToWITA } from "@/utils/dateUtils";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
-import { toast } from "sonner";
-import { useAbsenMurid } from "@/hooks/useAbsenMurid";
+import { useParams } from "next/navigation";
 import { useMemo } from "react";
+import { toast } from "sonner";
+import { DataTable } from "@/app/_components/shared/data-table-generic"; //
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAbsenMurid } from "@/hooks/useAbsenMurid";
+import { formatToWITA } from "@/utils/dateUtils";
+import { createDetailAbsenMuridColumns } from "./columns-detail-absen";
 
 export default function DetailAbsenMuridClient() {
 	const { sesiId } = useParams<{ sesiId: string }>();

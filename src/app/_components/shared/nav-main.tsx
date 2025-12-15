@@ -1,8 +1,9 @@
 "use client";
 
-import { Folder } from "lucide-react";
 import * as Icons from "lucide-react";
-
+import { Folder } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
@@ -11,10 +12,8 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
-import type { NavItem } from "@/types/nav.type";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
+import type { NavItem } from "@/types/nav.type";
 
 interface NavMainProps {
 	projects: NavItem[];
@@ -22,18 +21,18 @@ interface NavMainProps {
 const iconMap = Icons as unknown as Record<string, Icons.LucideIcon>;
 
 export function NavMain({ projects }: NavMainProps) {
-	const { isMobile } = useSidebar();
+	const { isMobile, setOpenMobile } = useSidebar();
 	const pathname = usePathname();
 
 	return (
 		<SidebarGroup className="pb-0">
-			<SidebarGroupLabel>Modules</SidebarGroupLabel>
+			<SidebarGroupLabel>Main</SidebarGroupLabel>
 			<SidebarMenu>
 				{projects.map((item) => {
 					const IconComponent = iconMap[item.icon] ?? Folder;
 					const itemUrlSegments = item.url.split("/").filter(Boolean).length;
 
-					let isActive;
+					let isActive: boolean;
 
 					if (itemUrlSegments === 1) {
 						// Ini adalah link root (cth: /admin). Gunakan exact match.
@@ -53,7 +52,12 @@ export function NavMain({ projects }: NavMainProps) {
 										"bg-sidebar-accent text-sidebar-accent-foreground",
 								)}
 							>
-								<Link href={item.url}>
+								<Link
+									href={item.url}
+									onClick={() => {
+										if (isMobile) setOpenMobile(false);
+									}}
+								>
 									<IconComponent />
 									<span>{item.title}</span>
 								</Link>

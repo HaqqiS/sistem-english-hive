@@ -1,7 +1,7 @@
 "use client";
-import { api } from "@/trpc/react";
-import type { TypeGuruSimple, TypeGuruComplete } from "@/types/user.type";
 import { toast } from "sonner";
+import { api } from "@/trpc/react";
+import type { TypeGuruComplete, TypeGuruSimple } from "@/types/user.type";
 
 interface UseGuruOptions {
 	// Query options

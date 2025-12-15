@@ -1,6 +1,6 @@
-import type { RouterOutputs } from "@/trpc/react";
 import { StatusAbsenGuru } from "@prisma/client";
 import z from "zod";
+import type { RouterOutputs } from "@/trpc/react";
 
 /** Tipe tunggal absensi guru (biasanya untuk list/table) */
 export type TypeAbsensiGuru =

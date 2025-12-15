@@ -2,46 +2,19 @@
 
 import {
 	type ColumnDef,
-	type SortingState,
+	type ColumnFiltersState,
 	flexRender,
-	useReactTable,
 	getCoreRowModel,
+	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
-	type ColumnFiltersState,
-	getFilteredRowModel,
-	type VisibilityState,
-	type Table as TableType,
-	type PaginationState,
 	type OnChangeFn,
+	type PaginationState,
+	type SortingState,
+	type Table as TableType,
+	useReactTable,
+	type VisibilityState,
 } from "@tanstack/react-table";
-
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import {
-	DropdownMenu,
-	DropdownMenuCheckboxItem,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-
-import { Label } from "@/components/ui/label";
 // import type { Payment } from "./columns";
 import {
 	ChevronDown,
@@ -52,6 +25,31 @@ import {
 	LayoutIcon,
 	Loader2,
 } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[];

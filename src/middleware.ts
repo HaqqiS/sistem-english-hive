@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import auth from "@/server/auth/edge-config";
-import { UserRole } from "./server/auth/type";
 import { protectedRoutes } from "./constants/routes";
+import { UserRole } from "./server/auth/type";
 
 export default async function middleware(request: NextRequest) {
 	const { pathname } = request.nextUrl;

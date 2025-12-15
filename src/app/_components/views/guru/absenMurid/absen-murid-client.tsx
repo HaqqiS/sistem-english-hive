@@ -1,21 +1,21 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { CalendarDays, ChevronRight, Clock, School, Users } from "lucide-react";
+import Link from "next/link";
+import React from "react";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Separator } from "@/components/ui/separator";
-import { useKelas } from "@/hooks/useKelas";
-import React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { formatToWITA } from "@/utils/dateUtils";
-import { CalendarDays, ChevronRight, Clock, School, Users } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useKelas } from "@/hooks/useKelas";
+import { formatToWITA } from "@/utils/dateUtils";
 
 export default function AbsenMuridClient() {
 	const { dataWithSesi: dataKelas, isLoadingWithSesi } = useKelas({

@@ -1,7 +1,7 @@
-import type { NavCollapsibleItem, NavItem } from "@/types/nav.type";
-import DashboardLayout from "../_components/layouts/dashboard-layout";
 import { auth } from "@/server/auth";
 import { UserRole } from "@/server/auth/type";
+import type { NavCollapsibleItem, NavItem } from "@/types/nav.type";
+import DashboardLayout from "../_components/layouts/dashboard-layout";
 
 // Tentukan navigasi khusus untuk ADMIN
 const adminNavItems: NavItem[] = [
@@ -32,7 +32,7 @@ export default async function AdminLayout({
 
 	const adminCollapsibleItems: NavCollapsibleItem[] = [
 		{
-			title: "Master Data",
+			title: "Sub Menu",
 			isActive: false,
 			items: masterDataItems,
 		},

@@ -1,16 +1,20 @@
 "use client";
 
+import { StatusPembayaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
 	ArrowUpDown,
 	CheckCircle,
 	Edit2,
-	Trash,
 	EllipsisVertical,
 	MessageCircle,
+	Trash,
 	XCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -18,13 +22,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { StatusPembayaran } from "@prisma/client";
-import { formatDateWITA } from "@/utils/dateUtils";
-import { toRupiah } from "@/utils/toRupiah";
-import Link from "next/link";
 import type { TypePembayaran } from "@/types/pembayaran.type";
+import { formatDateWITA } from "@/utils/dateUtils";
+import { formatWhatsAppLink } from "@/utils/noWAUtils";
+import { toRupiah } from "@/utils/toRupiah";
 
 // Kita gunakan tipe data dari router getAll yang baru
 
@@ -47,18 +48,6 @@ const getStatusBadgeVariant = (
 		default:
 			return "outline";
 	}
-};
-
-// Helper untuk format No. WA
-const formatWhatsAppLink = (noWA: string) => {
-	if (!noWA) return "#";
-	let formatted = noWA.trim();
-	if (formatted.startsWith("0")) {
-		formatted = "62" + formatted.substring(1);
-	} else if (!formatted.startsWith("62")) {
-		formatted = "62" + formatted;
-	}
-	return `https://wa.me/${formatted.replace(/[^0-9]/g, "")}`;
 };
 
 export const columns = ({

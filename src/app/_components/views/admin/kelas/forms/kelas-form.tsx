@@ -1,5 +1,10 @@
 "use client";
 
+import { JenisKelas, TipeKelas } from "@prisma/client";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
+import { useFormContext } from "react-hook-form";
+import { IMaskInput } from "react-imask";
 import {
 	FormControl,
 	FormField,
@@ -18,15 +23,10 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { IMaskInput } from "react-imask";
-import type { TypeClientKelasSchema } from "@/types/kelas.type";
-import { TipeKelas, JenisKelas } from "@prisma/client";
-import { useEffect } from "react";
-import { useFormContext } from "react-hook-form";
-import { toRupiah } from "@/utils/toRupiah";
 import { useCabang } from "@/hooks/useCabang";
-import { useSession } from "next-auth/react";
 import { UserRole } from "@/server/auth/type";
+import type { TypeClientKelasSchema } from "@/types/kelas.type";
+import { toRupiah } from "@/utils/toRupiah";
 
 interface KelasFormProps {
 	onSubmit: (data: TypeClientKelasSchema) => void;

@@ -1,17 +1,17 @@
 "use client";
 
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
+import { useMurid } from "@/hooks/useMurid";
 import {
 	RegisterMuridSchema,
 	type TypeClientRegisterMuridSchema,
 } from "@/types/murid.type";
-import { useMurid } from "@/hooks/useMurid";
 import MuridForm from "../views/admin/murid/form/murid-form";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 export default function Registration() {
 	const { mutations } = useMurid({

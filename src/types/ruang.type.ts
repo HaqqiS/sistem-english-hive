@@ -1,5 +1,5 @@
-import type { RouterOutputs } from "@/trpc/react";
 import z from "zod";
+import type { RouterOutputs } from "@/trpc/react";
 
 export type RuangType = RouterOutputs["ruang"]["getAll"][number];
 

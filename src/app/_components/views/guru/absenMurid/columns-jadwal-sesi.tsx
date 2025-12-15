@@ -2,7 +2,9 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, EllipsisVertical } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -10,9 +12,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { TypeKelasByGuruId } from "@/types/kelas.type";
-import Link from "next/link";
 
 interface ColumnsConfig {
 	onEditClick: (item: TypeKelasByGuruId) => void;

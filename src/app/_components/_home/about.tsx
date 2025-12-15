@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const stats = [
 	{ number: "350+", label: "Siswa Aktif" },
@@ -61,7 +61,7 @@ export default function About() {
 						<div className="grid grid-cols-2 gap-4 pt-4">
 							{stats.map((stat, index) => (
 								<ScrollAnimation
-									key={index}
+									key={stat.label}
 									variant="zoomIn"
 									delay={index * 0.1}
 									once={true}

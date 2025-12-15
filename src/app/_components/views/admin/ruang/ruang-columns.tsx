@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { EllipsisVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -10,7 +11,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { RuangType } from "@/types/ruang.type";
 
 interface ColumnsConfig {

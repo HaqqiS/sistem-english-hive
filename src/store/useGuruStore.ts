@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { type TypeAbsensiGuru } from "@/types/absenGuru.type";
-import { type TypeGuruComplete } from "@/types/user.type";
+import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
+import type { TypeGuruComplete } from "@/types/user.type";
 
 type DrawerType = "none" | "edit" | "tambah";
 

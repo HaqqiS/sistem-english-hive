@@ -81,9 +81,9 @@ export default function DetailGuruLoading() {
 									{/* Header */}
 									<div className="bg-muted/50 h-8 border-b" />
 									{/* Rows Mockup */}
-									{Array.from({ length: 3 }).map((_, i) => (
+									{Array.from({ length: 3 }, (_, i) => i).map((id) => (
 										<div
-											key={i}
+											key={id}
 											className="flex items-center gap-4 border-b p-2 last:border-0"
 										>
 											<Skeleton className="h-4 w-4" /> {/* Checkbox */}

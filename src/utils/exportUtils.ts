@@ -37,7 +37,7 @@ export function downloadCSV<T extends CsvRecord>(data: T[], filename: string) {
 	].join("\n");
 
 	// 3. Trigger Download
-	const blob = new Blob(["\uFEFF" + csvContent], {
+	const blob = new Blob([`\uFEFF${csvContent}`], {
 		type: "text/csv;charset=utf-8;",
 	});
 

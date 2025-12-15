@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import KelasClient from "@/app/_components/views/admin/kelas/kelas-client";
 import { api, HydrateClient } from "@/trpc/server";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Kelola Kelas",
@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 
 export default async function KelasPage() {
 	await Promise.all([
-		api.kelas.getKelasAndCount.prefetch(),
-		api.jadwalKelas.getAll.prefetch(),
+		api.kelas.getKelasAndCount.prefetch({}),
+		api.jadwalKelas.getAll.prefetch({}),
 	]);
 
 	return (

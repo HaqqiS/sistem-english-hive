@@ -1,13 +1,13 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import type { MuridForAbsensi } from "@/types/absenMurid.type";
 import { StatusAbsenMurid } from "@prisma/client";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; //
-import { Label } from "@/components/ui/label"; //
-import { type RouterInputs, type RouterOutputs } from "@/trpc/react";
-import { Badge } from "@/components/ui/badge";
+import type { ColumnDef } from "@tanstack/react-table";
 import type { UseTRPCMutationResult } from "@trpc/react-query/shared";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label"; //
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; //
+import type { RouterInputs, RouterOutputs } from "@/trpc/react";
+import type { MuridForAbsensi } from "@/types/absenMurid.type";
 
 type AbsensiMutation = UseTRPCMutationResult<
 	RouterOutputs["absenMurid"]["createOrUpdateAbsensi"],

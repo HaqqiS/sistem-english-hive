@@ -2,7 +2,9 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Check, EllipsisVertical, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -10,9 +12,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
-import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -21,6 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
 import { formatToWITA } from "@/utils/dateUtils";
 
 interface ColumnsConfig {

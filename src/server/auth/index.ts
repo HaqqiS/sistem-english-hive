@@ -1,9 +1,9 @@
-import NextAuth from "next-auth";
-import { cache } from "react";
-import { authConfig } from "./config";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { db } from "@/server/db";
+import NextAuth from "next-auth";
 import type { Adapter } from "next-auth/adapters";
+import { cache } from "react";
+import { db } from "@/server/db";
+import { authConfig } from "./config";
 
 const serverAuthConfig = {
 	...authConfig,

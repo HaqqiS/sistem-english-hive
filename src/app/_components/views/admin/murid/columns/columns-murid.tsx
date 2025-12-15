@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusMurid } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
 	Album,
@@ -9,7 +10,11 @@ import {
 	MapPin,
 	MessageCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -17,37 +22,21 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import type { TypeAllMurid } from "@/types/murid.type";
-import { toast } from "sonner";
-import Link from "next/link";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { StatusMurid } from "@prisma/client";
+import type { TypeAllMurid } from "@/types/murid.type";
 import { formatDateWITA } from "@/utils/dateUtils";
+import { formatWhatsAppLink } from "@/utils/noWAUtils";
 
 interface ColumnsConfig {
 	onEditClick: (item: TypeAllMurid) => void;
 	onEditStatusClick: (item: TypeAllMurid) => void;
 	onDeleteClick: (id: string, namaLengkap: string) => void;
 }
-
-// Helper untuk link WA
-const formatWhatsAppLink = (noWA: string) => {
-	if (!noWA) return "#";
-	let formatted = noWA.trim();
-	if (formatted.startsWith("0")) {
-		formatted = "62" + formatted.substring(1);
-	} else if (!formatted.startsWith("62")) {
-		formatted = "62" + formatted;
-	}
-	return `https://wa.me/${formatted.replace(/[^0-9]/g, "")}`;
-};
 
 export const getStatusColorBadge = (status: StatusMurid): string => {
 	switch (status) {

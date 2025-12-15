@@ -1,18 +1,18 @@
 "use client";
-import { EditDrawer } from "@/app/_components/shared/edit-drawer";
-import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { EditDrawer } from "@/app/_components/shared/edit-drawer";
+import { Form } from "@/components/ui/form";
+import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 import { useGuruKelasStore } from "@/store/useKelasStore";
 import {
-	updateHistoryGuruKelasSchema,
 	type TypeUpdateHistoryGuruKelasSchema,
+	updateHistoryGuruKelasSchema,
 } from "@/types/historyGuruKelas.type";
 import EditGuruKelasForm from "../forms/edit-guru-kelas-form";
-import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 
 export default function EditGuruKelas() {
-	const { isDrawerOpen, selectedHistoryGuruKelas, closeDrawer, clearSelected } =
+	const { isDrawerOpen, selectedHistoryGuruKelas, closeDrawer } =
 		useGuruKelasStore();
 
 	const guruKelasForm = useForm<TypeUpdateHistoryGuruKelasSchema>({

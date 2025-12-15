@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import MarqueeBanner from "./marquee_banner";
 import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Button } from "@/components/ui/button";
+import MarqueeBanner from "./marquee_banner";
 
 export default function Hero() {
 	return (

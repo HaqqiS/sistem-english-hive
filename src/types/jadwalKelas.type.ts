@@ -1,9 +1,9 @@
 // src/types/jadwalKelas.type.ts
 
-import { z } from "zod";
 import { Hari } from "@prisma/client"; // Pastikan untuk mengimpor Enum 'Hari'
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { z } from "zod";
 import type { RouterOutputs } from "@/trpc/react";
 
 // Aktifkan plugin untuk mem-parsing string "HH:mm"

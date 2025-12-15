@@ -1,13 +1,13 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Sidebar,
 	SidebarContent,
-	SidebarHeader,
 	SidebarFooter,
+	SidebarHeader,
 	SidebarRail,
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function SidebarMenuSkeleton() {
 	return (
@@ -19,8 +19,8 @@ export function SidebarMenuSkeleton() {
 			</SidebarHeader>
 
 			<SidebarContent className="space-y-2 px-3">
-				{Array.from({ length: 5 }).map((_, i) => (
-					<div key={i} className="flex items-center gap-3">
+				{Array.from({ length: 5 }, (_, i) => i).map((index) => (
+					<div key={index} className="flex items-center gap-3">
 						<Skeleton className="h-5 w-5 rounded-md" />
 						<Skeleton className="h-5 w-24 rounded-md" />
 					</div>

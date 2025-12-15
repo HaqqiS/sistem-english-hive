@@ -1,41 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/trpc/react";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { StatusAbsenGuru } from "@prisma/client";
 import {
 	AlertCircle,
 	CheckCircle2,
@@ -47,15 +12,50 @@ import {
 	UserCheck,
 	Users,
 } from "lucide-react";
-import { StatusAbsenGuru } from "@prisma/client";
-import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
-import { toast } from "sonner";
-import { useAbsenGuru } from "@/hooks/useAbsenGuru";
-import { useUser } from "@/hooks/useUser";
-import { useJadwalKelas } from "@/hooks/useJadwalKelas";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAbsenGuru } from "@/hooks/useAbsenGuru";
+import { useJadwalKelas } from "@/hooks/useJadwalKelas";
+import { useUser } from "@/hooks/useUser";
+import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
+import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
 
 export default function GuruDashboardClient() {
 	const router = useRouter();
@@ -81,7 +81,8 @@ export default function GuruDashboardClient() {
 	} | null>(null);
 
 	// --- Hooks & Mutations ---
-	const { dataGuruList: listGuru, isLoadingGuruList: isLoadingGuru } = useUser();
+	const { dataGuruList: listGuru, isLoadingGuruList: isLoadingGuru } =
+		useUser();
 
 	const {
 		dataJadwalHariIni: jadwalHariIni,
@@ -95,7 +96,7 @@ export default function GuruDashboardClient() {
 	});
 
 	const { data: semuaRuangan, isLoading: isLoadingRuangan } =
-		api.ruang.getAll.useQuery();
+		api.ruang.getAll.useQuery({});
 
 	const { mutations } = useAbsenGuru({
 		onSuccessStartSesi: (newSesiId, isFinished) => {

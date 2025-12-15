@@ -1,5 +1,7 @@
 "use client";
 
+import { useSession } from "next-auth/react";
+import { useFormContext } from "react-hook-form";
 import {
 	FormControl,
 	FormField,
@@ -18,8 +20,6 @@ import {
 import { useCabang } from "@/hooks/useCabang";
 import { UserRole } from "@/server/auth/type";
 import type { TypeClientRuangSchema } from "@/types/ruang.type";
-import { useSession } from "next-auth/react";
-import { useFormContext } from "react-hook-form";
 
 interface RuangFormProps {
 	onSubmit: (data: TypeClientRuangSchema) => void;
@@ -30,7 +30,7 @@ export default function RuangForm({ onSubmit }: RuangFormProps) {
 	const isAdmin = session.data?.user.role === UserRole.ADMIN;
 	const form = useFormContext<TypeClientRuangSchema>();
 	const { dataList: dataCabang, isLoadingList: isLoading } = useCabang({
-		enableQueryList:true
+		enableQueryList: true,
 	});
 
 	return (

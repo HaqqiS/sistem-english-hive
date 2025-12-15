@@ -1,5 +1,7 @@
 "use client";
 
+import { useSession } from "next-auth/react";
+import { useFormContext } from "react-hook-form";
 import {
 	FormControl,
 	FormField,
@@ -18,8 +20,6 @@ import {
 import { useCabang } from "@/hooks/useCabang";
 import { UserRole } from "@/server/auth/type";
 import type { TypeClientJamTetapSchema } from "@/types/jam.type";
-import { useSession } from "next-auth/react";
-import { useFormContext } from "react-hook-form";
 
 interface JamFormProps {
 	onSubmit: (data: TypeClientJamTetapSchema) => void;
@@ -30,7 +30,7 @@ export default function JamForm({ onSubmit }: JamFormProps) {
 	const isAdmin = session.data?.user?.role === UserRole.ADMIN;
 
 	const form = useFormContext<TypeClientJamTetapSchema>();
-	const { dataList: dataCabang, isLoadingList : isLoading } = useCabang();
+	const { dataList: dataCabang, isLoadingList: isLoading } = useCabang();
 
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

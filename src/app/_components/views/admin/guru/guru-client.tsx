@@ -1,21 +1,6 @@
 "use client";
 
-import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
-import { columns as columnsAbsen } from "./columns/columns-absen-guru";
-import { columns as columnsGuru } from "./columns/columns-guru";
-import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
-import { useAbsenGuru } from "@/hooks/useAbsenGuru";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUser } from "@/hooks/useUser";
-import EditVerifikasiAbsen from "./drawer/edit-verifikasi-absen";
-import { useAbsenGuruStore, useGuruStore } from "@/store/useGuruStore";
-import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { useEffect, useMemo, useState } from "react";
-import RegistrasiGuru from "./drawer/registrasi-guru";
-import EditGuru from "./drawer/edit-guru";
 import type { PaginationState } from "@tanstack/react-table";
-import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import {
 	CalendarIcon,
 	FileSpreadsheet,
@@ -23,19 +8,34 @@ import {
 	Search,
 	XCircle,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAbsenGuru } from "@/hooks/useAbsenGuru";
+import { useUser } from "@/hooks/useUser";
+import { getPeriodeGaji } from "@/server/services/gaji.service";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { useAbsenGuruStore, useGuruStore } from "@/store/useGuruStore";
+import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
 import dayjs, { formatToWITA } from "@/utils/dateUtils";
 import { downloadCSV } from "@/utils/exportUtils";
-import { getPeriodeGaji } from "@/server/services/gaji.service";
-import { Calendar } from "@/components/ui/calendar";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { columns as columnsAbsen } from "./columns/columns-absen-guru";
+import { columns as columnsGuru } from "./columns/columns-guru";
+import EditGuru from "./drawer/edit-guru";
+import EditVerifikasiAbsen from "./drawer/edit-verifikasi-absen";
+import RegistrasiGuru from "./drawer/registrasi-guru";
 
 export default function GuruClient() {
 	// STATES

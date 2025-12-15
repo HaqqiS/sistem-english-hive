@@ -23,8 +23,8 @@ export default function AdminMuridLoading() {
 					</div>
 				</div>
 				<div className="space-y-4 p-4">
-					{Array.from({ length: 5 }).map((_, i) => (
-						<div key={i} className="flex items-center justify-between gap-4">
+					{Array.from({ length: 5 }, (_, i) => i).map((id) => (
+						<div key={id} className="flex items-center justify-between gap-4">
 							<div className="flex flex-1 items-center gap-3">
 								<Skeleton className="h-4 w-4" /> {/* Checkbox */}
 								<div className="space-y-1">

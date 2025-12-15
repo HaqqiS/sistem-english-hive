@@ -1,4 +1,5 @@
 "use client";
+import { useFormContext } from "react-hook-form";
 import {
 	FormControl,
 	FormField,
@@ -7,7 +8,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useFormContext } from "react-hook-form";
 import type { UpdateProfileFormSchema } from "@/types/user.type";
 
 interface EditGuruFormProps {
@@ -18,7 +18,7 @@ export default function EditGuruForm({ onSubmit }: EditGuruFormProps) {
 	// HOOK FORMS
 	const form = useFormContext<UpdateProfileFormSchema>();
 
-	const { setError } = form;
+	// const { setError } = form;
 
 	//MUTATIONS
 	// const { mutateAsync: register, isPending: isPendingRegister } =

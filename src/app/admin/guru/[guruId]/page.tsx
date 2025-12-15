@@ -1,7 +1,7 @@
-import DetailGuruClient from "@/app/_components/views/admin/guru/detail/detail-guru-client";
-import { api, HydrateClient } from "@/trpc/server";
 import dayjs from "dayjs";
 import type { Metadata } from "next";
+import DetailGuruClient from "@/app/_components/views/admin/guru/detail/detail-guru-client";
+import { api, HydrateClient } from "@/trpc/server";
 
 interface PageProps {
 	params: Promise<{ guruId: string }>;
@@ -29,7 +29,7 @@ export default async function DetailGuruPage({ params }: PageProps) {
 	const currentMonth = dayjs().format("YYYY-MM");
 
 	await Promise.all([
-		api.user.getAllGuruComplete.prefetch(),
+		api.user.getAllGuruComplete.prefetch({}),
 		api.absenGuru.getHistoryByGuruId.prefetch({
 			guruId: guruId,
 			month: currentMonth,

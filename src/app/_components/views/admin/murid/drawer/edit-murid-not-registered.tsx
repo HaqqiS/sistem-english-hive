@@ -1,17 +1,17 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { StatusMurid } from "@prisma/client";
+import { useForm } from "react-hook-form";
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useMuridStore } from "@/store/useMuridStore";
 import { useMurid } from "@/hooks/useMurid";
-import EditStatusMuridForm from "../form/edit-status-murid-form";
-import { StatusMurid } from "@prisma/client";
+import { useMuridStore } from "@/store/useMuridStore";
 import {
-	updateStatusMuridSchema,
 	type TypeUpdateStatusMuridSchema,
+	updateStatusMuridSchema,
 } from "@/types/murid.type";
+import EditStatusMuridForm from "../form/edit-status-murid-form";
 
 export default function EditMuridNotRegistered() {
 	const { isDrawerOpen, selectedMurid, closeDrawer, clearSelected } =

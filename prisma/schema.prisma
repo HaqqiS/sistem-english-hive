@@ -232,6 +232,7 @@ model Murid {
     @@index([cabangId])
     @@index([namaLengkap])
     @@index([statusMurid])
+    @@index([noWA])
 }
 
 enum TipeKelas {

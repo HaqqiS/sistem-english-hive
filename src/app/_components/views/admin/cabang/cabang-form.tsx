@@ -1,6 +1,7 @@
 // src/app/admin/cabang/cabang-form.tsx
 "use client";
 
+import { useFormContext } from "react-hook-form";
 import {
 	FormControl,
 	FormField,
@@ -10,7 +11,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { TypeClientCabangSchema } from "@/types/cabang.type";
-import { useFormContext } from "react-hook-form";
 
 interface CabangFormProps {
 	onSubmit: (data: TypeClientCabangSchema) => void;

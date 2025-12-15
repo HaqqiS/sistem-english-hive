@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -32,8 +32,8 @@ export default function DetailSesiPertemuanKelasLoading() {
 									{/* Placeholder text just for spacing if needed, or leave empty */}
 								</TableHead>
 								{/* Skeleton Columns for Dates */}
-								{Array.from({ length: 3 }).map((_, i) => (
-									<TableHead key={i} className="min-w-[100px] p-0 text-center">
+								{Array.from({ length: 3 }, (_, i) => i).map((id) => (
+									<TableHead key={id} className="min-w-[100px] p-0 text-center">
 										<div className="flex w-full justify-center px-2 py-2.5">
 											<Skeleton className="h-4 w-20" />
 										</div>
@@ -43,8 +43,8 @@ export default function DetailSesiPertemuanKelasLoading() {
 
 							{/* --- Baris Header 2: Pertemuan Ke --- */}
 							<TableRow>
-								{Array.from({ length: 3 }).map((_, i) => (
-									<TableHead key={i} className="text-center">
+								{Array.from({ length: 3 }, (_, i) => i).map((id) => (
+									<TableHead key={id} className="text-center">
 										<div className="flex justify-center">
 											<Skeleton className="h-4 w-24" />
 										</div>
@@ -54,8 +54,8 @@ export default function DetailSesiPertemuanKelasLoading() {
 
 							{/* --- Baris Header 3: Pengajar --- */}
 							<TableRow>
-								{Array.from({ length: 3 }).map((_, i) => (
-									<TableHead key={i} className="text-center">
+								{Array.from({ length: 3 }, (_, i) => i).map((id) => (
+									<TableHead key={id} className="text-center">
 										<div className="flex justify-center">
 											<Skeleton className="h-4 w-32" />
 										</div>
@@ -65,16 +65,16 @@ export default function DetailSesiPertemuanKelasLoading() {
 						</TableHeader>
 						<TableBody>
 							{/* Generate 5 skeleton rows for students */}
-							{Array.from({ length: 3 }).map((_, rowIndex) => (
-								<TableRow key={rowIndex}>
+							{Array.from({ length: 3 }, (_, i) => i).map((rowId) => (
+								<TableRow key={rowId}>
 									{/* Kolom Nama Siswa (Sticky) */}
 									<TableCell className="bg-background sticky left-0 border-r font-medium">
 										<Skeleton className="h-5 w-32" />
 									</TableCell>
 
 									{/* Kolom Absensi (Dinamis) */}
-									{Array.from({ length: 3 }).map((_, colIndex) => (
-										<TableCell key={colIndex} className="text-center">
+									{Array.from({ length: 3 }, (_, j) => j).map((colId) => (
+										<TableCell key={colId} className="text-center">
 											<div className="flex justify-center">
 												<Skeleton className="h-6 w-8 rounded-full" />{" "}
 												{/* Mimics the Badge */}

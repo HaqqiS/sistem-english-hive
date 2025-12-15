@@ -1,25 +1,25 @@
 "use client";
 
-import { AddDrawer } from "@/app/_components/shared/add-drawer";
-import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import {
-	clientKelasSchema,
-	type TypeClientKelasSchema,
-} from "@/types/kelas.type";
-import KelasForm from "../forms/kelas-form";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { AddDrawer } from "@/app/_components/shared/add-drawer";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 import { useKelas } from "@/hooks/useKelas";
-import GuruKelasForm from "../forms/guru-kelas-form";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import {
 	clientHistoryGuruKelasSchema,
 	type TypeClientHistoryGuruKelasSchema,
 } from "@/types/historyGuruKelas.type";
-import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import {
+	clientKelasSchema,
+	type TypeClientKelasSchema,
+} from "@/types/kelas.type";
+import GuruKelasForm from "../forms/guru-kelas-form";
+import KelasForm from "../forms/kelas-form";
 
 export default function TambahKelas() {
 	const [isOpen, setIsOpen] = useState(false);

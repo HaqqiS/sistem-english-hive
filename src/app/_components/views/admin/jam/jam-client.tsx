@@ -3,20 +3,20 @@
 import { useState } from "react";
 import { DataTable as DataTableGeneric } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { columns as createJamTetapColumns } from "./jam-tetap-columns";
-import { columns as createJamCustomColumns } from "./jam-custom-columns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useJam } from "@/hooks/useJam";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import {
 	useJamCustomStore,
 	useJamTetapStore,
 } from "@/store/useMasterDataStore";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { TypeJamTetap, TypeJamCustom } from "@/types/jam.type";
-import { useJam } from "@/hooks/useJam";
-import TambahJamTetap from "./tambah-jam-tetap";
-import EditJamTetap from "./edit-jam-tetap";
-import TambahJamCustom from "./tambah-jam-custom";
+import type { TypeJamCustom, TypeJamTetap } from "@/types/jam.type";
 import EditJamCustom from "./edit-jam-custom";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import EditJamTetap from "./edit-jam-tetap";
+import { columns as createJamCustomColumns } from "./jam-custom-columns";
+import { columns as createJamTetapColumns } from "./jam-tetap-columns";
+import TambahJamCustom from "./tambah-jam-custom";
+import TambahJamTetap from "./tambah-jam-tetap";
 
 export default function JamClient() {
 	// State management

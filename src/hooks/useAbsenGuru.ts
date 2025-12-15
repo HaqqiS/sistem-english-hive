@@ -1,12 +1,12 @@
 "use client";
+import { keepPreviousData, skipToken } from "@tanstack/react-query";
+import type { PaginationState } from "@tanstack/react-table";
+import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import type {
 	TypeAbsensiGuruHistory,
 	TypeAbsensiGuruPaginated,
 } from "@/types/absenGuru.type";
-import { keepPreviousData, skipToken } from "@tanstack/react-query";
-import type { PaginationState } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 interface UseGuruOptions {
 	// Query options

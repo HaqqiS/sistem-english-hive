@@ -1,17 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TipeKelas } from "@prisma/client";
 import {
 	Album,
 	AlertCircle,
@@ -27,17 +16,20 @@ import {
 	TrendingUp,
 	User,
 } from "lucide-react";
-import TambahProgramKelas from "../drawers/tambah-kelas";
-import EditKelas from "../drawers/edit-kelas";
-import EditGuruKelas from "../drawers/edit-guru-kelas";
-import UpLevelKelas from "../drawers/up-level-kelas";
-import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import Link from "next/link";
+import { useState } from "react";
 import { toast } from "sonner";
-import { formatToWITA } from "@/utils/dateUtils";
-import { useKelas } from "@/hooks/useKelas";
-import { toRupiah } from "@/utils/toRupiah";
-import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
-import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -45,10 +37,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { downloadCSV } from "@/utils/exportUtils";
-import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import {
 	Select,
 	SelectContent,
@@ -56,7 +44,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { TipeKelas } from "@prisma/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useKelas } from "@/hooks/useKelas";
+import { cn } from "@/lib/utils";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
+import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
+import { formatToWITA } from "@/utils/dateUtils";
+import { downloadCSV } from "@/utils/exportUtils";
+import { toRupiah } from "@/utils/toRupiah";
+import EditGuruKelas from "../drawers/edit-guru-kelas";
+import EditKelas from "../drawers/edit-kelas";
+import TambahProgramKelas from "../drawers/tambah-kelas";
+import UpLevelKelas from "../drawers/up-level-kelas";
 
 export default function KelasTab() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -172,8 +172,8 @@ export default function KelasTab() {
 	if (isLoadingKelasCount) {
 		return (
 			<div className="space-y-4 pt-4">
-				{Array.from({ length: 3 }).map((_, i) => (
-					<Skeleton key={i} className="h-24 w-full rounded-lg" />
+				{Array.from({ length: 3 }, (_, i) => i).map((id) => (
+					<Skeleton key={id} className="h-24 w-full rounded-lg" />
 				))}
 			</div>
 		);

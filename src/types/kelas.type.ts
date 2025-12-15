@@ -1,6 +1,6 @@
-import type { RouterOutputs } from "@/trpc/react";
 import { JenisKelas, TipeKelas } from "@prisma/client";
 import z from "zod";
+import type { RouterOutputs } from "@/trpc/react";
 
 export type TypeKelas = RouterOutputs["kelas"]["getKelasAktif"][number];
 export type TypeCreateKelas = RouterOutputs["kelas"]["createKelas"];

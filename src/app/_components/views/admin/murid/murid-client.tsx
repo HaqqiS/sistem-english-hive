@@ -1,27 +1,14 @@
 "use client";
 
-import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useEffect, useState } from "react";
-import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
-import { useMurid } from "@/hooks/useMurid";
-import { columns as createColumnsMuridNotRegistered } from "./columns/columns-murid-not-registered";
-import { columns as createColumnsAllMurid } from "./columns/columns-murid";
-import TambahPendaftaranKelas from "./drawer/tambah-pendaftaran-kelas";
-import RegistrasiMurid from "./drawer/registrasi-murid";
-import EditMurid from "./drawer/edit-murid";
-import { useMuridStore } from "@/store/useMuridStore";
-import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
-import type { PaginationState } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { StatusMurid } from "@prisma/client";
-import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
-import { downloadCSV } from "@/utils/exportUtils";
+import type { PaginationState } from "@tanstack/react-table";
+import { FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { DataTable as DataTablePagination } from "@/app/_components/shared/data-table";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -30,7 +17,20 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMurid } from "@/hooks/useMurid";
+import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { useMuridStore } from "@/store/useMuridStore";
+import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { downloadCSV } from "@/utils/exportUtils";
+import { columns as createColumnsAllMurid } from "./columns/columns-murid";
+import { columns as createColumnsMuridNotRegistered } from "./columns/columns-murid-not-registered";
+import EditMurid from "./drawer/edit-murid";
+import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
+import RegistrasiMurid from "./drawer/registrasi-murid";
+import TambahPendaftaranKelas from "./drawer/tambah-pendaftaran-kelas";
 
 export default function MuridClient() {
 	// STATE
@@ -57,6 +57,8 @@ export default function MuridClient() {
 	const [tipeProgramFilter, setTipeProgramFilter] = useState<
 		"REGULER" | "PRIVAT" | "ALL"
 	>("ALL");
+	const [filterNoWA, setFilterNoWA] = useState<string | null>(null);
+
 	const [searchQuery, setSearchQuery] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 	useEffect(() => {
@@ -73,7 +75,6 @@ export default function MuridClient() {
 	const {
 		dataNotRegisteredPaginated,
 		pageCountNotRegistered,
-		totalRowsNotRegistered,
 		isLoadingNotRegisteredPaginated,
 		isFetchingNotRegisteredPaginated,
 		refetchNotRegisteredPaginated,
@@ -91,12 +92,15 @@ export default function MuridClient() {
 		refetchPaginated,
 		fetchExportData,
 		mutations,
+		dataDuplicateNoWA,
 	} = useMurid({
 		pagination: paginationAllMurid,
 		searchFilter: debouncedSearch,
 		filterStatus: statusFilter,
 		tipeProgram: tipeProgramFilter,
 		filterCabang: activeCabangId,
+		filterNoWA: filterNoWA ?? "ALL",
+		enableDuplicateNoWAQuery: true,
 		onSuccessDelete: () => {
 			setDeleteMuridDialogOpen(false);
 			setSelectedMuridToDelete(null);
@@ -291,6 +295,35 @@ export default function MuridClient() {
 							</div>
 
 							<div className="flex flex-wrap gap-2">
+								{/* Filter Duplicate WA */}
+								{dataDuplicateNoWA.length > 0 && (
+									<Select
+										value={filterNoWA ?? "ALL"}
+										onValueChange={(val) => {
+											setFilterNoWA(val === "ALL" ? null : val);
+											setPaginationAllMurid((prev) => ({
+												...prev,
+												pageIndex: 0,
+											}));
+										}}
+									>
+										<SelectTrigger className="w-full sm:w-50">
+											<div className="text-muted-foreground flex items-center gap-2">
+												<Filter className="h-3.5 w-3.5" />
+												<SelectValue placeholder="Filter Duplikat WA" />
+											</div>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="ALL">Semua No WA</SelectItem>
+											{dataDuplicateNoWA.map((item) => (
+												<SelectItem key={item.noWA} value={item.noWA}>
+													{item.noWA} ({item.count})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+
 								{/* Filter Tipe Program */}
 								<Select
 									value={tipeProgramFilter}

@@ -1,6 +1,6 @@
+import type { Metadata } from "next";
 import CabangClient from "@/app/_components/views/admin/cabang/cabang-client";
 import { api, HydrateClient } from "@/trpc/server";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Kelola Ruang",

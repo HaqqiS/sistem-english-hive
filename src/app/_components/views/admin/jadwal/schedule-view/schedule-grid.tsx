@@ -1,7 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { Hari } from "@prisma/client";
+import dayjs from "dayjs";
+import { CalendarDays, Info, RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
 	Select,
 	SelectContent,
@@ -9,21 +15,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CalendarDays, Info, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScheduleCard } from "./schedule-card";
-import { cn } from "@/lib/utils";
-import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { useJadwalKelas } from "@/hooks/useJadwalKelas";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import dayjs from "dayjs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile"; // Import hook
+import { useJadwalKelas } from "@/hooks/useJadwalKelas";
+import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
 import EditJadwalKelas from "../edit-jadwal";
+import { ScheduleCard } from "./schedule-card";
 
 export default function ScheduleGrid() {
 	// --- STATE ---
@@ -88,8 +88,12 @@ export default function ScheduleGrid() {
 			Record<string, (typeof dataMatrix.schedules)[0]>
 		> = {};
 		dataMatrix.schedules.forEach((s) => {
-			map[s.jamMulai] ??= {};
-			map[s.jamMulai]![s.ruangId] = s;
+			let timeSlot = map[s.jamMulai];
+			if (!timeSlot) {
+				timeSlot = {};
+				map[s.jamMulai] = timeSlot;
+			}
+			timeSlot[s.ruangId] = s;
 		});
 		return map;
 	}, [dataMatrix]);
@@ -199,8 +203,8 @@ export default function ScheduleGrid() {
 							<Skeleton className="h-10 w-24" />
 							<Skeleton className="h-10 flex-1" />
 						</div>
-						{Array.from({ length: 5 }).map((_, i) => (
-							<div key={i} className="grid grid-cols-4 gap-4">
+						{Array.from({ length: 5 }, (_, i) => i).map((id) => (
+							<div key={id} className="grid grid-cols-4 gap-4">
 								<Skeleton className="h-32 w-full" />
 								<Skeleton className="h-32 w-full" />
 								<Skeleton className="h-32 w-full" />

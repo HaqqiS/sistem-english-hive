@@ -1,7 +1,6 @@
-import DetailKelasClient from "@/app/_components/views/admin/kelas/detailKelas/detail-kelas-client";
-import { api } from "@/trpc/server";
-import { HydrateClient } from "@/trpc/server";
 import type { Metadata } from "next";
+import DetailKelasClient from "@/app/_components/views/admin/kelas/detailKelas/detail-kelas-client";
+import { api, HydrateClient } from "@/trpc/server";
 
 interface PageProps {
 	params: Promise<{ kelasId: string }>;

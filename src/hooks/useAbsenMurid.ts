@@ -1,9 +1,9 @@
 "use client";
-import { api } from "@/trpc/react";
-import { toast } from "sonner";
-import { skipToken } from "@tanstack/react-query";
-import type { MuridForAbsensi, SesiAbsensiInfo } from "@/types/absenMurid.type";
 import type { StatusAbsenMurid } from "@prisma/client";
+import { skipToken } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { api } from "@/trpc/react";
+import type { MuridForAbsensi, SesiAbsensiInfo } from "@/types/absenMurid.type";
 
 // Definisikan options untuk hook
 interface UseAbsenMuridOptions {
@@ -18,8 +18,7 @@ interface UseAbsenMuridOptions {
 		namaMurid: string,
 		status: StatusAbsenMurid,
 	) => void;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	onErrorCreateOrUpdate?: (error: any) => void;
+	onErrorCreateOrUpdate?: (error: unknown) => void;
 }
 
 /**
@@ -64,7 +63,7 @@ export function useAbsenMurid(options?: UseAbsenMuridOptions) {
 	// Mutasi untuk membuat atau memperbarui absensi seorang murid
 	const createOrUpdateAbsensiMutation =
 		api.absenMurid.createOrUpdateAbsensi.useMutation({
-			onSuccess: (data, variables) => {
+			onSuccess: (_data, variables) => {
 				// Invalidate query agar data di tabel ter-refresh
 				void apiUtils.absenMurid.getMuridForAbsensi.invalidate({
 					sesiId: variables.sesiId,

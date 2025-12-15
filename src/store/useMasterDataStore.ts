@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { type CabangType } from "@/types/cabang.type";
-import type { RuangType } from "@/types/ruang.type";
+import type { CabangType } from "@/types/cabang.type";
 import type { TypeJamCustom, TypeJamTetap } from "@/types/jam.type";
+import type { RuangType } from "@/types/ruang.type";
 
 type DrawerType = "none" | "edit" | "tambah";
 

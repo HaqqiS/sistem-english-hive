@@ -1,4 +1,6 @@
 "use client";
+import { motion } from "framer-motion";
+import { Suspense } from "react";
 import { AppSidebar } from "@/app/_components/shared/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -6,12 +8,10 @@ import {
 	SidebarProvider,
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { NavCollapsibleItem, NavItem } from "@/types/nav.type";
 import { DynamicBreadcrumb } from "../shared/dynamic-breadcrumb";
-import { Suspense } from "react";
 import { SidebarMenuSkeleton } from "../shared/sidebar-menu-skeleton";
-import { Skeleton } from "@/components/ui/skeleton";
-import { motion } from "framer-motion";
 
 interface DashboardLayoutProps {
 	children: React.ReactNode;

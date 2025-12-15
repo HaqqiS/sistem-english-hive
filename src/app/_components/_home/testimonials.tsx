@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import {
+	AnimatePresence,
+	LayoutGroup,
 	motion,
 	useScroll,
 	useVelocity,
 	type Variants,
-	AnimatePresence,
-	LayoutGroup,
 } from "framer-motion";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const testimonials = [
 	{
@@ -209,14 +209,15 @@ export default function Testimonials() {
 													</div>
 
 													<div className="flex gap-1">
-														{Array.from({ length: item.rating ?? 0 }).map(
-															(_, i) => (
-																<Star
-																	key={i}
-																	className="fill-primary text-primary h-4 w-4"
-																/>
-															),
-														)}
+														{Array.from(
+															{ length: item.rating ?? 0 },
+															(_, i) => i,
+														).map((starId) => (
+															<Star
+																key={`star-${starId}`}
+																className="fill-primary text-primary h-4 w-4"
+															/>
+														))}
 													</div>
 
 													<p className="text-muted-foreground italic">

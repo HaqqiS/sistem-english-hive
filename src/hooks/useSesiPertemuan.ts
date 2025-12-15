@@ -1,86 +1,86 @@
 "use client";
-import { api } from "@/trpc/react";
-import { toast } from "sonner";
-import type { TypeSesiSummary } from "@/types/sesiPertemuan.type";
 import { skipToken } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { api } from "@/trpc/react";
+import type { TypeSesiSummary } from "@/types/sesiPertemuan.type";
 
 interface UseSesiPertemuanOptions {
-  // Query options
-  enableQuery?: boolean;
-  initialDataSummary?: TypeSesiSummary;
+	// Query options
+	enableQuery?: boolean;
+	initialDataSummary?: TypeSesiSummary;
 
-  // Mutation callbacks
-  onSuccessCreate?: () => void;
-  onSuccessUpdate?: () => void;
-  onSuccessDelete?: () => void;
+	// Mutation callbacks
+	onSuccessCreate?: () => void;
+	onSuccessUpdate?: () => void;
+	onSuccessDelete?: () => void;
 
-  kelasId?: string;
-  filterCabang?: string;
+	kelasId?: string;
+	filterCabang?: string;
 }
 
 export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
-  const apiUtils = api.useUtils();
-  const kelasId = options?.kelasId;
-  const cabangIdPayload =
-    options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
+	const apiUtils = api.useUtils();
+	const kelasId = options?.kelasId;
+	const _cabangIdPayload =
+		options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
-  // ========== QUERIES ==========
+	// ========== QUERIES ==========
 
-  const sesiSummaryQuery = api.sesiPertemuan.getSesiSummaryByKelasId.useQuery(
-    kelasId ? { kelasId: kelasId } : skipToken, // Gunakan skipToken jika kelasId belum siap
-    {
-      enabled: options?.enableQuery ?? !!kelasId, // Aktifkan hanya jika kelasId ada
-      initialData: options?.initialDataSummary,
-      refetchOnWindowFocus: false,
-    },
-  );
+	const sesiSummaryQuery = api.sesiPertemuan.getSesiSummaryByKelasId.useQuery(
+		kelasId ? { kelasId: kelasId } : skipToken, // Gunakan skipToken jika kelasId belum siap
+		{
+			enabled: options?.enableQuery ?? !!kelasId, // Aktifkan hanya jika kelasId ada
+			initialData: options?.initialDataSummary,
+			refetchOnWindowFocus: false,
+		},
+	);
 
-  const invalidateSesi = async () => {
-    await Promise.all([
-      apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate({
-        kelasId: kelasId,
-      }),
-      apiUtils.pembayaran.getAllPaginated.invalidate(),
-    ]);
-  };
+	const invalidateSesi = async () => {
+		await Promise.all([
+			apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate({
+				kelasId: kelasId,
+			}),
+			apiUtils.pembayaran.getAllPaginated.invalidate(),
+		]);
+	};
 
-  // ========== MUTATIONS ==========
+	// ========== MUTATIONS ==========
 
-  // CREATE
-  const createMutation = api.sesiPertemuan.createSesiPertemuan.useMutation({
-    onSuccess: async () => {
-      await invalidateSesi();
-      toast.success("Program Kelas berhasil ditambahkan");
-      options?.onSuccessCreate?.();
-    },
-    onError: (error) => {
-      toast.error(`Gagal membuat Program Kelas: ${error.message}`);
-    },
-  });
+	// CREATE
+	const createMutation = api.sesiPertemuan.createSesiPertemuan.useMutation({
+		onSuccess: async () => {
+			await invalidateSesi();
+			toast.success("Program Kelas berhasil ditambahkan");
+			options?.onSuccessCreate?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal membuat Program Kelas: ${error.message}`);
+		},
+	});
 
-  // UPDATE
+	// UPDATE
 
-  // DELETE
+	// DELETE
 
-  return {
-    // Query results
+	return {
+		// Query results
 
-    dataSummary: sesiSummaryQuery.data,
-    isLoadingSummary: sesiSummaryQuery.isLoading,
-    isErrorSummary: sesiSummaryQuery.isError,
-    errorSummary: sesiSummaryQuery.error,
+		dataSummary: sesiSummaryQuery.data,
+		isLoadingSummary: sesiSummaryQuery.isLoading,
+		isErrorSummary: sesiSummaryQuery.isError,
+		errorSummary: sesiSummaryQuery.error,
 
-    // Mutations
-    mutations: {
-      create: {
-        mutate: createMutation.mutate,
-        mutateAsync: createMutation.mutateAsync,
-        isPending: createMutation.isPending,
-      },
-    },
+		// Mutations
+		mutations: {
+			create: {
+				mutate: createMutation.mutate,
+				mutateAsync: createMutation.mutateAsync,
+				isPending: createMutation.isPending,
+			},
+		},
 
-    // Utils untuk manual invalidation jika perlu
-    refetchSummary: sesiSummaryQuery.refetch,
-    invalidate: invalidateSesi,
-  };
+		// Utils untuk manual invalidation jika perlu
+		refetchSummary: sesiSummaryQuery.refetch,
+		invalidate: invalidateSesi,
+	};
 }

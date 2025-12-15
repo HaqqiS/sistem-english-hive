@@ -1,7 +1,8 @@
 "use client";
 
-import { useFormContext } from "react-hook-form";
 import { useEffect, useState } from "react";
+import { useFormContext } from "react-hook-form";
+import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import {
 	FormControl,
 	FormField,
@@ -9,6 +10,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -18,15 +20,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import { useKelas } from "@/hooks/useKelas";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
-import type { TypeClientCreatePembayaranSchema } from "@/types/pembayaran.type";
-import { toRupiah } from "@/utils/toRupiah";
-import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import type { TypeClientCreatePembayaranSchema } from "@/types/pembayaran.type";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { toRupiah } from "@/utils/toRupiah";
 
 interface PembayaranFormProps {
 	onSubmit: (data: TypeClientCreatePembayaranSchema) => void;
@@ -43,7 +43,7 @@ export default function PembayaranForm({ onSubmit }: PembayaranFormProps) {
 	// 2. Ambil Data Kelas (Untuk Dropdown 1 & Harga)
 	const { dataKelasAktif } = useKelas({
 		filterCabang: activeCabangId,
-		enableQueryGetKelasAktif:true,
+		enableQueryGetKelasAktif: true,
 		enableQueryGetKelasId: true, // Mengambil list kelas aktif
 	});
 

@@ -1,4 +1,11 @@
 "use client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getSession, signIn } from "next-auth/react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import InputPassword from "@/app/_components/shared/input-password";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -8,16 +15,9 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
-import { loginFormSchema, type LoginFormSchema } from "@/types/user.type";
-import { useForm } from "react-hook-form";
-import { getSession, signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
-import InputPassword from "@/app/_components/shared/input-password";
-import { useState } from "react";
 import { UserRole } from "@/server/auth/type";
+import { type LoginFormSchema, loginFormSchema } from "@/types/user.type";
 
 export default function LoginForm() {
 	const router = useRouter();

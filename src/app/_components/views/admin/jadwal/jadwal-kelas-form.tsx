@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import { Hari, TipeKelas } from "@prisma/client";
+import { Clock, Info, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import {
-	useFormContext,
-	useFieldArray,
-	useWatch,
 	type Control,
 	type UseFormSetValue,
-	type UseFormTrigger,
+	useFieldArray,
+	useFormContext,
+	useWatch,
 } from "react-hook-form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	FormControl,
 	FormField,
@@ -17,6 +22,8 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
 	Select,
 	SelectContent,
@@ -24,24 +31,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Plus, Trash2, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-
+import { useJam } from "@/hooks/useJam";
 import { useKelas } from "@/hooks/useKelas";
 import { useRuang } from "@/hooks/useRuang";
-import { useJam } from "@/hooks/useJam";
-import { Hari, TipeKelas } from "@prisma/client";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type {
 	TypeServerCreateBulkJadwalSchema,
 	TypeServerCreateJadwalSchema,
 } from "@/types/jadwalKelas.type";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 
 // Tipe Schema Form Wrapper
 type FormSchemaType = {
@@ -56,7 +54,7 @@ interface ScheduleItemRowProps {
 	index: number;
 	control: Control<FormSchemaType>;
 	setValue: UseFormSetValue<FormSchemaType>;
-	trigger: UseFormTrigger<FormSchemaType>;
+
 	remove: (index: number) => void;
 	firstItemKelasId: string | undefined; // ID Kelas dari parent
 	activeCabangId: string;
@@ -66,7 +64,7 @@ function ScheduleItemRow({
 	index,
 	control,
 	setValue,
-	trigger,
+
 	remove,
 	firstItemKelasId,
 	activeCabangId,
@@ -366,7 +364,7 @@ export default function JadwalKelasForm({
 	const { activeCabangId } = useGlobalCabangStore();
 
 	const form = useFormContext<FormSchemaType>();
-	const { control, setValue, trigger, handleSubmit } = form;
+	const { control, setValue, handleSubmit } = form;
 
 	const { fields, append, remove } = useFieldArray({
 		control,
@@ -455,7 +453,6 @@ export default function JadwalKelasForm({
 						index={index}
 						control={control}
 						setValue={setValue}
-						trigger={trigger}
 						remove={remove}
 						firstItemKelasId={firstItemKelasId}
 						activeCabangId={activeCabangId}

@@ -1,15 +1,15 @@
 "use client";
 
-import { EditDrawer } from "@/app/_components/shared/edit-drawer";
-import { Form } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { EditDrawer } from "@/app/_components/shared/edit-drawer";
+import { Form } from "@/components/ui/form";
+import { useMurid } from "@/hooks/useMurid";
 import { useMuridStore } from "@/store/useMuridStore";
 import {
 	RegisterMuridSchema,
 	type TypeClientRegisterMuridSchema,
 } from "@/types/murid.type";
-import { useMurid } from "@/hooks/useMurid";
 import MuridForm from "../form/murid-form";
 
 export default function EditMurid() {

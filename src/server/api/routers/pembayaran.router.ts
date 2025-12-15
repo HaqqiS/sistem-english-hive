@@ -1,437 +1,437 @@
-import { createTRPCRouter, cabangProtectedProcedure } from "../trpc";
-import { z } from "zod";
-import dayjs from "@/utils/dateUtils";
 import { Prisma, StatusPembayaran } from "@prisma/client";
-import { UserRole } from "@/server/auth/type";
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { UserRole } from "@/server/auth/type";
 import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
-import {
-  createPembayaranSchema,
-  updatePembayaranSchema,
-} from "@/types/pembayaran.schema";
 import { paginationSchema } from "@/types/pagination.type";
+import {
+	createPembayaranSchema,
+	updatePembayaranSchema,
+} from "@/types/pembayaran.schema";
+import dayjs from "@/utils/dateUtils";
+import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
 export const pembayaranRouter = createTRPCRouter({
-  getAllPaginated: cabangProtectedProcedure
-    .input(
-      paginationSchema.extend({
-        status: z.nativeEnum(StatusPembayaran).optional(),
-        muridId: z.string().optional(),
-        search: z.string().optional(),
-        cabangId: z.string().optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const { db, session, allowedCabangId } = ctx;
-      const { pageIndex, pageSize } = input;
+	getAllPaginated: cabangProtectedProcedure
+		.input(
+			paginationSchema.extend({
+				status: z.nativeEnum(StatusPembayaran).optional(),
+				muridId: z.string().optional(),
+				search: z.string().optional(),
+				cabangId: z.string().optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const { pageIndex, pageSize } = input;
 
-      const filterCabangId = allowedCabangId ?? input.cabangId;
+			const filterCabangId = allowedCabangId ?? input.cabangId;
 
-      const whereClause: Prisma.PembayaranWhereInput = {};
-      const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
+			const whereClause: Prisma.PembayaranWhereInput = {};
+			const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
 
-      if (filterCabangId)
-        pendaftaranFilter.Kelas = { cabangId: filterCabangId };
+			if (filterCabangId)
+				pendaftaranFilter.Kelas = { cabangId: filterCabangId };
 
-      if (input.muridId) pendaftaranFilter.muridId = input.muridId;
+			if (input.muridId) pendaftaranFilter.muridId = input.muridId;
 
-      if (input.search) {
-        pendaftaranFilter.murid = {
-          namaLengkap: {
-            contains: input.search,
-            mode: "insensitive",
-          },
-        };
-      }
+			if (input.search) {
+				pendaftaranFilter.murid = {
+					namaLengkap: {
+						contains: input.search,
+						mode: "insensitive",
+					},
+				};
+			}
 
-      if (Object.keys(pendaftaranFilter).length > 0)
-        whereClause.pendaftaranKelas = pendaftaranFilter;
+			if (Object.keys(pendaftaranFilter).length > 0)
+				whereClause.pendaftaranKelas = pendaftaranFilter;
 
-      if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
-        whereClause.statusBayar = input.status;
-      }
+			if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
+				whereClause.statusBayar = input.status;
+			}
 
-      // Transaction untuk performa lebih baik (count + findMany)
-      const [total, data] = await db.$transaction([
-        db.pembayaran.count({ where: whereClause }),
-        db.pembayaran.findMany({
-          skip: pageIndex * pageSize,
-          take: pageSize,
-          where: whereClause,
-          orderBy: { tanggalJatuhTempo: "desc" },
-          include: {
-            pendaftaranKelas: {
-              include: {
-                murid: { select: { namaLengkap: true, noWA: true } },
-                Kelas: { select: { kodeKelas: true, hargaKelas: true } },
-              },
-            },
-            verifiedBy: { select: { name: true } },
-          },
-        }),
-      ]);
+			// Transaction untuk performa lebih baik (count + findMany)
+			const [total, data] = await db.$transaction([
+				db.pembayaran.count({ where: whereClause }),
+				db.pembayaran.findMany({
+					skip: pageIndex * pageSize,
+					take: pageSize,
+					where: whereClause,
+					orderBy: { tanggalJatuhTempo: "desc" },
+					include: {
+						pendaftaranKelas: {
+							include: {
+								murid: { select: { namaLengkap: true, noWA: true } },
+								Kelas: { select: { kodeKelas: true, hargaKelas: true } },
+							},
+						},
+						verifiedBy: { select: { name: true } },
+					},
+				}),
+			]);
 
-      const pageCount = Math.ceil(total / pageSize);
+			const pageCount = Math.ceil(total / pageSize);
 
-      return {
-        data,
-        pageCount,
-        total,
-      };
-    }),
+			return {
+				data,
+				pageCount,
+				total,
+			};
+		}),
 
-  // 2. GET TAGIHAN JATUH TEMPO (Untuk Dashboard)
-  getTagihanJatuhTempo: cabangProtectedProcedure
-    .input(z.object({ cabangId: z.string().optional() }).optional())
-    .query(async ({ ctx, input }) => {
-      const { db, session, allowedCabangId } = ctx;
+	// 2. GET TAGIHAN JATUH TEMPO (Untuk Dashboard)
+	getTagihanJatuhTempo: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
 
-      const filterCabangId = allowedCabangId ?? input?.cabangId;
-      // const HARI_INI = dayjs().startOf("day");
-      const DUA_MINGGU_LAGI = dayjs().add(14, "day").endOf("day");
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+			// const HARI_INI = dayjs().startOf("day");
+			const DUA_MINGGU_LAGI = dayjs().add(14, "day").endOf("day");
 
-      const whereClause: Prisma.PembayaranWhereInput = {
-        statusBayar: {
-          in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
-        },
-        tanggalJatuhTempo: {
-          lte: DUA_MINGGU_LAGI.toDate(),
-        },
-      };
+			const whereClause: Prisma.PembayaranWhereInput = {
+				statusBayar: {
+					in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+				},
+				tanggalJatuhTempo: {
+					lte: DUA_MINGGU_LAGI.toDate(),
+				},
+			};
 
-      if (filterCabangId) {
-        whereClause.pendaftaranKelas = {
-          Kelas: { cabangId: filterCabangId },
-        };
-      }
+			if (filterCabangId) {
+				whereClause.pendaftaranKelas = {
+					Kelas: { cabangId: filterCabangId },
+				};
+			}
 
-      return db.pembayaran.findMany({
-        where: whereClause,
-        orderBy: { tanggalJatuhTempo: "asc" },
-        include: {
-          pendaftaranKelas: {
-            include: {
-              murid: { select: { namaLengkap: true, noWA: true } },
-              Kelas: { select: { kodeKelas: true } },
-            },
-          },
-        },
-      });
-    }),
+			return db.pembayaran.findMany({
+				where: whereClause,
+				orderBy: { tanggalJatuhTempo: "asc" },
+				include: {
+					pendaftaranKelas: {
+						include: {
+							murid: { select: { namaLengkap: true, noWA: true } },
+							Kelas: { select: { kodeKelas: true } },
+						},
+					},
+				},
+			});
+		}),
 
-  getForExport: cabangProtectedProcedure
-    .input(
-      z.object({
-        status: z.nativeEnum(StatusPembayaran).optional(),
-        muridId: z.string().optional(),
-        search: z.string().optional(),
-        cabangId: z.string().optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const { db, session, allowedCabangId } = ctx;
+	getForExport: cabangProtectedProcedure
+		.input(
+			z.object({
+				status: z.nativeEnum(StatusPembayaran).optional(),
+				muridId: z.string().optional(),
+				search: z.string().optional(),
+				cabangId: z.string().optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
 
-      const filterCabangId = allowedCabangId ?? input.cabangId;
+			const filterCabangId = allowedCabangId ?? input.cabangId;
 
-      const whereClause: Prisma.PembayaranWhereInput = {};
-      const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
+			const whereClause: Prisma.PembayaranWhereInput = {};
+			const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
 
-      if (filterCabangId)
-        pendaftaranFilter.Kelas = { cabangId: filterCabangId };
+			if (filterCabangId)
+				pendaftaranFilter.Kelas = { cabangId: filterCabangId };
 
-      if (input.muridId) pendaftaranFilter.muridId = input.muridId;
+			if (input.muridId) pendaftaranFilter.muridId = input.muridId;
 
-      if (input.search) {
-        pendaftaranFilter.murid = {
-          namaLengkap: {
-            contains: input.search,
-            mode: "insensitive",
-          },
-        };
-      }
+			if (input.search) {
+				pendaftaranFilter.murid = {
+					namaLengkap: {
+						contains: input.search,
+						mode: "insensitive",
+					},
+				};
+			}
 
-      if (Object.keys(pendaftaranFilter).length > 0) {
-        whereClause.pendaftaranKelas = pendaftaranFilter;
-      }
+			if (Object.keys(pendaftaranFilter).length > 0) {
+				whereClause.pendaftaranKelas = pendaftaranFilter;
+			}
 
-      if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
-        whereClause.statusBayar = input.status;
-      }
+			if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
+				whereClause.statusBayar = input.status;
+			}
 
-      const data = await db.pembayaran.findMany({
-        where: whereClause,
-        orderBy: { tanggalJatuhTempo: "desc" },
-        select: {
-          pembayaranKe: true,
-          jumlahBayar: true,
-          tanggalJatuhTempo: true,
-          statusBayar: true,
-          pendaftaranKelas: {
-            select: {
-              murid: { select: { namaLengkap: true } },
-              Kelas: { select: { kodeKelas: true } },
-            },
-          },
-        },
-      });
+			const data = await db.pembayaran.findMany({
+				where: whereClause,
+				orderBy: { tanggalJatuhTempo: "desc" },
+				select: {
+					pembayaranKe: true,
+					jumlahBayar: true,
+					tanggalJatuhTempo: true,
+					statusBayar: true,
+					pendaftaranKelas: {
+						select: {
+							murid: { select: { namaLengkap: true } },
+							Kelas: { select: { kodeKelas: true } },
+						},
+					},
+				},
+			});
 
-      return data;
-    }),
+			return data;
+		}),
 
-  getSaldoByMuridId: cabangProtectedProcedure
-    .input(z.object({ muridId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const { db, session, allowedCabangId } = ctx;
+	getSaldoByMuridId: cabangProtectedProcedure
+		.input(z.object({ muridId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
 
-      const pendaftaranAktif = await db.pendaftaranKelas.findFirst({
-        where: {
-          muridId: input.muridId,
-          isAktif: true, // Pastikan hanya ambil yang aktif
-        },
-        include: {
-          Kelas: { select: { cabangId: true } },
-        },
-      });
+			const pendaftaranAktif = await db.pendaftaranKelas.findFirst({
+				where: {
+					muridId: input.muridId,
+					isAktif: true, // Pastikan hanya ambil yang aktif
+				},
+				include: {
+					Kelas: { select: { cabangId: true } },
+				},
+			});
 
-      if (!pendaftaranAktif) {
-        return null;
-      }
+			if (!pendaftaranAktif) {
+				return null;
+			}
 
-      if (
-        allowedCabangId &&
-        pendaftaranAktif.Kelas.cabangId !== allowedCabangId
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Anda tidak berhak melihat data saldo siswa dari cabang lain.",
-        });
-      }
+			if (
+				allowedCabangId &&
+				pendaftaranAktif.Kelas.cabangId !== allowedCabangId
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Anda tidak berhak melihat data saldo siswa dari cabang lain.",
+				});
+			}
 
-      return await calculateSisaPertemuan(db, pendaftaranAktif.id);
-    }),
+			return await calculateSisaPertemuan(db, pendaftaranAktif.id);
+		}),
 
-  updatePembayaran: cabangProtectedProcedure
-    .input(updatePembayaranSchema)
-    .mutation(async ({ ctx, input }) => {
-      const { db, session, allowedCabangId } = ctx;
+	updatePembayaran: cabangProtectedProcedure
+		.input(updatePembayaranSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
 
-      // 1. Authorization Check
-      if (
-        session.user.role !== UserRole.ADMIN &&
-        session.user.role !== UserRole.MANAGER
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Hanya Admin atau Manager yang dapat mengupdate data pembayaran.",
-        });
-      }
+			// 1. Authorization Check
+			if (
+				session.user.role !== UserRole.ADMIN &&
+				session.user.role !== UserRole.MANAGER
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Hanya Admin atau Manager yang dapat mengupdate data pembayaran.",
+				});
+			}
 
-      // 2. Ambil data lama & Cek Kepemilikan (Layer 2)
-      const existingPayment = await db.pembayaran.findUnique({
-        where: { id: input.id },
-        include: {
-          pendaftaranKelas: {
-            include: { Kelas: { select: { cabangId: true } } },
-          },
-        },
-      });
+			// 2. Ambil data lama & Cek Kepemilikan (Layer 2)
+			const existingPayment = await db.pembayaran.findUnique({
+				where: { id: input.id },
+				include: {
+					pendaftaranKelas: {
+						include: { Kelas: { select: { cabangId: true } } },
+					},
+				},
+			});
 
-      if (!existingPayment) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data pembayaran tidak ditemukan.",
-        });
-      }
+			if (!existingPayment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Data pembayaran tidak ditemukan.",
+				});
+			}
 
-      // Validasi Cabang
-      const paymentCabangId = existingPayment.pendaftaranKelas.Kelas.cabangId;
+			// Validasi Cabang
+			const paymentCabangId = existingPayment.pendaftaranKelas.Kelas.cabangId;
 
-      if (allowedCabangId && paymentCabangId !== allowedCabangId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda tidak berhak mengedit pembayaran dari cabang lain.",
-        });
-      }
+			if (allowedCabangId && paymentCabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak mengedit pembayaran dari cabang lain.",
+				});
+			}
 
-      try {
-        // 3. Prepare update data
-        const updateData: Prisma.PembayaranUpdateInput = {
-          jumlahBayar: input.jumlahBayar,
-          note: input.note,
-          statusBayar: input.statusBayar,
-        };
+			try {
+				// 3. Prepare update data
+				const updateData: Prisma.PembayaranUpdateInput = {
+					jumlahBayar: input.jumlahBayar,
+					note: input.note,
+					statusBayar: input.statusBayar,
+				};
 
-        // Logic: Handling Status Changes
-        if (input.statusBayar === StatusPembayaran.LUNAS) {
-          updateData.verifiedBy = { connect: { id: session.user.id } };
-          updateData.tanggalBayar = input.tanggalBayar ?? new Date();
-        } else {
-          updateData.verifiedBy = { disconnect: true };
-          updateData.tanggalBayar = null;
-        }
+				// Logic: Handling Status Changes
+				if (input.statusBayar === StatusPembayaran.LUNAS) {
+					updateData.verifiedBy = { connect: { id: session.user.id } };
+					updateData.tanggalBayar = input.tanggalBayar ?? new Date();
+				} else {
+					updateData.verifiedBy = { disconnect: true };
+					updateData.tanggalBayar = null;
+				}
 
-        const updated = await db.pembayaran.update({
-          where: { id: input.id },
-          data: updateData,
-        });
+				const updated = await db.pembayaran.update({
+					where: { id: input.id },
+					data: updateData,
+				});
 
-        return updated;
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          if (error.code === "P2025") {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Pembayaran tidak ditemukan atau sudah dihapus.",
-            });
-          }
-        }
-        throw error;
-      }
-    }),
+				return updated;
+			} catch (error) {
+				if (error instanceof Prisma.PrismaClientKnownRequestError) {
+					if (error.code === "P2025") {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "Pembayaran tidak ditemukan atau sudah dihapus.",
+						});
+					}
+				}
+				throw error;
+			}
+		}),
 
-  // 5. [BARU] CREATE TAGIHAN MANUAL
-  // Jika admin perlu membuat tagihan di luar siklus otomatis
-  createManualTagihan: cabangProtectedProcedure
-    .input(createPembayaranSchema)
-    .mutation(async ({ ctx, input }) => {
-      const { db, session, allowedCabangId } = ctx;
+	// 5. [BARU] CREATE TAGIHAN MANUAL
+	// Jika admin perlu membuat tagihan di luar siklus otomatis
+	createManualTagihan: cabangProtectedProcedure
+		.input(createPembayaranSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
 
-      // 1. Validasi Kepemilikan Pendaftaran (Siswa)
-      const pendaftaran = await db.pendaftaranKelas.findUnique({
-        where: { id: input.pendaftaranKelasId },
-        include: { Kelas: { select: { cabangId: true } } }, // Ambil cabangId dari Kelas
-      });
+			// 1. Validasi Kepemilikan Pendaftaran (Siswa)
+			const pendaftaran = await db.pendaftaranKelas.findUnique({
+				where: { id: input.pendaftaranKelasId },
+				include: { Kelas: { select: { cabangId: true } } }, // Ambil cabangId dari Kelas
+			});
 
-      if (!pendaftaran) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Data pendaftaran siswa tidak ditemukan.",
-        });
-      }
+			if (!pendaftaran) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Data pendaftaran siswa tidak ditemukan.",
+				});
+			}
 
-      // 2. Security Check: Apakah user berhak membuat tagihan untuk siswa ini?
+			// 2. Security Check: Apakah user berhak membuat tagihan untuk siswa ini?
 
-      if (allowedCabangId && pendaftaran.Kelas.cabangId !== allowedCabangId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Anda tidak berhak membuat tagihan untuk siswa dari cabang lain.",
-        });
-      }
+			if (allowedCabangId && pendaftaran.Kelas.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Anda tidak berhak membuat tagihan untuk siswa dari cabang lain.",
+				});
+			}
 
-      const tanggalTransaksi = input.tanggalBayar ?? new Date();
+			const tanggalTransaksi = input.tanggalBayar ?? new Date();
 
-      try {
-        let urutan = input.pembayaranKe;
-        if (!urutan) {
-          const lastBill = await db.pembayaran.findFirst({
-            where: { pendaftaranKelasId: input.pendaftaranKelasId },
-            orderBy: { pembayaranKe: "desc" },
-          });
-          urutan = (lastBill?.pembayaranKe ?? 0) + 1;
-        }
+			try {
+				let urutan = input.pembayaranKe;
+				if (!urutan) {
+					const lastBill = await db.pembayaran.findFirst({
+						where: { pendaftaranKelasId: input.pendaftaranKelasId },
+						orderBy: { pembayaranKe: "desc" },
+					});
+					urutan = (lastBill?.pembayaranKe ?? 0) + 1;
+				}
 
-        return db.pembayaran.create({
-          data: {
-            pendaftaranKelasId: input.pendaftaranKelasId,
-            jumlahBayar: input.jumlahBayar,
-            tanggalJatuhTempo: tanggalTransaksi,
-            tanggalBayar: tanggalTransaksi,
-            pembayaranKe: urutan,
-            statusBayar: StatusPembayaran.LUNAS,
-            verifiedById: session.user.id,
-            note: input.note ?? "Tagihan Manual Admin",
-          },
-        });
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          // P2002: Konflik pada [pendaftaranKelasId, pembayaranKe]
-          if (error.code === "P2002") {
-            throw new TRPCError({
-              code: "CONFLICT",
-              message: `Tagihan ke-${input.pembayaranKe ?? "?"} sudah ada untuk siswa ini. Harap cek kembali urutan pembayaran.`,
-            });
-          }
-          // P2003: Pendaftaran ID salah
-          if (error.code === "P2003") {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Data Pendaftaran Siswa tidak valid.",
-            });
-          }
-        }
-        throw error;
-      }
-    }),
+				return db.pembayaran.create({
+					data: {
+						pendaftaranKelasId: input.pendaftaranKelasId,
+						jumlahBayar: input.jumlahBayar,
+						tanggalJatuhTempo: tanggalTransaksi,
+						tanggalBayar: tanggalTransaksi,
+						pembayaranKe: urutan,
+						statusBayar: StatusPembayaran.LUNAS,
+						verifiedById: session.user.id,
+						note: input.note ?? "Tagihan Manual Admin",
+					},
+				});
+			} catch (error) {
+				if (error instanceof Prisma.PrismaClientKnownRequestError) {
+					// P2002: Konflik pada [pendaftaranKelasId, pembayaranKe]
+					if (error.code === "P2002") {
+						throw new TRPCError({
+							code: "CONFLICT",
+							message: `Tagihan ke-${input.pembayaranKe ?? "?"} sudah ada untuk siswa ini. Harap cek kembali urutan pembayaran.`,
+						});
+					}
+					// P2003: Pendaftaran ID salah
+					if (error.code === "P2003") {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "Data Pendaftaran Siswa tidak valid.",
+						});
+					}
+				}
+				throw error;
+			}
+		}),
 
-  // 6. DELETE TAGIHAN
-  // Hati-hati, menghapus tagihan LUNAS akan mengurangi saldo pertemuan siswa!
-  deletePembayaran: cabangProtectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const { db, session, allowedCabangId } = ctx;
+	// 6. DELETE TAGIHAN
+	// Hati-hati, menghapus tagihan LUNAS akan mengurangi saldo pertemuan siswa!
+	deletePembayaran: cabangProtectedProcedure
+		.input(z.object({ id: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
 
-      // 1. Role Check
-      if (
-        session.user.role !== UserRole.ADMIN &&
-        session.user.role !== UserRole.MANAGER
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda tidak memiliki akses untuk menghapus pembayaran.",
-        });
-      }
+			// 1. Role Check
+			if (
+				session.user.role !== UserRole.ADMIN &&
+				session.user.role !== UserRole.MANAGER
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak memiliki akses untuk menghapus pembayaran.",
+				});
+			}
 
-      // 2. Ambil data & Cek Kepemilikan
-      const existingPayment = await db.pembayaran.findUnique({
-        where: { id: input.id },
-        include: {
-          pendaftaranKelas: {
-            include: { Kelas: { select: { cabangId: true } } },
-          },
-        },
-      });
+			// 2. Ambil data & Cek Kepemilikan
+			const existingPayment = await db.pembayaran.findUnique({
+				where: { id: input.id },
+				include: {
+					pendaftaranKelas: {
+						include: { Kelas: { select: { cabangId: true } } },
+					},
+				},
+			});
 
-      if (!existingPayment) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Pembayaran tidak ditemukan.",
-        });
-      }
+			if (!existingPayment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Pembayaran tidak ditemukan.",
+				});
+			}
 
-      // Validasi Cabang
-      const paymentCabangId = existingPayment.pendaftaranKelas.Kelas.cabangId;
+			// Validasi Cabang
+			const paymentCabangId = existingPayment.pendaftaranKelas.Kelas.cabangId;
 
-      if (allowedCabangId && paymentCabangId !== allowedCabangId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda tidak berhak menghapus pembayaran dari cabang lain.",
-        });
-      }
+			if (allowedCabangId && paymentCabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak menghapus pembayaran dari cabang lain.",
+				});
+			}
 
-      if (session.user.role !== UserRole.ADMIN) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Admin yang boleh menghapus data pembayaran.",
-        });
-      }
+			if (session.user.role !== UserRole.ADMIN) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Hanya Admin yang boleh menghapus data pembayaran.",
+				});
+			}
 
-      try {
-        return await db.pembayaran.delete({
-          where: { id: input.id },
-        });
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          if (error.code === "P2025") {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Pembayaran sudah dihapus atau tidak ditemukan.",
-            });
-          }
-        }
-        throw error;
-      }
-    }),
+			try {
+				return await db.pembayaran.delete({
+					where: { id: input.id },
+				});
+			} catch (error) {
+				if (error instanceof Prisma.PrismaClientKnownRequestError) {
+					if (error.code === "P2025") {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: "Pembayaran sudah dihapus atau tidak ditemukan.",
+						});
+					}
+				}
+				throw error;
+			}
+		}),
 });

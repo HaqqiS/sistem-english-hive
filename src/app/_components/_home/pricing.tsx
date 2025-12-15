@@ -1,18 +1,18 @@
 "use client";
 
 import { motion, type Variants } from "framer-motion";
-import { Check, Users, User } from "lucide-react";
+import { Check, User, Users } from "lucide-react";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
-	CardHeader,
-	CardTitle,
 	CardDescription,
 	CardFooter,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import { useScrollDirection } from "@/hooks/use-scroll-direction";
 
 const pricingOptions = [
@@ -109,11 +109,11 @@ export default function Pricing() {
 					custom={scrollDirection}
 					variants={containerVariants}
 				>
-					{pricingOptions.map((option, index) => {
+					{pricingOptions.map((option) => {
 						const Icon = option.icon;
 						return (
 							<motion.div
-								key={index}
+								key={option.title}
 								variants={itemVariants}
 								className="h-full"
 							>
@@ -150,9 +150,9 @@ export default function Pricing() {
 									</CardHeader>
 									<CardContent className="flex-1">
 										<ul className="space-y-3">
-											{option.features.map((feature, idx) => (
+											{option.features.map((feature) => (
 												<li
-													key={idx}
+													key={feature}
 													className="flex items-start gap-3 text-sm"
 												>
 													<Check className="h-5 w-5 shrink-0 text-green-500" />

@@ -20,8 +20,8 @@ export default function AdminGuruLoading() {
 
 			{/* Table Skeleton */}
 			<div className="mt-4 space-y-4 rounded-md border p-4">
-				{Array.from({ length: 5 }).map((_, i) => (
-					<div key={i} className="flex items-center justify-between">
+				{Array.from({ length: 5 }, (_, i) => i).map((id) => (
+					<div key={id} className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<Skeleton className="h-4 w-4" />
 							<Skeleton className="h-5 w-48" />

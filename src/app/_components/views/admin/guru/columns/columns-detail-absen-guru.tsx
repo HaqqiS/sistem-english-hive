@@ -1,14 +1,14 @@
 // src/app/_components/views/admin/guru/detail/columns-guru-history.tsx
 "use client";
 
+import { StatusAbsenGuru } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { TypeAbsensiGuruHistoryItem } from "@/types/absenGuru.type";
 import { formatToWITA } from "@/utils/dateUtils";
-import { Badge } from "@/components/ui/badge";
-import { StatusAbsenGuru } from "@prisma/client";
 
 // Helper untuk status badge
 const getStatusBadge = (status: StatusAbsenGuru) => {

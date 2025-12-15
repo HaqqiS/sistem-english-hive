@@ -28,15 +28,15 @@ import { db } from "@/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await auth();
-  // const { req, res } = opts;
-  // console.log("Session in TRPC context:", session);
+	const session = await auth();
+	// const { req, res } = opts;
+	// console.log("Session in TRPC context:", session);
 
-  return {
-    db,
-    session,
-    ...opts,
-  };
+	return {
+		db,
+		session,
+		...opts,
+	};
 };
 
 /**
@@ -47,17 +47,17 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
  * errors on the backend.
  */
 const t = initTRPC.context<typeof createTRPCContext>().create({
-  transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
-      },
-    };
-  },
+	transformer: superjson,
+	errorFormatter({ shape, error }) {
+		return {
+			...shape,
+			data: {
+				...shape.data,
+				zodError:
+					error.cause instanceof ZodError ? error.cause.flatten() : null,
+			},
+		};
+	},
 });
 
 /**
@@ -88,21 +88,21 @@ export const createTRPCRouter = t.router;
  * network latency that would occur in production but not in local development.
  */
 const timingMiddleware = t.middleware(async ({ next, path }) => {
-  const start = Date.now();
+	const start = Date.now();
 
-  if (t._config.isDev) {
-    // artificial delay in dev
-    const waitMs = Math.floor(Math.random() * 400) + 100;
-    await new Promise((resolve) => setTimeout(resolve, waitMs));
-  }
+	if (t._config.isDev) {
+		// artificial delay in dev
+		const waitMs = Math.floor(Math.random() * 400) + 100;
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+	}
 
-  const result = await next();
+	const result = await next();
 
-  const end = Date.now();
-  const durationMs = end - start;
-  console.log(`[TRPC] ${path} took ${durationMs}ms to execute`);
+	const end = Date.now();
+	const durationMs = end - start;
+	console.log(`[TRPC] ${path} took ${durationMs}ms to execute`);
 
-  return result;
+	return result;
 });
 
 /**
@@ -123,30 +123,30 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = t.procedure
-  .use(timingMiddleware)
-  .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
-    return next({
-      ctx: {
-        // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
-      },
-    });
-  });
+	.use(timingMiddleware)
+	.use(({ ctx, next }) => {
+		if (!ctx.session?.user) {
+			throw new TRPCError({ code: "UNAUTHORIZED" });
+		}
+		return next({
+			ctx: {
+				// infers the `session` as non-nullable
+				session: { ...ctx.session, user: ctx.session.user },
+			},
+		});
+	});
 
 /**
  * Manager Only Procedure
  */
 export const managerProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.session.user.role !== UserRole.MANAGER) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Akses ditolak. Khusus Manager.",
-    });
-  }
-  return next({ ctx });
+	if (ctx.session.user.role !== UserRole.MANAGER) {
+		throw new TRPCError({
+			code: "FORBIDDEN",
+			message: "Akses ditolak. Khusus Manager.",
+		});
+	}
+	return next({ ctx });
 });
 
 /**
@@ -156,36 +156,36 @@ export const managerProcedure = protectedProcedure.use(({ ctx, next }) => {
  * - Jika Manager: Mengecek input `cabangId` (jika ada) untuk filter, atau membiarkan null (All).
  */
 export const cabangProtectedProcedure = protectedProcedure.use(async (opts) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-  const rawInput = (opts as any).rawInput;
-  const { ctx, next } = opts;
-  const { role, cabangId } = ctx.session.user;
-  let allowedCabangId: string | undefined = undefined;
+	// biome-ignore lint/suspicious/noExplicitAny: Accessing internal rawInput which is not typed by tRPC
+	const rawInput = (opts as any).rawInput;
+	const { ctx, next } = opts;
+	const { role, cabangId } = ctx.session.user;
+	let allowedCabangId: string | undefined;
 
-  if (role === UserRole.ADMIN || role === UserRole.GURU) {
-    // Enforce cabang mereka sendiri
-    if (!cabangId) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Akun Anda tidak terhubung dengan cabang manapun.",
-      });
-    }
-    allowedCabangId = cabangId;
-  } else if (role === UserRole.MANAGER) {
-    // Cek apakah input memiliki property cabangId
-    // Kita lakukan pengecekan loose pada rawInput karena tipe input belum divalidasi Zod di level middleware
-    if (rawInput && typeof rawInput === "object" && "cabangId" in rawInput) {
-      const inputArg = rawInput as { cabangId?: string | null };
-      if (inputArg.cabangId && inputArg.cabangId !== "ALL") {
-        allowedCabangId = inputArg.cabangId;
-      }
-    }
-  }
+	if (role === UserRole.ADMIN || role === UserRole.GURU) {
+		// Enforce cabang mereka sendiri
+		if (!cabangId) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Akun Anda tidak terhubung dengan cabang manapun.",
+			});
+		}
+		allowedCabangId = cabangId;
+	} else if (role === UserRole.MANAGER) {
+		// Cek apakah input memiliki property cabangId
+		// Kita lakukan pengecekan loose pada rawInput karena tipe input belum divalidasi Zod di level middleware
+		if (rawInput && typeof rawInput === "object" && "cabangId" in rawInput) {
+			const inputArg = rawInput as { cabangId?: string | null };
+			if (inputArg.cabangId && inputArg.cabangId !== "ALL") {
+				allowedCabangId = inputArg.cabangId;
+			}
+		}
+	}
 
-  return next({
-    ctx: {
-      ...ctx,
-      allowedCabangId,
-    },
-  });
+	return next({
+		ctx: {
+			...ctx,
+			allowedCabangId,
+		},
+	});
 });

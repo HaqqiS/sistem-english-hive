@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import {
 	IconBrandFacebook,
 	IconBrandInstagram,
 	IconBrandTiktok,
 } from "@tabler/icons-react";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 export default function Footer() {
 	return (

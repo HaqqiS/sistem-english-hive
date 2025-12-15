@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Menu, X, LogIn } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { signIn, useSession } from "next-auth/react";
-import { UserRole } from "@/server/auth/type";
+import { AnimatePresence, motion } from "framer-motion";
+import { LogIn, Menu, X } from "lucide-react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { UserRole } from "@/server/auth/type";
 
 export default function Navbar() {
 	const [isOpen, setIsOpen] = useState(false);
@@ -143,13 +143,13 @@ export default function Navbar() {
 					</div>
 
 					{/* Mobile Menu Button */}
-					<button
+					<Button
 						className="text-foreground z-50 rounded-md p-2 transition-colors hover:bg-black/5 md:hidden"
 						onClick={() => setIsOpen(!isOpen)}
 						aria-label="Toggle menu"
 					>
 						{isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-					</button>
+					</Button>
 				</div>
 			</div>
 

@@ -1,12 +1,12 @@
 "use client";
 
+import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 
 const faqs = [
 	{
@@ -54,7 +54,7 @@ export default function FAQ() {
 				<Accordion type="single" collapsible className="w-full space-y-4">
 					{faqs.map((faq, index) => (
 						<ScrollAnimation
-							key={index}
+							key={faq.question}
 							variant="fadeUp"
 							delay={index * 0.1}
 							viewportAmount={0.5}

@@ -1,7 +1,8 @@
 "use client";
 
 import * as Icons from "lucide-react";
-
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -16,10 +17,8 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import type { NavCollapsibleItem } from "@/types/nav.type";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
+import type { NavCollapsibleItem } from "@/types/nav.type";
 
 interface NavItemProps {
 	items: NavCollapsibleItem[];
@@ -59,7 +58,7 @@ export function NavCollapsible({ items }: NavItemProps) {
 												.split("/")
 												.filter(Boolean).length;
 
-											let isActive;
+											let isActive: boolean;
 
 											if (subItemUrlSegments === 1) {
 												// Ini adalah link root (cth: /admin). Gunakan exact match.

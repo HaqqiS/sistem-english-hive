@@ -1,6 +1,6 @@
 import { ArrowRight, MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
+import { Button } from "@/components/ui/button";
 
 export default function CTA() {
 	return (

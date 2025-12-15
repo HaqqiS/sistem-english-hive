@@ -1,9 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { DataTable } from "@/app/_components/shared/data-table-generic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { StatusPembayaran } from "@prisma/client";
 import {
 	Banknote,
 	CalendarClock,
@@ -11,15 +8,29 @@ import {
 	Terminal,
 	User,
 } from "lucide-react";
-import { usePembayaran } from "@/hooks/usePembayaran";
-import { columns as createColumns } from "../columns/columns-pembayaran";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import { DataTable } from "@/app/_components/shared/data-table-generic";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePembayaran } from "@/hooks/usePembayaran";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { usePembayaranStore } from "@/store/usePembayaranStore";
+import type { TypePembayaran } from "@/types/pembayaran.type";
+import { toRupiah } from "@/utils/toRupiah";
+import { columns as createColumns } from "../columns/columns-pembayaran";
+import EditPembayaran from "../edit-pembayaran";
 
 export default function HistoryPembayaranMuridClient() {
 	const { activeCabangId } = useGlobalCabangStore();
 	const { muridId } = useParams<{ muridId: string }>();
+	const { openDrawer } = usePembayaranStore();
+
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [itemToDelete, setItemToDelete] = useState<TypePembayaran | null>(null);
 
 	// 1. Gunakan Hook Utama
 	const {
@@ -28,14 +39,19 @@ export default function HistoryPembayaranMuridClient() {
 		isErrorGetAllPaginated,
 		errorGetAllPaginated,
 		getSaldoByMuridIdQuery, // Query Saldo Spesifik
+		mutations,
 	} = usePembayaran({
 		pagination: {
-			pageSize:30,
+			pageSize: 30,
 			pageIndex: 0,
 		},
 		enableGetAll: true,
 		muridIdFilter: muridId,
 		filterCabang: activeCabangId,
+		onSuccessDelete: () => {
+			setDeleteDialogOpen(false);
+			setItemToDelete(null);
+		},
 	});
 
 	// 2. Panggil Query Saldo (untuk Header & Cards)
@@ -45,17 +61,45 @@ export default function HistoryPembayaranMuridClient() {
 		{ enabled: !!muridId },
 	);
 
-	// 3. Handler Aksi Tabel (Placeholder / Bisa dihubungkan ke mutasi)
+	// 3. Handler Aksi Tabel
+	const handleDeleteClick = (item: TypePembayaran) => {
+		setItemToDelete(item);
+		setDeleteDialogOpen(true);
+	};
+
+	const handleConfirmDelete = () => {
+		if (itemToDelete) {
+			mutations.delete.mutate({ id: itemToDelete.id });
+		}
+	};
+
+	const handleVerifyClick = (item: TypePembayaran) => {
+		// Toggle status: Jika LUNAS -> BELUM_LUNAS, jika BELUM -> LUNAS
+		const newStatus =
+			item.statusBayar === StatusPembayaran.LUNAS
+				? StatusPembayaran.BELUM_LUNAS
+				: StatusPembayaran.LUNAS;
+
+		mutations.update.mutate({
+			id: item.id,
+			jumlahBayar: item.jumlahBayar, // Required by schema
+			note: item.note ?? undefined, // Optional in schema
+			statusBayar: newStatus,
+			tanggalBayar:
+				newStatus === StatusPembayaran.LUNAS
+					? new Date().toISOString()
+					: undefined,
+		});
+	};
+
+	const handleEditClick = (item: TypePembayaran) => {
+		openDrawer("edit", item);
+	};
+
 	const columns = createColumns({
-		onDeleteClick(item) {
-			console.log("Delete clicked for", item);
-		},
-		onEditClick(item) {
-			console.log("Edit clicked for", item);
-		},
-		onVerifyClick(item) {
-			console.log("Verify clicked for", item);
-		},
+		onDeleteClick: handleDeleteClick,
+		onEditClick: handleEditClick,
+		onVerifyClick: handleVerifyClick,
 	});
 
 	const isLoading = isLoadingGetAllPaginated || isLoadingSaldo;
@@ -232,6 +276,32 @@ export default function HistoryPembayaranMuridClient() {
 					</div>
 				)}
 			</div>
+
+			<EditPembayaran />
+
+			<DeleteConfirmationDialog
+				isOpen={deleteDialogOpen}
+				onOpenChange={setDeleteDialogOpen}
+				title="Hapus Tagihan Pembayaran"
+				description={
+					<>
+						Apakah Anda yakin ingin menghapus tagihan untuk{" "}
+						<span className="text-foreground font-bold">
+							{itemToDelete?.pendaftaranKelas.murid.namaLengkap}
+						</span>{" "}
+						sebesar{" "}
+						<span className="text-foreground font-bold">
+							{toRupiah(itemToDelete?.jumlahBayar ?? 0)}
+						</span>
+						? Data ini tidak dapat dikembalikan dan dapat mempengaruhi saldo
+						pertemuan siswa.
+					</>
+				}
+				onConfirm={handleConfirmDelete}
+				isLoading={mutations.delete.isPending}
+				confirmText="Hapus Tagihan"
+				cancelText="Batal"
+			/>
 		</div>
 	);
 }

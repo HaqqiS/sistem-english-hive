@@ -57,15 +57,38 @@ export const muridRouter = createTRPCRouter({
 			}
 
 			// Gunakan transaction untuk performa (count + findMany paralel)
-			const [total, data] = await db.$transaction([
-				db.murid.count({ where: whereClause }),
-				db.murid.findMany({
-					skip: pageIndex * pageSize,
-					take: pageSize,
-					where: whereClause,
-					orderBy: { createdAt: "desc" },
-				}),
-			]);
+			const [total, data] = await db.$transaction(
+				async (tx) => {
+					return Promise.all([
+						tx.murid.count({ where: whereClause }),
+						tx.murid.findMany({
+							skip: pageIndex * pageSize,
+							take: pageSize,
+							where: whereClause,
+							orderBy: { createdAt: "desc" },
+							select: {
+								id: true,
+								namaLengkap: true,
+								email: true,
+								gender: true,
+								umur: true,
+								asalSekolah: true,
+								kelasSekolah: true,
+								noWA: true,
+								alamat: true,
+								pilihanProgram: true,
+								jamPulang: true,
+								deskripsi: true,
+								sumberInfo: true,
+								statusMurid: true,
+								createdAt: true,
+								cabangId: true,
+							},
+						}),
+					]);
+				},
+				{ timeout: 20000 },
+			);
 
 			const pageCount = Math.ceil(total / pageSize);
 

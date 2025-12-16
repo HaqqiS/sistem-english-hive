@@ -31,4 +31,5 @@ const handler = (req: NextRequest) =>
 				: undefined,
 	});
 
+export const maxDuration = 60; // 60 seconds
 export { handler as GET, handler as POST };

@@ -202,6 +202,7 @@ enum StatusMurid {
     PENDING //baru daftar, belum mulai kelas
     PLACEMENT_TEST //sedang dalam tahap placement test
     ON_GOING //murid sedang dalam tahap on going
+    WAITING_LIST //murid sedang dalam tahap waiting list
 }
 
 model Murid {

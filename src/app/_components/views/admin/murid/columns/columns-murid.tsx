@@ -54,10 +54,16 @@ export const getStatusColorBadge = (status: StatusMurid): string => {
 			return "bg-sky-500 hover:bg-sky-600 text-white";
 
 		case StatusMurid.PENDING:
-			return "bg-amber-500 hover:bg-amber-600 text-white";
+			return "bg-orange-500 hover:bg-orange-600 text-white";
 
 		case StatusMurid.PLACEMENT_TEST:
 			return "bg-pink-500 hover:bg-pink-600 text-white";
+		case StatusMurid.ON_GOING:
+			return "bg-fuchsia-500 hover:bg-fuchsia-600 text-white";
+		case StatusMurid.WAITING_LIST:
+			return "bg-yellow-500 hover:bg-yellow-600 text-white";
+		case StatusMurid.TUNGGU_KONFIRMASI:
+			return "bg-lime-500 hover:bg-lime-600 text-white";
 		default:
 			return "bg-gray-500 text-white";
 	}

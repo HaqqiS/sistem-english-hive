@@ -18,6 +18,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useMurid } from "@/hooks/useMurid";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
@@ -58,16 +59,33 @@ export default function MuridClient() {
 		"REGULER" | "PRIVAT" | "ALL"
 	>("ALL");
 	const [filterNoWA, setFilterNoWA] = useState<string | null>(null);
+	// State for Not Registered Tab
+	const [statusFilterNotRegistered, setStatusFilterNotRegistered] = useState<
+		StatusMurid | "ALL"
+	>("ALL");
+	const [tipeProgramFilterNotRegistered, setTipeProgramFilterNotRegistered] =
+		useState<"REGULER" | "PRIVAT" | "ALL">("ALL");
+	const [filterNoWANotRegistered, setFilterNoWANotRegistered] = useState<
+		string | null
+	>(null);
+	const [searchQueryNotRegistered, setSearchQueryNotRegistered] = useState("");
+	const debouncedSearchNotRegistered = useDebounce(
+		searchQueryNotRegistered,
+		500,
+	);
 
 	const [searchQuery, setSearchQuery] = useState("");
-	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const debouncedSearch = useDebounce(searchQuery, 500);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset pagination when search changes
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedSearch(searchQuery);
-			setPaginationAllMurid((prev) => ({ ...prev, pageIndex: 0 }));
-		}, 500);
-		return () => clearTimeout(timer);
-	}, [searchQuery]);
+		setPaginationAllMurid((prev) => ({ ...prev, pageIndex: 0 }));
+	}, [debouncedSearch]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset pagination when search changes
+	useEffect(() => {
+		setPaginationNotRegistered((prev) => ({ ...prev, pageIndex: 0 }));
+	}, [debouncedSearchNotRegistered]);
 
 	const { openDrawer } = useMuridStore();
 
@@ -81,6 +99,10 @@ export default function MuridClient() {
 	} = useMurid({
 		pagination: paginationNotRegistered,
 		filterCabang: activeCabangId,
+		searchFilterNotRegistered: debouncedSearchNotRegistered,
+		filterStatusNotRegistered: statusFilterNotRegistered,
+		tipeProgramNotRegistered: tipeProgramFilterNotRegistered,
+		filterNoWANotRegistered: filterNoWANotRegistered ?? "ALL",
 	});
 
 	const {
@@ -95,11 +117,11 @@ export default function MuridClient() {
 		dataDuplicateNoWA,
 	} = useMurid({
 		pagination: paginationAllMurid,
-		searchFilter: debouncedSearch,
-		filterStatus: statusFilter,
-		tipeProgram: tipeProgramFilter,
+		searchFilterAll: debouncedSearch,
+		filterStatusAll: statusFilter,
+		tipeProgramAll: tipeProgramFilter,
 		filterCabang: activeCabangId,
-		filterNoWA: filterNoWA ?? "ALL",
+		filterNoWAAll: filterNoWA ?? "ALL",
 		enableDuplicateNoWAQuery: true,
 		onSuccessDelete: () => {
 			setDeleteMuridDialogOpen(false);
@@ -222,6 +244,107 @@ export default function MuridClient() {
 
 							<TambahPendaftaranKelas />
 						</div>
+
+						{/* --- SEARCH + FILTER: mobile-first, turun ke bawah --- */}
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							{/* Search */}
+							<div className="relative w-full sm:w-60">
+								<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+								<Input
+									placeholder="Cari nama murid..."
+									className="pl-8"
+									value={searchQueryNotRegistered}
+									onChange={(e) => setSearchQueryNotRegistered(e.target.value)}
+								/>
+							</div>
+
+							<div className="flex flex-wrap gap-2">
+								{/* Filter Duplicate WA */}
+								{dataDuplicateNoWA.length > 0 && (
+									<Select
+										value={filterNoWANotRegistered ?? "ALL"}
+										onValueChange={(val) => {
+											setFilterNoWANotRegistered(val === "ALL" ? null : val);
+											setPaginationNotRegistered((prev) => ({
+												...prev,
+												pageIndex: 0,
+											}));
+										}}
+									>
+										<SelectTrigger className="w-full sm:w-50">
+											<div className="text-muted-foreground flex items-center gap-2">
+												<Filter className="h-3.5 w-3.5" />
+												<SelectValue placeholder="Filter Duplikat WA" />
+											</div>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="ALL">Semua No WA</SelectItem>
+											{dataDuplicateNoWA.map((item) => (
+												<SelectItem key={item.noWA} value={item.noWA}>
+													{item.noWA} ({item.count})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+
+								{/* Filter Tipe Program */}
+								<Select
+									value={tipeProgramFilterNotRegistered}
+									onValueChange={(val) => {
+										setTipeProgramFilterNotRegistered(
+											val as "REGULER" | "PRIVAT" | "ALL",
+										);
+										setPaginationNotRegistered((prev) => ({
+											...prev,
+											pageIndex: 0,
+										}));
+									}}
+								>
+									<SelectTrigger className="w-full sm:w-50">
+										<div className="text-muted-foreground flex items-center gap-2">
+											<Filter className="h-3.5 w-3.5" />
+											<SelectValue placeholder="Status" />
+										</div>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="ALL">Semua Tipe Program</SelectItem>
+										<SelectItem value="REGULER">Reguler</SelectItem>
+										<SelectItem value="PRIVAT">Privat</SelectItem>
+									</SelectContent>
+								</Select>
+
+								{/* Filter Status */}
+								<Select
+									value={statusFilterNotRegistered}
+									onValueChange={(val) => {
+										setStatusFilterNotRegistered(val as StatusMurid | "ALL");
+										setPaginationNotRegistered((prev) => ({
+											...prev,
+											pageIndex: 0,
+										}));
+									}}
+								>
+									<SelectTrigger className="w-full sm:w-40">
+										<div className="text-muted-foreground flex items-center gap-2">
+											<Filter className="h-3.5 w-3.5" />
+											<SelectValue placeholder="Status" />
+										</div>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="ALL">Semua Status</SelectItem>
+										{Object.values(StatusMurid).map((status) => (
+											<SelectItem key={status} value={status}>
+												{status
+													.replaceAll("_", " ")
+													.toLowerCase()
+													.replace(/\b\w/g, (c) => c.toUpperCase())}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
 					</header>
 
 					<DataTablePagination
@@ -239,7 +362,7 @@ export default function MuridClient() {
 				<HeaderActionPortal>
 					<Button variant="outline" size="sm" onClick={handleExport}>
 						<FileSpreadsheet className="mr-2 h-4 w-4" />
-						Export Database
+						Export Excel
 					</Button>
 				</HeaderActionPortal>
 

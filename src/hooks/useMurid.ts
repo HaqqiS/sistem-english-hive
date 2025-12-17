@@ -21,11 +21,19 @@ interface useMuridOptions {
 
 	pagination?: PaginationState;
 
-	searchFilter?: string;
-	filterStatus?: StatusMurid | "ALL";
 	filterCabang?: string;
-	tipeProgram?: "REGULER" | "PRIVAT" | "ALL";
-	filterNoWA?: string | "ALL";
+
+	// Filters for "All Murid"
+	searchFilterAll?: string;
+	filterStatusAll?: StatusMurid | "ALL";
+	tipeProgramAll?: "REGULER" | "PRIVAT" | "ALL";
+	filterNoWAAll?: string | "ALL";
+
+	// Filters for "Not Registered"
+	searchFilterNotRegistered?: string;
+	filterStatusNotRegistered?: StatusMurid | "ALL";
+	tipeProgramNotRegistered?: "REGULER" | "PRIVAT" | "ALL";
+	filterNoWANotRegistered?: string | "ALL";
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
@@ -40,10 +48,7 @@ export function useMurid(options?: useMuridOptions) {
 	const pageIndex = options?.pagination?.pageIndex ?? 0;
 	const pageSize = options?.pagination?.pageSize ?? 10;
 	const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
-	const tipeProgram =
-		options?.tipeProgram && options?.tipeProgram !== "ALL"
-			? options?.tipeProgram
-			: undefined;
+
 	const cabangIdPayload =
 		options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 
@@ -58,7 +63,24 @@ export function useMurid(options?: useMuridOptions) {
 
 	const MuridNotRegisteredPaginatedQuery =
 		api.murid.getMuridNotRegisteredPaginated.useQuery(
-			{ pageIndex, pageSize, cabangId: cabangIdPayload },
+			{
+				pageIndex,
+				pageSize,
+				cabangId: cabangIdPayload,
+				search: options?.searchFilterNotRegistered,
+				status:
+					options?.filterStatusNotRegistered !== "ALL"
+						? options?.filterStatusNotRegistered
+						: undefined,
+				tipeProgram:
+					options?.tipeProgramNotRegistered !== "ALL"
+						? options?.tipeProgramNotRegistered
+						: undefined,
+				filterNoWA:
+					options?.filterNoWANotRegistered !== "ALL"
+						? options?.filterNoWANotRegistered
+						: undefined,
+			},
 			{
 				enabled: !!options?.pagination,
 				placeholderData: keepPreviousData,
@@ -79,13 +101,16 @@ export function useMurid(options?: useMuridOptions) {
 		{
 			pageIndex,
 			pageSize,
-			search: options?.searchFilter,
+			search: options?.searchFilterAll,
 			status:
-				options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
-			tipeProgram: tipeProgram,
+				options?.filterStatusAll !== "ALL"
+					? options?.filterStatusAll
+					: undefined,
+			tipeProgram:
+				options?.tipeProgramAll !== "ALL" ? options?.tipeProgramAll : undefined,
 			cabangId: cabangIdPayload,
 			filterNoWA:
-				options?.filterNoWA !== "ALL" ? options?.filterNoWA : undefined,
+				options?.filterNoWAAll !== "ALL" ? options?.filterNoWAAll : undefined,
 		},
 		{
 			enabled: !!options?.pagination,
@@ -98,9 +123,11 @@ export function useMurid(options?: useMuridOptions) {
 
 	const fetchExportData = async () => {
 		return await apiUtils.murid.getForExport.fetch({
-			search: options?.searchFilter,
+			search: options?.searchFilterAll,
 			status:
-				options?.filterStatus !== "ALL" ? options?.filterStatus : undefined,
+				options?.filterStatusAll !== "ALL"
+					? options?.filterStatusAll
+					: undefined,
 			cabangId: cabangIdPayload,
 		});
 	};

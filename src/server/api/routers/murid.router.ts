@@ -65,7 +65,7 @@ export const muridRouter = createTRPCRouter({
 							skip: pageIndex * pageSize,
 							take: pageSize,
 							where: whereClause,
-							orderBy: { createdAt: "desc" },
+							orderBy: [{ statusMurid: "asc" }, { createdAt: "desc" }],
 							select: {
 								id: true,
 								namaLengkap: true,
@@ -158,7 +158,15 @@ export const muridRouter = createTRPCRouter({
 		}),
 
 	getMuridNotRegisteredPaginated: cabangProtectedProcedure
-		.input(paginationSchema.extend({ cabangId: z.string().optional() }))
+		.input(
+			paginationSchema.extend({
+				cabangId: z.string().optional(),
+				search: z.string().optional(),
+				status: z.nativeEnum(StatusMurid).optional(),
+				tipeProgram: z.enum(["REGULER", "PRIVAT", "ALL"]).optional(),
+				filterNoWA: z.string().optional(),
+			}),
+		)
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 			const { pageIndex, pageSize } = input;
@@ -170,8 +178,35 @@ export const muridRouter = createTRPCRouter({
 					{ pendaftaranKelases: { every: { isAktif: false } } },
 				],
 			};
+
+			const { search, status, tipeProgram, filterNoWA } = input;
+
+			if (search) {
+				whereClause.namaLengkap = {
+					contains: search,
+					mode: "insensitive",
+				};
+			}
+			if (status) whereClause.statusMurid = status;
 			const filterCabangId = allowedCabangId ?? input.cabangId;
 			if (filterCabangId) whereClause.cabangId = filterCabangId;
+
+			if (tipeProgram && tipeProgram !== undefined) {
+				if (tipeProgram === "REGULER") {
+					whereClause.pilihanProgram = {
+						contains: "reguler",
+						mode: "insensitive",
+					};
+				} else if (tipeProgram === "PRIVAT") {
+					whereClause.pilihanProgram = {
+						contains: "privat",
+						mode: "insensitive",
+					};
+				}
+			}
+			if (filterNoWA) {
+				whereClause.noWA = filterNoWA;
+			}
 
 			// Transaction untuk performa (count + query data paralel)
 			const [total, data] = await db.$transaction([
@@ -180,7 +215,7 @@ export const muridRouter = createTRPCRouter({
 					skip: pageIndex * pageSize,
 					take: pageSize,
 					where: whereClause,
-					orderBy: { createdAt: "desc" }, // Urutkan berdasarkan nama
+					orderBy: [{ statusMurid: "asc" }, { createdAt: "desc" }],
 					select: {
 						id: true,
 						kelasSekolah: true,

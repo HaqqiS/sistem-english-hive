@@ -56,6 +56,18 @@ export const muridRouter = createTRPCRouter({
 				whereClause.noWA = filterNoWA;
 			}
 
+			// Dynamic Sorting
+			let orderBy: Prisma.MuridOrderByWithRelationInput[] = [
+				{ statusMurid: "asc" },
+				{ createdAt: "desc" },
+			];
+
+			if (input.sorting && input.sorting.length > 0) {
+				orderBy = input.sorting.map((sort) => ({
+					[sort.id]: sort.desc ? "desc" : "asc",
+				}));
+			}
+
 			// Gunakan transaction untuk performa (count + findMany paralel)
 			const [total, data] = await db.$transaction(
 				async (tx) => {
@@ -65,7 +77,7 @@ export const muridRouter = createTRPCRouter({
 							skip: pageIndex * pageSize,
 							take: pageSize,
 							where: whereClause,
-							orderBy: [{ statusMurid: "asc" }, { createdAt: "desc" }],
+							orderBy: orderBy,
 							select: {
 								id: true,
 								namaLengkap: true,
@@ -208,6 +220,18 @@ export const muridRouter = createTRPCRouter({
 				whereClause.noWA = filterNoWA;
 			}
 
+			// Dynamic Sorting
+			let orderBy: Prisma.MuridOrderByWithRelationInput[] = [
+				{ statusMurid: "asc" },
+				{ createdAt: "desc" },
+			];
+
+			if (input.sorting && input.sorting.length > 0) {
+				orderBy = input.sorting.map((sort) => ({
+					[sort.id]: sort.desc ? "desc" : "asc",
+				}));
+			}
+
 			// Transaction untuk performa (count + query data paralel)
 			const [total, data] = await db.$transaction([
 				db.murid.count({ where: whereClause }),
@@ -215,7 +239,7 @@ export const muridRouter = createTRPCRouter({
 					skip: pageIndex * pageSize,
 					take: pageSize,
 					where: whereClause,
-					orderBy: [{ statusMurid: "asc" }, { createdAt: "desc" }],
+					orderBy: orderBy,
 					select: {
 						id: true,
 						kelasSekolah: true,
@@ -265,6 +289,19 @@ export const muridRouter = createTRPCRouter({
 			return await db.murid.findMany({
 				where: whereClause,
 				orderBy: { namaLengkap: "asc" },
+				include: {
+					cabang: {
+						select: { namaCabang: true },
+					},
+					pendaftaranKelases: {
+						where: { isAktif: true },
+						include: {
+							Kelas: {
+								select: { kodeKelas: true, jenisKelas: true },
+							},
+						},
+					},
+				},
 			});
 		}),
 

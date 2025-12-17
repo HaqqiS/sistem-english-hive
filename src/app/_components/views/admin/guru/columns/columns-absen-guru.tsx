@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Check, EllipsisVertical, Loader2 } from "lucide-react";
+import { ArrowUpDown, Check, EllipsisVertical, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -61,9 +61,17 @@ export const columns = ({
 	},
 
 	{
-		id: "guru.name",
+		id: "namaGuru", // Changed ID to match backend
 		accessorKey: "guru.name",
-		header: "Nama Guru",
+		header: ({ column }) => (
+			<Button
+				variant="ghost"
+				onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+			>
+				Nama Guru
+				<ArrowUpDown className="ml-2 h-4 w-4" />
+			</Button>
+		),
 		cell: ({ row }) => (
 			<Button
 				variant="link"
@@ -79,7 +87,15 @@ export const columns = ({
 	{
 		accessorKey: "sesiPertemuanKelas.kelas.kodeKelas",
 		id: "kelas",
-		header: "Kelas",
+		header: ({ column }) => (
+			<Button
+				variant="ghost"
+				onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+			>
+				Kelas
+				<ArrowUpDown className="ml-2 h-4 w-4" />
+			</Button>
+		),
 		cell: ({ row }) => (
 			<div
 				className="max-w-[300px] truncate"
@@ -92,8 +108,16 @@ export const columns = ({
 
 	{
 		accessorKey: "sesiPertemuanKelas.tanggalWaktu",
-		id: "tanggal waktu",
-		header: "Tanggal Waktu",
+		id: "tanggalWaktu", // Changed ID to match backend (was "tanggal waktu")
+		header: ({ column }) => (
+			<Button
+				variant="ghost"
+				onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+			>
+				Tanggal Waktu
+				<ArrowUpDown className="ml-2 h-4 w-4" />
+			</Button>
+		),
 		cell: ({ row }) => (
 			<div
 				className="max-w-[300px] truncate"
@@ -106,8 +130,16 @@ export const columns = ({
 
 	{
 		accessorKey: "isVerified",
-		id: "status verifikasi",
-		header: "Status Verifikasi",
+		id: "isVerified", // Changed ID to match backend (was "status verifikasi")
+		header: ({ column }) => (
+			<Button
+				variant="ghost"
+				onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+			>
+				Status Verifikasi
+				<ArrowUpDown className="ml-2 h-4 w-4" />
+			</Button>
+		),
 		cell: ({ row }) => {
 			const isVerified = row.original.isVerified;
 			// Cek apakah ID baris ini sama dengan ID yang sedang diproses di parent

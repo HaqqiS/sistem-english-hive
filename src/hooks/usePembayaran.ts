@@ -2,7 +2,7 @@
 
 import type { StatusPembayaran } from "@prisma/client";
 import { keepPreviousData } from "@tanstack/react-query";
-import type { PaginationState } from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import type { TypePembayaranPaginated } from "@/types/pembayaran.type";
@@ -17,6 +17,7 @@ interface UsePembayaranOptions {
 
 	// Pagination & Filter
 	pagination?: PaginationState;
+	sorting?: SortingState; // Add sorting type
 	statusFilter?: StatusPembayaran | "ALL";
 	muridIdFilter?: string;
 	searchFilter?: string;
@@ -39,6 +40,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 
 	const pageIndex = options?.pagination?.pageIndex ?? 0;
 	const pageSize = options?.pagination?.pageSize ?? 10;
+	const sorting = options?.sorting; // Get sorting from options
 	const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
 
 	const invalidatePayments = async () => {
@@ -65,6 +67,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 			muridId: options?.muridIdFilter,
 			search: options?.searchFilter,
 			cabangId: cabangIdPayload,
+			sorting, // Pass sorting to query
 		},
 		{
 			enabled: options?.enableGetAll ?? true,

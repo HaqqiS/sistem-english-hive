@@ -147,6 +147,7 @@ export default function KelasTab() {
 
 				return {
 					"Kode Kelas": item.kodeKelas,
+					Cabang: item.cabang.namaCabang,
 					Program: item.jenisKelas,
 					Level: item.level,
 					Tipe: item.tipe,
@@ -155,6 +156,7 @@ export default function KelasTab() {
 					Jadwal: jadwal,
 					"Jumlah Murid": item._count.pendaftaranKelases,
 					"Sesi Berjalan": item._count.sesiPertemuanKelases,
+					Deskripsi: item.deskripsi ?? "-",
 					"Harga Kelas": item.hargaKelas, // Angka murni agar bisa diolah Excel
 				};
 			});

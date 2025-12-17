@@ -19,6 +19,14 @@ export const pembayaranRouter = createTRPCRouter({
 				muridId: z.string().optional(),
 				search: z.string().optional(),
 				cabangId: z.string().optional(),
+				sorting: z
+					.array(
+						z.object({
+							id: z.string(),
+							desc: z.boolean(),
+						}),
+					)
+					.optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
@@ -51,6 +59,45 @@ export const pembayaranRouter = createTRPCRouter({
 				whereClause.statusBayar = input.status;
 			}
 
+			// Dynamic Sorting
+			let orderBy: Prisma.PembayaranOrderByWithRelationInput[] = [
+				{ tanggalJatuhTempo: "desc" },
+			];
+
+			if (input.sorting && input.sorting.length > 0) {
+				orderBy = input.sorting.map((sort) => {
+					// Handle nested relationship sorting manually if needed
+					// Example: if sort.id is "pendaftaranKelas.murid.namaLengkap"
+					// For now assuming direct fields or simple relations that Prisma supports directly via recursive structure if passed correctly
+					// However, frontend usually passes dotted paths for nested columns.
+					// We might need to map them. Let's start with supporting basic fields.
+
+					// Simple mapping for demonstration of nested sorting support
+					if (sort.id === "namaMurid") {
+						return {
+							pendaftaranKelas: {
+								murid: {
+									namaLengkap: sort.desc ? "desc" : "asc",
+								},
+							},
+						};
+					}
+					if (sort.id === "kelas") {
+						return {
+							pendaftaranKelas: {
+								Kelas: {
+									kodeKelas: sort.desc ? "desc" : "asc",
+								},
+							},
+						};
+					}
+
+					return {
+						[sort.id]: sort.desc ? "desc" : "asc",
+					};
+				});
+			}
+
 			// Transaction untuk performa lebih baik (count + findMany)
 			const [total, data] = await db.$transaction([
 				db.pembayaran.count({ where: whereClause }),
@@ -58,7 +105,7 @@ export const pembayaranRouter = createTRPCRouter({
 					skip: pageIndex * pageSize,
 					take: pageSize,
 					where: whereClause,
-					orderBy: { tanggalJatuhTempo: "desc" },
+					orderBy: orderBy,
 					include: {
 						pendaftaranKelas: {
 							include: {
@@ -165,11 +212,19 @@ export const pembayaranRouter = createTRPCRouter({
 					pembayaranKe: true,
 					jumlahBayar: true,
 					tanggalJatuhTempo: true,
+					tanggalBayar: true,
+					note: true,
 					statusBayar: true,
+					verifiedBy: { select: { name: true } },
 					pendaftaranKelas: {
 						select: {
 							murid: { select: { namaLengkap: true } },
-							Kelas: { select: { kodeKelas: true } },
+							Kelas: {
+								select: {
+									kodeKelas: true,
+									cabang: { select: { namaCabang: true } },
+								},
+							},
 						},
 					},
 				},

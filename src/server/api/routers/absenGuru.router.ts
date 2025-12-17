@@ -26,6 +26,14 @@ export const absenGuruRouter = createTRPCRouter({
 					.regex(/^\d{4}-\d{2}$/, "Format bulan harus YYYY-MM")
 					.optional(),
 				cabangId: z.string().optional(),
+				sorting: z
+					.array(
+						z.object({
+							id: z.string(),
+							desc: z.boolean(),
+						}),
+					)
+					.optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
@@ -56,17 +64,64 @@ export const absenGuruRouter = createTRPCRouter({
 			if (Object.keys(sesiFilter).length > 0)
 				whereClause.sesiPertemuanKelas = sesiFilter;
 
+			// Dynamic Sorting
+			let orderBy: Prisma.AbsensiGuruOrderByWithRelationInput[] = [
+				{
+					sesiPertemuanKelas: {
+						tanggalWaktu: "desc",
+					},
+				},
+			];
+
+			if (input.sorting && input.sorting.length > 0) {
+				orderBy = input.sorting.map((sort) => {
+					// Handling nested sorting
+					if (sort.id === "namaGuru") {
+						return {
+							guru: {
+								name: sort.desc ? "desc" : "asc",
+							},
+						};
+					}
+					if (sort.id === "kelas") {
+						return {
+							sesiPertemuanKelas: {
+								kelas: {
+									kodeKelas: sort.desc ? "desc" : "asc",
+								},
+							},
+						};
+					}
+					if (sort.id === "tanggalWaktu") {
+						return {
+							sesiPertemuanKelas: {
+								tanggalWaktu: sort.desc ? "desc" : "asc",
+							},
+						};
+					}
+					if (sort.id === "status") {
+						return {
+							status: sort.desc ? "desc" : "asc",
+						};
+					}
+					if (sort.id === "isVerified") {
+						return {
+							isVerified: sort.desc ? "desc" : "asc",
+						};
+					}
+					return {
+						[sort.id]: sort.desc ? "desc" : "asc",
+					};
+				});
+			}
+
 			const [total, data] = await db.$transaction([
 				db.absensiGuru.count({ where: whereClause }),
 				db.absensiGuru.findMany({
 					skip: pageIndex * pageSize,
 					take: pageSize,
 					where: whereClause,
-					orderBy: {
-						sesiPertemuanKelas: {
-							tanggalWaktu: "desc",
-						},
-					},
+					orderBy: orderBy,
 					select: {
 						id: true,
 						guruId: true,
@@ -264,7 +319,12 @@ export const absenGuruRouter = createTRPCRouter({
 					sesiPertemuanKelas: {
 						select: {
 							tanggalWaktu: true,
-							kelas: { select: { kodeKelas: true } },
+							kelas: {
+								select: {
+									kodeKelas: true,
+									cabang: { select: { namaCabang: true } },
+								},
+							},
 							ruang: { select: { namaRuang: true } },
 						},
 					},

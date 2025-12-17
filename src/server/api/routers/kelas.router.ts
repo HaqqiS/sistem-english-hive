@@ -273,6 +273,8 @@ export const kelasRouter = createTRPCRouter({
 					tipe: true,
 					bulanTahunAjar: true,
 					hargaKelas: true,
+					deskripsi: true,
+					cabang: { select: { namaCabang: true } },
 
 					// Info Guru Aktif
 					historyGuruKelases: {

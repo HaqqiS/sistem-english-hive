@@ -1,6 +1,6 @@
 "use client";
 
-import type { PaginationState } from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import {
 	CalendarIcon,
 	FileSpreadsheet,
@@ -44,6 +44,7 @@ export default function GuruClient() {
 		pageIndex: 0,
 		pageSize: 10,
 	});
+	const [sorting, setSorting] = useState<SortingState>([]);
 	const [open, setOpen] = useState(false);
 	const [month, setMonth] = useState<Date | undefined>(undefined);
 	const selectedMonthYYYYMM = month
@@ -100,6 +101,7 @@ export default function GuruClient() {
 		month: selectedMonthYYYYMM,
 		searchFilter: debouncedSearch,
 		pagination: pagination,
+		sorting,
 		filterCabang: activeCabangId,
 		onSuccessDelete: () => {
 			setDeleteAbsenGuruDialogOpen(false);
@@ -172,6 +174,7 @@ export default function GuruClient() {
 			const csvData = data.map((item) => ({
 				"Nama Guru": item.guru.name,
 				Kelas: item.sesiPertemuanKelas.kelas.kodeKelas,
+				Cabang: item.sesiPertemuanKelas.kelas.cabang.namaCabang,
 				Ruang: item.sesiPertemuanKelas.ruang.namaRuang,
 				"Tanggal Waktu": formatToWITA(item.sesiPertemuanKelas.tanggalWaktu),
 				"Status Kehadiran": item.status,
@@ -357,6 +360,8 @@ export default function GuruClient() {
 						pagination={pagination}
 						onPaginationChange={setPagination}
 						pageCount={pageCount}
+						sorting={sorting}
+						onSortingChange={setSorting}
 					/>
 				</div>
 			</TabsContent>

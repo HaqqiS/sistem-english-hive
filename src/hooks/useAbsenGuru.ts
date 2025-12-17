@@ -1,6 +1,6 @@
 "use client";
 import { keepPreviousData, skipToken } from "@tanstack/react-query";
-import type { PaginationState } from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import type {
@@ -24,6 +24,7 @@ interface UseGuruOptions {
 	guruId?: string;
 	month?: string;
 	pagination?: PaginationState;
+	sorting?: SortingState; // Add sorting
 	searchFilter?: string;
 	filterCabang?: string;
 }
@@ -32,6 +33,7 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 	const apiUtils = api.useUtils();
 	const pageIndex = options?.pagination?.pageIndex ?? 0;
 	const pageSize = options?.pagination?.pageSize ?? 10;
+	const sorting = options?.sorting; // Get sorting
 	const guruId = options?.guruId;
 	const month = options?.month;
 	const searchFilter = options?.searchFilter;
@@ -47,6 +49,7 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 			search: searchFilter,
 			month,
 			cabangId: cabangIdPayload,
+			sorting, // Pass sorting
 		},
 		{
 			enabled: !!options?.pagination,

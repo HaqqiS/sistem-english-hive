@@ -2,7 +2,7 @@
 
 import type { StatusMurid } from "@prisma/client";
 import { keepPreviousData } from "@tanstack/react-query";
-import type { PaginationState } from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import type {
@@ -20,6 +20,7 @@ interface useMuridOptions {
 	initialDataAllPaginated?: TypeAllMuridPaginated;
 
 	pagination?: PaginationState;
+	sorting?: SortingState;
 
 	filterCabang?: string;
 
@@ -34,6 +35,7 @@ interface useMuridOptions {
 	filterStatusNotRegistered?: StatusMurid | "ALL";
 	tipeProgramNotRegistered?: "REGULER" | "PRIVAT" | "ALL";
 	filterNoWANotRegistered?: string | "ALL";
+	sortingNotRegistered?: SortingState;
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
@@ -47,6 +49,8 @@ export function useMurid(options?: useMuridOptions) {
 	const apiUtils = api.useUtils();
 	const pageIndex = options?.pagination?.pageIndex ?? 0;
 	const pageSize = options?.pagination?.pageSize ?? 10;
+	const sorting = options?.sorting;
+	const sortingNotRegistered = options?.sortingNotRegistered;
 	const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
 
 	const cabangIdPayload =
@@ -80,6 +84,7 @@ export function useMurid(options?: useMuridOptions) {
 					options?.filterNoWANotRegistered !== "ALL"
 						? options?.filterNoWANotRegistered
 						: undefined,
+				sorting: sortingNotRegistered,
 			},
 			{
 				enabled: !!options?.pagination,
@@ -111,6 +116,7 @@ export function useMurid(options?: useMuridOptions) {
 			cabangId: cabangIdPayload,
 			filterNoWA:
 				options?.filterNoWAAll !== "ALL" ? options?.filterNoWAAll : undefined,
+			sorting,
 		},
 		{
 			enabled: !!options?.pagination,

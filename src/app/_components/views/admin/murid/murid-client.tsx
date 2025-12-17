@@ -1,7 +1,7 @@
 "use client";
 
 import { StatusMurid } from "@prisma/client";
-import type { PaginationState } from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -42,11 +42,15 @@ export default function MuridClient() {
 			pageSize: 10,
 		},
 	);
+	const [sortingAllMurid, setSortingAllMurid] = useState<SortingState>([]);
+
 	const [paginationNotRegistered, setPaginationNotRegistered] =
 		useState<PaginationState>({
 			pageIndex: 0,
 			pageSize: 10,
 		});
+	const [sortingNotRegistered, setSortingNotRegistered] =
+		useState<SortingState>([]);
 
 	const [deleteMuridDialogOpen, setDeleteMuridDialogOpen] = useState(false);
 	const [selectedMuridToDelete, setSelectedMuridToDelete] = useState<{
@@ -103,6 +107,7 @@ export default function MuridClient() {
 		filterStatusNotRegistered: statusFilterNotRegistered,
 		tipeProgramNotRegistered: tipeProgramFilterNotRegistered,
 		filterNoWANotRegistered: filterNoWANotRegistered ?? "ALL",
+		sortingNotRegistered,
 	});
 
 	const {
@@ -123,6 +128,7 @@ export default function MuridClient() {
 		filterCabang: activeCabangId,
 		filterNoWAAll: filterNoWA ?? "ALL",
 		enableDuplicateNoWAQuery: true,
+		sorting: sortingAllMurid,
 		onSuccessDelete: () => {
 			setDeleteMuridDialogOpen(false);
 			setSelectedMuridToDelete(null);
@@ -154,16 +160,31 @@ export default function MuridClient() {
 			}
 
 			// Format CSV
-			const csvData = data.map((m) => ({
-				"Nama Lengkap": m.namaLengkap,
-				"No. WA": m.noWA ? `'${m.noWA}` : "-", // Tambah kutip agar excel baca text (bukan angka ilmiah)
-				Email: m.email,
-				"Asal Sekolah": m.asalSekolah,
-				"Kelas Sekolah": m.kelasSekolah,
-				"Program Minat": m.pilihanProgram ?? "-",
-				Status: m.statusMurid,
-				"Tanggal Gabung": formatDateToYYYYMMDD(m.createdAt),
-			}));
+			// Format CSV
+			const csvData = data.map((m) => {
+				const activeClasses = m.pendaftaranKelases
+					.map((p) => p.Kelas.kodeKelas)
+					.join(", ");
+
+				return {
+					"Nama Lengkap": m.namaLengkap,
+					Cabang: m.cabang.namaCabang,
+					"Jenis Kelamin": m.gender,
+					Umur: m.umur,
+					Alamat: m.alamat,
+					"No. WA": m.noWA ? `'${m.noWA}` : "-", // Tambah kutip agar excel baca text (bukan angka ilmiah)
+					Email: m.email,
+					"Asal Sekolah": m.asalSekolah,
+					"Kelas Sekolah": m.kelasSekolah,
+					"Kelas Aktif": activeClasses || "-",
+					"Program Minat": m.pilihanProgram ?? "-",
+					"Jam Pulang": m.jamPulang,
+					"Sumber Info": m.sumberInfo,
+					Status: m.statusMurid,
+					Deskripsi: m.deskripsi,
+					"Tanggal Gabung": formatDateToYYYYMMDD(m.createdAt),
+				};
+			});
 
 			const filename = `Database-Murid-${statusFilter}-${new Date().toISOString().split("T")[0]}`;
 			downloadExcel(csvData, filename);
@@ -354,6 +375,8 @@ export default function MuridClient() {
 						pagination={paginationNotRegistered}
 						onPaginationChange={setPaginationNotRegistered}
 						isLoading={isFetchingNotRegisteredPaginated}
+						sorting={sortingNotRegistered}
+						onSortingChange={setSortingNotRegistered}
 					/>
 				</div>
 			</TabsContent>
@@ -531,6 +554,8 @@ export default function MuridClient() {
 						pagination={paginationAllMurid}
 						onPaginationChange={setPaginationAllMurid}
 						isLoading={isFetchingAllMuridPaginated}
+						sorting={sortingAllMurid}
+						onSortingChange={setSortingAllMurid}
 					/>
 				</div>
 			</TabsContent>

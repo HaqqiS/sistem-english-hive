@@ -1,7 +1,7 @@
 "use client";
 
 import { StatusPembayaran } from "@prisma/client";
-import type { PaginationState } from "@tanstack/react-table";
+import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { FileSpreadsheet, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -44,6 +44,7 @@ export default function PembayaranClient({
 	);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const [sorting, setSorting] = useState<SortingState>([]);
 
 	const { openDrawer } = usePembayaranStore();
 
@@ -80,6 +81,7 @@ export default function PembayaranClient({
 		searchFilter: debouncedSearch,
 		enableGetAll: true,
 		pagination: pagination,
+		sorting: sorting,
 		filterCabang: activeCabangId,
 		onSuccessDelete: () => {
 			setDeleteDialogOpen(false);
@@ -132,10 +134,16 @@ export default function PembayaranClient({
 			const formattedData = rawData.map((item) => ({
 				"Nama Murid": item.pendaftaranKelas.murid.namaLengkap,
 				Kelas: item.pendaftaranKelas.Kelas.kodeKelas,
+				Cabang: item.pendaftaranKelas.Kelas.cabang.namaCabang,
 				"Pembayaran Ke": item.pembayaranKe,
 				"Jumlah (Rp)": item.jumlahBayar,
 				Status: item.statusBayar === "LUNAS" ? "Lunas" : "Belum Lunas",
 				"Jatuh Tempo": formatDateToYYYYMMDD(item.tanggalJatuhTempo),
+				"Tanggal Bayar": item.tanggalBayar
+					? formatDateToYYYYMMDD(item.tanggalBayar)
+					: "-",
+				"Diverifikasi Oleh": item.verifiedBy?.name ?? "-",
+				Catatan: item.note ?? "-",
 			}));
 
 			// 3. Download CSV
@@ -239,6 +247,8 @@ export default function PembayaranClient({
 				pagination={pagination}
 				onPaginationChange={setPagination}
 				isLoading={isLoading || isFetching || isRefetching}
+				sorting={sorting}
+				onSortingChange={setSorting}
 			/>
 
 			<EditPembayaran />

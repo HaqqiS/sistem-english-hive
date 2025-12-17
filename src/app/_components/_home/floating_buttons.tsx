@@ -2,7 +2,7 @@
 
 import { ArrowUp, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function FloatingButtons() {
 	const [showScrollTop, setShowScrollTop] = useState(false);
@@ -39,18 +39,23 @@ export default function FloatingButtons() {
 
 			{/* Scroll to Top Button */}
 
-			{isClient &&
-				showScrollTop && ( // 3. Tambahkan kondisi isClient
-					<Button
-						onClick={scrollToTop}
-						className="fixed right-6 bottom-24 z-40"
-						aria-label="Scroll to top"
-					>
-						<div className="text-accent flex h-14 w-14 items-center justify-center rounded-full border border-gray-300 bg-white shadow-lg transition-all hover:bg-gray-50">
-							<ArrowUp className="h-6 w-6" />
-						</div>
-					</Button>
-				)}
+			{isClient && (
+				<button
+					type="button"
+					onClick={scrollToTop}
+					className={cn(
+						"fixed right-6 bottom-24 z-40 rounded-full transition-all duration-300",
+						showScrollTop
+							? "translate-y-0 opacity-100"
+							: "pointer-events-none translate-y-10 opacity-0",
+					)}
+					aria-label="Scroll to top"
+				>
+					<div className="text-accent flex h-14 w-14 items-center justify-center rounded-full border border-gray-300 bg-white shadow-lg transition-all hover:bg-gray-50">
+						<ArrowUp className="h-6 w-6" />
+					</div>
+				</button>
+			)}
 		</>
 	);
 }

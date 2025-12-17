@@ -23,5 +23,10 @@ export const HeaderActionPortal = ({ children }: { children: ReactNode }) => {
 	}
 
 	// 3. Render ke target
-	return createPortal(children, portalContainer);
+	// Wrap children in a div so that if #header-actions is messed with,
+	// React still owns this wrapper div and can unmount it safely.
+	return createPortal(
+		<div className="header-action-portal-wrapper contents">{children}</div>,
+		portalContainer,
+	);
 };

@@ -134,8 +134,16 @@ export default function MuridForm({
 										</SelectTrigger>
 									</FormControl>
 									<SelectContent>
-										<SelectItem value={Gender.LAKI_LAKI}>Laki-laki</SelectItem>
-										<SelectItem value={Gender.PEREMPUAN}>Perempuan</SelectItem>
+										<SelectItem value={Gender.LAKI_LAKI}>
+											<span translate="no" className="notranslate">
+												Laki-laki
+											</span>
+										</SelectItem>
+										<SelectItem value={Gender.PEREMPUAN}>
+											<span translate="no" className="notranslate">
+												Perempuan
+											</span>
+										</SelectItem>
 									</SelectContent>
 								</Select>
 								<FormMessage />
@@ -156,6 +164,7 @@ export default function MuridForm({
 											type="number"
 											placeholder="Umur"
 											{...field}
+											value={field.value ?? ""}
 											onChange={(e) => field.onChange(e.target.valueAsNumber)}
 										/>
 									</FormControl>
@@ -200,28 +209,42 @@ export default function MuridForm({
 											<SelectGroup>
 												<SelectLabel>Reguler</SelectLabel>
 												<SelectItem value="regulerPG">
-													Program Reguler (PG)
+													<span translate="no" className="notranslate">
+														Program Reguler (PG)
+													</span>
 												</SelectItem>
 												<SelectItem value="regulerTK">
-													Program Reguler (TK)
+													<span translate="no" className="notranslate">
+														Program Reguler (TK)
+													</span>
 												</SelectItem>
 												<SelectItem value="regulerSD">
-													Program Reguler (SD)
+													<span translate="no" className="notranslate">
+														Program Reguler (SD)
+													</span>
 												</SelectItem>
 												<SelectItem value="regulerSMP">
-													Program Reguler (SMP)
+													<span translate="no" className="notranslate">
+														Program Reguler (SMP)
+													</span>
 												</SelectItem>
 												<SelectItem value="regulerSMA">
-													Program Reguler (SMA)
+													<span translate="no" className="notranslate">
+														Program Reguler (SMA)
+													</span>
 												</SelectItem>
 											</SelectGroup>
 											<SelectGroup>
 												<SelectLabel>Privat</SelectLabel>
 												<SelectItem value="privatSekolah">
-													Program Privat (Sekolah)
+													<span translate="no" className="notranslate">
+														Program Privat (Sekolah)
+													</span>
 												</SelectItem>
 												<SelectItem value="privatDewasa">
-													Program Privat (Dewasa/Kerja)
+													<span translate="no" className="notranslate">
+														Program Privat (Dewasa/Kerja)
+													</span>
 												</SelectItem>
 											</SelectGroup>
 										</SelectContent>

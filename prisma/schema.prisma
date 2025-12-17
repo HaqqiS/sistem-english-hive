@@ -243,6 +243,7 @@ enum TipeKelas {
 
 enum JenisKelas {
     TinyTods
+    TinyStar
     PreLittleStar
     LittleStar
     RisingStar

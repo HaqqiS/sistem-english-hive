@@ -38,7 +38,7 @@ import {
 } from "@/server/services/gaji.service";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import dayjs, { formatToWITA } from "@/utils/dateUtils";
-import { downloadCSV } from "@/utils/exportUtils";
+import { downloadExcel } from "@/utils/exportUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "../columns/columns-detail-absen-guru";
 
@@ -120,7 +120,7 @@ export default function DetailGuruClient() {
 			}));
 
 			const filename = `SlipGaji-${guruName}-${selectedMonthYYYYMM}`;
-			downloadCSV(csvData, filename);
+			downloadExcel(csvData, filename);
 
 			toast.success("Slip Gaji berhasil diunduh!", { id: toastId });
 		} catch (e) {

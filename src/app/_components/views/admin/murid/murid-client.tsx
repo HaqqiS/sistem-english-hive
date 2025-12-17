@@ -24,7 +24,7 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useMuridStore } from "@/store/useMuridStore";
 import type { TypeAllMurid, TypeMuridNotRegistered } from "@/types/murid.type";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
-import { downloadCSV } from "@/utils/exportUtils";
+import { downloadExcel } from "@/utils/exportUtils";
 import { columns as createColumnsAllMurid } from "./columns/columns-murid";
 import { columns as createColumnsMuridNotRegistered } from "./columns/columns-murid-not-registered";
 import EditMurid from "./drawer/edit-murid";
@@ -144,7 +144,7 @@ export default function MuridClient() {
 			}));
 
 			const filename = `Database-Murid-${statusFilter}-${new Date().toISOString().split("T")[0]}`;
-			downloadCSV(csvData, filename);
+			downloadExcel(csvData, filename);
 
 			toast.success("Export berhasil!", { id: toastId });
 		} catch (e) {

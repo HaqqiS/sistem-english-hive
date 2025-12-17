@@ -71,16 +71,18 @@ export default function KelasClient() {
 					<div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
 						<h1 className="text-xl font-semibold">Penjadwalan</h1>
 						{/* Toggle View Mode (Opsional) */}
-						<div className="bg-muted/20 flex items-center rounded-md border p-1">
+						<div className="bg-muted/20 flex items-center rounded-md border p-1 space-x-2">
 							<Button
+								variant={viewMode === "GRID" ? "default" : "ghost"}
+								size="sm"
 								onClick={() => setViewMode("GRID")}
-								className={`rounded-sm px-3 py-1 text-xs transition-all ${viewMode === "GRID" ? "bg-background font-medium shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
 							>
 								Kalender
 							</Button>
 							<Button
+								variant={viewMode === "TABLE" ? "default" : "ghost"}
+								size="sm"
 								onClick={() => setViewMode("TABLE")}
-								className={`rounded-sm px-3 py-1 text-xs transition-all ${viewMode === "TABLE" ? "bg-background font-medium shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
 							>
 								Tabel
 							</Button>

@@ -51,7 +51,7 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
 import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
 import { formatToWITA } from "@/utils/dateUtils";
-import { downloadCSV } from "@/utils/exportUtils";
+import { downloadExcel } from "@/utils/exportUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import EditGuruKelas from "../drawers/edit-guru-kelas";
 import EditKelas from "../drawers/edit-kelas";
@@ -160,7 +160,7 @@ export default function KelasTab() {
 			});
 
 			const filename = `Laporan-Kelas-Operasional-${new Date().toISOString().split("T")[0]}`;
-			downloadCSV(csvData, filename);
+			downloadExcel(csvData, filename);
 
 			toast.success("Export berhasil!", { id: toastId });
 		} catch (e) {
@@ -200,7 +200,7 @@ export default function KelasTab() {
 			<HeaderActionPortal>
 				<Button variant="ghost" size="sm" onClick={handleExport}>
 					<FileSpreadsheet className="mr-2 h-4 w-4" />
-					Export CSV
+					Export Excel
 				</Button>
 			</HeaderActionPortal>
 

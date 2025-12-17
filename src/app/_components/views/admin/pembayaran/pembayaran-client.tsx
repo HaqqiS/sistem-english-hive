@@ -25,7 +25,7 @@ import type {
 	TypePembayaranPaginated,
 } from "@/types/pembayaran.type";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
-import { downloadCSV } from "@/utils/exportUtils";
+import { downloadExcel } from "@/utils/exportUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "./columns/columns-pembayaran";
 import EditPembayaran from "./edit-pembayaran";
@@ -139,7 +139,7 @@ export default function PembayaranClient({
 			}));
 
 			// 3. Download CSV
-			downloadCSV(
+			downloadExcel(
 				formattedData,
 				`Laporan-Pembayaran-${new Date().toISOString().split("T")[0]}`,
 			);
@@ -164,7 +164,7 @@ export default function PembayaranClient({
 					{/* Anda bisa taruh tombol Export di sini */}
 					<Button variant="ghost" size="sm" onClick={handleExport}>
 						<FileSpreadsheet className="mr-2 h-4 w-4" />
-						Export CSV
+						Export Excel
 					</Button>
 				</div>
 			</HeaderActionPortal>

@@ -30,7 +30,7 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useAbsenGuruStore, useGuruStore } from "@/store/useGuruStore";
 import type { TypeAbsensiGuru } from "@/types/absenGuru.type";
 import dayjs, { formatToWITA } from "@/utils/dateUtils";
-import { downloadCSV } from "@/utils/exportUtils";
+import { downloadExcel } from "@/utils/exportUtils";
 import { columns as columnsAbsen } from "./columns/columns-absen-guru";
 import { columns as columnsGuru } from "./columns/columns-guru";
 import EditGuru from "./drawer/edit-guru";
@@ -178,7 +178,7 @@ export default function GuruClient() {
 				"Status Verifikasi": item.isVerified ? "Terverifikasi" : "Belum",
 			}));
 
-			downloadCSV(
+			downloadExcel(
 				csvData,
 				`Laporan-Absensi-Guru-${new Date().toISOString().split("T")[0]}`,
 			);
@@ -228,7 +228,7 @@ export default function GuruClient() {
 				<HeaderActionPortal>
 					<Button variant="ghost" size="sm" onClick={handleExport}>
 						<FileSpreadsheet className="mr-2 h-4 w-4" />
-						Export CSV
+						Export Excel
 					</Button>
 				</HeaderActionPortal>
 

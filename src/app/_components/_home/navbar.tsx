@@ -103,7 +103,7 @@ export default function Navbar() {
 							<Button
 								variant="ghost"
 								size="sm"
-								onClick={() => signIn()}
+								onClick={() => signIn(undefined, { callbackUrl: "/admin" })}
 								className={cn(
 									"gap-2 text-base",
 									// Perbaikan Warna: Gunakan text-foreground agar terlihat jelas di Light/Dark mode
@@ -205,7 +205,7 @@ export default function Navbar() {
 									size="lg"
 									className="w-full gap-2"
 									onClick={async () => {
-										await signIn();
+										await signIn(undefined, { callbackUrl: "/admin" });
 										setIsOpen(false);
 									}}
 								>

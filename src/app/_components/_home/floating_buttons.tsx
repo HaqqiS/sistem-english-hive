@@ -32,7 +32,7 @@ export default function FloatingButtons() {
 				className="fixed right-6 bottom-6 z-40"
 				aria-label="Chat on WhatsApp"
 			>
-				<div className="flex h-14 w-14 animate-pulse cursor-pointer items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-all hover:animate-none hover:bg-green-600">
+				<div className="bg-primary text-primary-foreground flex h-14 w-14 animate-pulse cursor-pointer items-center justify-center rounded-full shadow-lg transition-all hover:animate-none hover:brightness-110">
 					<MessageCircle className="h-6 w-6" />
 				</div>
 			</a>

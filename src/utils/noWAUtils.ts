@@ -30,7 +30,11 @@ export const formatWhatsAppReminder = (
 	}
 
 	// Template Pesan
-	const text = `Halo Kak/Bapak/Ibu, kami dari *English Hive*.\n\nKami ingin mengingatkan tagihan kursus untuk:\nNama: *${namaMurid}*\nNominal: *${toRupiah(jumlah)}*\nJatuh Tempo: *${formatDateWITA(jatuhTempo)}*\n\nMohon segera melakukan pembayaran. Terima kasih 🙏`;
+	const text = `Halo Kak/Bapak/Ibu, kami dari *English Hive*.\n\nKami ingin mengingatkan tagihan kursus untuk:\nNama: *${namaMurid}*\nNominal: *${toRupiah(
+		jumlah,
+	)}*\nJatuh Tempo: *${formatDateWITA(
+		jatuhTempo,
+	)}*\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: Mandiri\nNo. Rekening: 1750080088080\nAtas nama: DESAK PUTU EKA PRATI\n\nMohon segera melakukan pembayaran. Terima kasih`;
 
 	const encodedText = encodeURIComponent(text);
 

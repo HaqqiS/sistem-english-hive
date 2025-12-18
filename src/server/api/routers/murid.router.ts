@@ -31,10 +31,28 @@ export const muridRouter = createTRPCRouter({
 			const whereClause: Prisma.MuridWhereInput = {};
 
 			if (search) {
-				whereClause.namaLengkap = {
-					contains: search,
-					mode: "insensitive",
-				};
+				const isNumber = /^[0-9]+$/.test(search);
+
+				if (isNumber) {
+					whereClause.OR = [
+						{
+							namaLengkap: {
+								contains: search,
+								mode: "insensitive",
+							},
+						},
+						{
+							noWA: {
+								contains: search,
+							},
+						},
+					];
+				} else {
+					whereClause.namaLengkap = {
+						contains: search,
+						mode: "insensitive",
+					};
+				}
 			}
 			if (status) whereClause.statusMurid = status;
 			const filterCabangId = allowedCabangId ?? input.cabangId;
@@ -194,10 +212,28 @@ export const muridRouter = createTRPCRouter({
 			const { search, status, tipeProgram, filterNoWA } = input;
 
 			if (search) {
-				whereClause.namaLengkap = {
-					contains: search,
-					mode: "insensitive",
-				};
+				const isNumber = /^[0-9]+$/.test(search);
+
+				if (isNumber) {
+					whereClause.OR = [
+						{
+							namaLengkap: {
+								contains: search,
+								mode: "insensitive",
+							},
+						},
+						{
+							noWA: {
+								contains: search,
+							},
+						},
+					];
+				} else {
+					whereClause.namaLengkap = {
+						contains: search,
+						mode: "insensitive",
+					};
+				}
 			}
 			if (status) whereClause.statusMurid = status;
 			const filterCabangId = allowedCabangId ?? input.cabangId;

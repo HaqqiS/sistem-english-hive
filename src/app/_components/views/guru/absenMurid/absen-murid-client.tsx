@@ -15,11 +15,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKelas } from "@/hooks/useKelas";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { formatToWITA } from "@/utils/dateUtils";
 
 export default function AbsenMuridClient() {
+	const { activeCabangId } = useGlobalCabangStore();
 	const { dataWithSesi: dataKelas, isLoadingWithSesi } = useKelas({
 		enableQueryGetKelasWithSesi: true,
+		filterCabang: activeCabangId,
 	});
 
 	if (isLoadingWithSesi) {

@@ -9,7 +9,7 @@ export const protectedRoutes = [
 	},
 	{
 		path: "/guru",
-		roles: [UserRole.GURU, UserRole.ADMIN],
+		roles: [UserRole.GURU, UserRole.ADMIN, UserRole.MANAGER],
 		redirect: "/guru",
 	},
 ];

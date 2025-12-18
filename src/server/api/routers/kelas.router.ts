@@ -210,44 +210,57 @@ export const kelasRouter = createTRPCRouter({
 	 * Query ini dirancang untuk halaman absensi guru.
 	 * Mengambil semua kelas, dan untuk setiap kelas, mengambil daftar sesi pertemuannya.
 	 */
-	getKelasWithSesiForGuru: cabangProtectedProcedure.query(async ({ ctx }) => {
-		const { db, session } = ctx;
-		const guruId = session.user.id;
+	getKelasWithSesiForGuru: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
+			const guruId = session.user.id;
+			const isGuru = session.user.role === "GURU";
 
-		const kelasWithSesi = await db.kelas.findMany({
-			where: {
-				// Filter kelas yang diajar oleh guru yang login & masih aktif
-				historyGuruKelases: {
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.KelasWhereInput = {};
+
+			if (filterCabangId) {
+				whereClause.cabangId = filterCabangId;
+			}
+
+			// Jika GURU, filter hanya kelas yang diajar
+			if (isGuru) {
+				whereClause.historyGuruKelases = {
 					some: {
 						guruId: guruId,
 						statusGuru: "ACTIVE",
 					},
-				},
-			},
-			orderBy: {
-				createdAt: "desc",
-			},
-			select: {
-				id: true,
-				kodeKelas: true,
-				// Ambil semua sesi pertemuan yang terkait dengan kelas ini
-				sesiPertemuanKelases: {
-					orderBy: {
-						tanggalWaktu: "desc",
-					},
-					select: {
-						id: true,
-						tanggalWaktu: true,
-					},
-				},
-			},
-		});
+				};
+			}
 
-		// Filter kelas yang tidak memiliki sesi pertemuan
-		return kelasWithSesi.filter(
-			(kelas) => kelas.sesiPertemuanKelases.length > 0,
-		);
-	}),
+			const kelasWithSesi = await db.kelas.findMany({
+				where: whereClause,
+				orderBy: {
+					createdAt: "desc",
+				},
+				select: {
+					id: true,
+					kodeKelas: true,
+					// Ambil semua sesi pertemuan yang terkait dengan kelas ini
+					sesiPertemuanKelases: {
+						orderBy: {
+							tanggalWaktu: "desc",
+						},
+						select: {
+							id: true,
+							tanggalWaktu: true,
+						},
+					},
+				},
+			});
+
+			// Filter kelas yang tidak memiliki sesi pertemuan
+			return kelasWithSesi.filter(
+				(kelas) => kelas.sesiPertemuanKelases.length > 0,
+			);
+		}),
 
 	getForExport: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional() }).optional())

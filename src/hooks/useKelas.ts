@@ -69,7 +69,7 @@ export function useKelas(options?: UseKelasOptions) {
 	);
 
 	const kelasWithSesiQuery = api.kelas.getKelasWithSesiForGuru.useQuery(
-		undefined,
+		{ cabangId: cabangIdPayload },
 		{
 			enabled: options?.enableQueryGetKelasWithSesi ?? false,
 			initialData: options?.initialDataKelasWithSesi,

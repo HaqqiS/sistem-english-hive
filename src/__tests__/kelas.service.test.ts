@@ -1,0 +1,134 @@
+import type {
+	HistoryGuruKelas,
+	JadwalKelas,
+	Kelas,
+	PendaftaranKelas,
+	PrismaClient,
+} from "@prisma/client";
+import { describe, expect, it, vi } from "vitest";
+import {
+	handleAutoLevelUp,
+	handleClassCompletion,
+} from "../server/services/kelas.service";
+
+describe("Kelas Service", () => {
+	const mockTx = {
+		kelas: {
+			findFirst: vi.fn(),
+			create: vi.fn(),
+		},
+		historyGuruKelas: {
+			findFirst: vi.fn(),
+			create: vi.fn(),
+			updateMany: vi.fn(),
+		},
+		jadwalKelas: {
+			findMany: vi.fn(),
+			createMany: vi.fn(),
+			deleteMany: vi.fn(),
+		},
+		pendaftaranKelas: {
+			findMany: vi.fn(),
+			create: vi.fn(),
+			updateMany: vi.fn(),
+		},
+		pembayaran: {
+			create: vi.fn(),
+		},
+	} as unknown as PrismaClient;
+
+	const resetMocks = () => vi.clearAllMocks();
+
+	describe("handleAutoLevelUp", () => {
+		it("should skip if level is 4", async () => {
+			resetMocks();
+			const result = await handleAutoLevelUp({
+				tx: mockTx,
+				jadwal: {
+					kelasId: "k-1",
+					ruangId: "r-1",
+					kelas: { level: 4 } as unknown as Kelas,
+				},
+			});
+			expect(result).toBeNull();
+		});
+
+		it("should create new class if level < 4", async () => {
+			resetMocks();
+			// Mock existing check -> null (create new)
+			vi.mocked(mockTx.kelas.findFirst).mockResolvedValue(null);
+			// Mock create
+			vi.mocked(mockTx.kelas.create).mockResolvedValue({
+				id: "k-new",
+			} as unknown as Kelas);
+			// Mock prev guru
+			vi.mocked(mockTx.historyGuruKelas.findFirst).mockResolvedValue({
+				guruId: "g-1",
+			} as unknown as HistoryGuruKelas);
+			// Mock old schedules
+			vi.mocked(mockTx.jadwalKelas.findMany).mockResolvedValue([
+				{ id: "j-1", hari: "SENIN" } as unknown as JadwalKelas,
+			]);
+			// Mock active students
+			vi.mocked(mockTx.pendaftaranKelas.findMany).mockResolvedValue([
+				{ muridId: "m-1" } as unknown as PendaftaranKelas,
+			]);
+			// Mock registration create
+			vi.mocked(mockTx.pendaftaranKelas.create).mockResolvedValue({
+				id: "reg-new",
+			} as unknown as PendaftaranKelas);
+
+			const result = await handleAutoLevelUp({
+				tx: mockTx,
+				jadwal: {
+					kelasId: "k-1",
+					ruangId: "r-1",
+					kelas: {
+						level: 1,
+						jenisKelas: "Regular",
+						kodeKelas: "REG 1 | 01/2024",
+						cohortId: "cohort-1",
+						hargaKelas: 50000,
+					} as unknown as Kelas,
+				},
+			});
+
+			expect(result).toEqual({ id: "k-new" });
+			expect(mockTx.kelas.create).toHaveBeenCalled();
+			// Should create next level (Level 2)
+			const createCalls = vi.mocked(mockTx.kelas.create).mock.calls;
+			if (!createCalls[0] || !createCalls[0][0])
+				throw new Error("Create call not found");
+			const createCall = createCalls[0][0];
+			expect(createCall.data.level).toBe(2);
+
+			// Should copy schedules
+			expect(mockTx.jadwalKelas.createMany).toHaveBeenCalled();
+
+			// Should move students
+			expect(mockTx.pendaftaranKelas.create).toHaveBeenCalled();
+			expect(mockTx.pembayaran.create).toHaveBeenCalled(); // Pending bill
+		});
+	});
+
+	describe("handleClassCompletion", () => {
+		it("should complete class if sessions >= 24", async () => {
+			resetMocks();
+			const result = await handleClassCompletion(mockTx, "k-1", 24);
+
+			expect(result).toBe(true);
+			expect(mockTx.pendaftaranKelas.updateMany).toHaveBeenCalledWith({
+				where: { kelasId: "k-1" },
+				data: { isAktif: false },
+			});
+		});
+
+		it("should not complete class if sessions < 24", async () => {
+			resetMocks();
+			const result = await handleClassCompletion(mockTx, "k-1", 23);
+
+			expect(result).toBe(false);
+			expect(mockTx.pendaftaranKelas.updateMany).not.toHaveBeenCalled();
+		});
+	});
+});

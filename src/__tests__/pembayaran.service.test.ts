@@ -1,6 +1,10 @@
 import type { Pembayaran, Prisma, PrismaClient } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
-import { calculateSisaPertemuan } from "../server/services/pembayaran.service";
+import {
+	calculateInitialBill,
+	calculateSisaPertemuan,
+	generateTagihan,
+} from "../server/services/pembayaran.service";
 
 // Mock Data Constants
 const MOCK_PENDAFTARAN_ID = "pendaftaran-1";
@@ -202,5 +206,95 @@ describe("calculateSisaPertemuan (Hybrid Billing Logic)", () => {
 		const result = await calculateSisaPertemuan(mockDb, MOCK_PENDAFTARAN_ID);
 
 		expect(result.needNewBill).toBe(false); // Harusnya false karena sudah lunas
+	});
+});
+
+describe("generateTagihan", () => {
+	const mockDb = {
+		pembayaran: {
+			findFirst: vi.fn(),
+			create: vi.fn(),
+		},
+	} as unknown as PrismaClient;
+
+	it("should return existing bill if found", async () => {
+		const mockExistingBill = { id: "bill-1" };
+		vi.mocked(mockDb.pembayaran.findFirst).mockResolvedValue(
+			mockExistingBill as unknown as Pembayaran,
+		);
+
+		const result = await generateTagihan(mockDb, {
+			pendaftaranId: "p-1",
+			pembayaranKe: 1,
+			jumlahBayar: 50000,
+			jatuhTempo: new Date(),
+			note: "test",
+		});
+
+		expect(result).toBe(mockExistingBill);
+		expect(mockDb.pembayaran.create).not.toHaveBeenCalled();
+	});
+
+	it("should create new bill if not found", async () => {
+		vi.mocked(mockDb.pembayaran.findFirst).mockResolvedValue(null);
+		const mockNewBill = { id: "bill-new" };
+		vi.mocked(mockDb.pembayaran.create).mockResolvedValue(
+			mockNewBill as unknown as Pembayaran,
+		);
+
+		const result = await generateTagihan(mockDb, {
+			pendaftaranId: "p-1",
+			pembayaranKe: 1,
+			jumlahBayar: 50000,
+			jatuhTempo: new Date(),
+			note: "test",
+		});
+
+		expect(result).toBe(mockNewBill);
+		expect(mockDb.pembayaran.create).toHaveBeenCalled();
+	});
+});
+
+describe("calculateInitialBill", () => {
+	const HARGA = 50000;
+
+	it("should calculate for Block 1 (Session 1-6)", () => {
+		// e.g. Join at Session 1 (0 passed)
+		const result = calculateInitialBill(HARGA, 0);
+
+		expect(result.pembayaranKe).toBe(1);
+		expect(result.sesiMasuk).toBe(1);
+		// Target 8. Pay 8 - 0 = 8 sessions.
+		expect(result.jumlahSesiDibayar).toBe(8);
+		expect(result.totalTagihan).toBe(8 * HARGA);
+	});
+
+	it("should calculate for Block 2 (Late Joiner, Session 7-14)", () => {
+		// e.g. Join at Session 7 (6 passed)
+		const result = calculateInitialBill(HARGA, 6);
+
+		expect(result.pembayaranKe).toBe(2);
+		expect(result.sesiMasuk).toBe(7);
+		// Target 16. Pay 16 - 6 = 10 sessions.
+		expect(result.jumlahSesiDibayar).toBe(10);
+		expect(result.totalTagihan).toBe(10 * HARGA);
+	});
+
+	it("should calculate for Block 3 (Very Late Joiner, Session 15-24)", () => {
+		// e.g. Join at Session 15 (14 passed)
+		const result = calculateInitialBill(HARGA, 14);
+
+		expect(result.pembayaranKe).toBe(3);
+		expect(result.sesiMasuk).toBe(15);
+		// Target 24. Pay 24 - 14 = 10 sessions.
+		expect(result.jumlahSesiDibayar).toBe(10);
+		expect(result.totalTagihan).toBe(10 * HARGA);
+	});
+
+	it("should throw error if session limit exceeded", () => {
+		// 24 passed -> Join at 25.
+		expect(() => calculateInitialBill(HARGA, 24)).toThrow(
+			"Kelas ini sudah selesai",
+		);
 	});
 });

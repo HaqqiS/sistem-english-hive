@@ -7,7 +7,13 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboardPage() {
-	await api.pembayaran.getTagihanJatuhTempo.prefetch({});
+	await Promise.all([
+		api.pembayaran.getTagihanJatuhTempo.prefetch({}),
+		api.dashboard.getKpiStats.prefetch(),
+		api.dashboard.getRegistrationTrend.prefetch(),
+		api.dashboard.getRevenueTrend.prefetch(),
+		api.dashboard.getTodaySchedule.prefetch(),
+	]);
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">

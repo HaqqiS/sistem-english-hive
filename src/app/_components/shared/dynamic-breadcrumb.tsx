@@ -61,6 +61,9 @@ export function DynamicBreadcrumb() {
 						if (currentPath === `/admin/pembayaran/${segment}`) {
 							displayLabel = "Detail Pembayaran";
 						}
+						if (currentPath === `/admin/guru/${segment}`) {
+							displayLabel = "Detail Gaji Guru";
+						}
 					}
 
 					return (

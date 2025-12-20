@@ -162,7 +162,7 @@ export const columns = ({
 
 			// 2. JIKA BELUM TERVERIFIKASI (isVerified === false)
 			return (
-				<div className="w-[180px]">
+				<div className="min-w-[140px]">
 					<Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
 						Reviewer
 					</Label>
@@ -176,7 +176,7 @@ export const columns = ({
 						}}
 					>
 						<SelectTrigger
-							className="w-full"
+							className="w-full sm:w-fit sm:min-w-[140px]"
 							size="sm"
 							id={`${row.original.id}-reviewer`}
 						>

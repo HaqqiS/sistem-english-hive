@@ -28,14 +28,24 @@ export default function AbsenMuridClient() {
 	if (isLoadingWithSesi) {
 		return (
 			<div className="space-y-4">
-				{[1, 2, 3].map((i) => (
-					<div key={i} className="rounded-lg border p-4">
-						<div className="mb-4 flex items-center justify-between">
-							<Skeleton className="h-6 w-1/3" />
-							<Skeleton className="h-5 w-16 rounded-full" />
-						</div>
-						<Skeleton className="h-10 w-full" />
-					</div>
+				{Array.from({ length: 3 }, (_, k) => k).map((k) => (
+					<Card key={k} className="overflow-hidden">
+						<CardContent className="p-0">
+							{/* Mimic Accordion Trigger */}
+							<div className="flex items-center justify-between px-6 py-4">
+								<div className="flex flex-1 items-center justify-between pr-4">
+									<div className="flex items-center gap-3">
+										{/* Icon */}
+										<Skeleton className="h-10 w-10 rounded-lg" />
+										<div className="flex flex-col gap-2">
+											<Skeleton className="h-5 w-32" /> {/* Kode Kelas */}
+										</div>
+									</div>
+									<Skeleton className="h-6 w-16 rounded-full" /> {/* Badge */}
+								</div>
+							</div>
+						</CardContent>
+					</Card>
 				))}
 			</div>
 		);

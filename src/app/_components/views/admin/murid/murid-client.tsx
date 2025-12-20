@@ -269,7 +269,7 @@ export default function MuridClient() {
 						{/* --- SEARCH + FILTER: mobile-first, turun ke bawah --- */}
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							{/* Search */}
-							<div className="relative w-full sm:w-60">
+							<div className="relative w-full sm:max-w-xs">
 								<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
 								<Input
 									placeholder="Cari nama murid..."
@@ -292,7 +292,7 @@ export default function MuridClient() {
 											}));
 										}}
 									>
-										<SelectTrigger className="w-full sm:w-50">
+										<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
 											<div className="text-muted-foreground flex items-center gap-2">
 												<Filter className="h-3.5 w-3.5" />
 												<SelectValue placeholder="Filter Duplikat WA" />
@@ -322,7 +322,7 @@ export default function MuridClient() {
 										}));
 									}}
 								>
-									<SelectTrigger className="w-full sm:w-50">
+									<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
 										<div className="text-muted-foreground flex items-center gap-2">
 											<Filter className="h-3.5 w-3.5" />
 											<SelectValue placeholder="Status" />
@@ -346,7 +346,7 @@ export default function MuridClient() {
 										}));
 									}}
 								>
-									<SelectTrigger className="w-full sm:w-40">
+									<SelectTrigger className="w-full sm:w-fit sm:min-w-40">
 										<div className="text-muted-foreground flex items-center gap-2">
 											<Filter className="h-3.5 w-3.5" />
 											<SelectValue placeholder="Status" />
@@ -430,7 +430,7 @@ export default function MuridClient() {
 						{/* --- SEARCH + FILTER: mobile-first, turun ke bawah --- */}
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							{/* Search */}
-							<div className="relative w-full sm:w-60">
+							<div className="relative w-full sm:max-w-xs">
 								<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
 								<Input
 									placeholder="Cari nama murid..."
@@ -453,7 +453,7 @@ export default function MuridClient() {
 											}));
 										}}
 									>
-										<SelectTrigger className="w-full sm:w-50">
+										<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
 											<div className="text-muted-foreground flex items-center gap-2">
 												<Filter className="h-3.5 w-3.5" />
 												<SelectValue placeholder="Filter Duplikat WA" />
@@ -481,7 +481,7 @@ export default function MuridClient() {
 										}));
 									}}
 								>
-									<SelectTrigger className="w-full sm:w-50">
+									<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
 										<div className="text-muted-foreground flex items-center gap-2">
 											<Filter className="h-3.5 w-3.5" />
 											<SelectValue placeholder="Status" />
@@ -505,7 +505,7 @@ export default function MuridClient() {
 										}));
 									}}
 								>
-									<SelectTrigger className="w-full sm:w-40">
+									<SelectTrigger className="w-full sm:w-fit sm:min-w-40">
 										<div className="text-muted-foreground flex items-center gap-2">
 											<Filter className="h-3.5 w-3.5" />
 											<SelectValue placeholder="Status" />

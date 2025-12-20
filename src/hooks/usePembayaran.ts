@@ -20,8 +20,8 @@ interface UsePembayaranOptions {
 	sorting?: SortingState; // Add sorting type
 	statusFilter?: StatusPembayaran | "ALL";
 	muridIdFilter?: string;
+	kelasIdFilter?: string;
 	searchFilter?: string;
-
 	filterCabang?: string;
 
 	// Mutation callbacks
@@ -37,6 +37,8 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 	const apiUtils = api.useUtils();
 	const cabangIdPayload =
 		options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
+	const kelasIdPayload =
+		options?.kelasIdFilter !== "ALL" ? options?.kelasIdFilter : undefined;
 
 	const pageIndex = options?.pagination?.pageIndex ?? 0;
 	const pageSize = options?.pagination?.pageSize ?? 10;
@@ -65,6 +67,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 					? options.statusFilter
 					: undefined,
 			muridId: options?.muridIdFilter,
+			kelasId: kelasIdPayload,
 			search: options?.searchFilter,
 			cabangId: cabangIdPayload,
 			sorting, // Pass sorting to query

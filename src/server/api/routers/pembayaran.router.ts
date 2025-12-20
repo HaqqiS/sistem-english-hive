@@ -19,6 +19,7 @@ export const pembayaranRouter = createTRPCRouter({
 				muridId: z.string().optional(),
 				search: z.string().optional(),
 				cabangId: z.string().optional(),
+				kelasId: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -54,6 +55,9 @@ export const pembayaranRouter = createTRPCRouter({
 
 			if (Object.keys(pendaftaranFilter).length > 0)
 				whereClause.pendaftaranKelas = pendaftaranFilter;
+
+			if (input.kelasId)
+				whereClause.pendaftaranKelas = { Kelas: { id: input.kelasId } };
 
 			if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
 				whereClause.statusBayar = input.status;

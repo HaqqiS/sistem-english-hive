@@ -119,29 +119,80 @@ export const calculateSisaPertemuan = async (
 		select: { jumlahBayar: true, pembayaranKe: true },
 	});
 
+	// --- A. LOGIKA UTAMA: BERDASARKAN SALDO (Prepaid System) ---
 	const totalUangDitagih = allBills.reduce(
 		(acc, curr) => acc + curr.jumlahBayar,
 		0,
 	);
-	// totalKapasitasDitagih = 300k/ 50k
-	// totalKapasitasDitagih = 6 sesi
-	const totalKapasitasDitagih = Math.floor(totalUangDitagih / hargaPerSesi);
 
-	// potensiSisa = 6 - totalTerpakai(3)
-	// potensiSisa = 3 sesi
+	const totalKapasitasDitagih = Math.floor(totalUangDitagih / hargaPerSesi);
 	const potensiSisa = totalKapasitasDitagih - totalTerpakai;
 
+	// Trigger 1: Sisa Saldo Menipis
 	if (potensiSisa <= BATAS_SISA_UNTUK_TAGIHAN) {
 		needNewBill = true;
+	}
 
-		// E. Tentukan urutan pembayaran berikutnya
-		// Ambil angka terbesar yang ada, lalu tambah 1.
-		// Ini aman untuk Late Joiner yang mungkin start dari pembayaranKe: 2.
+	// --- B. LOGIKA SYNC: BERDASARKAN JADWAL KELAS (Hybrid System) ---
+	// Tujuannya: Memaksa tagihan muncul jika kelas sudah berjalan jauh,
+	// meskipun murid masih punya saldo (karena sering OFF/Cuti).
+
+	// 1. Hitung berapa sesi kelas yang SUDAH berlalu sejak murid bergabung
+	// (Kita ambil semua sesi kelas yang sudah lewat tanggalnya)
+	const totalSesiKelasBerlalu = await db.sesiPertemuanKelas.count({
+		where: {
+			kelasId: pendaftaran.kelasId,
+			tanggalWaktu: {
+				lte: new Date(), // Sesi yang sudah lewat
+			},
+		},
+	});
+
+	// 2. Tentukan kita sekarang ada di "Blok" ke berapa?
+	// Blok 1: Sesi 1-8 -> Trigger di Sesi 6
+	// Blok 2: Sesi 9-16 -> Trigger di Sesi 14
+	// Rumus: Sisa Sesi di Blok Ini <= BATAS (2)
+
+	// Contoh: Sesi 6.
+	// SesiDalamBlok = 6 % 8 = 6.
+	// LastBlockEnd = ceil(6/8) * 8 = 8.
+	// DistanceToEnd = 8 - 6 = 2. -> TRIGGER!
+
+	const currentBlockNumber = Math.ceil(
+		totalSesiKelasBerlalu / JUMLAH_PERTEMUAN_PER_BLOK,
+	);
+	const targetSesiAkhirBlok = currentBlockNumber * JUMLAH_PERTEMUAN_PER_BLOK;
+	const distanceToBlockEnd = targetSesiAkhirBlok - totalSesiKelasBerlalu;
+
+	// Cek apakah kita berada di zona trigger (2 sesi sebelum blok berakhir)
+	// Note: totalSesiKelasBerlalu > 0 check is important to avoid trigger at 0
+	if (
+		totalSesiKelasBerlalu > 0 &&
+		distanceToBlockEnd <= BATAS_SISA_UNTUK_TAGIHAN
+	) {
+		// Logika: Kita mengharapkan murid SUDAH membayar tagihan untuk Blok Berikutnya (N+1).
+		// Blok 1 selesai -> Butuh Tagihan ke-2.
+		// Blok 2 selesai -> Butuh Tagihan ke-3.
+
+		const targetPembayaranKe = currentBlockNumber + 1;
+
+		// Cek apakah murid sudah punya tagihan level itu?
 		const maxPembayaranKe =
 			allBills.length > 0
 				? Math.max(...allBills.map((b) => b.pembayaranKe))
 				: 0;
 
+		if (maxPembayaranKe < targetPembayaranKe) {
+			needNewBill = true;
+		}
+	}
+
+	// --- FINALIZATION ---
+	if (needNewBill) {
+		const maxPembayaranKe =
+			allBills.length > 0
+				? Math.max(...allBills.map((b) => b.pembayaranKe))
+				: 0;
 		nextBillPembayaranKe = maxPembayaranKe + 1;
 	}
 

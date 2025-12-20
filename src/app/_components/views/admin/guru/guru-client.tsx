@@ -263,13 +263,13 @@ export default function GuruClient() {
 						{/* COMPONENT ADD */}
 
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-							<div className="relative w-full sm:w-60">
+							<div className="relative w-full sm:max-w-xs">
 								<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
 								<Input
 									placeholder="Cari nama guru..."
 									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
-									className="w-full pl-9"
+									className="pl-8"
 								/>
 							</div>
 							<div className="flex flex-col gap-1">

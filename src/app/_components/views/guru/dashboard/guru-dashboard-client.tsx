@@ -239,7 +239,7 @@ export default function GuruDashboardClient() {
 						}
 						disabled={isLoadingGuru}
 					>
-						<SelectTrigger className="bg-background w-full sm:w-60">
+						<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-60">
 							<SelectValue placeholder="Pilih Guru..." />
 						</SelectTrigger>
 						<SelectContent>

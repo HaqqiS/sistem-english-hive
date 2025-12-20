@@ -2,6 +2,7 @@ import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { absenGuruRouter } from "./routers/absenGuru.router";
 import { absenMuridRouter } from "./routers/absenMurid.router";
 import { cabangRouter } from "./routers/cabang.router";
+import { dashboardRouter } from "./routers/dashboard.router";
 import { historyGuruKelasRouter } from "./routers/historyGuruKelas.router";
 import { jadwalKelasRouter } from "./routers/jadwalKelas.router";
 import { jamRouter } from "./routers/jam.router";
@@ -32,6 +33,7 @@ export const appRouter = createTRPCRouter({
 	pembayaran: pembayaranRouter,
 	jam: jamRouter,
 	jadwalKelas: jadwalKelasRouter,
+	dashboard: dashboardRouter,
 });
 
 // export type definition of API

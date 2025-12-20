@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AbsensiMuridPage() {
-	await api.kelas.getKelasWithSesiForGuru.prefetch();
+	await api.kelas.getKelasWithSesiForGuru.prefetch({});
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4 pt-0">
 			<header className="flex items-center justify-between pt-6">

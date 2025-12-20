@@ -17,6 +17,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useKelas } from "@/hooks/useKelas";
 import { usePembayaran } from "@/hooks/usePembayaran";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { usePembayaranStore } from "@/store/usePembayaranStore";
@@ -42,6 +43,7 @@ export default function PembayaranClient({
 	const [statusFilter, setStatusFilter] = useState<StatusPembayaran | "ALL">(
 		"ALL",
 	);
+	const [kelasIdFilter, setKelasIdFilter] = useState<string | "ALL">("ALL");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [sorting, setSorting] = useState<SortingState>([]);
@@ -79,6 +81,7 @@ export default function PembayaranClient({
 		initialDataPaginated: initialDataPembayaran,
 		statusFilter: statusFilter,
 		searchFilter: debouncedSearch,
+		kelasIdFilter: kelasIdFilter,
 		enableGetAll: true,
 		pagination: pagination,
 		sorting: sorting,
@@ -87,6 +90,11 @@ export default function PembayaranClient({
 			setDeleteDialogOpen(false);
 			setItemToDelete(null);
 		},
+	});
+
+	const { dataKelasAktif: kelasList } = useKelas({
+		filterCabang: activeCabangId,
+		enableQueryGetKelasAktif: true,
 	});
 
 	// --- HANDLERS ---
@@ -178,105 +186,127 @@ export default function PembayaranClient({
 			</HeaderActionPortal>
 
 			{/* --- TOOLBAR --- */}
-			<header className="mb-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex flex-col items-start gap-2">
-					<div className="flex items-center gap-2">
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-9 w-9 shrink-0"
-							onClick={() => refetch()}
-							disabled={isLoading || isFetching}
-							title="Refresh Data"
-						>
-							<RefreshCw
-								className={`h-4 w-4 ${isLoading || isFetching ? "animate-spin" : ""}`}
-							/>
-						</Button>
-						<div>
-							<h1 className="text-xl">Data Pembayaran</h1>
-							<p className="text-muted-foreground text-sm">
-								halaman ini mengatur data pembayaran siswa.
-							</p>
+			<div>
+				<header className="flex w-full flex-col gap-4">
+					<div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+						<div className="flex flex-1 items-center gap-3">
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-9 w-9 shrink-0"
+								onClick={() => refetch()}
+								disabled={isLoading || isFetching}
+								title="Refresh"
+							>
+								<RefreshCw
+									className={`h-4 w-4 ${isLoading || isFetching ? "animate-spin" : ""}`}
+								/>
+							</Button>
+
+							<div className="flex flex-col">
+								<h1 className="text-xl">Data Pembayaran</h1>
+								<p className="text-muted-foreground text-sm">
+									halaman ini mengatur data pembayaran siswa.
+								</p>
+							</div>
 						</div>
+
+						{/* Action button kanan (di desktop) */}
+						<TambahPembayaran />
 					</div>
 
-					<div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div className="relative w-full sm:max-w-xs">
-							<Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+							<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
 							<Input
 								placeholder="Cari nama murid..."
+								className="pl-8"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full pl-9"
 							/>
 						</div>
 
-						{/* Filter Status */}
-						<Select
-							value={statusFilter}
-							onValueChange={(val) =>
-								setStatusFilter(val as StatusPembayaran | "ALL")
-							}
-						>
-							<SelectTrigger className="w-[150px]">
-								<SelectValue placeholder="Filter Status" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="ALL">Semua Status</SelectItem>
-								<SelectItem value={StatusPembayaran.LUNAS}>Lunas</SelectItem>
-								<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
-									Belum Lunas
-								</SelectItem>
-								<SelectItem value={StatusPembayaran.PENDING}>
-									Pending
-								</SelectItem>
-							</SelectContent>
-						</Select>
+						<div className="flex flex-wrap gap-2">
+							<Select
+								value={statusFilter}
+								onValueChange={(val) =>
+									setStatusFilter(val as StatusPembayaran | "ALL")
+								}
+							>
+								<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
+									<SelectValue placeholder="Filter Status" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Status</SelectItem>
+									<SelectItem value={StatusPembayaran.LUNAS}>Lunas</SelectItem>
+									<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
+										Belum Lunas
+									</SelectItem>
+									<SelectItem value={StatusPembayaran.PENDING}>
+										Pending
+									</SelectItem>
+								</SelectContent>
+							</Select>
+
+							<Select
+								value={kelasIdFilter}
+								onValueChange={(val) => setKelasIdFilter(val as string | "ALL")}
+							>
+								<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
+									<SelectValue placeholder="Filter Kelas" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Kelas</SelectItem>
+									{kelasList?.map((kelas) => (
+										<SelectItem key={kelas.id} value={kelas.id}>
+											{kelas.kodeKelas}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
-				</div>
+				</header>
 
-				<TambahPembayaran />
-			</header>
+				<EditPembayaran />
 
-			{/* --- DATA TABLE --- */}
-			<DataTable
-				columns={tableColumns}
-				data={dataPembayaran ?? []}
-				pageCount={pageCount}
-				pagination={pagination}
-				onPaginationChange={setPagination}
-				isLoading={isLoading || isFetching || isRefetching}
-				sorting={sorting}
-				onSortingChange={setSorting}
-			/>
+				{/* --- DIALOGS --- */}
+				<DeleteConfirmationDialog
+					isOpen={deleteDialogOpen}
+					onOpenChange={setDeleteDialogOpen}
+					title="Hapus Tagihan Pembayaran"
+					description={
+						<>
+							Apakah Anda yakin ingin menghapus tagihan untuk{" "}
+							<span className="text-foreground font-bold">
+								{itemToDelete?.pendaftaranKelas.murid.namaLengkap}
+							</span>{" "}
+							sebesar{" "}
+							<span className="text-foreground font-bold">
+								{toRupiah(itemToDelete?.jumlahBayar ?? 0)}
+							</span>
+							? Data ini tidak dapat dikembalikan dan dapat mempengaruhi saldo
+							pertemuan siswa.
+						</>
+					}
+					onConfirm={handleConfirmDelete}
+					isLoading={mutations.delete.isPending}
+					confirmText="Hapus Tagihan"
+					cancelText="Batal"
+				/>
 
-			<EditPembayaran />
-
-			{/* --- DIALOGS --- */}
-			<DeleteConfirmationDialog
-				isOpen={deleteDialogOpen}
-				onOpenChange={setDeleteDialogOpen}
-				title="Hapus Tagihan Pembayaran"
-				description={
-					<>
-						Apakah Anda yakin ingin menghapus tagihan untuk{" "}
-						<span className="text-foreground font-bold">
-							{itemToDelete?.pendaftaranKelas.murid.namaLengkap}
-						</span>{" "}
-						sebesar{" "}
-						<span className="text-foreground font-bold">
-							{toRupiah(itemToDelete?.jumlahBayar ?? 0)}
-						</span>
-						? Data ini tidak dapat dikembalikan dan dapat mempengaruhi saldo
-						pertemuan siswa.
-					</>
-				}
-				onConfirm={handleConfirmDelete}
-				isLoading={mutations.delete.isPending}
-				confirmText="Hapus Tagihan"
-				cancelText="Batal"
-			/>
+				{/* --- DATA TABLE --- */}
+				<DataTable
+					columns={tableColumns}
+					data={dataPembayaran ?? []}
+					pageCount={pageCount}
+					pagination={pagination}
+					onPaginationChange={setPagination}
+					isLoading={isLoading || isFetching || isRefetching}
+					sorting={sorting}
+					onSortingChange={setSorting}
+				/>
+			</div>
 		</div>
 	);
 }

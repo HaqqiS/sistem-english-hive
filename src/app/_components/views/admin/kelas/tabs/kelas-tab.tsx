@@ -241,7 +241,7 @@ export default function KelasTab() {
 						value={selectedTipeKelas}
 						onValueChange={(v) => setSelectedTipeKelas(v as TipeKelas | "ALL")}
 					>
-						<SelectTrigger className="bg-background w-full">
+						<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[160px]">
 							<div className="flex items-center gap-2">
 								<CalendarDays className="text-muted-foreground h-4 w-4" />
 								<span className="font-medium">

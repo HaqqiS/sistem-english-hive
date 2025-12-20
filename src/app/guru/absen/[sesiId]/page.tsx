@@ -19,7 +19,15 @@ export async function generateMetadata({
 	};
 }
 
-export default function DetailAbsenMuridPage() {
+export default async function DetailAbsenMuridPage({
+	params,
+}: {
+	params: Promise<{ sesiId: string }>;
+}) {
+	const { sesiId } = await params;
+
+	await api.absenMurid.getMuridForAbsensi.prefetch({ sesiId });
+
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">
 			<main className="flex flex-1 flex-col gap-4 pt-0">

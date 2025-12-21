@@ -1,5 +1,5 @@
 "use client";
-import type { TipeKelas } from "@prisma/client";
+import type { JenisKelas, TipeKelas } from "@prisma/client";
 import { skipToken } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
@@ -34,6 +34,7 @@ interface UseKelasOptions {
 	cohortId?: string;
 	filterCabang?: string;
 	tipeKelas?: TipeKelas | "ALL";
+	jenisKelas?: JenisKelas | "ALL";
 }
 
 export function useKelas(options?: UseKelasOptions) {
@@ -45,6 +46,8 @@ export function useKelas(options?: UseKelasOptions) {
 		options?.filterCabang !== "ALL" ? options?.filterCabang : undefined;
 	const tipeKelasPayload =
 		options?.tipeKelas !== "ALL" ? options?.tipeKelas : undefined;
+	const jenisKelasPayload =
+		options?.jenisKelas !== "ALL" ? options?.jenisKelas : undefined;
 	// ========== QUERIES ==========
 
 	const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(
@@ -56,7 +59,11 @@ export function useKelas(options?: UseKelasOptions) {
 	);
 
 	const kelasCountQuery = api.kelas.getKelasAndCount.useQuery(
-		{ cabangId: cabangIdPayload, tipeKelas: tipeKelasPayload },
+		{
+			cabangId: cabangIdPayload,
+			tipeKelas: tipeKelasPayload,
+			jenisKelas: jenisKelasPayload,
+		},
 		{
 			enabled: options?.enableQueryGetKelasCount ?? false,
 			initialData: options?.initialDataKelasCount,

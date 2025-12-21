@@ -1,6 +1,6 @@
 "use client";
 
-import { TipeKelas } from "@prisma/client";
+import { JenisKelas, TipeKelas } from "@prisma/client";
 import {
 	Album,
 	AlertCircle,
@@ -10,6 +10,7 @@ import {
 	Edit2,
 	EllipsisVertical,
 	FileSpreadsheet,
+	Filter,
 	GraduationCap,
 	RefreshCw,
 	Trash,
@@ -44,6 +45,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKelas } from "@/hooks/useKelas";
 import { cn } from "@/lib/utils";
@@ -68,6 +70,9 @@ export default function KelasTab() {
 	const [selectedTipeKelas, setSelectedTipeKelas] = useState<TipeKelas | "ALL">(
 		"ALL",
 	);
+	const [selectedJenisKelas, setSelectedJenisKelas] = useState<
+		JenisKelas | "ALL"
+	>("ALL");
 
 	// 2. Zustand Store Actions
 	const { openDrawer: openKelasDrawer } = useKelasStore();
@@ -85,6 +90,7 @@ export default function KelasTab() {
 	} = useKelas({
 		filterCabang: activeCabangId,
 		tipeKelas: selectedTipeKelas,
+		jenisKelas: selectedJenisKelas,
 		enableQueryGetKelasCount: true,
 
 		onSuccessDelete: () => {
@@ -236,14 +242,14 @@ export default function KelasTab() {
 					<TambahProgramKelas />
 				</div>
 
-				<div className="w-full md:max-w-xs">
+				<div className="flex flex-wrap gap-2">
 					<Select
 						value={selectedTipeKelas}
 						onValueChange={(v) => setSelectedTipeKelas(v as TipeKelas | "ALL")}
 					>
 						<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[160px]">
 							<div className="flex items-center gap-2">
-								<CalendarDays className="text-muted-foreground h-4 w-4" />
+								<Filter className="text-muted-foreground h-4 w-4" />
 								<span className="font-medium">
 									<SelectValue />
 								</span>
@@ -258,10 +264,37 @@ export default function KelasTab() {
 							))}
 						</SelectContent>
 					</Select>
+					<Select
+						value={selectedJenisKelas}
+						onValueChange={(v) =>
+							setSelectedJenisKelas(v as JenisKelas | "ALL")
+						}
+					>
+						<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[160px]">
+							<div className="flex items-center gap-2">
+								<Filter className="text-muted-foreground h-4 w-4" />
+								<span className="font-medium">
+									<SelectValue />
+								</span>
+							</div>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="ALL">Semua Jenis Kelas</SelectItem>
+							{Object.values(JenisKelas).map((jenis) => (
+								<SelectItem key={jenis} value={jenis}>
+									{jenis.charAt(0).toUpperCase() + jenis.slice(1).toLowerCase()}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 				</div>
 			</header>
 
-			<Accordion type="single" collapsible className="w-full space-y-4">
+			<Accordion
+				type="single"
+				collapsible
+				className="grid w-full grid-cols-1 items-start gap-4 md:grid-cols-2"
+			>
 				{dataKelasCount && dataKelasCount.length > 0 ? (
 					dataKelasCount.map((kelas) => {
 						const guruAktif =
@@ -277,155 +310,189 @@ export default function KelasTab() {
 								<CardContent className="p-0">
 									<AccordionItem value={kelas.id} className="border-none">
 										<AccordionTrigger className="hover:bg-muted/30 items-center px-6 py-5 transition-colors hover:no-underline">
-											<div className="flex w-full flex-col items-start justify-between gap-4 pr-4 md:flex-row md:items-center">
-												{/* Bagian Kiri: Identitas Kelas */}
-												<div className="flex flex-col items-start gap-1.5 text-left">
-													<span className="text-foreground text-lg font-bold tracking-tight">
-														{kelas.kodeKelas}
-													</span>
-
-													<div className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs">
-														{/* Guru */}
-														<div className="bg-muted/50 flex items-center gap-1.5 rounded-md px-2.5 py-1">
-															<User className="text-primary h-3.5 w-3.5" />
-															<span className="font-medium">{guruAktif}</span>
-														</div>
-														{/* Jadwal Hari */}
-														<div className="bg-muted/50 flex items-center gap-1.5 rounded-md px-2.5 py-1">
-															<CalendarDays className="text-primary h-3.5 w-3.5" />
-															<span>{jadwalHari}</span>
-														</div>
-														{kelas.deskripsi && (
-															<div className="bg-muted/50 flex items-center gap-1.5 rounded-md px-2.5 py-1">
-																<Album className="text-primary h-3.5 w-3.5" />
-																<span>{kelas.deskripsi}</span>
-															</div>
-														)}
+											<div className="flex w-full flex-col gap-4 pr-4">
+												{/* Header: Kode & Badge */}
+												<div className="flex w-full flex-col justify-between gap-2 sm:flex-row sm:items-center">
+													<div className="flex items-center gap-3">
+														<span className="text-foreground text-lg font-bold tracking-tight">
+															{kelas.kodeKelas}
+														</span>
+													</div>
+													<div className="flex flex-wrap items-center gap-2">
+														<Badge
+															variant="secondary"
+															className="flex gap-1.5 px-2.5 py-1"
+														>
+															<GraduationCap className="h-3.5 w-3.5" />
+															<span>{kelas._count.pendaftaranKelases}</span>
+														</Badge>
+														<Badge
+															variant="outline"
+															className="border-primary/30 text-primary flex gap-1.5 px-2.5 py-1"
+														>
+															<CalendarClock className="h-3.5 w-3.5" />
+															<span>{kelas._count.sesiPertemuanKelases}</span>
+														</Badge>
 													</div>
 												</div>
 
-												{/* Bagian Kanan: Badge Statistik */}
-												<div className="mt-2 flex flex-wrap items-center gap-2 md:mt-0">
-													<Badge
-														variant="secondary"
-														className="flex gap-1.5 px-3 py-1"
-													>
-														<GraduationCap className="h-3.5 w-3.5" />
-														<span>{kelas._count.pendaftaranKelases} Murid</span>
-													</Badge>
-													<Badge
-														variant="outline"
-														className="border-primary/30 text-primary flex gap-1.5 px-3 py-1"
-													>
-														<CalendarClock className="h-3.5 w-3.5" />
-														<span>
-															{kelas._count.sesiPertemuanKelases} Sesi
-														</span>
-													</Badge>
+												{/* Subheader: Metadata */}
+												<div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-2 text-xs">
+													<div className="flex items-center gap-1.5">
+														<User className="text-primary h-3.5 w-3.5" />
+														<span className="font-medium">{guruAktif}</span>
+													</div>
+													<div className="flex items-center gap-1.5">
+														<CalendarDays className="text-primary h-3.5 w-3.5" />
+														<span>{jadwalHari}</span>
+													</div>
+													{kelas.deskripsi && (
+														<div className="flex items-center gap-1.5">
+															<Album className="text-primary h-3.5 w-3.5" />
+															<span className="line-clamp-1 max-w-[200px]">
+																{kelas.deskripsi}
+															</span>
+														</div>
+													)}
 												</div>
 											</div>
 										</AccordionTrigger>
 
-										<AccordionContent className="bg-muted/5 border-t px-6 py-5">
-											<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-												{/* Info Harga */}
-												<div className="flex justify-between gap-4">
-													<div className="space-y-1.5">
-														<p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+										<AccordionContent className="bg-muted/5 border-t px-6 py-5 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+											<div className="flex flex-col gap-6">
+												{/* Info Grid */}
+												<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+													<div className="flex flex-col gap-1 rounded-lg border p-3">
+														<span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
 															Harga Kelas
-														</p>
-														<div className="text-foreground flex items-center gap-2 text-sm font-semibold">
-															{toRupiah(kelas.hargaKelas)}
-															<span className="text-muted-foreground text-xs font-normal">
-																/ Sesi
+														</span>
+														<div className="flex items-baseline gap-1">
+															<span className="text-lg font-semibold">
+																{toRupiah(kelas.hargaKelas)}
+															</span>
+															<span className="text-muted-foreground text-xs">
+																/ sesi
 															</span>
 														</div>
 													</div>
 
-													<div className="space-y-1.5">
-														<p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-															Sesi Pertemuan Terakhir
-														</p>
-														<p className="text-sm">
+													<div className="flex flex-col gap-1 rounded-lg border p-3">
+														<span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+															Sesi Terakhir
+														</span>
+														<div className="font-medium">
 															{lastSession ? (
-																<span className="text-foreground font-medium">
-																	{formatToWITA(lastSession)}
-																</span>
+																formatToWITA(lastSession)
 															) : (
 																<span className="text-muted-foreground italic">
 																	Belum ada sesi
 																</span>
 															)}
-														</p>
+														</div>
 													</div>
 												</div>
 
-												{/* Tombol Aksi */}
-												<div className="flex flex-col items-end gap-3 sm:flex-row md:col-span-1 md:items-center md:justify-end">
+												{/* Daftar Murid Aktif */}
+												<div>
+													<p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+														Murid Aktif ({kelas._count.pendaftaranKelases})
+													</p>
+													{kelas.pendaftaranKelases.length > 0 ? (
+														<div className="flex flex-col">
+															{kelas.pendaftaranKelases.map((p, index) => (
+																<div key={p.id} className="flex flex-col">
+																	<div className="flex items-center py-2">
+																		<span className="text-muted-foreground min-w-[24px] text-sm">
+																			{index + 1}.
+																		</span>
+																		<span className="text-sm">
+																			{p.murid?.namaLengkap ?? "Unknown"}
+																		</span>
+																	</div>
+																	{index <
+																		kelas.pendaftaranKelases.length - 1 && (
+																		<Separator />
+																	)}
+																</div>
+															))}
+														</div>
+													) : (
+														<p className="text-sm text-muted-foreground italic">
+															Belum ada murid aktif.
+														</p>
+													)}
+												</div>
+
+												{/* Action Buttons Group */}
+												<div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
 													<Button
 														asChild
 														size="sm"
-														variant="secondary"
-														className="w-full sm:w-auto"
+														variant="ghost"
+														className="w-full justify-start sm:w-auto"
 													>
 														<Link href={`/admin/kelas/sesi/${kelas.id}`}>
+															<CalendarClock className="mr-2 h-4 w-4" />
 															Riwayat Absensi
-															<ArrowRight className="ml-2 h-4 w-4" />
 														</Link>
 													</Button>
 
-													<Button
-														asChild
-														size="sm"
-														variant="secondary"
-														className="w-full shadow-sm sm:w-auto"
-													>
-														<Link href={`/admin/kelas/detail/${kelas.id}`}>
-															Detail Kelas
-															<ArrowRight className="ml-2 h-4 w-4" />
-														</Link>
-													</Button>
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<Button
-																variant="outline"
-																className="text-muted-foreground data-[state=open]:bg-muted flex size-8"
-																size="icon"
-															>
-																<EllipsisVertical />
-																<span className="sr-only">Open menu</span>
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end" className="w-32">
-															<DropdownMenuItem
-																onClick={() => handleEditClickKelas(kelas)}
-															>
-																<Edit2 className="mr-2 h-4 w-4" />
-																Edit Kelas
-															</DropdownMenuItem>
-															<DropdownMenuItem
-																onClick={() => handleEditClickGuruKelas(kelas)}
-															>
-																<User className="mr-2 h-4 w-4" />
-																Edit Guru
-															</DropdownMenuItem>
-															<DropdownMenuSeparator />
-															<DropdownMenuItem
-																onClick={() => handleUpLevelClick(kelas)}
-															>
-																<TrendingUp className="mr-2 h-4 w-4" />
-																Naik Kelas (Up Level)
-															</DropdownMenuItem>
-															<DropdownMenuSeparator />
-															<DropdownMenuItem
-																variant="destructive"
-																onClick={() => handleDeleteClick(kelas)}
-															>
-																<Trash className="mr-2 h-4 w-4" />
-																Delete
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
+													<div className="flex items-center gap-2">
+														<Button
+															asChild
+															size="sm"
+															className="w-full sm:w-auto"
+														>
+															<Link href={`/admin/kelas/detail/${kelas.id}`}>
+																Detail Kelas
+																<ArrowRight className="ml-2 h-4 w-4" />
+															</Link>
+														</Button>
+
+														<DropdownMenu>
+															<DropdownMenuTrigger asChild>
+																<Button
+																	variant="outline"
+																	size="icon"
+																	className="h-9 w-9 shrink-0"
+																>
+																	<EllipsisVertical className="h-4 w-4" />
+																	<span className="sr-only">Menu</span>
+																</Button>
+															</DropdownMenuTrigger>
+															<DropdownMenuContent align="end" className="w-48">
+																<DropdownMenuItem
+																	onClick={() => handleEditClickKelas(kelas)}
+																>
+																	<Edit2 className="mr-2 h-4 w-4" />
+																	Edit Data Kelas
+																</DropdownMenuItem>
+																<DropdownMenuItem
+																	onClick={() =>
+																		handleEditClickGuruKelas(kelas)
+																	}
+																>
+																	<User className="mr-2 h-4 w-4" />
+																	Ganti Pengajar
+																</DropdownMenuItem>
+																<DropdownMenuSeparator />
+																<DropdownMenuItem
+																	onClick={() => handleUpLevelClick(kelas)}
+																>
+																	<TrendingUp className="mr-2 h-4 w-4" />
+																	Naik Level (Up Level)
+																</DropdownMenuItem>
+																<DropdownMenuSeparator />
+																<DropdownMenuItem
+																	variant="destructive"
+																	onClick={() => handleDeleteClick(kelas)}
+																>
+																	<Trash className="mr-2 h-4 w-4" />
+																	Hapus Kelas
+																</DropdownMenuItem>
+															</DropdownMenuContent>
+														</DropdownMenu>
+													</div>
 												</div>
 											</div>
 										</AccordionContent>

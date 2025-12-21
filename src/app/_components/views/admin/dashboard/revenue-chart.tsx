@@ -14,7 +14,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { api } from "@/trpc/react";
+import { useDashboard } from "@/hooks/useDashboard";
 import { toRupiah } from "@/utils/toRupiah";
 
 const chartConfig = {
@@ -25,7 +25,8 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function RevenueChart() {
-	const { data, isLoading } = api.dashboard.getRevenueTrend.useQuery();
+	const { revenueTrend } = useDashboard();
+	const { data, isLoading } = revenueTrend;
 
 	const chartData = data ?? [];
 

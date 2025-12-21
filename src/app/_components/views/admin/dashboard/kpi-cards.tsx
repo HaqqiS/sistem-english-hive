@@ -8,7 +8,7 @@ import {
 	Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/trpc/react";
+import { useDashboard } from "@/hooks/useDashboard";
 import { toRupiah } from "@/utils/toRupiah";
 
 interface KpiCardProps {
@@ -39,7 +39,8 @@ function KpiCard({ title, value, icon: Icon, desc, isLoading }: KpiCardProps) {
 }
 
 export default function KpiCards() {
-	const { data, isLoading } = api.dashboard.getKpiStats.useQuery();
+	const { kpiStats } = useDashboard();
+	const { data, isLoading } = kpiStats;
 
 	return (
 		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

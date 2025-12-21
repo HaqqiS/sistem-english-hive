@@ -14,7 +14,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { api } from "@/trpc/react";
+import { useDashboard } from "@/hooks/useDashboard";
 
 const chartConfig = {
 	views: {
@@ -27,7 +27,8 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export default function RegistrationChart() {
-	const { data, isLoading } = api.dashboard.getRegistrationTrend.useQuery();
+	const { registrationTrend } = useDashboard();
+	const { data, isLoading } = registrationTrend;
 
 	// Format data for Recharts (handling empty states handled by query result structure)
 	const chartData = data ?? [];

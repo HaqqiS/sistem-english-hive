@@ -1,4 +1,5 @@
 import {
+	JenisKelas,
 	Prisma,
 	StatusMurid,
 	StatusPembayaran,
@@ -70,6 +71,7 @@ export const kelasRouter = createTRPCRouter({
 				.object({
 					cabangId: z.string().optional(),
 					tipeKelas: z.nativeEnum(TipeKelas).optional(),
+					jenisKelas: z.nativeEnum(JenisKelas).optional(),
 				})
 				.optional(),
 		)
@@ -81,6 +83,8 @@ export const kelasRouter = createTRPCRouter({
 			const whereClause: Prisma.KelasWhereInput = {};
 			if (filterCabangId) whereClause.cabangId = filterCabangId;
 			if (input?.tipeKelas) whereClause.tipe = input.tipeKelas as TipeKelas;
+			if (input?.jenisKelas)
+				whereClause.jenisKelas = input.jenisKelas as JenisKelas;
 
 			const allKelasData = await db.kelas.findMany({
 				where: whereClause,
@@ -129,6 +133,16 @@ export const kelasRouter = createTRPCRouter({
 					},
 					pendaftaranKelases: {
 						where: { isAktif: true },
+						select: {
+							id: true,
+							murid: {
+								select: {
+									id: true,
+									namaLengkap: true,
+									statusMurid: true,
+								},
+							},
+						},
 					},
 					jadwalKelas: {
 						select: {
@@ -137,7 +151,10 @@ export const kelasRouter = createTRPCRouter({
 						},
 					},
 					_count: {
-						select: { sesiPertemuanKelases: true, pendaftaranKelases: true },
+						select: {
+							sesiPertemuanKelases: true,
+							pendaftaranKelases: { where: { isAktif: true } },
+						},
 					},
 				},
 			});

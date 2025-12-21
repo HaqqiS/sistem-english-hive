@@ -115,7 +115,7 @@ export default function ScheduleGrid() {
 		<div className="flex h-full flex-col gap-4">
 			{/* --- FILTERS --- */}
 			<div className="flex gap-4 lg:flex-row lg:items-center lg:justify-between">
-				{/* 2. FILTER CABANG & REFRESH */}
+				{/* 2. REFRESH */}
 				<div className="flex items-center gap-2 lg:w-auto">
 					<Button
 						variant="outline"
@@ -275,7 +275,7 @@ export default function ScheduleGrid() {
 												{/* Sticky Time Column */}
 												<td
 													className={cn(
-														"text-muted-foreground sticky left-0 z-30 border-r border-b p-2 text-center align-top font-mono text-xs font-medium",
+														"text-foreground sticky left-0 z-30 border-r border-b p-2 text-center align-top font-mono text-sm font-medium",
 														isEven ? "bg-background" : "bg-background", // Samakan bg agar tidak transparan saat scroll horizontal
 													)}
 												>

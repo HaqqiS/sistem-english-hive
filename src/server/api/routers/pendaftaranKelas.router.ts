@@ -12,6 +12,7 @@ import {
 	serverPendaftaranKelasSchema,
 	serverUpdatePendaftaranKelasSchema,
 } from "@/types/pendaftaranKelas.type";
+import { convertWITAtoUTC } from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
 export const pendaftaranKelasRouter = createTRPCRouter({
@@ -426,11 +427,35 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						// atau Admin buat tagihan manual lewat menu Pembayaran.
 					}
 
+					// C. Jika Tanggal Mulai BERUBAH -> Update Tanggal Jatuh Tempo Tagihan Pertama (jika BELUM LUNAS)
+					// input.tanggalMulai and existingRecord.tanggalMulai are BOTH strings (YYYY-MM-DD)
+					if (
+						input.tanggalMulai &&
+						existingRecord.tanggalMulai &&
+						input.tanggalMulai !== existingRecord.tanggalMulai
+					) {
+						// Pembayaran.tanggalJatuhTempo expects DateTime, so we must convert.
+						const newJatuhTempo = convertWITAtoUTC(input.tanggalMulai);
+
+						await tx.pembayaran.updateMany({
+							where: {
+								pendaftaranKelasId: input.id,
+								pembayaranKe: 1,
+								statusBayar: {
+									in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+								},
+							},
+							data: {
+								tanggalJatuhTempo: newJatuhTempo,
+							},
+						});
+					}
+
 					// Update Biasa
 					return tx.pendaftaranKelas.update({
 						where: { id: input.id },
 						data: {
-							tanggalMulai: input.tanggalMulai,
+							tanggalMulai: input.tanggalMulai, // Keep as string
 							isAktif: input.isAktif,
 						},
 					});

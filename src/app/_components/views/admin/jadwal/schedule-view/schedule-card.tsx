@@ -53,7 +53,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 					{/* Header Card: Kode Kelas & Actions */}
 					<div className="flex items-start justify-between gap-2">
 						<span
-							className="text-foreground/90 line-clamp-2 text-sm leading-tight font-bold"
+							className="text-foreground/90 line-clamp-2 text-base leading-tight font-bold"
 							title={data.kodeKelas}
 						>
 							{data.kodeKelas}
@@ -108,13 +108,11 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 					<div className="text-muted-foreground mt-2 flex flex-col gap-1 text-[10px]">
 						<div className="flex items-center gap-1.5">
 							<User className="h-3 w-3 shrink-0 opacity-70" />
-							<span className="truncate text-[12px] font-medium">
-								{data.guru}
-							</span>
+							<span className="truncate text-sm font-medium">{data.guru}</span>
 						</div>
 						<div className="flex items-center gap-1.5">
 							<Clock className="h-3 w-3 shrink-0 opacity-70" />
-							<span className="font-mono text-[12px]">
+							<span className="font-mono text-sm">
 								{data.jamMulai} - {data.jamSelesai}
 							</span>
 						</div>
@@ -139,7 +137,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 
 				<div className="flex flex-col gap-3 p-4">
 					<div className="space-y-1.5">
-						<h4 className="text-foreground text-sm leading-snug font-bold">
+						<h4 className="text-foreground text-base leading-snug font-bold">
 							{data.kodeKelas}
 						</h4>
 						<div className="flex flex-wrap gap-2">
@@ -167,18 +165,18 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 						<div className="flex items-center justify-between">
 							<div className="text-muted-foreground flex items-center gap-2">
 								<User className="h-4 w-4" />
-								<span className="text-xs">Pengajar</span>
+								<span className="text-sm">Pengajar</span>
 							</div>
-							<span className="text-foreground text-xs font-medium">
+							<span className="text-foreground text-sm font-medium">
 								{data.guru}
 							</span>
 						</div>
 						<div className="border-border/50 mt-1 flex items-center justify-between border-t pt-2">
 							<div className="text-muted-foreground flex items-center gap-2">
 								<Clock className="h-4 w-4" />
-								<span className="text-xs">Waktu</span>
+								<span className="text-sm">Waktu</span>
 							</div>
-							<span className="text-foreground font-mono text-xs font-medium">
+							<span className="text-foreground font-mono text-sm font-medium">
 								{data.jamMulai} - {data.jamSelesai}
 							</span>
 						</div>

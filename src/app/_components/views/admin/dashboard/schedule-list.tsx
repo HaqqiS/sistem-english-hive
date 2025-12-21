@@ -9,11 +9,12 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { api } from "@/trpc/react";
+import { useDashboard } from "@/hooks/useDashboard";
 import dayjs from "@/utils/dateUtils";
 
 export default function ScheduleList() {
-	const { data, isLoading } = api.dashboard.getTodaySchedule.useQuery();
+	const { todaySchedule } = useDashboard();
+	const { data, isLoading } = todaySchedule;
 
 	const hasSchedule = data && data.length > 0;
 
@@ -35,30 +36,43 @@ export default function ScheduleList() {
 								Tidak ada jadwal kelas hari ini.
 							</div>
 						) : (
-							data?.map((sesi) => (
-								<div
-									key={sesi.id}
-									className="flex flex-col gap-1 border-b p-4 last:border-0 hover:bg-muted/50"
-								>
-									<div className="flex items-center justify-between">
-										<span className="font-semibold">
-											{dayjs(sesi.tanggalWaktu).format("HH:mm")}
-										</span>
-										<Badge variant="outline">{sesi.ruang.namaRuang}</Badge>
-									</div>
-									<div className="text-sm font-medium">
-										{sesi.kelas.kodeKelas}
-									</div>
-									<div className="flex items-center justify-between text-xs text-muted-foreground">
-										<span>{sesi.kelas.jenisKelas}</span>
-										<span>
-											{sesi.absensiGurus?.length > 0
-												? `Guru: ${sesi.absensiGurus[0]?.guru.name ?? "-"}`
-												: "Guru: -"}
-										</span>
-									</div>
-								</div>
-							))
+							data
+								?.sort((a, b) => {
+									const timeA =
+										a.jamSlotTetap?.jamMulai ?? a.jamSlotCustom?.jamMulai ?? "";
+									const timeB =
+										b.jamSlotTetap?.jamMulai ?? b.jamSlotCustom?.jamMulai ?? "";
+									return timeA.localeCompare(timeB);
+								})
+								.map((jadwal) => {
+									const jamMulai =
+										jadwal.jamSlotTetap?.jamMulai ??
+										jadwal.jamSlotCustom?.jamMulai ??
+										"-";
+									const guruName =
+										jadwal.kelas.historyGuruKelases[0]?.guru?.name ?? "-";
+
+									return (
+										<div
+											key={jadwal.id}
+											className="flex flex-col gap-1 border-b p-4 last:border-0 hover:bg-muted/50"
+										>
+											<div className="flex items-center justify-between">
+												<span className="font-semibold">{jamMulai}</span>
+												<Badge variant="outline">
+													{jadwal.ruang.namaRuang}
+												</Badge>
+											</div>
+											<div className="text-sm font-medium">
+												{jadwal.kelas.kodeKelas}
+											</div>
+											<div className="flex items-center justify-between text-xs text-muted-foreground">
+												<span>{jadwal.kelas.jenisKelas}</span>
+												<span>Guru: {guruName}</span>
+											</div>
+										</div>
+									);
+								})
 						)}
 					</div>
 				</ScrollArea>

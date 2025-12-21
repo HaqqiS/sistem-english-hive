@@ -43,8 +43,8 @@ const generateKodeKelas = (
 ) => {
 	// Hanya buat kode jika semua field penting sudah diisi
 	if (jenis && level && grup && tipe && bulanTahun) {
-		// e.g., "TinyTods 1-A|REGULAR|03/2025"
-		return `${jenis} ${safeVal(level)}-${safeVal(grup)} | ${safeVal(tipe)} | ${safeVal(bulanTahun)}`;
+		// e.g., "REGULAR|TinyTods 1-A|03/2025"
+		return `${safeVal(tipe)} | ${jenis.toUpperCase()} ${safeVal(level)}-${safeVal(grup)} | ${safeVal(bulanTahun)}`;
 	}
 	return ""; // Kembalikan string kosong jika belum lengkap
 };
@@ -275,7 +275,7 @@ export default function KelasForm({ onSubmit }: KelasFormProps) {
 						<FormLabel>Kode Kelas</FormLabel>
 						<FormControl>
 							<Input
-								placeholder="TinyTods 1-A|reguler|03/2025"
+								placeholder="REGULAR | TinyTods 1-A | 03/2025"
 								type="text"
 								{...field}
 								required

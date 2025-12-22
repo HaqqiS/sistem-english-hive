@@ -9,6 +9,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
 import dayjs from "@/utils/dateUtils";
 
@@ -28,9 +29,22 @@ export default function ScheduleList() {
 				<ScrollArea className="h-[300px]">
 					<div className="flex flex-col gap-0">
 						{isLoading ? (
-							<div className="p-4 text-center text-sm text-muted-foreground">
-								Loading jadwal...
-							</div>
+							[1, 2, 3].map((id) => (
+								<div
+									key={id}
+									className="flex flex-col gap-2 border-b p-4 last:border-0"
+								>
+									<div className="flex items-center justify-between">
+										<Skeleton className="h-5 w-16" />
+										<Skeleton className="h-5 w-20" />
+									</div>
+									<Skeleton className="h-5 w-32" />
+									<div className="flex items-center justify-between pt-1">
+										<Skeleton className="h-4 w-24" />
+										<Skeleton className="h-4 w-32" />
+									</div>
+								</div>
+							))
 						) : !hasSchedule ? (
 							<div className="p-4 text-center text-sm text-muted-foreground">
 								Tidak ada jadwal kelas hari ini.

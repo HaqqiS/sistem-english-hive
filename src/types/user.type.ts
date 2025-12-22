@@ -6,13 +6,22 @@ export type TypeGuruComplete =
 	RouterOutputs["user"]["getAllGuruComplete"][number];
 
 export const loginFormSchema = z.object({
-	email: z.string().email("Email tidak valid"),
-	password: z.string().min(6, "Password minimal 6 karakter"),
+	email: z
+		.string()
+		.email("Email tidak valid")
+		.max(255, "Email terlalu panjang"),
+	password: z
+		.string()
+		.min(6, "Password minimal 6 karakter")
+		.max(100, "Password terlalu panjang"),
 	root: z.string().optional(),
 });
 
 export const registerGuruFormSchema = loginFormSchema.extend({
-	name: z.string().min(1, "Nama tidak boleh kosong"),
+	name: z
+		.string()
+		.min(1, "Nama tidak boleh kosong")
+		.max(255, "Nama terlalu panjang"),
 });
 
 export const updateProfileFormSchema = registerGuruFormSchema.pick({

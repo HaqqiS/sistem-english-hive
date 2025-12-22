@@ -3,7 +3,11 @@ import { TRPCError } from "@trpc/server";
 import bcrypt from "bcryptjs";
 import z from "zod";
 import { UserRole } from "@/server/auth/type";
-import { registerGuruFormSchema } from "@/types/user.type";
+import {
+	registerGuruFormSchema,
+	updatePasswordFormSchema,
+	updateProfileFormSchema,
+} from "@/types/user.type";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
 export const userRouter = createTRPCRouter({
@@ -270,5 +274,79 @@ export const userRouter = createTRPCRouter({
 				}
 				throw error;
 			}
+		}),
+
+	// --- SELF UPDATE MUTATIONS ---
+	updateMyProfileSelf: cabangProtectedProcedure
+		.input(updateProfileFormSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session } = ctx;
+			// Update diri sendiri (session.user.id)
+			const userId = session.user.id;
+
+			try {
+				const updatedUser = await db.user.update({
+					where: { id: userId },
+					data: {
+						name: input.name,
+						email: input.email,
+					},
+				});
+				return updatedUser;
+			} catch (error) {
+				if (error instanceof Prisma.PrismaClientKnownRequestError) {
+					if (error.code === "P2002") {
+						throw new TRPCError({
+							code: "CONFLICT",
+							message: "Email ini sudah digunakan user lain.",
+						});
+					}
+				}
+				throw error;
+			}
+		}),
+
+	updateMyPasswordSelf: cabangProtectedProcedure
+		.input(updatePasswordFormSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session } = ctx;
+			const userId = session.user.id;
+
+			// 1. Ambil password lama
+			const user = await db.user.findUnique({
+				where: { id: userId },
+			});
+
+			if (!user || !user.password) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "User tidak valid atau belum memiliki password.",
+				});
+			}
+
+			// 2. Verifikasi Password Lama
+			const isPasswordValid = await bcrypt.compare(
+				input.currentPassword,
+				user.password,
+			);
+
+			if (!isPasswordValid) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Kata sandi saat ini salah.",
+				});
+			}
+
+			// 3. Update Password Baru
+			const hashPassword = await bcrypt.hash(input.newPassword, 12);
+
+			await db.user.update({
+				where: { id: userId },
+				data: {
+					password: hashPassword,
+				},
+			});
+
+			return { success: true, message: "Kata sandi berhasil diubah." };
 		}),
 });

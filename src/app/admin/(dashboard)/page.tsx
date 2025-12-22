@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 export default async function AdminDashboardPage() {
 	await Promise.all([
 		api.pembayaran.getTagihanJatuhTempo.prefetch({}),
-		api.dashboard.getKpiStats.prefetch(),
-		api.dashboard.getRegistrationTrend.prefetch(),
-		api.dashboard.getRevenueTrend.prefetch(),
-		api.dashboard.getTodaySchedule.prefetch(),
+		api.dashboard.getKpiStats.prefetch({}),
+		api.dashboard.getRegistrationTrend.prefetch({}),
+		api.dashboard.getRevenueTrend.prefetch({}),
+		api.dashboard.getTodaySchedule.prefetch({}),
 	]);
 
 	return (

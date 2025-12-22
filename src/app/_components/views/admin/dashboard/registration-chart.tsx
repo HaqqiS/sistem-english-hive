@@ -14,6 +14,7 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
 
 const chartConfig = {
@@ -41,9 +42,7 @@ export default function RegistrationChart() {
 			</CardHeader>
 			<CardContent className="px-2 sm:p-6">
 				{isLoading ? (
-					<div className="flex aspect-auto h-[250px] w-full items-center justify-center bg-slate-100 dark:bg-slate-800">
-						Loading...
-					</div>
+					<Skeleton className="h-[250px] w-full rounded-xl" />
 				) : (
 					<ChartContainer
 						config={chartConfig}

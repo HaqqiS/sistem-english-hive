@@ -5,7 +5,9 @@ import type {
 	PendaftaranKelas,
 	PrismaClient,
 } from "@prisma/client";
+import { JenisKelas } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+
 import {
 	handleAutoLevelUp,
 	handleClassCompletion,
@@ -40,17 +42,75 @@ describe("Kelas Service", () => {
 	const resetMocks = () => vi.clearAllMocks();
 
 	describe("handleAutoLevelUp", () => {
-		it("should skip if level is 4", async () => {
+		it("should return null if level is 4 and no next program exists (End of Line)", async () => {
 			resetMocks();
+			// Elementary is the last one in our mock progression for this test context or real one
 			const result = await handleAutoLevelUp({
 				tx: mockTx,
 				jadwal: {
 					kelasId: "k-1",
 					ruangId: "r-1",
-					kelas: { level: 4 } as unknown as Kelas,
+					kelas: {
+						level: 4,
+						jenisKelas: JenisKelas.Elementary, // End of line
+					} as unknown as Kelas,
 				},
 			});
 			expect(result).toBeNull();
+		});
+
+		it("should create new class (Level 1) of NEXT program if level is 4", async () => {
+			resetMocks();
+			// Mock existing check -> null (create new)
+			vi.mocked(mockTx.kelas.findFirst).mockResolvedValue(null);
+			// Mock create
+			vi.mocked(mockTx.kelas.create).mockResolvedValue({
+				id: "k-new-prog",
+				jenisKelas: JenisKelas.TinyStar,
+				level: 1,
+			} as unknown as Kelas);
+			// Mock other necessary calls...
+			vi.mocked(mockTx.historyGuruKelas.findFirst).mockResolvedValue(null);
+			vi.mocked(mockTx.jadwalKelas.findMany).mockResolvedValue([]);
+			vi.mocked(mockTx.pendaftaranKelas.findMany).mockResolvedValue([]);
+
+			const result = await handleAutoLevelUp({
+				tx: mockTx,
+				jadwal: {
+					kelasId: "k-old",
+					ruangId: "r-1",
+					kelas: {
+						level: 4,
+						jenisKelas: JenisKelas.TinyTods, // Should go to TinyStar
+						kodeKelas: "TinyTods 4-A | 01/2024",
+						cohortId: "cohort-1",
+						hargaKelas: 60000,
+						grup: "A",
+						tipe: "REGULAR",
+					} as unknown as Kelas,
+				},
+			});
+
+			// Verify Create was called with Level 1 and TinyStar
+			expect(mockTx.kelas.create).toHaveBeenCalled();
+			const createCalls = vi.mocked(mockTx.kelas.create).mock.calls;
+			if (!createCalls[0] || !createCalls[0][0])
+				throw new Error("Create not called");
+			const createCall = createCalls[0][0];
+
+			expect(createCall.data.level).toBe(1); // Reset to 1
+			expect(createCall.data.jenisKelas).toBe(JenisKelas.TinyStar); // Changed Program
+
+			// Verify name replacement logic (TinyTods 4 -> TinyStar 1)
+			// The function uses current date MM/YYYY, so we check partial match
+			expect(createCall.data.kodeKelas).toContain("TinyStar 1");
+
+			// Also verify the function returns exactly what create() returned
+			expect(result).toEqual({
+				id: "k-new-prog",
+				jenisKelas: JenisKelas.TinyStar,
+				level: 1,
+			});
 		});
 
 		it("should create new class if level < 4", async () => {

@@ -1,6 +1,7 @@
 import type { JenisKelas, PrismaClient, TipeKelas } from "@prisma/client";
 import { StatusPembayaran } from "@prisma/client";
 import { BATAS_SESI, JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
+import { CLASS_PROGRESSION } from "@/constants/progression";
 import dayjs from "@/utils/dateUtils";
 
 // Tipe untuk Transaksi Prisma (agar bisa dipakai di dalam tx)
@@ -35,19 +36,27 @@ export const handleAutoLevelUp = async ({
 	tx,
 	jadwal,
 }: HandleLevelUpParams) => {
-	// Hanya jalankan jika level < 4 (Max Level)
-	if (jadwal.kelas.level >= 4) return null;
+	// Determine next level and class type
+	let nextLevel = jadwal.kelas.level + 1;
+	let nextJenisKelas = jadwal.kelas.jenisKelas as JenisKelas;
 
-	console.log(
-		`[AUTO-GEN] Memulai proses Level Up untuk kelas ${jadwal.kelas.kodeKelas}`,
-	);
+	if (jadwal.kelas.level >= 4) {
+		const nextProgression =
+			CLASS_PROGRESSION[jadwal.kelas.jenisKelas as JenisKelas];
 
-	// A. Buat Kelas Baru (Level + 1)
-	const nextLevel = jadwal.kelas.level + 1;
+		if (!nextProgression) {
+			console.log("Sudah mencapai level max dan tidak ada program lanjutan.");
+			return null;
+		}
+
+		nextLevel = 1;
+		nextJenisKelas = nextProgression;
+	}
 
 	const existingClass = await tx.kelas.findFirst({
 		where: {
 			cohortId: jadwal.kelas.cohortId,
+			jenisKelas: nextJenisKelas, // MUST check jenisKelas too now
 			level: nextLevel,
 		},
 	});
@@ -60,16 +69,31 @@ export const handleAutoLevelUp = async ({
 	const oldKode = jadwal.kelas.kodeKelas;
 
 	// Logic replace string kode kelas
-	const newKodeKelas = oldKode
-		.replace(
+	// Handle change of JenisKelas name if applicable
+	let newKodeKelas = oldKode;
+
+	if (nextJenisKelas !== jadwal.kelas.jenisKelas) {
+		// Replace JenisKelas name and Reset Level to 1
+		newKodeKelas = newKodeKelas.replace(
+			`${jadwal.kelas.jenisKelas} ${jadwal.kelas.level}`,
+			`${nextJenisKelas} ${nextLevel}`,
+		);
+	} else {
+		// Just increment level
+		newKodeKelas = newKodeKelas.replace(
 			`${jadwal.kelas.jenisKelas} ${jadwal.kelas.level}`,
 			`${jadwal.kelas.jenisKelas} ${nextLevel}`,
-		)
-		.replace(/\|\s\d{2}\/\d{4}$/, `| ${newBulanTahun}`);
+		);
+	}
+
+	newKodeKelas = newKodeKelas.replace(
+		/\|\s\d{2}\/\d{4}$/,
+		`| ${newBulanTahun}`,
+	);
 
 	const newKelas = await tx.kelas.create({
 		data: {
-			jenisKelas: jadwal.kelas.jenisKelas as JenisKelas,
+			jenisKelas: nextJenisKelas,
 			level: nextLevel,
 			grup: jadwal.kelas.grup,
 			tipe: jadwal.kelas.tipe as TipeKelas,

@@ -12,18 +12,19 @@ export default async function PembayaranPage() {
 	//   pageSize: 10,
 	// });
 
-	await api.pembayaran.getAllPaginated.prefetch({
-		pageIndex: 0,
-		pageSize: 10,
-	});
+	await Promise.all([
+		api.pembayaran.getAllPaginated.prefetch({
+			pageIndex: 0,
+			pageSize: 10,
+		}),
+		api.pembayaran.getTagihanJatuhTempo.prefetch({}),
+	]);
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">
 			<main className="flex flex-1 flex-col gap-4 pt-0">
 				<HydrateClient>
-					<PembayaranClient
-					//  initialDataPembayaran={dataPembayaran}
-					/>
+					<PembayaranClient />
 				</HydrateClient>
 			</main>
 		</div>

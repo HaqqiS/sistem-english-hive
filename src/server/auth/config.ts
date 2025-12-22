@@ -4,7 +4,7 @@
 import { compare } from "bcryptjs";
 import type { DefaultSession, NextAuthConfig, Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import CredentialsProvider from "next-auth/providers/credentials";
+import Credentials from "next-auth/providers/credentials";
 import { env } from "@/env";
 import { UserRole } from "./type";
 
@@ -59,7 +59,7 @@ export const authConfig: NextAuthConfig = {
 	},
 
 	providers: [
-		CredentialsProvider({
+		Credentials({
 			id: "credentials",
 			name: "Credentials",
 			credentials: {

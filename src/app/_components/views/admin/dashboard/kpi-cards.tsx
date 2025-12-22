@@ -3,6 +3,7 @@
 import {
 	BookOpen,
 	CreditCard,
+	Loader2,
 	type LucideIcon,
 	UserCheck,
 	Users,
@@ -28,7 +29,9 @@ function KpiCard({ title, value, icon: Icon, desc, isLoading }: KpiCardProps) {
 			</CardHeader>
 			<CardContent>
 				{isLoading ? (
-					<div className="h-7 w-20 animate-pulse rounded bg-slate-200" />
+					<div className="flex items-center">
+						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+					</div>
 				) : (
 					<div className="text-2xl font-bold">{value}</div>
 				)}

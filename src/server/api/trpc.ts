@@ -106,6 +106,33 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 });
 
 /**
+ * Rate Limiter Middleware
+ * Uses in-memory limiter. Note: In serverless (Vercel), this memory is ephemeral per lambda instance.
+ * For robust production rate limiting, use Redis (upstash/ratelimit).
+ */
+import { RateLimiterMemory } from "rate-limiter-flexible";
+
+const rateLimiter = new RateLimiterMemory({
+	points: 10, // 10 requests
+	duration: 1, // Per second
+});
+
+const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
+	const userId = ctx.session?.user?.id ?? "ip_based_limit"; // Fallback if no session (IP handling requires more context)
+
+	try {
+		// Consuming 1 point per request
+		await rateLimiter.consume(userId, 1);
+	} catch (_rejRes) {
+		throw new TRPCError({
+			code: "TOO_MANY_REQUESTS",
+			message: "Too many requests. Please try again later.",
+		});
+	}
+	return next();
+});
+
+/**
  * Public (unauthenticated) procedure
  *
  * This is the base piece you use to build new queries and mutations on your tRPC API. It does not
@@ -124,6 +151,7 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  */
 export const protectedProcedure = t.procedure
 	.use(timingMiddleware)
+	.use(rateLimitMiddleware)
 	.use(({ ctx, next }) => {
 		if (!ctx.session?.user) {
 			throw new TRPCError({ code: "UNAUTHORIZED" });

@@ -1,6 +1,7 @@
 "use client";
 
 import { BadgeCheck, ChevronsUpDown, LogOut } from "lucide-react";
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -69,10 +70,21 @@ export function NavUser() {
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<BadgeCheck />
-								Account
-							</DropdownMenuItem>
+							<Link
+								href={
+									session?.user?.role === "ADMIN" ||
+									session?.user?.role === "MANAGER"
+										? "/admin/profile"
+										: session?.user?.role === "GURU"
+											? "/guru/profile"
+											: "/profile"
+								}
+							>
+								<DropdownMenuItem>
+									<BadgeCheck />
+									Profil Saya
+								</DropdownMenuItem>
+							</Link>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem

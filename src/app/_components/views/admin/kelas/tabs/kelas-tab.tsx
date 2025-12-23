@@ -281,23 +281,16 @@ export default function KelasTab() {
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="ALL">Semua Jenis Kelas</SelectItem>
-							{jenisKelasList?.map((jenis: JenisKelasModel) => (
-								<SelectItem key={jenis.id} value={jenis.nama}>
-									<div className="flex items-center gap-2">
-										{jenis.nama}
-										<Badge
-											className={cn("text-xs", {
-												"bg-teal-500 text-white":
-													jenis.tipe === TipeKelas.REGULAR,
-												"bg-violet-500 text-white":
-													jenis.tipe === TipeKelas.PRIVATE,
-											})}
-										>
-											{jenis.tipe}
-										</Badge>
-									</div>
-								</SelectItem>
-							))}
+							{jenisKelasList
+								?.filter(
+									(jenis, index, self) =>
+										index === self.findIndex((t) => t.nama === jenis.nama),
+								)
+								.map((jenis: JenisKelasModel) => (
+									<SelectItem key={jenis.nama} value={jenis.nama}>
+										<div className="flex items-center gap-2">{jenis.nama}</div>
+									</SelectItem>
+								))}
 						</SelectContent>
 					</Select>
 				</div>

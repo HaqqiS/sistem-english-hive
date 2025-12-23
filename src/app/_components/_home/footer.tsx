@@ -186,7 +186,7 @@ export default function Footer() {
 							<li className="flex items-start gap-3">
 								<MapPin className="text-primary mt-0.5 h-4 w-4 shrink-0" />
 								<Link
-									href={"https://maps.app.goo.gl/gei9mTQj4ao2rpxw6"}
+									href={"https://maps.app.goo.gl/JFAcnXQNysrjqUQ76"}
 									target="_blank"
 								>
 									<span className="text-muted-foreground">

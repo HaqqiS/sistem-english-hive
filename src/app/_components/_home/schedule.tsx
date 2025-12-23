@@ -27,7 +27,7 @@ const scheduleData = {
 	Gatsu: {
 		address:
 			"Jl. Gunung Catur, Padang Sambian Kaja, Kec. Denpasar Barat, Kota Denpasar",
-		mapLink: "https://maps.app.goo.gl/gei9mTQj4ao2rpxw6",
+		mapLink: "https://maps.app.goo.gl/JFAcnXQNysrjqUQ76",
 		schedules: [
 			{
 				days: "Senin & Kamis",

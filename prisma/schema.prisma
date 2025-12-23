@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
     provider = "prisma-client-js"
 }
@@ -254,43 +251,43 @@ enum JenisKelas {
 }
 
 model JenisKelasModel {
-    id          String    @id @default(cuid())
-    nama        String    @unique // e.g., "TinyTods", "Private TinyTods"
-    tipe        TipeKelas // REGULAR or PRIVATE
-    harga       Int       // e.g., 300000 or 800000
-    deskripsi   String?
+    id        String    @id @default(cuid())
+    nama      String    @unique // e.g., "TinyTods", "Private TinyTods"
+    tipe      TipeKelas // REGULAR or PRIVATE
+    harga     Int // e.g., 300000 or 800000
+    deskripsi String?
 
     // For Auto-Level Up Logic
-    nextLevelId String?   @unique
+    nextLevelId String?          @unique
     nextLevel   JenisKelasModel? @relation("Progression", fields: [nextLevelId], references: [id])
     prevLevel   JenisKelasModel? @relation("Progression")
-    
-    kelas       Kelas[]
+
+    kelas Kelas[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-    
+
     @@map("master_jenis_kelas")
 }
 
 model Kelas {
-    id             String     @id @default(cuid())
-    
+    id String @id @default(cuid())
+
     // NEW: Optional Relation (for migration)
-    jenisKelasId   String?
-    jenisKelasRel  JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
-    
+    jenisKelasId  String?
+    jenisKelasRel JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
+
     // OLD: Keep as original
-    legacyJenisKelas     JenisKelas? @map("jenisKelas")
-    legacyTipe           TipeKelas?  @map("tipe")
-    
-    level          Int // e.g., 1, 2, 3
-    
-    grup           String? 
-    bulanTahunAjar String     @db.VarChar(7) 
+    legacyJenisKelas JenisKelas? @map("jenisKelas")
+    legacyTipe       TipeKelas?  @map("tipe")
+
+    level Int // e.g., 1, 2, 3
+
+    grup           String?
+    bulanTahunAjar String  @db.VarChar(7)
     deskripsi      String?
-    hargaKelas     Int 
-    kodeKelas      String 
+    hargaKelas     Int
+    kodeKelas      String
 
     cohortId String @default(cuid())
     cabangId String

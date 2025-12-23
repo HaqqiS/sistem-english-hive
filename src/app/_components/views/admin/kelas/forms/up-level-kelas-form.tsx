@@ -36,7 +36,9 @@ export default function UpLevelKelasForm({
 	useEffect(() => {
 		if (!oldKelasData) return;
 
-		const { jenisKelas, grup, tipe } = oldKelasData;
+		const { jenisKelasRel, grup } = oldKelasData;
+		const jenisKelas = jenisKelasRel?.nama ?? "";
+		const tipe = jenisKelasRel?.tipe ?? "";
 
 		// Generate Kode Kelas Baru only if inputs are sufficient
 		// Format: "Jenis Level-Grup | Tipe | BulanTahun"

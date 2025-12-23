@@ -98,7 +98,8 @@ function ScheduleItemRow({
 		() => dataKelas?.find((k) => k.id === firstItemKelasId),
 		[dataKelas, firstItemKelasId],
 	);
-	const isPrivateClass = selectedKelasInfo?.tipe === TipeKelas.PRIVATE;
+	const isPrivateClass =
+		selectedKelasInfo?.jenisKelasRel?.tipe === TipeKelas.PRIVATE;
 
 	// 2. Effect: Set tipeJam otomatis saat kelas berubah
 	useEffect(() => {
@@ -433,7 +434,7 @@ export default function JadwalKelasForm({
 							<SelectItem key={kelas.id} value={kelas.id}>
 								{kelas.kodeKelas}{" "}
 								<span className="text-muted-foreground text-xs">
-									({kelas.tipe})
+									({kelas.jenisKelasRel?.tipe ?? "-"})
 								</span>
 							</SelectItem>
 						))}

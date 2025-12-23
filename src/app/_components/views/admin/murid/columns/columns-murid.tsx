@@ -106,7 +106,7 @@ export const columns = ({
 				onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 				className="pl-0 hover:bg-transparent"
 			>
-				Nama & Email
+				Nama & Kelas
 				<ArrowUpDown className="ml-2 h-4 w-4" />
 			</Button>
 		),
@@ -120,7 +120,9 @@ export const columns = ({
 					{row.original.namaLengkap}
 				</Button>
 				<span className="text-muted-foreground text-xs">
-					{row.original.email}
+					{row.original.pendaftaranKelases.length > 0
+						? row.original.pendaftaranKelases[0]?.Kelas.kodeKelas
+						: "-"}
 				</span>
 			</div>
 		),

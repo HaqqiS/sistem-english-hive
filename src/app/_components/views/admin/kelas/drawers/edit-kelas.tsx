@@ -18,9 +18,9 @@ export default function EditKelas() {
 		resolver: zodResolver(clientKelasSchema),
 		values: selectedKelas
 			? {
-					jenisKelas: selectedKelas.jenisKelas,
+					jenisKelasId: selectedKelas.jenisKelasId ?? "", // Safe, though should be set
 					level: selectedKelas.level,
-					tipe: selectedKelas.tipe,
+					tipe: selectedKelas.jenisKelasRel?.tipe ?? "",
 					grup: selectedKelas.grup ?? "",
 					bulanTahunAjar: selectedKelas.bulanTahunAjar,
 					deskripsi: selectedKelas.deskripsi ?? "",
@@ -30,9 +30,9 @@ export default function EditKelas() {
 				}
 			: undefined,
 		defaultValues: {
-			jenisKelas: selectedKelas?.jenisKelas,
+			jenisKelasId: selectedKelas?.jenisKelasId ?? "",
 			level: selectedKelas?.level,
-			tipe: selectedKelas?.tipe,
+			tipe: selectedKelas?.jenisKelasRel?.tipe ?? "",
 			grup: selectedKelas?.grup ?? "",
 			bulanTahunAjar: selectedKelas?.bulanTahunAjar,
 			deskripsi: selectedKelas?.deskripsi ?? "",

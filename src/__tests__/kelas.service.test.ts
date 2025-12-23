@@ -5,7 +5,6 @@ import type {
 	PendaftaranKelas,
 	PrismaClient,
 } from "@prisma/client";
-import { JenisKelas } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -42,9 +41,8 @@ describe("Kelas Service", () => {
 	const resetMocks = () => vi.clearAllMocks();
 
 	describe("handleAutoLevelUp", () => {
-		it("should return null if level is 4 and no next program exists (End of Line)", async () => {
+		it("should return null if no next program exists (End of Line)", async () => {
 			resetMocks();
-			// Elementary is the last one in our mock progression for this test context or real one
 			const result = await handleAutoLevelUp({
 				tx: mockTx,
 				jadwal: {
@@ -52,7 +50,11 @@ describe("Kelas Service", () => {
 					ruangId: "r-1",
 					kelas: {
 						level: 4,
-						jenisKelas: JenisKelas.Elementary, // End of line
+						// Mock `jenisKelasRel` instead of `jenisKelas`
+						jenisKelasRel: {
+							nama: "Elementary",
+							nextLevelId: null, // End of line
+						},
 					} as unknown as Kelas,
 				},
 			});
@@ -66,7 +68,7 @@ describe("Kelas Service", () => {
 			// Mock create
 			vi.mocked(mockTx.kelas.create).mockResolvedValue({
 				id: "k-new-prog",
-				jenisKelas: JenisKelas.TinyStar,
+				jenisKelasId: "jen-tiny-star",
 				level: 1,
 			} as unknown as Kelas);
 			// Mock other necessary calls...
@@ -81,17 +83,27 @@ describe("Kelas Service", () => {
 					ruangId: "r-1",
 					kelas: {
 						level: 4,
-						jenisKelas: JenisKelas.TinyTods, // Should go to TinyStar
+						jenisKelasId: "jen-tiny-tods",
+						jenisKelasRel: {
+							nama: "TinyTods",
+							// Relasi Next Level
+							nextLevelId: "jen-tiny-star",
+							nextLevel: {
+								id: "jen-tiny-star",
+								nama: "TinyStar",
+								harga: 60000,
+							},
+						},
 						kodeKelas: "TinyTods 4-A | 01/2024",
 						cohortId: "cohort-1",
 						hargaKelas: 60000,
 						grup: "A",
-						tipe: "REGULAR",
+						// tipe: "REGULAR", // Now inside relational or ignored
 					} as unknown as Kelas,
 				},
 			});
 
-			// Verify Create was called with Level 1 and TinyStar
+			// Verify Create was called with Level 1 and new ID
 			expect(mockTx.kelas.create).toHaveBeenCalled();
 			const createCalls = vi.mocked(mockTx.kelas.create).mock.calls;
 			if (!createCalls[0] || !createCalls[0][0])
@@ -99,16 +111,15 @@ describe("Kelas Service", () => {
 			const createCall = createCalls[0][0];
 
 			expect(createCall.data.level).toBe(1); // Reset to 1
-			expect(createCall.data.jenisKelas).toBe(JenisKelas.TinyStar); // Changed Program
+			expect(createCall.data.jenisKelasId).toBe("jen-tiny-star"); // Changed Program to Next Level ID
 
 			// Verify name replacement logic (TinyTods 4 -> TinyStar 1)
-			// The function uses current date MM/YYYY, so we check partial match
 			expect(createCall.data.kodeKelas).toContain("TinyStar 1");
 
 			// Also verify the function returns exactly what create() returned
 			expect(result).toEqual({
 				id: "k-new-prog",
-				jenisKelas: JenisKelas.TinyStar,
+				jenisKelasId: "jen-tiny-star",
 				level: 1,
 			});
 		});
@@ -145,7 +156,11 @@ describe("Kelas Service", () => {
 					ruangId: "r-1",
 					kelas: {
 						level: 1,
-						jenisKelas: "Regular",
+						jenisKelasId: "jen-reg",
+						jenisKelasRel: {
+							nama: "Regular",
+							nextLevelId: "jen-next",
+						},
 						kodeKelas: "REG 1 | 01/2024",
 						cohortId: "cohort-1",
 						hargaKelas: 50000,

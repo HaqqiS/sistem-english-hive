@@ -22,6 +22,7 @@ export const registerGuruFormSchema = loginFormSchema.extend({
 		.string()
 		.min(1, "Nama tidak boleh kosong")
 		.max(255, "Nama terlalu panjang"),
+	cabangId: z.string().optional(),
 });
 
 export const updateProfileFormSchema = registerGuruFormSchema.pick({

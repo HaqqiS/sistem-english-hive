@@ -25,6 +25,7 @@ export default async function AdminLayout({
 	const masterDataItems = [
 		{ title: "Ruang", url: "/admin/ruang", icon: "Building" },
 		{ title: "Jam Operasional", url: "/admin/jam", icon: "Clock" },
+		{ title: "Jenis Kelas", url: "/admin/jenis-kelas", icon: "School" },
 		...(isManager
 			? [{ title: "Cabang", url: "/admin/cabang", icon: "MapPin" }]
 			: []),

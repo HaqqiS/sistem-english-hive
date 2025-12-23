@@ -22,7 +22,7 @@ interface ScheduleCardProps {
 	data: {
 		id: string;
 		kodeKelas: string;
-		tipeKelas: "REGULAR" | "PRIVATE";
+		tipeKelas: string;
 		guru: string;
 		jamMulai: string;
 		jamSelesai: string;

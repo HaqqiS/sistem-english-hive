@@ -1,7 +1,6 @@
-import type { JenisKelas, PrismaClient, TipeKelas } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { StatusPembayaran } from "@prisma/client";
 import { BATAS_SESI, JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
-import { CLASS_PROGRESSION } from "@/constants/progression";
 import dayjs from "@/utils/dateUtils";
 
 // Tipe untuk Transaksi Prisma (agar bisa dipakai di dalam tx)
@@ -15,16 +14,8 @@ interface HandleLevelUpParams {
 	jadwal: {
 		kelasId: string;
 		ruangId: string;
-		kelas: {
-			level: number;
-			cohortId: string;
-			jenisKelas: string;
-			tipe: string;
-			grup: string | null;
-			hargaKelas: number;
-			deskripsi: string | null;
-			kodeKelas: string;
-			cabangId: string;
+		kelas?: {
+			id: string;
 		};
 	};
 }
@@ -36,27 +27,43 @@ export const handleAutoLevelUp = async ({
 	tx,
 	jadwal,
 }: HandleLevelUpParams) => {
+	// 1. Fetch Class + Master Data Relation
+	const currentClass = await tx.kelas.findUnique({
+		where: { id: jadwal.kelas?.id || jadwal.kelasId },
+		include: { jenisKelasRel: { include: { nextLevel: true } } },
+	});
+
+	if (!currentClass || !currentClass.jenisKelasRel) {
+		console.error("Data kelas atau Master JenisKelas tidak ditemukan.");
+		return null;
+	}
+
 	// Determine next level and class type
-	let nextLevel = jadwal.kelas.level + 1;
-	let nextJenisKelas = jadwal.kelas.jenisKelas as JenisKelas;
+	let nextLevel = currentClass.level + 1;
+	let nextJenisKelasId = currentClass.jenisKelasRel.id;
+	let nextJenisKelasNama = currentClass.jenisKelasRel.nama;
+	let nextJenisKelasHarga = currentClass.jenisKelasRel.harga;
 
-	if (jadwal.kelas.level >= 4) {
-		const nextProgression =
-			CLASS_PROGRESSION[jadwal.kelas.jenisKelas as JenisKelas];
-
-		if (!nextProgression) {
-			console.log("Sudah mencapai level max dan tidak ada program lanjutan.");
+	if (currentClass.level >= 4) {
+		// Check progression from DB
+		if (!currentClass.jenisKelasRel.nextLevel) {
+			console.log(
+				"Sudah mencapai level max dan tidak ada program lanjutan (DB).",
+			);
 			return null;
 		}
 
 		nextLevel = 1;
-		nextJenisKelas = nextProgression;
+		nextJenisKelasId = currentClass.jenisKelasRel.nextLevel.id;
+		nextJenisKelasNama = currentClass.jenisKelasRel.nextLevel.nama;
+		nextJenisKelasHarga = currentClass.jenisKelasRel.nextLevel.harga;
 	}
 
+	// Cek apakah kelas tujuan sudah ada
 	const existingClass = await tx.kelas.findFirst({
 		where: {
-			cohortId: jadwal.kelas.cohortId,
-			jenisKelas: nextJenisKelas, // MUST check jenisKelas too now
+			cohortId: currentClass.cohortId,
+			jenisKelasId: nextJenisKelasId,
 			level: nextLevel,
 		},
 	});
@@ -66,23 +73,23 @@ export const handleAutoLevelUp = async ({
 	}
 
 	const newBulanTahun = dayjs().format("MM/YYYY");
-	const oldKode = jadwal.kelas.kodeKelas;
+	const oldKode = currentClass.kodeKelas;
 
 	// Logic replace string kode kelas
-	// Handle change of JenisKelas name if applicable
+	// Replace JenisKelas Name in string if changed
 	let newKodeKelas = oldKode;
 
-	if (nextJenisKelas !== jadwal.kelas.jenisKelas) {
-		// Replace JenisKelas name and Reset Level to 1
+	if (nextJenisKelasId !== currentClass.jenisKelasRel.id) {
+		// Replace Old Name with New Name
 		newKodeKelas = newKodeKelas.replace(
-			`${jadwal.kelas.jenisKelas} ${jadwal.kelas.level}`,
-			`${nextJenisKelas} ${nextLevel}`,
+			`${currentClass.jenisKelasRel.nama} ${currentClass.level}`,
+			`${nextJenisKelasNama} ${nextLevel}`,
 		);
 	} else {
 		// Just increment level
 		newKodeKelas = newKodeKelas.replace(
-			`${jadwal.kelas.jenisKelas} ${jadwal.kelas.level}`,
-			`${jadwal.kelas.jenisKelas} ${nextLevel}`,
+			`${currentClass.jenisKelasRel.nama} ${currentClass.level}`,
+			`${currentClass.jenisKelasRel.nama} ${nextLevel}`,
 		);
 	}
 
@@ -91,23 +98,24 @@ export const handleAutoLevelUp = async ({
 		`| ${newBulanTahun}`,
 	);
 
+	// Create New Class using Master Data Price
 	const newKelas = await tx.kelas.create({
 		data: {
-			jenisKelas: nextJenisKelas,
+			jenisKelasId: nextJenisKelasId,
 			level: nextLevel,
-			grup: jadwal.kelas.grup,
-			tipe: jadwal.kelas.tipe as TipeKelas,
+			grup: currentClass.grup,
+			// tipe is inherited from Master, but if Schema removed it from Kelas, we don't need to set it.
 			bulanTahunAjar: newBulanTahun,
-			hargaKelas: jadwal.kelas.hargaKelas,
-			deskripsi: jadwal.kelas.deskripsi,
+			hargaKelas: nextJenisKelasHarga, // Use New Price!
+			deskripsi: currentClass.deskripsi,
 			kodeKelas: newKodeKelas,
-			cohortId: jadwal.kelas.cohortId, // PERTAHANKAN COHORT ID
-			cabangId: jadwal.kelas.cabangId,
+			cohortId: currentClass.cohortId,
+			cabangId: currentClass.cabangId,
 		},
 	});
 
 	const prevGuru = await tx.historyGuruKelas.findFirst({
-		where: { kelasId: jadwal.kelasId, statusGuru: "ACTIVE" },
+		where: { kelasId: currentClass.id, statusGuru: "ACTIVE" },
 	});
 
 	if (prevGuru) {
@@ -116,14 +124,14 @@ export const handleAutoLevelUp = async ({
 				kelasId: newKelas.id,
 				guruId: prevGuru.guruId,
 				statusGuru: "ACTIVE",
-				mulaiPada: dayjs().add(2, "week").format("YYYY-MM-DD"), // Sesuaikan estimasi
+				mulaiPada: dayjs().add(2, "week").format("YYYY-MM-DD"),
 			},
 		});
 	}
 
 	// B. Copy Jadwal Kelas Lama ke Kelas Baru
 	const oldJadwals = await tx.jadwalKelas.findMany({
-		where: { kelasId: jadwal.kelasId },
+		where: { kelasId: currentClass.id },
 	});
 
 	if (oldJadwals.length > 0) {
@@ -141,18 +149,15 @@ export const handleAutoLevelUp = async ({
 	}
 	// C. Pindahkan Murid Aktif
 	const activeStudents = await tx.pendaftaranKelas.findMany({
-		where: { kelasId: jadwal.kelasId, isAktif: true },
+		where: { kelasId: currentClass.id, isAktif: true },
 	});
 
 	const totalTagihan = newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
-	// Tanggal mulai efektif kelas baru = 2 minggu lagi (estimasi)
 	const estimasiMulai = dayjs().add(2, "week").toDate();
 	const estimasiMulaiString = dayjs(estimasiMulai).format("YYYY-MM-DD");
 
-	// Jalankan semua operasi murid secara bersamaan
 	await Promise.all(
 		activeStudents.map(async (student) => {
-			// A. Buat Pendaftaran Baru
 			const newReg = await tx.pendaftaranKelas.create({
 				data: {
 					muridId: student.muridId,
@@ -162,7 +167,6 @@ export const handleAutoLevelUp = async ({
 				},
 			});
 
-			// B. Buat Tagihan PENDING (Linked ke Pendaftaran Baru)
 			await tx.pembayaran.create({
 				data: {
 					pendaftaranKelasId: newReg.id,

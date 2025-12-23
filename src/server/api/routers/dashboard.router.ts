@@ -234,7 +234,8 @@ export const dashboardRouter = createTRPCRouter({
 					kelas: {
 						select: {
 							kodeKelas: true,
-							jenisKelas: true,
+							jenisKelasRel: { select: { nama: true } },
+							// jenisKelas: true,
 							// Ambil guru yang sedang aktif mengajar kelas ini
 							historyGuruKelases: {
 								where: {

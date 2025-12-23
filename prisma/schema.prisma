@@ -253,18 +253,45 @@ enum JenisKelas {
     Elementary
 }
 
+model JenisKelasModel {
+    id          String    @id @default(cuid())
+    nama        String    @unique // e.g., "TinyTods", "Private TinyTods"
+    tipe        TipeKelas // REGULAR or PRIVATE
+    harga       Int       // e.g., 300000 or 800000
+    deskripsi   String?
+
+    // For Auto-Level Up Logic
+    nextLevelId String?   @unique
+    nextLevel   JenisKelasModel? @relation("Progression", fields: [nextLevelId], references: [id])
+    prevLevel   JenisKelasModel? @relation("Progression")
+    
+    kelas       Kelas[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    
+    @@map("master_jenis_kelas")
+}
+
 model Kelas {
     id             String     @id @default(cuid())
-    jenisKelas     JenisKelas // e.g., "Rising Star", "Tiny Tod's"
+    
+    // NEW: Optional Relation (for migration)
+    jenisKelasId   String?
+    jenisKelasRel  JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
+    
+    // OLD: Keep as original
+    legacyJenisKelas     JenisKelas? @map("jenisKelas")
+    legacyTipe           TipeKelas?  @map("tipe")
+    
     level          Int // e.g., 1, 2, 3
-    tipe           TipeKelas // BARU: REGULAR atau PRIVATE
-    grup           String? // BARU: "A", "B", atau null (opsional)
-    bulanTahunAjar String     @db.VarChar(7) // format: "MM/YYYY", e.g., "08/2025"
+    
+    grup           String? 
+    bulanTahunAjar String     @db.VarChar(7) 
     deskripsi      String?
-    hargaKelas     Int
-    kodeKelas      String // e.g., "TinyTods 1-A|reguler|03/2025"
+    hargaKelas     Int 
+    kodeKelas      String 
 
-    // cohortId Int @default(autoincrement())
     cohortId String @default(cuid())
     cabangId String
     cabang   Cabang @relation(fields: [cabangId], references: [id])
@@ -282,6 +309,7 @@ model Kelas {
     @@index([level])
     @@index([bulanTahunAjar])
     @@index([cabangId])
+    @@index([jenisKelasId])
 }
 
 enum EnumStatusGuru {

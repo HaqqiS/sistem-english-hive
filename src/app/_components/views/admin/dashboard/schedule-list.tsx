@@ -81,7 +81,7 @@ export default function ScheduleList() {
 												{jadwal.kelas.kodeKelas}
 											</div>
 											<div className="flex items-center justify-between text-xs text-muted-foreground">
-												<span>{jadwal.kelas.jenisKelas}</span>
+												<span>{jadwal.kelas.jenisKelasRel?.nama}</span>
 												<span>Guru: {guruName}</span>
 											</div>
 										</div>

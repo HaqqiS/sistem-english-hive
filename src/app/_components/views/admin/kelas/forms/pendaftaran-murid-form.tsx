@@ -110,7 +110,7 @@ export default function PendaftaranMuridForm({
 													/>
 													<div className="flex flex-col">
 														<span>{murid.namaLengkap}</span>
-														<span className="text-muted-foreground text-xs">
+														<span className="text-xs opacity-80">
 															{murid.umur} tahun - Kelas: {murid.kelasSekolah}
 														</span>
 													</div>

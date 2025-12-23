@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { CabangType } from "@/types/cabang.type";
 import type { TypeJamCustom, TypeJamTetap } from "@/types/jam.type";
+import type { TypeJenisKelas } from "@/types/jenisKelas.type";
 import type { RuangType } from "@/types/ruang.type";
 
 type DrawerType = "none" | "edit" | "tambah";
@@ -54,6 +55,20 @@ interface JamCustomStore {
 
 	// Action methods
 	openDrawer: (drawer: DrawerType, jam?: TypeJamCustom) => void;
+	closeDrawer: () => void;
+
+	// Helpers
+	isDrawerOpen: (drawer: DrawerType) => boolean;
+	clearSelected: () => void;
+}
+
+interface JenisKelasStore {
+	// Drawer management
+	activeDrawer: DrawerType;
+	selectedJenisKelas: TypeJenisKelas | null;
+
+	// Action methods
+	openDrawer: (drawer: DrawerType, jenisKelas?: TypeJenisKelas) => void;
 	closeDrawer: () => void;
 
 	// Helpers
@@ -124,4 +139,20 @@ export const useJamCustomStore = create<JamCustomStore>((set, get) => ({
 	isDrawerOpen: (drawer) => get().activeDrawer === drawer,
 
 	clearSelected: () => set({ selectedJam: null }),
+}));
+
+export const useJenisKelasStore = create<JenisKelasStore>((set, get) => ({
+	activeDrawer: "none",
+	selectedJenisKelas: null,
+
+	openDrawer: (drawer, jenisKelas) =>
+		set({
+			activeDrawer: drawer,
+			selectedJenisKelas: jenisKelas ?? null,
+		}),
+	closeDrawer: () => set({ activeDrawer: "none", selectedJenisKelas: null }),
+
+	isDrawerOpen: (drawer) => get().activeDrawer === drawer,
+
+	clearSelected: () => set({ selectedJenisKelas: null }),
 }));

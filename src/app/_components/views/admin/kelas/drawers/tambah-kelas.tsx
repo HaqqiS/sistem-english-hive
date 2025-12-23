@@ -28,9 +28,14 @@ export default function TambahKelas() {
 	const form = useForm<TypeClientKelasSchema>({
 		resolver: zodResolver(clientKelasSchema),
 		defaultValues: {
-			jenisKelas: undefined,
+			jenisKelasId: "",
 			level: 1,
-			tipe: undefined,
+			tipe: "REGULAR", // Default or empty? Empty string might be safer if controlled by Select
+			// But form expects 'tipe' to be present.
+			// Let's set undefined or "" depending on what schema allows (schema allows string optional?)
+			// Client Schema: tipe is determined by ID. But kept in watched fields.
+			// Let's use empty string "" for initial.
+			// tipe: "",
 			grup: "",
 			kodeKelas: "",
 			bulanTahunAjar: "",

@@ -248,8 +248,10 @@ export const absenGuruRouter = createTRPCRouter({
 							kelas: {
 								select: {
 									kodeKelas: true,
-									jenisKelas: true,
-									tipe: true,
+									// jenisKelas: true, // Legacy
+									// jenisKelas: true, // Legacy
+									jenisKelasRel: { select: { nama: true } },
+									// tipe: true, // Removed
 								},
 							},
 							ruang: {
@@ -353,10 +355,13 @@ export const absenGuruRouter = createTRPCRouter({
 						ruangId: true,
 						kelas: {
 							select: {
+								id: true,
 								level: true,
 								cohortId: true,
-								jenisKelas: true,
-								tipe: true,
+								// jenisKelas: true,
+								// jenisKelas: true,
+								jenisKelasRel: { select: { nama: true } },
+								// tipe: true,
 								grup: true,
 								hargaKelas: true,
 								deskripsi: true,

@@ -63,7 +63,8 @@ export default function EditJadwalKelasForm() {
 		() => dataKelas?.find((k) => k.id === selectedKelasId),
 		[dataKelas, selectedKelasId],
 	);
-	const isPrivateClass = selectedKelasInfo?.tipe === TipeKelas.PRIVATE;
+	const isPrivateClass =
+		selectedKelasInfo?.jenisKelasRel?.tipe === TipeKelas.PRIVATE;
 
 	useEffect(() => {
 		if (selectedKelasInfo) {

@@ -1,4 +1,9 @@
-import type { Pembayaran, Prisma, PrismaClient } from "@prisma/client";
+import type {
+	Pembayaran,
+	Prisma,
+	PrismaClient,
+	TipeKelas,
+} from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import {
 	calculateInitialBill,
@@ -61,9 +66,16 @@ describe("calculateSisaPertemuan (Hybrid Billing Logic)", () => {
 				kodeKelas: "KELAS-A",
 				// add required fields to satisfy type or cast
 				cabangId: "cabang-1",
-				jenisKelas: "Regular",
+				jenisKelasId: "jk-1",
+				jenisKelasRel: {
+					id: "jk-1",
+					nama: "Regular",
+					tipe: "REGULAR" as TipeKelas,
+				},
+				legacyJenisKelas: null,
+				legacyTipe: null,
 				level: 1,
-				tipe: "REGULAR",
+				// tipe: "REGULAR", // Removed
 				grup: "A",
 				bulanTahunAjar: "01/2024",
 				deskripsi: null,

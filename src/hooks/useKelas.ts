@@ -1,5 +1,5 @@
 "use client";
-import type { JenisKelas, TipeKelas } from "@prisma/client";
+import type { TipeKelas } from "@prisma/client";
 import { skipToken } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
@@ -34,7 +34,8 @@ interface UseKelasOptions {
 	cohortId?: string;
 	filterCabang?: string;
 	tipeKelas?: TipeKelas | "ALL";
-	jenisKelas?: JenisKelas | "ALL";
+	// jenisKelas?: JenisKelas | "ALL"; // Legacy Enum
+	jenisKelas?: string | "ALL";
 }
 
 export function useKelas(options?: UseKelasOptions) {

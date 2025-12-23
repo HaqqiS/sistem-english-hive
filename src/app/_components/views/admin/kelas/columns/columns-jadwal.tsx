@@ -112,7 +112,7 @@ export const columns = ({
 			<div className="flex flex-col">
 				<span className="font-medium">{row.original.kelas.kodeKelas}</span>
 				<span className="text-muted-foreground text-xs capitalize">
-					{row.original.kelas.jenisKelas.toLowerCase().replace("_", " ")}
+					{row.original.kelas.jenisKelasRel?.nama.toLowerCase() ?? "Unknown"}
 				</span>
 			</div>
 		),

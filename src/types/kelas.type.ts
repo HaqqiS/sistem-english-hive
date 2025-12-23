@@ -1,4 +1,5 @@
-import { JenisKelas, TipeKelas } from "@prisma/client";
+// import { JenisKelas, TipeKelas } from "@prisma/client";
+// Removed unused imports
 import z from "zod";
 import type { RouterOutputs } from "@/trpc/react";
 
@@ -15,9 +16,9 @@ export type TypeKelasHistory =
 	RouterOutputs["kelas"]["getKelasHistory"][number];
 
 const baseKelasSchema = z.object({
-	jenisKelas: z.nativeEnum(JenisKelas),
+	jenisKelasId: z.string().cuid("Jenis Kelas harus dipilih"),
 	level: z.coerce.number().min(1, "Level harus diisi").max(10),
-	tipe: z.nativeEnum(TipeKelas),
+	// tipe: determined by Master Data
 	grup: z
 		.string()
 		.min(1, "Grup harus diisi. contoh: A")
@@ -33,7 +34,9 @@ const baseKelasSchema = z.object({
 	cabangId: z.string().cuid(),
 });
 
-export const clientKelasSchema = baseKelasSchema.extend({});
+export const clientKelasSchema = baseKelasSchema.extend({
+	tipe: z.string().optional(),
+});
 
 export type TypeClientKelasSchema = z.infer<typeof clientKelasSchema>;
 

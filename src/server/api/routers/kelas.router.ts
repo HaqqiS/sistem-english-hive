@@ -1,10 +1,10 @@
 import {
-	JenisKelas,
 	Prisma,
 	StatusMurid,
 	StatusPembayaran,
-	TipeKelas,
+	type TipeKelas,
 } from "@prisma/client";
+
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
@@ -32,10 +32,12 @@ export const kelasRouter = createTRPCRouter({
 
 				select: {
 					id: true,
-					jenisKelas: true,
+					jenisKelasId: true,
+					// jenisKelas: true, // Legacy mapped
+					jenisKelasRel: { select: { nama: true, tipe: true } },
 					level: true,
 					grup: true,
-					tipe: true,
+					// tipe: true, // Removed from schema
 					kodeKelas: true,
 					bulanTahunAjar: true,
 					deskripsi: true,
@@ -70,8 +72,8 @@ export const kelasRouter = createTRPCRouter({
 			z
 				.object({
 					cabangId: z.string().optional(),
-					tipeKelas: z.nativeEnum(TipeKelas).optional(),
-					jenisKelas: z.nativeEnum(JenisKelas).optional(),
+					tipeKelas: z.string().optional(),
+					jenisKelas: z.string().optional(),
 				})
 				.optional(),
 		)
@@ -82,9 +84,14 @@ export const kelasRouter = createTRPCRouter({
 
 			const whereClause: Prisma.KelasWhereInput = {};
 			if (filterCabangId) whereClause.cabangId = filterCabangId;
-			if (input?.tipeKelas) whereClause.tipe = input.tipeKelas as TipeKelas;
-			if (input?.jenisKelas)
-				whereClause.jenisKelas = input.jenisKelas as JenisKelas;
+			const jenisKelasFilters: Prisma.JenisKelasModelWhereInput = {};
+			if (input?.tipeKelas)
+				jenisKelasFilters.tipe = input.tipeKelas as TipeKelas;
+			if (input?.jenisKelas) jenisKelasFilters.nama = input.jenisKelas;
+
+			if (Object.keys(jenisKelasFilters).length > 0) {
+				whereClause.jenisKelasRel = jenisKelasFilters;
+			}
 
 			const allKelasData = await db.kelas.findMany({
 				where: whereClause,
@@ -93,10 +100,12 @@ export const kelasRouter = createTRPCRouter({
 
 				select: {
 					id: true,
-					jenisKelas: true,
+					jenisKelasId: true,
+					// jenisKelasId: true,
+					jenisKelasRel: { select: { nama: true, tipe: true } },
 					level: true,
 					grup: true,
-					tipe: true,
+					// tipe: true,
 					kodeKelas: true,
 					bulanTahunAjar: true,
 					deskripsi: true,
@@ -173,6 +182,7 @@ export const kelasRouter = createTRPCRouter({
 
 			const kelas = await db.kelas.findUnique({
 				where: { id: input.id },
+				include: { jenisKelasRel: true },
 			});
 
 			if (!kelas) return null;
@@ -297,10 +307,11 @@ export const kelasRouter = createTRPCRouter({
 				orderBy: { createdAt: "desc" },
 				select: {
 					kodeKelas: true,
-					jenisKelas: true,
+					jenisKelasRel: { select: { nama: true, tipe: true } },
+					// level: true, // Keep level? Yes.
 					level: true,
 					grup: true,
-					tipe: true,
+					// tipe: true, // Removed
 					bulanTahunAjar: true,
 					hargaKelas: true,
 					deskripsi: true,
@@ -360,10 +371,10 @@ export const kelasRouter = createTRPCRouter({
 			try {
 				const kelas = await db.kelas.create({
 					data: {
-						jenisKelas: input.jenisKelas,
+						jenisKelasId: input.jenisKelasId,
 						level: input.level,
 						grup: input.grup,
-						tipe: input.tipe,
+						// tipe: input.tipe, // Removed
 						kodeKelas: input.kodeKelas,
 						bulanTahunAjar: input.bulanTahunAjar,
 						deskripsi: input.deskripsi,
@@ -449,10 +460,10 @@ export const kelasRouter = createTRPCRouter({
 				const kelas = await db.kelas.update({
 					where: { id: input.id },
 					data: {
-						jenisKelas: input.jenisKelas,
+						jenisKelasId: input.jenisKelasId,
 						level: input.level,
 						grup: input.grup,
-						tipe: input.tipe,
+						// tipe: input.tipe,
 						kodeKelas: input.kodeKelas,
 						bulanTahunAjar: input.bulanTahunAjar,
 						deskripsi: input.deskripsi,
@@ -587,8 +598,8 @@ export const kelasRouter = createTRPCRouter({
 					// A. Buat Kelas Baru (Salin data lama, override level & bulan)
 					const newKelas = await tx.kelas.create({
 						data: {
-							jenisKelas: oldKelas.jenisKelas,
-							tipe: oldKelas.tipe,
+							jenisKelasId: oldKelas.jenisKelasId,
+							// tipe: oldKelas.tipe, // Removed
 							grup: oldKelas.grup,
 							deskripsi: oldKelas.deskripsi,
 							cohortId: oldKelas.cohortId,

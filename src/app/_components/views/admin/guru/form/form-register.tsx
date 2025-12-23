@@ -9,6 +9,15 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { useCabang } from "@/hooks/useCabang";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { RegisterGuruFormSchema } from "@/types/user.type";
 
 interface RegisterFormProps {
@@ -18,6 +27,11 @@ interface RegisterFormProps {
 export default function RegisterForm({ onSubmit }: RegisterFormProps) {
 	// HOOK FORMS
 	const form = useFormContext<RegisterGuruFormSchema>();
+	const { activeCabangId } = useGlobalCabangStore();
+
+	const { dataList: cabangList } = useCabang({
+		enableQueryList: true,
+	});
 
 	// const { setError } = form;
 
@@ -30,6 +44,39 @@ export default function RegisterForm({ onSubmit }: RegisterFormProps) {
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 			<div className="flex flex-col gap-6">
+				{cabangList && (
+					<div className="grid gap-3">
+						<FormField
+							control={form.control}
+							name="cabangId"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Cabang</FormLabel>
+									<Select
+										onValueChange={field.onChange}
+										defaultValue={
+											activeCabangId === "ALL" ? field.value : activeCabangId
+										}
+									>
+										<FormControl>
+											<SelectTrigger>
+												<SelectValue placeholder="Pilih Cabang" />
+											</SelectTrigger>
+										</FormControl>
+										<SelectContent>
+											{cabangList.map((cabang) => (
+												<SelectItem key={cabang.id} value={cabang.id}>
+													{cabang.namaCabang}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+				)}
 				<div className="grid gap-3">
 					<FormField
 						control={form.control}

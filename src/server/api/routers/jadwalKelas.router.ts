@@ -65,8 +65,9 @@ export const jadwalKelasRouter = createTRPCRouter({
 						kelas: {
 							select: {
 								kodeKelas: true,
-								jenisKelas: true,
-								tipe: true,
+								jenisKelasRel: { select: { nama: true, tipe: true } },
+								// jenisKelas: true,
+								// tipe: true,
 								// Field tambahan yang berguna untuk logic frontend
 								level: true,
 								grup: true,
@@ -103,7 +104,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 					ruangId: s.ruangId,
 					kelasId: s.kelasId,
 					kodeKelas: s.kelas.kodeKelas,
-					tipeKelas: s.kelas.tipe,
+					tipeKelas: s.kelas.jenisKelasRel?.tipe ?? "-",
 					guru: s.kelas.historyGuruKelases[0]?.guru.name ?? "Belum ada guru",
 					jamMulai: jam?.jamMulai ?? "00:00",
 					jamSelesai: jam?.jamSelesai ?? "00:00",
@@ -176,7 +177,12 @@ export const jadwalKelasRouter = createTRPCRouter({
 					hari: "asc",
 				},
 				include: {
-					kelas: { select: { kodeKelas: true, jenisKelas: true } },
+					kelas: {
+						select: {
+							kodeKelas: true,
+							jenisKelasRel: { select: { nama: true } },
+						},
+					},
 					ruang: {
 						select: {
 							namaRuang: true,

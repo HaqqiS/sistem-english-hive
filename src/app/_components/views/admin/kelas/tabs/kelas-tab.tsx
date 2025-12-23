@@ -1,6 +1,6 @@
 "use client";
 
-import { JenisKelas, TipeKelas } from "@prisma/client";
+import { type JenisKelasModel, TipeKelas } from "@prisma/client";
 import {
 	Album,
 	AlertCircle,
@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useJenisKelas } from "@/hooks/useJenisKelas";
 import { useKelas } from "@/hooks/useKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
@@ -70,13 +71,15 @@ export default function KelasTab() {
 	const [selectedTipeKelas, setSelectedTipeKelas] = useState<TipeKelas | "ALL">(
 		"ALL",
 	);
-	const [selectedJenisKelas, setSelectedJenisKelas] = useState<
-		JenisKelas | "ALL"
-	>("ALL");
+	const [selectedJenisKelas, setSelectedJenisKelas] = useState<string | "ALL">(
+		"ALL",
+	);
 
 	// 2. Zustand Store Actions
 	const { openDrawer: openKelasDrawer } = useKelasStore();
 	const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
+
+	const { data: jenisKelasList } = useJenisKelas();
 
 	const {
 		dataKelasCount,
@@ -154,9 +157,9 @@ export default function KelasTab() {
 				return {
 					"Kode Kelas": item.kodeKelas,
 					Cabang: item.cabang.namaCabang,
-					Program: item.jenisKelas,
+					Program: item.jenisKelasRel?.nama ?? "Unknown",
 					Level: item.level,
-					Tipe: item.tipe,
+					Tipe: item.jenisKelasRel?.tipe ?? "Unknown",
 					Grup: item.grup ?? "-",
 					Pengajar: guru,
 					Jadwal: jadwal,
@@ -266,9 +269,7 @@ export default function KelasTab() {
 					</Select>
 					<Select
 						value={selectedJenisKelas}
-						onValueChange={(v) =>
-							setSelectedJenisKelas(v as JenisKelas | "ALL")
-						}
+						onValueChange={(v) => setSelectedJenisKelas(v)}
 					>
 						<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[160px]">
 							<div className="flex items-center gap-2">
@@ -280,9 +281,21 @@ export default function KelasTab() {
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="ALL">Semua Jenis Kelas</SelectItem>
-							{Object.values(JenisKelas).map((jenis) => (
-								<SelectItem key={jenis} value={jenis}>
-									{jenis.charAt(0).toUpperCase() + jenis.slice(1).toLowerCase()}
+							{jenisKelasList?.map((jenis: JenisKelasModel) => (
+								<SelectItem key={jenis.id} value={jenis.nama}>
+									<div className="flex items-center gap-2">
+										{jenis.nama}
+										<Badge
+											className={cn("text-xs", {
+												"bg-teal-500 text-white":
+													jenis.tipe === TipeKelas.REGULAR,
+												"bg-violet-500 text-white":
+													jenis.tipe === TipeKelas.PRIVATE,
+											})}
+										>
+											{jenis.tipe}
+										</Badge>
+									</div>
 								</SelectItem>
 							))}
 						</SelectContent>

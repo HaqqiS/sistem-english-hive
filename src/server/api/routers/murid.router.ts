@@ -113,6 +113,18 @@ export const muridRouter = createTRPCRouter({
 								statusMurid: true,
 								createdAt: true,
 								cabangId: true,
+								pendaftaranKelases: {
+									where: {
+										isAktif: true,
+									},
+									include: {
+										Kelas: {
+											select: {
+												kodeKelas: true,
+											},
+										},
+									},
+								},
 							},
 						}),
 					]);
@@ -333,7 +345,10 @@ export const muridRouter = createTRPCRouter({
 						where: { isAktif: true },
 						include: {
 							Kelas: {
-								select: { kodeKelas: true, jenisKelas: true },
+								select: {
+									kodeKelas: true,
+									jenisKelasRel: { select: { nama: true } },
+								},
 							},
 						},
 					},

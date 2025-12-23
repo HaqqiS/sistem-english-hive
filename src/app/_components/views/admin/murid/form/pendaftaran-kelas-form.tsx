@@ -132,7 +132,7 @@ export default function PendaftaranKelasForm({
 													/>
 													<div className="flex flex-col">
 														<span>{murid.namaLengkap}</span>
-														<span className="text-muted-foreground text-xs">
+														<span className="text-xs opacity-80">
 															{murid.umur} tahun - Kelas: {murid.kelasSekolah}
 														</span>
 													</div>
@@ -155,10 +155,14 @@ export default function PendaftaranKelasForm({
 									<Badge
 										variant="secondary"
 										key={muridId}
-										className="mr-1 mb-1"
+										className="mr-1 mb-1 pr-0"
 									>
 										{murid.namaLengkap}
 										<Button
+											// <button
+											// type="button"
+											variant="ghost"
+											size="icon-sm"
 											className="ring-offset-background focus:ring-ring ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-2"
 											onKeyDown={(e) => {
 												if (e.key === "Enter") handleUnselect(muridId);

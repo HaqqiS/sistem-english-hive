@@ -252,7 +252,7 @@ enum JenisKelas {
 
 model JenisKelasModel {
     id        String    @id @default(cuid())
-    nama      String    @unique // e.g., "TinyTods", "Private TinyTods"
+    nama      String // e.g., "TinyTods", "Private TinyTods"
     tipe      TipeKelas // REGULAR or PRIVATE
     harga     Int // e.g., 300000 or 800000
     deskripsi String?
@@ -267,6 +267,7 @@ model JenisKelasModel {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
+    @@unique([tipe, nama])
     @@map("master_jenis_kelas")
 }
 

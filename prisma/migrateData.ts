@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, TipeKelas } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -34,23 +34,30 @@ async function main() {
 		}
 
 		// Construct Target Name
-		let targetName = k.legacyJenisKelas as string;
+		const targetName = k.legacyJenisKelas as string;
+
+		// Map legacy Tipe to new enum TipeKelas if needed, assuming direct mapping
+		// The seed data has TipeKelas.REGULAR and TipeKelas.PRIVATE
+		// k.legacyTipe matches the enum values string-wise?
+		// legacyTipe is likely 'REGULAR' or 'PRIVATE'
+
+		let targetType: TipeKelas = TipeKelas.REGULAR;
 		if (k.legacyTipe === "PRIVATE") {
-			// Try "Private TinyTods"
-			targetName = `Private ${targetName}`;
+			targetType = TipeKelas.PRIVATE;
 		}
 
 		// Find Master Data
-		let master = await prisma.jenisKelasModel.findUnique({
-			where: { nama: targetName },
+		const master = await prisma.jenisKelasModel.findUnique({
+			where: {
+				tipe_nama: {
+					nama: targetName,
+					tipe: targetType,
+				},
+			},
 		});
 
-		// Fallback: If "Private TinyTods" not found, maybe it was just "TinyTods" (misconfig?)
-		if (!master && k.legacyTipe === "PRIVATE") {
-			master = await prisma.jenisKelasModel.findUnique({
-				where: { nama: k.legacyJenisKelas as string },
-			});
-		}
+		// Fallback not really needed if seed is correct, but keeping structure if needed
+		// Removing the old logic that tried to find "Private TinyTods" by name
 
 		if (master) {
 			await prisma.kelas.update({
@@ -60,7 +67,7 @@ async function main() {
 			successCount++;
 		} else {
 			console.error(
-				`Could not find Master Data for '${targetName}' (Original: ${k.legacyJenisKelas}, Tipe: ${k.legacyTipe}) (Class: ${k.kodeKelas}).`,
+				`Could not find Master Data for '${targetName}' (Type: ${targetType}) (Original: ${k.legacyJenisKelas}, Tipe: ${k.legacyTipe}) (Class: ${k.kodeKelas}).`,
 			);
 			failCount++;
 		}

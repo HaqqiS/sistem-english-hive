@@ -14,18 +14,18 @@ const REGULAR_TRACK = [
 ];
 
 const PRIVATE_TRACK = [
-	{ name: "Private TinyTods", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Private TinyStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Private PreLittleStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Private LittleStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Private RisingStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Private PreShiningStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Private ShiningStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Private Elementary", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "TinyTods", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "TinyStar", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "PreLittleStar", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "LittleStar", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "RisingStar", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "PreShiningStar", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "ShiningStar", price: 800000, type: TipeKelas.PRIVATE },
+	{ name: "Elementary", price: 800000, type: TipeKelas.PRIVATE },
 ];
 
 const PRIVATE_DEWASA = [
-	{ name: "Private General / Dewasa", price: 1200000, type: TipeKelas.PRIVATE },
+	{ name: "General / Dewasa", price: 1200000, type: TipeKelas.PRIVATE },
 ];
 
 async function main() {
@@ -36,10 +36,14 @@ async function main() {
 
 	for (const item of allGroups) {
 		await prisma.jenisKelasModel.upsert({
-			where: { nama: item.name },
+			where: {
+				tipe_nama: {
+					nama: item.name,
+					tipe: item.type,
+				},
+			},
 			update: {
 				harga: item.price,
-				tipe: item.type,
 			},
 			create: {
 				nama: item.name,
@@ -60,13 +64,25 @@ async function main() {
 			if (!currentItem || !nextItem) continue;
 
 			const currentName = currentItem.name;
+			const currentType = currentItem.type;
 			const nextName = nextItem.name;
+			const nextType = nextItem.type;
 
 			const current = await prisma.jenisKelasModel.findUnique({
-				where: { nama: currentName },
+				where: {
+					tipe_nama: {
+						nama: currentName,
+						tipe: currentType,
+					},
+				},
 			});
 			const next = await prisma.jenisKelasModel.findUnique({
-				where: { nama: nextName },
+				where: {
+					tipe_nama: {
+						nama: nextName,
+						tipe: nextType,
+					},
+				},
 			});
 
 			if (current && next) {
@@ -74,7 +90,9 @@ async function main() {
 					where: { id: current.id },
 					data: { nextLevelId: next.id },
 				});
-				console.log(`Linked ${currentName} -> ${nextName}`);
+				console.log(
+					`Linked ${currentName} (${currentType}) -> ${nextName} (${nextType})`,
+				);
 			}
 		}
 	};

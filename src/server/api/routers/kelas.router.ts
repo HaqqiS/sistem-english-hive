@@ -162,7 +162,11 @@ export const kelasRouter = createTRPCRouter({
 					_count: {
 						select: {
 							sesiPertemuanKelases: true,
-							pendaftaranKelases: { where: { isAktif: true } },
+							pendaftaranKelases: {
+								where: {
+									OR: [{ status: "AKTIF" }, { status: "WAITING_LIST" }],
+								},
+							},
 						},
 					},
 				},

@@ -10,7 +10,10 @@ async function main() {
 	// but Prisma client allows access via field name 'legacyJenisKelas'
 	const classes = await prisma.kelas.findMany({
 		where: {
-			jenisKelasId: null,
+			// jenisKelasId: null,
+			NOT: {
+				legacyJenisKelas: null,
+			},
 		},
 		select: {
 			id: true,
@@ -62,7 +65,11 @@ async function main() {
 		if (master) {
 			await prisma.kelas.update({
 				where: { id: k.id },
-				data: { jenisKelasId: master.id },
+				data: {
+					jenisKelasId: master.id,
+					legacyJenisKelas: null,
+					legacyTipe: null,
+				},
 			});
 			successCount++;
 		} else {

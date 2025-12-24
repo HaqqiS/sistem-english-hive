@@ -8,14 +8,14 @@ async function main() {
 	// Update isAktif = true -> AKTIF
 	const updatedAktif = await prisma.pendaftaranKelas.updateMany({
 		where: { isAktif: true },
-		data: { status: StatusPendaftaran.AKTIF },
+		data: { status: StatusPendaftaran.AKTIF, isAktif: null },
 	});
 	console.log(`Updated ${updatedAktif.count} records to AKTIF`);
 
 	// Update isAktif = false -> NON_AKTIF
 	const updatedNonAktif = await prisma.pendaftaranKelas.updateMany({
 		where: { isAktif: false },
-		data: { status: StatusPendaftaran.NON_AKTIF },
+		data: { status: StatusPendaftaran.NON_AKTIF, isAktif: null },
 	});
 	console.log(`Updated ${updatedNonAktif.count} records to NON_AKTIF`);
 

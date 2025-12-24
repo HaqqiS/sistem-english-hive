@@ -417,7 +417,7 @@ model PendaftaranKelas {
     muridId      String
     kelasId      String
     tanggalMulai String?  @db.VarChar(10) // format: "YYYY-MM-DD"
-    isAktif      Boolean @default(true) //false jika murid sudah tidak ikut kelas ini lagi/ kelas selesai
+    isAktif      Boolean?  //false jika murid sudah tidak ikut kelas ini lagi/ kelas selesai
     status       StatusPendaftaran @default(AKTIF)
 
     createdAt DateTime @default(now())

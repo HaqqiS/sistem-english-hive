@@ -35,7 +35,7 @@ export const jenisKelasColumns = ({
 		cell: ({ row }) => <span>{row.getValue("tipe")}</span>,
 	},
 	{
-		accessorKey: "harga",
+		accessorKey: "harga (per sesi)",
 		header: "Harga",
 		cell: ({ row }) => <span>{toRupiah(row.getValue("harga"))}</span>,
 	},

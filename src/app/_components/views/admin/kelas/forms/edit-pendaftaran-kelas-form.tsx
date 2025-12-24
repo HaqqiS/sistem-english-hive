@@ -1,4 +1,5 @@
 "use client";
+import { StatusPendaftaran } from "@prisma/client";
 
 import { useFormContext } from "react-hook-form";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
@@ -118,32 +119,35 @@ export default function EditPendaftaranKelasForm({
 				)}
 			/>
 
-			{/* Tanggal Mulai */}
-			<FormStringDatePicker
-				control={form.control}
-				name="tanggalMulai"
-				label="Tanggal Mulai"
-			/>
-
-			{/* Status Keaktifan (Specific to Edit) */}
 			<FormField
 				control={form.control}
-				name="isAktif"
+				name="status"
 				render={({ field }) => (
 					<FormItem>
-						<FormLabel>Status Keaktifan</FormLabel>
+						<FormLabel>Status Pendaftaran</FormLabel>
 						<FormControl>
 							<Select
-								// Convert string "true"/"false" back to boolean for the form
-								onValueChange={(val) => field.onChange(val === "true")}
-								value={field.value ? "true" : "false"}
+								onValueChange={(val) => {
+									field.onChange(val);
+									// Jika ganti ke WAITING LIST, kosongkan tanggal mulai (opsional)
+									if (val === StatusPendaftaran.WAITING_LIST) {
+										form.setValue("tanggalMulai", null);
+									}
+								}}
+								value={field.value}
 							>
 								<SelectTrigger className="w-full">
 									<SelectValue placeholder="Pilih Status" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="true">Aktif</SelectItem>
-									<SelectItem value="false">Non-Aktif</SelectItem>
+									<SelectItem value={StatusPendaftaran.AKTIF}>Aktif</SelectItem>
+									<SelectItem value={StatusPendaftaran.TRIAL}>Trial</SelectItem>
+									<SelectItem value={StatusPendaftaran.WAITING_LIST}>
+										Waiting List
+									</SelectItem>
+									<SelectItem value={StatusPendaftaran.NON_AKTIF}>
+										Non-Aktif
+									</SelectItem>
 								</SelectContent>
 							</Select>
 						</FormControl>
@@ -151,6 +155,15 @@ export default function EditPendaftaranKelasForm({
 					</FormItem>
 				)}
 			/>
+
+			{/* Tanggal Mulai (Hanya muncul jika bukan Waiting List) */}
+			{form.watch("status") !== StatusPendaftaran.WAITING_LIST && (
+				<FormStringDatePicker
+					control={form.control}
+					name="tanggalMulai"
+					label="Tanggal Mulai"
+				/>
+			)}
 		</form>
 	);
 }

@@ -16,13 +16,20 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePembayaran } from "@/hooks/usePembayaran";
+import { useTagihanLain } from "@/hooks/useTagihanLain";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { usePembayaranStore } from "@/store/usePembayaranStore";
 import type { TypePembayaran } from "@/types/pembayaran.type";
 import { toRupiah } from "@/utils/toRupiah";
 import { columns as createColumns } from "../columns/columns-pembayaran";
+import {
+	columnsTagihanLain,
+	type TypeTagihanLain,
+} from "../columns/columns-tagihan-lain";
 import EditPembayaran from "../edit-pembayaran";
+import EditTagihanLain from "../edit-tagihan-lain";
 
 export default function HistoryPembayaranMuridClient() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -32,7 +39,16 @@ export default function HistoryPembayaranMuridClient() {
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [itemToDelete, setItemToDelete] = useState<TypePembayaran | null>(null);
 
-	// 1. Gunakan Hook Utama
+	// State untuk Tagihan Lain
+	const [deleteTagihanLainOpen, setDeleteTagihanLainOpen] = useState(false);
+	const [tagihanLainToDelete, setTagihanLainToDelete] =
+		useState<TypeTagihanLain | null>(null);
+
+	const [editTagihanLainOpen, setEditTagihanLainOpen] = useState(false);
+	const [tagihanLainToEdit, setTagihanLainToEdit] =
+		useState<TypeTagihanLain | null>(null);
+
+	// 1. Hook Utama SPP
 	const {
 		dataGetAllPaginated, // List Pembayaran
 		isLoadingGetAllPaginated,
@@ -54,14 +70,27 @@ export default function HistoryPembayaranMuridClient() {
 		},
 	});
 
-	// 2. Panggil Query Saldo (untuk Header & Cards)
+	// 2. Hook Tagihan Lain
+	const {
+		dataByMurid: dataTagihanLain,
+		isLoadingByMurid: isLoadingTagihanLain,
+		mutations: mutationsTagihanLain,
+	} = useTagihanLain({
+		muridId,
+		enableGetAll: false, // Use specific query
+		onSuccessDelete: () => {
+			setDeleteTagihanLainOpen(false);
+			setTagihanLainToDelete(null);
+		},
+	});
+
+	// 3. Panggil Query Saldo (untuk Header & Cards)
 	const { data: saldoInfo, isLoading: isLoadingSaldo } = getSaldoByMuridIdQuery(
 		{ muridId: muridId },
-
 		{ enabled: !!muridId },
 	);
 
-	// 3. Handler Aksi Tabel
+	// --- HANDLERS SPP ---
 	const handleDeleteClick = (item: TypePembayaran) => {
 		setItemToDelete(item);
 		setDeleteDialogOpen(true);
@@ -74,7 +103,6 @@ export default function HistoryPembayaranMuridClient() {
 	};
 
 	const handleVerifyClick = (item: TypePembayaran) => {
-		// Toggle status: Jika LUNAS -> BELUM_LUNAS, jika BELUM -> LUNAS
 		const newStatus =
 			item.statusBayar === StatusPembayaran.LUNAS
 				? StatusPembayaran.BELUM_LUNAS
@@ -82,8 +110,8 @@ export default function HistoryPembayaranMuridClient() {
 
 		mutations.update.mutate({
 			id: item.id,
-			jumlahBayar: item.jumlahBayar, // Required by schema
-			note: item.note ?? undefined, // Optional in schema
+			jumlahBayar: item.jumlahBayar,
+			note: item.note ?? undefined,
 			statusBayar: newStatus,
 			tanggalBayar:
 				newStatus === StatusPembayaran.LUNAS
@@ -102,13 +130,47 @@ export default function HistoryPembayaranMuridClient() {
 		onVerifyClick: handleVerifyClick,
 	});
 
-	const isLoading = isLoadingGetAllPaginated || isLoadingSaldo;
+	// --- HANDLERS TAGIHAN LAIN ---
+	const handleDeleteTagihanLain = (item: TypeTagihanLain) => {
+		setTagihanLainToDelete(item);
+		setDeleteTagihanLainOpen(true);
+	};
+
+	const handleConfirmDeleteTagihanLain = () => {
+		if (tagihanLainToDelete) {
+			mutationsTagihanLain.delete.mutate({ id: tagihanLainToDelete.id });
+		}
+	};
+
+	const handleVerifyTagihanLain = (item: TypeTagihanLain) => {
+		if (item.status === StatusPembayaran.LUNAS) {
+			mutationsTagihanLain.update.mutate({
+				id: item.id,
+				status: StatusPembayaran.BELUM_LUNAS,
+			});
+		} else {
+			mutationsTagihanLain.markAsPaid.mutate({ id: item.id });
+		}
+	};
+
+	const handleEditTagihanLain = (item: TypeTagihanLain) => {
+		setTagihanLainToEdit(item);
+		setEditTagihanLainOpen(true);
+	};
+
+	const columnsLain = columnsTagihanLain({
+		onDeleteClick: handleDeleteTagihanLain,
+		onEditClick: handleEditTagihanLain,
+		onVerifyClick: handleVerifyTagihanLain,
+	});
+
+	const isLoading =
+		isLoadingGetAllPaginated || isLoadingSaldo || isLoadingTagihanLain;
 
 	// --- LOADING STATE ---
 	if (isLoading) {
 		return (
 			<div className="space-y-6">
-				{/* Header Skeleton */}
 				<div className="flex items-center gap-4">
 					<Skeleton className="h-10 w-10 rounded-full" />
 					<div className="space-y-2">
@@ -116,13 +178,11 @@ export default function HistoryPembayaranMuridClient() {
 						<Skeleton className="h-4 w-40" />
 					</div>
 				</div>
-				{/* Cards Skeleton */}
 				<div className="grid gap-4 md:grid-cols-3">
 					<Skeleton className="h-32 rounded-xl" />
 					<Skeleton className="h-32 rounded-xl" />
 					<Skeleton className="h-32 rounded-xl" />
 				</div>
-				{/* Table Skeleton */}
 				<Skeleton className="h-96 w-full rounded-xl" />
 			</div>
 		);
@@ -142,7 +202,6 @@ export default function HistoryPembayaranMuridClient() {
 	}
 
 	// --- DATA HELPERS ---
-	// Ambil nama murid dari saldoInfo (prioritas) atau dari list pembayaran pertama
 	const namaMurid =
 		saldoInfo?.muridName ??
 		dataGetAllPaginated?.[0]?.pendaftaranKelas?.murid?.namaLengkap ??
@@ -153,7 +212,6 @@ export default function HistoryPembayaranMuridClient() {
 		dataGetAllPaginated?.[0]?.pendaftaranKelas?.Kelas?.kodeKelas ??
 		"-";
 
-	// Tentukan warna status kuota
 	const sisaKuota = saldoInfo?.sisaPertemuan ?? 0;
 	const isLowBalance = sisaKuota <= 2;
 
@@ -162,20 +220,11 @@ export default function HistoryPembayaranMuridClient() {
 			{/* --- 1. HEADER SECTION --- */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div className="flex items-center gap-3">
-					{/* <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Kembali</span>
-          </Button> */}
 					<div>
 						<h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
 							{namaMurid}
 						</h1>
-						<div className="text-muted-foreground flex items-center gap-2 text-sm">
+						<div className="flex items-center gap-2 text-sm text-muted-foreground">
 							<Badge variant="outline" className="font-normal">
 								{kodeKelas}
 							</Badge>
@@ -188,7 +237,6 @@ export default function HistoryPembayaranMuridClient() {
 
 			{/* --- 2. SUMMARY CARDS (SALDO INFO) --- */}
 			<div className="grid gap-4 md:grid-cols-3">
-				{/* Card 1: Sisa Kuota */}
 				<Card className={isLowBalance ? "border-red-200 bg-red-50/50" : ""}>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="text-sm font-medium">
@@ -208,7 +256,7 @@ export default function HistoryPembayaranMuridClient() {
 						>
 							{saldoInfo?.sisaPertemuan ?? 0} Sesi
 						</div>
-						<p className="text-muted-foreground text-xs">
+						<p className="text-xs text-muted-foreground">
 							{isLowBalance
 								? "Kuota menipis, segera buat tagihan."
 								: "Kuota pertemuan masih aman."}
@@ -216,89 +264,132 @@ export default function HistoryPembayaranMuridClient() {
 					</CardContent>
 				</Card>
 
-				{/* Card 2: Tagihan Berikutnya */}
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="text-sm font-medium">
 							Tagihan Berikutnya
 						</CardTitle>
-						<Banknote className="text-muted-foreground h-4 w-4" />
+						<Banknote className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold">
 							Ke-{saldoInfo?.nextBillPembayaranKe ?? 1}
 						</div>
-						<p className="text-muted-foreground text-xs">
+						<p className="text-xs text-muted-foreground">
 							Estimasi tagihan selanjutnya
 						</p>
 					</CardContent>
 				</Card>
 
-				{/* Card 3: Total Terpakai */}
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="text-sm font-medium">
 							Total Sesi Terpakai
 						</CardTitle>
-						<User className="text-muted-foreground h-4 w-4" />
+						<User className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold">
 							{saldoInfo?.totalTerpakai ?? 0}
 						</div>
-						<p className="text-muted-foreground text-xs">
+						<p className="text-xs text-muted-foreground">
 							Total kehadiran & alpa siswa
 						</p>
 					</CardContent>
 				</Card>
 			</div>
 
-			{/* --- 3. TABLE SECTION --- */}
-			<div className="space-y-4">
-				<div className="flex items-center justify-between">
-					<div className="space-y-1">
-						<h2 className="text-lg font-semibold tracking-tight">
-							Daftar Transaksi
-						</h2>
-						<p className="text-muted-foreground text-sm">
-							History lengkap pembayaran siswa ini.
-						</p>
-					</div>
-					{/* Optional: Tombol Download Invoice / Tambah Manual Khusus Siswa Ini */}
-				</div>
+			{/* --- 3. TABS SECTION --- */}
+			<Tabs defaultValue="spp" className="w-full">
+				<TabsList>
+					<TabsTrigger value="spp">SPP (Tuition)</TabsTrigger>
+					<TabsTrigger value="lainnya">Tagihan Lain (Buku/Regis)</TabsTrigger>
+				</TabsList>
 
-				{dataGetAllPaginated && dataGetAllPaginated.length > 0 ? (
-					<DataTable columns={columns} data={dataGetAllPaginated} />
-				) : (
-					<div className="text-muted-foreground flex h-40 flex-col items-center justify-center gap-2">
-						<CreditCard className="h-8 w-8 opacity-50" />
-						<p>Belum ada riwayat pembayaran.</p>
+				<TabsContent value="spp" className="space-y-4 pt-4">
+					<div className="flex items-center justify-between">
+						<div className="space-y-1">
+							<h2 className="text-lg font-semibold tracking-tight">
+								History SPP
+							</h2>
+							<p className="text-sm text-muted-foreground">
+								Pembayaran bulanan / per paket sesi.
+							</p>
+						</div>
 					</div>
-				)}
-			</div>
 
+					{dataGetAllPaginated && dataGetAllPaginated.length > 0 ? (
+						<DataTable columns={columns} data={dataGetAllPaginated} />
+					) : (
+						<div className="flex h-40 flex-col items-center justify-center gap-2 rounded-md border border-dashed text-muted-foreground">
+							<CreditCard className="h-8 w-8 opacity-50" />
+							<p>Belum ada riwayat pembayaran SPP.</p>
+						</div>
+					)}
+				</TabsContent>
+
+				<TabsContent value="lainnya" className="space-y-4 pt-4">
+					<div className="flex items-center justify-between">
+						<div className="space-y-1">
+							<h2 className="text-lg font-semibold tracking-tight">
+								Tagihan Lainnya
+							</h2>
+							<p className="text-sm text-muted-foreground">
+								Biaya pendaftaran, buku, dan lain-lain.
+							</p>
+						</div>
+					</div>
+
+					{dataTagihanLain && dataTagihanLain.length > 0 ? (
+						<DataTable columns={columnsLain} data={dataTagihanLain} />
+					) : (
+						<div className="flex h-40 flex-col items-center justify-center gap-2 rounded-md border border-dashed text-muted-foreground">
+							<Banknote className="h-8 w-8 opacity-50" />
+							<p>Belum ada tagihan lain.</p>
+						</div>
+					)}
+				</TabsContent>
+			</Tabs>
+
+			{/* Drawers & Dialogs */}
 			<EditPembayaran />
+			<EditTagihanLain
+				isOpen={editTagihanLainOpen}
+				onOpenChange={setEditTagihanLainOpen}
+				data={tagihanLainToEdit}
+			/>
 
+			{/* Delete Dialog SPP */}
 			<DeleteConfirmationDialog
 				isOpen={deleteDialogOpen}
 				onOpenChange={setDeleteDialogOpen}
-				title="Hapus Tagihan Pembayaran"
+				title="Hapus Tagihan SPP"
 				description={
 					<>
-						Apakah Anda yakin ingin menghapus tagihan untuk{" "}
-						<span className="text-foreground font-bold">
-							{itemToDelete?.pendaftaranKelas.murid.namaLengkap}
-						</span>{" "}
-						sebesar{" "}
-						<span className="text-foreground font-bold">
-							{toRupiah(itemToDelete?.jumlahBayar ?? 0)}
-						</span>
-						? Data ini tidak dapat dikembalikan dan dapat mempengaruhi saldo
-						pertemuan siswa.
+						Apakah Anda yakin ingin menghapus tagihan SPP ini? Data ini tidak
+						dapat dikembalikan.
 					</>
 				}
 				onConfirm={handleConfirmDelete}
 				isLoading={mutations.delete.isPending}
+				confirmText="Hapus"
+				cancelText="Batal"
+			/>
+
+			{/* Delete Dialog Tagihan Lain */}
+			<DeleteConfirmationDialog
+				isOpen={deleteTagihanLainOpen}
+				onOpenChange={setDeleteTagihanLainOpen}
+				title="Hapus Tagihan Lain"
+				description={
+					<>
+						Apakah Anda yakin ingin menghapus tagihan{" "}
+						<b>{tagihanLainToDelete?.judul}</b> senilai{" "}
+						<b>{toRupiah(tagihanLainToDelete?.jumlah ?? 0)}</b>?
+					</>
+				}
+				onConfirm={handleConfirmDeleteTagihanLain}
+				isLoading={mutationsTagihanLain.delete.isPending}
 				confirmText="Hapus Tagihan"
 				cancelText="Batal"
 			/>

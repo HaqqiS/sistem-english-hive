@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: false positive */
 import type {
 	HistoryGuruKelas,
 	JadwalKelas,
@@ -16,6 +17,7 @@ describe("Kelas Service", () => {
 	const mockTx = {
 		kelas: {
 			findFirst: vi.fn(),
+			findUnique: vi.fn(),
 			create: vi.fn(),
 		},
 		historyGuruKelas: {
@@ -43,6 +45,15 @@ describe("Kelas Service", () => {
 	describe("handleAutoLevelUp", () => {
 		it("should return null if no next program exists (End of Line)", async () => {
 			resetMocks();
+
+			vi.mocked(mockTx.kelas.findUnique).mockResolvedValue({
+				level: 4,
+				jenisKelasRel: {
+					nama: "Elementary",
+					nextLevel: null,
+				},
+			} as any);
+
 			const result = await handleAutoLevelUp({
 				tx: mockTx,
 				jadwal: {
@@ -50,10 +61,9 @@ describe("Kelas Service", () => {
 					ruangId: "r-1",
 					kelas: {
 						level: 4,
-						// Mock `jenisKelasRel` instead of `jenisKelas`
 						jenisKelasRel: {
 							nama: "Elementary",
-							nextLevelId: null, // End of line
+							nextLevelId: null,
 						},
 					} as unknown as Kelas,
 				},
@@ -76,30 +86,33 @@ describe("Kelas Service", () => {
 			vi.mocked(mockTx.jadwalKelas.findMany).mockResolvedValue([]);
 			vi.mocked(mockTx.pendaftaranKelas.findMany).mockResolvedValue([]);
 
+			// Mock findUnique for handleAutoLevelUp
+			vi.mocked(mockTx.kelas.findUnique).mockResolvedValue({
+				id: "k-old",
+				level: 4,
+				jenisKelasId: "jen-tiny-tods",
+				kodeKelas: "TinyTods 4-A | 01/2024",
+				cohortId: "cohort-1",
+				hargaKelas: 60000,
+				grup: "A",
+				cabangId: "cab-1",
+				jenisKelasRel: {
+					id: "jen-tiny-tods",
+					nama: "TinyTods",
+					harga: 60000,
+					nextLevel: {
+						id: "jen-tiny-star",
+						nama: "TinyStar",
+						harga: 60000,
+					},
+				},
+			} as any);
+
 			const result = await handleAutoLevelUp({
 				tx: mockTx,
 				jadwal: {
 					kelasId: "k-old",
 					ruangId: "r-1",
-					kelas: {
-						level: 4,
-						jenisKelasId: "jen-tiny-tods",
-						jenisKelasRel: {
-							nama: "TinyTods",
-							// Relasi Next Level
-							nextLevelId: "jen-tiny-star",
-							nextLevel: {
-								id: "jen-tiny-star",
-								nama: "TinyStar",
-								harga: 60000,
-							},
-						},
-						kodeKelas: "TinyTods 4-A | 01/2024",
-						cohortId: "cohort-1",
-						hargaKelas: 60000,
-						grup: "A",
-						// tipe: "REGULAR", // Now inside relational or ignored
-					} as unknown as Kelas,
 				},
 			});
 
@@ -149,22 +162,29 @@ describe("Kelas Service", () => {
 				id: "reg-new",
 			} as unknown as PendaftaranKelas);
 
+			// Mock findUnique
+			vi.mocked(mockTx.kelas.findUnique).mockResolvedValue({
+				id: "k-1",
+				level: 1,
+				jenisKelasId: "jen-reg",
+				kodeKelas: "REG 1 | 01/2024",
+				cohortId: "cohort-1",
+				hargaKelas: 50000,
+				grup: "A",
+				cabangId: "cab-1",
+				jenisKelasRel: {
+					id: "jen-reg",
+					nama: "Regular",
+					harga: 50000,
+					nextLevel: { id: "jen-next", nama: "RegularNext" },
+				},
+			} as any);
+
 			const result = await handleAutoLevelUp({
 				tx: mockTx,
 				jadwal: {
 					kelasId: "k-1",
 					ruangId: "r-1",
-					kelas: {
-						level: 1,
-						jenisKelasId: "jen-reg",
-						jenisKelasRel: {
-							nama: "Regular",
-							nextLevelId: "jen-next",
-						},
-						kodeKelas: "REG 1 | 01/2024",
-						cohortId: "cohort-1",
-						hargaKelas: 50000,
-					} as unknown as Kelas,
 				},
 			});
 

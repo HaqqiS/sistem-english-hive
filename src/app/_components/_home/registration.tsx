@@ -9,6 +9,7 @@ import { Form } from "@/components/ui/form";
 import { useMurid } from "@/hooks/useMurid";
 import {
 	RegisterMuridSchema,
+	type TypeClientRegisterMuridInput,
 	type TypeClientRegisterMuridSchema,
 } from "@/types/murid.type";
 import MuridForm from "../views/admin/murid/form/murid-form";
@@ -21,14 +22,20 @@ export default function Registration() {
 		},
 	});
 
-	const form = useForm<TypeClientRegisterMuridSchema>({
+	// Note: MuridForm might expect default values or type compatibility
+	// Ensure TypeClientRegisterMuridSchema matches what MuridForm expects
+	const form = useForm<
+		TypeClientRegisterMuridInput,
+		undefined,
+		TypeClientRegisterMuridSchema
+	>({
 		resolver: zodResolver(RegisterMuridSchema),
 		defaultValues: {
 			namaLengkap: "",
 			email: "",
 			alamat: "",
-			gender: undefined,
-			umur: undefined,
+			gender: undefined as unknown as "LAKI_LAKI" | "PEREMPUAN",
+			umur: undefined as unknown as number,
 			asalSekolah: "",
 			kelasSekolah: "",
 			jamPulang: "",
@@ -36,6 +43,7 @@ export default function Registration() {
 			cabangId: "",
 			pilihanProgram: "",
 			sumberInfo: "",
+			withRegistrationFee: true,
 		},
 	});
 

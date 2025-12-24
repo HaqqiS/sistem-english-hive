@@ -22,14 +22,14 @@ export default function EditMuridDetailKelas() {
 					muridId: selectedPendaftaran.muridId,
 					kelasId: selectedPendaftaran.kelasId,
 					tanggalMulai: selectedPendaftaran.tanggalMulai,
-					isAktif: selectedPendaftaran.isAktif,
+					status: selectedPendaftaran.status,
 				}
 			: undefined,
 		defaultValues: {
 			muridId: selectedPendaftaran?.muridId,
 			kelasId: selectedPendaftaran?.kelasId,
-			tanggalMulai: selectedPendaftaran?.tanggalMulai ?? "",
-			isAktif: selectedPendaftaran?.isAktif ?? false,
+			tanggalMulai: selectedPendaftaran?.tanggalMulai ?? null,
+			status: selectedPendaftaran?.status,
 		},
 	});
 

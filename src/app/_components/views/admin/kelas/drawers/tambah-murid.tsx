@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { StatusPendaftaran } from "@prisma/client";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -22,9 +23,14 @@ export default function TambahMuridDetailKelas({
 	const [isOpen, setIsOpen] = useState(false);
 
 	const form = useForm<TypeClientTambahMuridSchema>({
-		resolver: zodResolver(clientTambahMuridSchema),
+		resolver: zodResolver(
+			clientTambahMuridSchema,
+		) as Resolver<TypeClientTambahMuridSchema>,
 		defaultValues: {
 			muridId: "",
+			status: StatusPendaftaran.AKTIF, // Default status
+			tanggalMulai: null, // Default tanggalMulai
+			kelasId: kelasId ?? "",
 		},
 	});
 
@@ -36,7 +42,7 @@ export default function TambahMuridDetailKelas({
 	});
 
 	const onSubmit = (values: TypeClientTambahMuridSchema) => {
-		// console.log("values:", values);
+		console.log("values:", values);
 		mutations.create.mutate({
 			...values,
 			kelasId: kelasId ?? "",
@@ -47,7 +53,9 @@ export default function TambahMuridDetailKelas({
 		<AddDrawer
 			title="Tambah Murid ke Kelas"
 			description="Tambahkan murid baru ke kelas ini"
-			onSubmit={form.handleSubmit(onSubmit)}
+			onSubmit={form.handleSubmit(onSubmit, (err) =>
+				console.error("Form Errors:", err),
+			)}
 			isPending={mutations.create.isPending}
 			submitText="Tambah Murid"
 			cancelText="Batal"

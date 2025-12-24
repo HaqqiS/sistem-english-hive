@@ -28,6 +28,7 @@ import EditGuruKelas from "../drawers/edit-guru-kelas";
 import EditMuridDetailKelas from "../drawers/edit-murid";
 import TambahGuruKelas from "../drawers/tambah-guru-kelas";
 import TambahMuridDetailKelas from "../drawers/tambah-murid";
+import { BulkActivateDialog } from "./bulk-activate-dialog";
 import { ClassHistoryTimeline } from "./class-history-timeline";
 
 export default function DetailKelasClient() {
@@ -168,7 +169,32 @@ export default function DetailKelasClient() {
 							cancelText="Batal"
 						/>
 					</div>
-					<DataTable data={dataByKelasId ?? []} columns={columnsMurid} />
+					<DataTable
+						data={dataByKelasId ?? []}
+						columns={columnsMurid}
+						toolbar={(table) => {
+							const selectedRows = table.getFilteredSelectedRowModel().rows;
+							// Hanya tampil jika ada murid yang dipilih dan statusnya WAITING_LIST (opsional filter)
+							// Saat ini kita aktifkan semua yang terpilih
+							if (selectedRows.length === 0) return null;
+
+							const selectedIds = selectedRows.map((row) => row.original.id);
+							// Opsional: Cek apakah ada yang statusnya sudah AKTIF?
+							// const hasActive = selectedRows.some(r => r.original.status === 'AKTIF');
+
+							return (
+								<div className="flex items-center gap-2">
+									<BulkActivateDialog
+										selectedIds={selectedIds}
+										onSuccess={() => table.resetRowSelection()}
+									/>
+									<p className="text-muted-foreground text-sm">
+										{selectedRows.length} siswa terpilih
+									</p>
+								</div>
+							);
+						}}
+					/>
 				</div>
 
 				{/* GURU */}

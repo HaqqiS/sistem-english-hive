@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusPendaftaran } from "@prisma/client";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -25,7 +26,13 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { useMurid } from "@/hooks/useMurid";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
@@ -48,13 +55,7 @@ export default function PendaftaranMuridForm({
 		enableNotRegisteredQuery: true,
 	});
 
-	// const handleUnselect = (item: string) => {
-	//   const current = form.getValues("muridId") || [];
-	//   form.setValue(
-	//     "muridId",
-	//     current.filter((i) => i !== item),
-	//   );
-	// };
+	console.log("form.getValues():", form.getValues());
 
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -126,11 +127,47 @@ export default function PendaftaranMuridForm({
 				)}
 			/>
 
-			<FormStringDatePicker
+			<FormField
 				control={form.control}
-				name="tanggalMulai"
-				label="Tanggal Mulai"
+				name="status"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Status Pendaftaran</FormLabel>
+						<FormControl>
+							<Select
+								onValueChange={(val) => {
+									field.onChange(val);
+									if (val === StatusPendaftaran.WAITING_LIST) {
+										form.setValue("tanggalMulai", null);
+									}
+								}}
+								value={field.value}
+								defaultValue={StatusPendaftaran.AKTIF}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Pilih Status" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value={StatusPendaftaran.AKTIF}>Aktif</SelectItem>
+									<SelectItem value={StatusPendaftaran.TRIAL}>Trial</SelectItem>
+									<SelectItem value={StatusPendaftaran.WAITING_LIST}>
+										Waiting List
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
 			/>
+
+			{form.watch("status") !== StatusPendaftaran.WAITING_LIST && (
+				<FormStringDatePicker
+					control={form.control}
+					name="tanggalMulai"
+					label="Tanggal Mulai"
+				/>
+			)}
 		</form>
 	);
 }

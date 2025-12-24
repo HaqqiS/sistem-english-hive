@@ -64,7 +64,7 @@ export function DataTable<TData, TValue>({
 	data,
 	// filterColumnId,
 	// filterColumnPlaceholder,
-	// toolbar,
+	toolbar,
 	isLoading,
 }: DataTableProps<TData, TValue>) {
 	const [rowSelection, setRowSelection] = React.useState({});
@@ -113,6 +113,9 @@ export function DataTable<TData, TValue>({
 		<div className="w-full flex-col justify-start gap-6">
 			<div className="flex items-center justify-between py-4">
 				<div className="sr-only">Search</div>
+				{/* TOOLBAR */}
+				{toolbar && <div className="flex-1">{toolbar(table)}</div>}
+
 				{/* CUSTOMIZE COLUMNS */}
 				<div className="flex items-center gap-2">
 					<DropdownMenu>

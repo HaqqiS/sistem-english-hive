@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusPendaftaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
 	ArrowUpDown,
@@ -11,6 +12,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -33,6 +35,28 @@ export const columns = ({
 	onEditClick: (item: DaftarMuridType) => void;
 	onDeleteClick: (id: string, namaLengkap: string) => void;
 }): ColumnDef<DaftarMuridType>[] => [
+	{
+		id: "select",
+		header: ({ table }) => (
+			<Checkbox
+				checked={
+					table.getIsAllPageRowsSelected() ||
+					(table.getIsSomePageRowsSelected() && "indeterminate")
+				}
+				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+				aria-label="Select all"
+			/>
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				checked={row.getIsSelected()}
+				onCheckedChange={(value) => row.toggleSelected(!!value)}
+				aria-label="Select row"
+			/>
+		),
+		enableSorting: false,
+		enableHiding: false,
+	},
 	{
 		id: "number",
 		header: () =>
@@ -97,7 +121,7 @@ export const columns = ({
 	},
 
 	{
-		accessorKey: "isAktif",
+		accessorKey: "status",
 		header: ({ column }) => (
 			<Button
 				variant="ghost"
@@ -108,12 +132,31 @@ export const columns = ({
 			</Button>
 		),
 		cell: ({ row }) => {
-			const isActive = row.original.isAktif;
-			return (
-				<Badge variant={isActive ? "default" : "destructive"}>
-					{isActive ? "Aktif" : "Non-Aktif"}
-				</Badge>
-			);
+			const status = row.original.status;
+			let variant: "default" | "secondary" | "destructive" | "outline" =
+				"default";
+			let label = "Aktif";
+
+			switch (status) {
+				case StatusPendaftaran.AKTIF:
+					variant = "default";
+					label = "Aktif";
+					break;
+				case StatusPendaftaran.TRIAL:
+					variant = "secondary";
+					label = "Trial";
+					break;
+				case StatusPendaftaran.WAITING_LIST:
+					variant = "outline"; // Or customized color if possible
+					label = "Waiting List";
+					break;
+				case StatusPendaftaran.NON_AKTIF:
+					variant = "destructive";
+					label = "Non-Aktif";
+					break;
+			}
+
+			return <Badge variant={variant}>{label}</Badge>;
 		},
 		filterFn: (row, id, value: unknown) => {
 			const cell = row.getValue(id);
@@ -130,7 +173,9 @@ export const columns = ({
 		header: () => <div className="w-full text-center">Tanggal Masuk Kelas</div>,
 		cell: ({ row }) => (
 			<div className="text-center">
-				{formatDateWITA(row.original.tanggalMulai)}
+				{row.original.tanggalMulai
+					? formatDateWITA(row.original.tanggalMulai)
+					: "-"}
 			</div>
 		),
 	},

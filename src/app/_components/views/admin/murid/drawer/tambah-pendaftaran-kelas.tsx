@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -18,11 +18,13 @@ export default function TambahPendaftaranKelas() {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const form = useForm<TypeClientBulkPendaftaranKelasSchema>({
-		resolver: zodResolver(clientBulkPendaftaranKelasSchema),
+		resolver: zodResolver(
+			clientBulkPendaftaranKelasSchema,
+		) as Resolver<TypeClientBulkPendaftaranKelasSchema>,
 		defaultValues: {
 			muridIds: [],
 			kelasId: "",
-			tanggalMulai: "",
+			tanggalMulai: null,
 		},
 	});
 

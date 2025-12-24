@@ -1,13 +1,19 @@
-import { Prisma, StatusMurid, StatusPembayaran } from "@prisma/client";
+import {
+	Prisma,
+	StatusMurid,
+	StatusPembayaran,
+	StatusPendaftaran,
+} from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-
+import dayjs from "dayjs";
 import z from "zod";
-
+import { calculateInitialBill } from "@/server/services/pembayaran.service";
 import {
 	createBulkPendaftaran,
 	createPendaftaran,
 } from "@/server/services/pendaftaran.service";
 import {
+	clientBulkUpdateStatusSchema,
 	serverBulkPendaftaranKelasSchema,
 	serverPendaftaranKelasSchema,
 	serverUpdatePendaftaranKelasSchema,
@@ -108,19 +114,19 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 				});
 			}
 
-			// 4. Cek Apakah Sudah Terdaftar di Kelas Ini (Aktif)
+			// 4. Cek Apakah Sudah Terdaftar di Kelas Ini (Aktif/Trial)
 			const existingRegistration = await db.pendaftaranKelas.findFirst({
 				where: {
 					muridId: input.muridId,
 					kelasId: input.kelasId,
-					isAktif: true,
+					status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL] },
 				},
 			});
 
 			if (existingRegistration) {
 				throw new TRPCError({
 					code: "CONFLICT",
-					message: "Murid sudah terdaftar aktif di kelas ini.",
+					message: "Murid sudah terdaftar (Aktif/Trial) di kelas ini.",
 				});
 			}
 
@@ -145,14 +151,17 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
 				// Validasi Duplikat Pendaftaran Aktif
 				const existingActive = await db.pendaftaranKelas.findFirst({
-					where: { muridId: input.muridId, isAktif: true },
+					where: {
+						muridId: input.muridId,
+						status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL] },
+					},
 				});
 				if (existingActive) {
 					// Gunakan TRPCError dan pesan yang benar
 					throw new TRPCError({
 						code: "CONFLICT",
 						message:
-							"Murid ini sudah terdaftar di kelas lain yang masih aktif. Nonaktifkan pendaftaran lama terlebih dahulu.",
+							"Murid ini sudah terdaftar di kelas lain yang masih aktif/trial. Nonaktifkan pendaftaran lama terlebih dahulu.",
 					});
 				}
 
@@ -164,7 +173,10 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 				const result = await db.$transaction(async (tx) => {
 					return createPendaftaran({
 						tx,
-						input,
+						input: {
+							...input,
+							status: input.status ?? StatusPendaftaran.AKTIF,
+						},
 						kelas,
 						jumlahSesiBerlalu,
 					});
@@ -232,14 +244,17 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
 			// Validasi Duplikat
 			const existingActive = await db.pendaftaranKelas.findMany({
-				where: { muridId: { in: muridIds }, isAktif: true },
+				where: {
+					muridId: { in: muridIds },
+					status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL] },
+				},
 				include: { murid: true },
 			});
 
 			if (existingActive.length > 0) {
 				throw new TRPCError({
 					code: "CONFLICT",
-					message: `Beberapa murid sudah aktif: ${existingActive.map((p) => p.murid.namaLengkap).join(", ")}`,
+					message: `Beberapa murid sudah aktif/trial: ${existingActive.map((p) => p.murid.namaLengkap).join(", ")}`,
 				});
 			}
 
@@ -356,7 +371,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 								muridId: input.muridId ?? existingRecord.muridId,
 								kelasId: input.kelasId ?? existingRecord.kelasId,
 								tanggalMulai: input.tanggalMulai, // Tanggal mulai di kelas baru
-								isAktif: true,
+								status: StatusPendaftaran.AKTIF, // Explicitly AKTIF
 							},
 						});
 
@@ -373,7 +388,9 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 									pembayaranKe: 1,
 									jumlahBayar: targetKelas.hargaKelas * 8, // Atau logika prorate
 									statusBayar: StatusPembayaran.BELUM_LUNAS,
-									tanggalJatuhTempo: new Date(input.tanggalMulai),
+									tanggalJatuhTempo: input.tanggalMulai
+										? new Date(input.tanggalMulai)
+										: new Date(),
 									note: "Tagihan Pindahan Kelas / Koreksi Data",
 								},
 							});
@@ -385,8 +402,11 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					// === SKEMA 2 & 3: UPDATE STATUS (Soft Change) ===
 
 					// A. Jika Status Berubah jadi NON-AKTIF (Berhenti)
-					if (input.isAktif === false && existingRecord.isAktif === true) {
-						// Cleanup 1: Hapus pendaftaran masa depan (Logic Anda yang sudah bagus)
+					if (
+						input.status === StatusPendaftaran.NON_AKTIF &&
+						existingRecord.status !== StatusPendaftaran.NON_AKTIF
+					) {
+						// Cleanup 1: Hapus pendaftaran masa depan
 						const nextLevelRegistration = await tx.pendaftaranKelas.findFirst({
 							where: {
 								muridId: existingRecord.muridId,
@@ -394,7 +414,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 									cohortId: existingRecord.Kelas.cohortId,
 									level: { gt: existingRecord.Kelas.level },
 								},
-								// Pastikan hanya menghapus yang belum ada pembayaran lunas
 								pembayarans: {
 									every: { statusBayar: { not: StatusPembayaran.LUNAS } },
 								},
@@ -407,34 +426,67 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							});
 						}
 
-						// Cleanup 2: [BARU] Hapus tagihan 'gantung' di level ini
-						// Hapus tagihan BELUM LUNAS yang dibuat otomatis (bukan manual) agar tidak jadi piutang macet
+						// Cleanup 2: Hapus tagihan 'gantung'
 						await tx.pembayaran.deleteMany({
 							where: {
 								pendaftaranKelasId: input.id,
 								statusBayar: {
 									in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
 								},
-								note: { contains: "Auto-Generate" }, // Safety: Hanya hapus yg auto
+								note: { contains: "Auto-Generate" },
 							},
 						});
 					}
 
-					// B. Jika Status Berubah jadi AKTIF (Re-Join)
-					if (input.isAktif === true && existingRecord.isAktif === false) {
-						// Opsional: Cek apakah perlu generate tagihan baru?
-						// Untuk amannya, biarkan Guru trigger tagihan lewat absensi pertama,
-						// atau Admin buat tagihan manual lewat menu Pembayaran.
+					// B. Jika Status Berubah: TRIAL/WAITING_LIST -> AKTIF (Upgrade/Activation)
+					if (
+						(existingRecord.status === StatusPendaftaran.TRIAL ||
+							existingRecord.status === StatusPendaftaran.WAITING_LIST) &&
+						input.status === StatusPendaftaran.AKTIF
+					) {
+						// Generate Tagihan SPP Pertama (Karena pas Trial belum buat)
+						const jumlahSesiBerlalu = await tx.sesiPertemuanKelas.count({
+							where: { kelasId: existingRecord.kelasId },
+						});
+						const infoTagihan = calculateInitialBill(
+							existingRecord.Kelas.hargaKelas,
+							jumlahSesiBerlalu,
+						);
+
+						// Pastikan tagihan belum ada (prevent duplicate)
+						const existingBill = await tx.pembayaran.findFirst({
+							where: {
+								pendaftaranKelasId: input.id,
+								pembayaranKe: infoTagihan.pembayaranKe,
+							},
+						});
+
+						if (!existingBill) {
+							await tx.pembayaran.create({
+								data: {
+									pendaftaranKelasId: input.id,
+									pembayaranKe: infoTagihan.pembayaranKe,
+									jumlahBayar: infoTagihan.totalTagihan,
+									tanggalJatuhTempo: dayjs(input.tanggalMulai).toDate(),
+									statusBayar: StatusPembayaran.BELUM_LUNAS,
+									note: infoTagihan.note,
+								},
+							});
+						}
+
+						// Update status murid jadi AKTIF juga (jika belum)
+						await tx.murid.update({
+							where: { id: existingRecord.muridId },
+							data: { statusMurid: StatusMurid.AKTIF },
+						});
 					}
 
-					// C. Jika Tanggal Mulai BERUBAH -> Update Tanggal Jatuh Tempo Tagihan Pertama (jika BELUM LUNAS)
-					// input.tanggalMulai and existingRecord.tanggalMulai are BOTH strings (YYYY-MM-DD)
+					// C. Tanggal Mulai BERUBAH -> Update Tanggal Jatuh Tempo Tagihan Pertama (jika BELUM LUNAS)
 					if (
 						input.tanggalMulai &&
 						existingRecord.tanggalMulai &&
 						input.tanggalMulai !== existingRecord.tanggalMulai
 					) {
-						// Pembayaran.tanggalJatuhTempo expects DateTime, so we must convert.
 						const newJatuhTempo = convertWITAtoUTC(input.tanggalMulai);
 
 						await tx.pembayaran.updateMany({
@@ -451,13 +503,18 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						});
 					}
 
-					// Update Biasa
+					// Update Biasa AND Status
+					const updateData: Prisma.PendaftaranKelasUpdateInput = {
+						tanggalMulai: input.tanggalMulai,
+					};
+					// Only update status if provided (though schema says optional, logic implies it matters)
+					if (input.status) {
+						updateData.status = input.status;
+					}
+
 					return tx.pendaftaranKelas.update({
 						where: { id: input.id },
-						data: {
-							tanggalMulai: input.tanggalMulai, // Keep as string
-							isAktif: input.isAktif,
-						},
+						data: updateData,
 					});
 				});
 			} catch (error) {
@@ -476,6 +533,134 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					}
 				}
 				throw error;
+			}
+		}),
+
+	updateBulkStatus: cabangProtectedProcedure
+		.input(clientBulkUpdateStatusSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const { pendaftaranIds, status, tanggalMulai } = input;
+
+			// 1. Validasi: Ambil semua pendaftaran
+			const pendaftarans = await db.pendaftaranKelas.findMany({
+				where: { id: { in: pendaftaranIds } },
+				include: {
+					Kelas: {
+						select: {
+							id: true,
+							hargaKelas: true,
+							cabangId: true,
+						},
+					},
+					murid: { select: { id: true, namaLengkap: true } },
+				},
+			});
+
+			if (pendaftarans.length !== pendaftaranIds.length) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Beberapa data pendaftaran tidak ditemukan.",
+				});
+			}
+
+			// Security Check (One branch only for now)
+			// Assuming all selected are in valid view, but strictly checking:
+			const firstCabang = pendaftarans[0]?.Kelas.cabangId;
+			if (allowedCabangId && firstCabang !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Akses ditolak.",
+				});
+			}
+			const differentCabang = pendaftarans.some(
+				(p) => p.Kelas.cabangId !== firstCabang,
+			);
+			if (differentCabang) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Bulk update hanya bisa dilakukan dalam satu cabang.",
+				});
+			}
+
+			// 2. Transaction Loop
+			try {
+				await db.$transaction(async (tx) => {
+					for (const p of pendaftarans) {
+						// Skip if status same
+						if (p.status === status) continue;
+
+						// Logic Activation (Waiting List / Trial -> Aktif)
+						if (
+							(p.status === StatusPendaftaran.WAITING_LIST ||
+								p.status === StatusPendaftaran.TRIAL) &&
+							status === StatusPendaftaran.AKTIF
+						) {
+							// Generate Bill
+							const jumlahSesiBerlalu = await tx.sesiPertemuanKelas.count({
+								where: { kelasId: p.kelasId },
+							});
+							const infoTagihan = calculateInitialBill(
+								p.Kelas.hargaKelas,
+								jumlahSesiBerlalu,
+							);
+
+							// Check Duplicate Bill
+							const existingBill = await tx.pembayaran.findFirst({
+								where: {
+									pendaftaranKelasId: p.id,
+									pembayaranKe: infoTagihan.pembayaranKe,
+								},
+							});
+
+							if (!existingBill) {
+								await tx.pembayaran.create({
+									data: {
+										pendaftaranKelasId: p.id,
+										pembayaranKe: infoTagihan.pembayaranKe,
+										jumlahBayar: infoTagihan.totalTagihan,
+										tanggalJatuhTempo: tanggalMulai
+											? dayjs(tanggalMulai).toDate()
+											: new Date(),
+										statusBayar: StatusPembayaran.BELUM_LUNAS,
+										note: infoTagihan.note,
+									},
+								});
+							}
+
+							// Update Murid Status
+							await tx.murid.update({
+								where: { id: p.muridId },
+								data: { statusMurid: StatusMurid.AKTIF },
+							});
+						} else if (
+							p.status === StatusPendaftaran.AKTIF &&
+							status === StatusPendaftaran.NON_AKTIF
+						) {
+							// Logic Deactivation (Optional cleanup)
+							// For now, simple status update.
+						}
+
+						// Update Pendaftaran
+						await tx.pendaftaranKelas.update({
+							where: { id: p.id },
+							data: {
+								status: status,
+								tanggalMulai:
+									status === StatusPendaftaran.AKTIF
+										? tanggalMulai
+										: p.tanggalMulai,
+							},
+						});
+					}
+				});
+				return { success: true, count: pendaftarans.length };
+			} catch (error) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Gagal melakukan update masal.",
+					cause: error,
+				});
 			}
 		}),
 

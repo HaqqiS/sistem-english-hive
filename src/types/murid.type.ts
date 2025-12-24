@@ -53,6 +53,8 @@ export const RegisterMuridSchema = z.object({
 	pilihanProgram: z.string().min(1, "Pilihan program harus diisi").max(100),
 	sumberInfo: z.string().min(1, "Sumber informasi harus diisi").max(100),
 	deskripsi: z.string().optional(),
+	statusMurid: z.nativeEnum(StatusMurid).default(StatusMurid.PENDAFTAR_BARU),
+	withRegistrationFee: z.boolean().default(true),
 });
 
 export const updateStatusMuridSchema = z.object({
@@ -65,3 +67,4 @@ export type TypeUpdateStatusMuridSchema = z.infer<
 >;
 
 export type TypeClientRegisterMuridSchema = z.infer<typeof RegisterMuridSchema>;
+export type TypeClientRegisterMuridInput = z.input<typeof RegisterMuridSchema>;

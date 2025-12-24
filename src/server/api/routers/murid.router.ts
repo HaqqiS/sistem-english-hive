@@ -393,15 +393,33 @@ export const muridRouter = createTRPCRouter({
 		.input(RegisterMuridSchema)
 		.mutation(async ({ input, ctx }) => {
 			const { db } = ctx;
+			const { withRegistrationFee, ...muridData } = input;
 
 			try {
-				const murid = await db.murid.create({
-					data: {
-						...input,
-						cabangId: input.cabangId,
-					},
+				// Use transaction to ensure both Murid and TagihanLain are created or neither
+				return await db.$transaction(async (tx) => {
+					const murid = await tx.murid.create({
+						data: {
+							...muridData,
+							cabangId: muridData.cabangId,
+						},
+					});
+
+					// If fee is enabled (admin checked it, or default), create TagihanLain
+					if (withRegistrationFee) {
+						await tx.tagihanLain.create({
+							data: {
+								muridId: murid.id,
+								kategori: "REGISTRASI", // Hardcoded string or Enum if imported
+								judul: "Biaya Registrasi Murid Baru",
+								jumlah: 50000, // Default 50k
+								status: "BELUM_LUNAS",
+							},
+						});
+					}
+
+					return murid;
 				});
-				return murid;
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
 					if (error.code === "P2025") {

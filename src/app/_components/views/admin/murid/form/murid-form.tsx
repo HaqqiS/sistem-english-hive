@@ -1,9 +1,10 @@
 "use client";
 
-import { Gender } from "@prisma/client";
+import { Gender, StatusMurid } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	FormControl,
 	FormField,
@@ -72,6 +73,33 @@ export default function MuridForm({
 			{/* Container utama: 2 kolom di desktop untuk layout form besar, 1 kolom jika forceStacked */}
 			<div className={cn("grid gap-4", gridColsClass)}>
 				<div className="col-span-1 space-y-4">
+					<FormField
+						control={form.control}
+						name="statusMurid"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel className="text-sm">Langsung Daftar?</FormLabel>
+								<Select
+									onValueChange={field.onChange}
+									defaultValue={field.value}
+								>
+									<FormControl>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder="Pilih opsi" />
+										</SelectTrigger>
+									</FormControl>
+									<SelectContent>
+										<SelectItem value={StatusMurid.PENDAFTAR_BARU}>
+											Daftar Langsung
+										</SelectItem>
+										<SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
+									</SelectContent>
+								</Select>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
 					<FormField
 						control={form.control}
 						name="namaLengkap"
@@ -253,6 +281,7 @@ export default function MuridForm({
 								</FormItem>
 							)}
 						/>
+
 						{!isAdmin && (
 							<FormField
 								control={form.control}
@@ -404,25 +433,51 @@ export default function MuridForm({
 					/>
 
 					{isAuthorized && (
-						<FormField
-							control={form.control}
-							name="deskripsi"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel className="text-sm">
-										Catatan Admin (Internal)
-									</FormLabel>
-									<FormControl>
-										<Textarea
-											placeholder="Catatan khusus mengenai murid ini..."
-											{...field}
-											value={field.value ?? ""}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+						<>
+							<FormField
+								control={form.control}
+								name="deskripsi"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel className="text-sm">
+											Catatan Admin (Internal)
+										</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder="Catatan khusus mengenai murid ini..."
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="withRegistrationFee"
+								render={({ field }) => (
+									<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+										<FormControl>
+											<Checkbox
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+										<div className="space-y-1 leading-none">
+											<FormLabel>
+												Kenakan Biaya Pendaftaran (Rp 50.000)
+											</FormLabel>
+											<p className="text-muted-foreground text-sm">
+												Jika dicentang, tagihan pendaftaran akan otomatis
+												dibuat.
+											</p>
+										</div>
+									</FormItem>
+								)}
+							/>
+						</>
 					)}
 				</div>
 			</div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
 import { Form } from "@/components/ui/form";
 import { useMurid } from "@/hooks/useMurid";
@@ -17,7 +17,9 @@ export default function EditMurid() {
 		useMuridStore();
 
 	const form = useForm<TypeClientRegisterMuridSchema>({
-		resolver: zodResolver(RegisterMuridSchema),
+		resolver: zodResolver(
+			RegisterMuridSchema,
+		) as Resolver<TypeClientRegisterMuridSchema>,
 		values: selectedMurid
 			? {
 					namaLengkap: selectedMurid.namaLengkap,
@@ -33,14 +35,16 @@ export default function EditMurid() {
 					pilihanProgram: selectedMurid.pilihanProgram ?? "",
 					sumberInfo: selectedMurid.sumberInfo,
 					deskripsi: selectedMurid.deskripsi ?? "",
+					withRegistrationFee: false, // Default false for edit
+					statusMurid: selectedMurid.statusMurid,
 				}
 			: undefined,
 		defaultValues: {
 			namaLengkap: "",
 			email: "",
 			alamat: "",
-			gender: undefined,
-			umur: undefined,
+			gender: undefined as unknown as "LAKI_LAKI" | "PEREMPUAN",
+			umur: undefined as unknown as number,
 			asalSekolah: "",
 			kelasSekolah: "",
 			jamPulang: "",
@@ -49,6 +53,7 @@ export default function EditMurid() {
 			pilihanProgram: "",
 			sumberInfo: "",
 			deskripsi: "",
+			withRegistrationFee: false,
 		},
 	});
 

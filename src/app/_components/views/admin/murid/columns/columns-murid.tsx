@@ -45,6 +45,9 @@ export const getStatusColorBadge = (status: StatusMurid): string => {
 			return "bg-accent hover:bg-accent/90 text-accent-foreground text-white";
 
 		case StatusMurid.NON_AKTIF:
+			return "bg-stone-500 hover:bg-stone-600 text-white";
+
+		case StatusMurid.PENDAFTAR_BARU:
 			return "bg-destructive hover:bg-destructive/90 text-destructive-foreground text-white";
 
 		case StatusMurid.LULUS:

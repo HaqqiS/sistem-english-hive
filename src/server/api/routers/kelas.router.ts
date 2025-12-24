@@ -561,6 +561,7 @@ export const kelasRouter = createTRPCRouter({
 				// 1. Ambil Data Kelas Lama
 				const oldKelas = await db.kelas.findUnique({
 					where: { id: oldKelasId },
+					include: { jenisKelasRel: true },
 				});
 
 				if (!oldKelas) {
@@ -650,6 +651,22 @@ export const kelasRouter = createTRPCRouter({
 								note: `Tagihan Kenaikan Kelas (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
 							},
 						});
+
+						// C.3 Buat Tagihan Buku (Jika setup harga > 0 di Master Jenis Kelas)
+						// Kita ambil harga buku dari jenis kelas yang sedang berjalan
+						const hargaBuku = oldKelas.jenisKelasRel?.hargaBuku ?? 0;
+						if (hargaBuku > 0) {
+							await tx.tagihanLain.create({
+								data: {
+									muridId: student.muridId,
+									kategori: "BUKU",
+									judul: `Buku ${oldKelas.jenisKelasRel?.nama} Level ${newLevel}`,
+									jumlah: hargaBuku,
+									status: StatusPembayaran.BELUM_LUNAS,
+									kelasId: newKelas.id,
+								},
+							});
+						}
 					}
 
 					return {

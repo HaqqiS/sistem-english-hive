@@ -194,6 +194,7 @@ enum Gender {
 enum StatusMurid {
     AKTIF //masih aktif
     NON_AKTIF // sudah tidak aktif(tidak kursus lagi)
+    PENDAFTAR_BARU //murid baru
     LULUS // sudah lulus semua kelas
     TRIAL //murid trial
     PENDING //baru daftar, belum mulai kelas
@@ -216,7 +217,7 @@ model Murid {
     noWA           String
     pilihanProgram String?
     sumberInfo     String
-    statusMurid    StatusMurid @default(NON_AKTIF)
+    statusMurid    StatusMurid @default(PENDAFTAR_BARU)
     deskripsi      String?
 
     createdAt DateTime @default(now())
@@ -227,6 +228,7 @@ model Murid {
 
     absensiMurids      AbsensiMurid[]
     pendaftaranKelases PendaftaranKelas[]
+    tagihanLains TagihanLain[]
 
     @@index([cabangId])
     @@index([namaLengkap])
@@ -255,6 +257,7 @@ model JenisKelasModel {
     nama      String // e.g., "TinyTods", "Private TinyTods"
     tipe      TipeKelas // REGULAR or PRIVATE
     harga     Int // e.g., 300000 or 800000
+    hargaBuku Int @default(0) // Default harga buku untuk jenis kelas ini
     deskripsi String?
 
     // For Auto-Level Up Logic
@@ -301,6 +304,7 @@ model Kelas {
     pendaftaranKelases   PendaftaranKelas[]
     historyGuruKelases   HistoryGuruKelas[]
     jadwalKelas          JadwalKelas[]
+    tagihanLains TagihanLain[]
 
     @@unique([cabangId, kodeKelas])
     @@index([kodeKelas])
@@ -412,12 +416,13 @@ model PendaftaranKelas {
     id           String  @id @default(cuid())
     muridId      String
     kelasId      String
-    tanggalMulai String  @db.VarChar(10) // format: "YYYY-MM-DD"
+    tanggalMulai String?  @db.VarChar(10) // format: "YYYY-MM-DD"
     isAktif      Boolean @default(true) //false jika murid sudah tidak ikut kelas ini lagi/ kelas selesai
+    status       StatusPendaftaran @default(AKTIF)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-
+    
     murid Murid @relation(fields: [muridId], references: [id], onDelete: Cascade)
     Kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
 
@@ -425,7 +430,14 @@ model PendaftaranKelas {
 
     @@index([muridId])
     @@index([kelasId])
-    @@index([isAktif])
+    @@index([status])
+}
+
+enum StatusPendaftaran {
+    AKTIF
+    NON_AKTIF
+    TRIAL
+    WAITING_LIST
 }
 
 enum StatusPembayaran {
@@ -458,4 +470,32 @@ model Pembayaran {
     @@index([tanggalJatuhTempo]) // <-- Index baru untuk reminder
     @@index([statusBayar])
     @@index([verifiedById])
+}
+
+enum KategoriTagihan {
+    REGISTRASI
+    BUKU
+    LAINNYA
+}
+
+model TagihanLain {
+    id        String @id @default(cuid())
+    muridId   String
+    murid     Murid  @relation(fields: [muridId], references: [id], onDelete: Cascade)
+
+    kategori  KategoriTagihan
+    judul     String
+    deskripsi String?
+    jumlah    Int
+    status    StatusPembayaran @default(BELUM_LUNAS)
+
+    // Opsional: Link ke Kelas jika tagihan ini muncul karena masuk kelas tertentu
+    kelasId String?
+    kelas   Kelas?  @relation(fields: [kelasId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([muridId])
+    @@index([kelasId])
 }

@@ -58,6 +58,7 @@ describe("calculateSisaPertemuan (Hybrid Billing Logic)", () => {
 			muridId: MOCK_MURID_ID,
 			tanggalMulai: "2024-01-01",
 			isAktif: true,
+			status: "AKTIF",
 			createdAt: new Date(),
 			updatedAt: new Date(),
 			Kelas: {

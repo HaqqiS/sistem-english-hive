@@ -1,8 +1,10 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: false positive */
 import {
 	type Kelas,
 	type PendaftaranKelas,
 	type PrismaClient,
 	StatusPembayaran,
+	StatusPendaftaran,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as PembayaranService from "../server/services/pembayaran.service";
@@ -58,7 +60,8 @@ describe("Pendaftaran Service", () => {
 					muridId: "m-1",
 					kelasId: "k-1",
 					tanggalMulai: "2024-01-01",
-				},
+					status: StatusPendaftaran.AKTIF,
+				} as any,
 				kelas: {
 					hargaKelas: 50000,
 					cohortId: "c-1",
@@ -67,7 +70,7 @@ describe("Pendaftaran Service", () => {
 				jumlahSesiBerlalu: 0,
 			};
 
-			const result = await createPendaftaran(params);
+			const result = await createPendaftaran(params as any);
 
 			expect(mockTx.pendaftaranKelas.create).toHaveBeenCalled();
 			expect(mockTx.pembayaran.create).toHaveBeenCalledWith(
@@ -79,6 +82,42 @@ describe("Pendaftaran Service", () => {
 				}),
 			);
 			expect(result.pendaftaran.id).toBe("reg-1");
+		});
+
+		it("should create registration with WAITING_LIST status (NO BILL)", async () => {
+			vi.mocked(mockTx.pendaftaranKelas.create).mockResolvedValue({
+				id: "reg-wl",
+				status: StatusPendaftaran.WAITING_LIST,
+			} as unknown as PendaftaranKelas);
+
+			const params = {
+				tx: mockTx,
+				input: {
+					muridId: "m-wl",
+					kelasId: "k-1",
+					tanggalMulai: null, // Allow null
+					status: StatusPendaftaran.WAITING_LIST,
+				} as any,
+				kelas: {
+					hargaKelas: 50000,
+					cohortId: "c-1",
+					level: 1,
+				},
+				jumlahSesiBerlalu: 0,
+			};
+
+			const result = await createPendaftaran(params as any);
+
+			expect(mockTx.pendaftaranKelas.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						status: StatusPendaftaran.WAITING_LIST,
+					}),
+				}),
+			);
+			// Should NOT create bill
+			expect(mockTx.pembayaran.create).not.toHaveBeenCalled();
+			expect(result.pendaftaran.id).toBe("reg-wl");
 		});
 
 		it("should handle very late joiner (auto-register next level)", async () => {
@@ -106,7 +145,8 @@ describe("Pendaftaran Service", () => {
 					muridId: "m-1",
 					kelasId: "k-1",
 					tanggalMulai: "2024-01-01",
-				},
+					status: StatusPendaftaran.AKTIF,
+				} as any,
 				kelas: {
 					hargaKelas: 50000,
 					cohortId: "c-1",
@@ -115,7 +155,7 @@ describe("Pendaftaran Service", () => {
 				jumlahSesiBerlalu: 21,
 			};
 
-			await createPendaftaran(params);
+			await createPendaftaran(params as any);
 
 			// Should verify next level create is called
 			expect(mockTx.kelas.findFirst).toHaveBeenCalled();
@@ -144,7 +184,8 @@ describe("Pendaftaran Service", () => {
 					muridIds: ["m-1", "m-2"],
 					kelasId: "k-1",
 					tanggalMulai: "2024-01-01",
-				},
+					status: StatusPendaftaran.AKTIF,
+				} as any,
 				kelas: {
 					hargaKelas: 50000,
 					cohortId: "c-1",
@@ -153,7 +194,7 @@ describe("Pendaftaran Service", () => {
 				jumlahSesiBerlalu: 0,
 			};
 
-			const result = await createBulkPendaftaran(params);
+			const result = await createBulkPendaftaran(params as any);
 
 			expect(result.success).toBe(true);
 			expect(result.count).toBe(2);

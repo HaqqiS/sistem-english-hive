@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { type Resolver, useForm } from "react-hook-form";
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -20,13 +20,15 @@ export default function RegistrasiMurid() {
 	const { activeCabangId } = useGlobalCabangStore();
 
 	const form = useForm<TypeClientRegisterMuridSchema>({
-		resolver: zodResolver(RegisterMuridSchema),
+		resolver: zodResolver(
+			RegisterMuridSchema,
+		) as Resolver<TypeClientRegisterMuridSchema>,
 		defaultValues: {
 			namaLengkap: "",
 			email: "",
 			alamat: "",
-			gender: undefined,
-			umur: undefined,
+			gender: undefined as unknown as "LAKI_LAKI" | "PEREMPUAN",
+			umur: undefined as unknown as number,
 			asalSekolah: "",
 			kelasSekolah: "",
 			jamPulang: "",
@@ -35,6 +37,7 @@ export default function RegistrasiMurid() {
 			pilihanProgram: "",
 			sumberInfo: "",
 			deskripsi: "",
+			withRegistrationFee: true,
 		},
 	});
 

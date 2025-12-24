@@ -2,6 +2,7 @@ import {
 	type PrismaClient,
 	StatusMurid,
 	StatusPembayaran,
+	StatusPendaftaran,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import dayjs from "dayjs";
@@ -19,8 +20,8 @@ interface CreatePendaftaranParams {
 	input: {
 		muridId: string;
 		kelasId: string;
-		tanggalMulai: string;
-		isAktif?: boolean;
+		tanggalMulai?: string | null;
+		status?: StatusPendaftaran;
 	};
 	kelas: {
 		hargaKelas: number;
@@ -35,7 +36,8 @@ interface CreateBulkPendaftaranParams {
 	input: {
 		muridIds: string[];
 		kelasId: string;
-		tanggalMulai: string;
+		tanggalMulai?: string | null;
+		status?: StatusPendaftaran;
 	};
 	kelas: {
 		hargaKelas: number;
@@ -51,42 +53,55 @@ export const createPendaftaran = async ({
 	kelas,
 	jumlahSesiBerlalu,
 }: CreatePendaftaranParams) => {
-	// 1. Kalkulasi Tagihan
-	let billInfo: ReturnType<typeof calculateInitialBill>;
-	try {
-		billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
-	} catch (error) {
-		throw new TRPCError({
-			code: "PRECONDITION_FAILED",
-			message:
-				error instanceof Error ? error.message : "Gagal menghitung tagihan",
-		});
+	const isWaitingList = input.status === StatusPendaftaran.WAITING_LIST;
+
+	// 1. Kalkulasi Tagihan (SKIP if WAITING_LIST)
+	let billInfo: ReturnType<typeof calculateInitialBill> | null = null;
+
+	if (!isWaitingList) {
+		try {
+			billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
+		} catch (error) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message:
+					error instanceof Error ? error.message : "Gagal menghitung tagihan",
+			});
+		}
 	}
 
 	// A. Create Pendaftaran Utama
 	const pendaftaran = await tx.pendaftaranKelas.create({
 		data: {
 			...input,
-			isAktif: true,
+			status: input.status ?? StatusPendaftaran.AKTIF,
 		},
 	});
 
-	// B. Create Tagihan Utama
-	await tx.pembayaran.create({
-		data: {
-			pendaftaranKelasId: pendaftaran.id,
-			pembayaranKe: billInfo.pembayaranKe,
-			jumlahBayar: billInfo.totalTagihan,
-			tanggalJatuhTempo: dayjs(input.tanggalMulai).toDate(),
-			statusBayar: StatusPembayaran.BELUM_LUNAS,
-			note: billInfo.note,
-		},
-	});
+	// B. Create Tagihan Utama (HANYA JIKA BUKAN TRIAL DAN BUKAN WAITING_LIST)
+	if (input.status !== StatusPendaftaran.TRIAL && !isWaitingList && billInfo) {
+		if (!input.tanggalMulai) {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "Tanggal mulai wajib diisi untuk status AKTIF",
+			});
+		}
+		await tx.pembayaran.create({
+			data: {
+				pendaftaranKelasId: pendaftaran.id,
+				pembayaranKe: billInfo.pembayaranKe,
+				jumlahBayar: billInfo.totalTagihan,
+				tanggalJatuhTempo: dayjs(input.tanggalMulai).toDate(),
+				statusBayar: StatusPembayaran.BELUM_LUNAS,
+				note: billInfo.note,
+			},
+		});
+	}
 
-	// C. CEK "VERY LATE JOINER" (Sesi 21-24)
+	// C. CEK "VERY LATE JOINER" (Sesi 21-24) - SKIP if WAITING_LIST
 	let nextLevelRegistrationId: string | null = null;
 
-	if (billInfo.sesiMasuk > 20) {
+	if (billInfo && billInfo.sesiMasuk > 20 && !isWaitingList) {
 		const nextClass = await tx.kelas.findFirst({
 			where: {
 				cohortId: kelas.cohortId,
@@ -95,7 +110,7 @@ export const createPendaftaran = async ({
 			orderBy: { createdAt: "desc" },
 		});
 
-		if (nextClass) {
+		if (nextClass && input.tanggalMulai) {
 			const nextStartDate = dayjs(input.tanggalMulai)
 				.add(1, "month")
 				.format("YYYY-MM-DD");
@@ -105,7 +120,7 @@ export const createPendaftaran = async ({
 					muridId: input.muridId,
 					kelasId: nextClass.id,
 					tanggalMulai: nextStartDate,
-					isAktif: true,
+					status: StatusPendaftaran.AKTIF,
 				},
 			});
 			nextLevelRegistrationId = nextReg.id;
@@ -126,10 +141,16 @@ export const createPendaftaran = async ({
 		}
 	}
 
-	// D. Update Status Murid -> AKTIF
+	// D. Update Status Murid
+	// Jika WAITING_LIST -> Update status murid jadi WAITING_LIST
+	// Jika AKTIF -> Update status murid jadi AKTIF
+	const targetStatusMurid = isWaitingList
+		? StatusMurid.WAITING_LIST
+		: StatusMurid.AKTIF;
+
 	await tx.murid.update({
 		where: { id: input.muridId },
-		data: { statusMurid: StatusMurid.AKTIF },
+		data: { statusMurid: targetStatusMurid },
 	});
 
 	return { pendaftaran, nextLevelRegistrationId };
@@ -141,18 +162,21 @@ export const createBulkPendaftaran = async ({
 	kelas,
 	jumlahSesiBerlalu,
 }: CreateBulkPendaftaranParams) => {
-	const { muridIds, kelasId, tanggalMulai } = input;
+	const { muridIds, kelasId, tanggalMulai, status } = input;
+	const isWaitingList = status === StatusPendaftaran.WAITING_LIST;
 
-	// B. Hitung Bill Info
-	let billInfo: ReturnType<typeof calculateInitialBill>;
-	try {
-		billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
-	} catch (error) {
-		throw new TRPCError({
-			code: "PRECONDITION_FAILED",
-			message:
-				error instanceof Error ? error.message : "Gagal menghitung tagihan",
-		});
+	// B. Hitung Bill Info (SKIP if WAITING_LIST)
+	let billInfo: ReturnType<typeof calculateInitialBill> | null = null;
+	if (!isWaitingList) {
+		try {
+			billInfo = calculateInitialBill(kelas.hargaKelas, jumlahSesiBerlalu);
+		} catch (error) {
+			throw new TRPCError({
+				code: "PRECONDITION_FAILED",
+				message:
+					error instanceof Error ? error.message : "Gagal menghitung tagihan",
+			});
+		}
 	}
 
 	let nextClassId: string | null = null;
@@ -160,7 +184,7 @@ export const createBulkPendaftaran = async ({
 	let nextStartDateStr = "";
 	let nextStartDateDate: Date | undefined;
 
-	if (billInfo.sesiMasuk > 20) {
+	if (billInfo && billInfo.sesiMasuk > 20 && !isWaitingList) {
 		const nextClass = await tx.kelas.findFirst({
 			where: {
 				cohortId: kelas.cohortId,
@@ -169,7 +193,7 @@ export const createBulkPendaftaran = async ({
 			orderBy: { createdAt: "desc" },
 		});
 
-		if (nextClass) {
+		if (nextClass && tanggalMulai) {
 			nextClassId = nextClass.id;
 			nextClassTagihan = nextClass.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
 			const nextDateDayjs = dayjs(tanggalMulai).add(1, "month");
@@ -178,7 +202,7 @@ export const createBulkPendaftaran = async ({
 		}
 	}
 
-	const tglMulaiDate = dayjs(tanggalMulai).toDate();
+	const tglMulaiDate = tanggalMulai ? dayjs(tanggalMulai).toDate() : undefined;
 
 	for (const muridId of muridIds) {
 		const pendaftaran = await tx.pendaftaranKelas.create({
@@ -186,29 +210,36 @@ export const createBulkPendaftaran = async ({
 				muridId,
 				kelasId,
 				tanggalMulai,
-				isAktif: true,
+				status: status ?? StatusPendaftaran.AKTIF,
 			},
 		});
 
-		await tx.pembayaran.create({
-			data: {
-				pendaftaranKelasId: pendaftaran.id,
-				pembayaranKe: billInfo.pembayaranKe,
-				jumlahBayar: billInfo.totalTagihan,
-				tanggalJatuhTempo: tglMulaiDate,
-				statusBayar: StatusPembayaran.BELUM_LUNAS,
-				note: `${billInfo.note} (Bulk Reg)`,
-			},
-		});
+		if (!isWaitingList && billInfo && tglMulaiDate) {
+			await tx.pembayaran.create({
+				data: {
+					pendaftaranKelasId: pendaftaran.id,
+					pembayaranKe: billInfo.pembayaranKe,
+					jumlahBayar: billInfo.totalTagihan,
+					tanggalJatuhTempo: tglMulaiDate,
+					statusBayar: StatusPembayaran.BELUM_LUNAS,
+					note: `${billInfo.note} (Bulk Reg)`,
+				},
+			});
+		}
 
 		// C. Handle "Very Late Joiner" (Auto-Register Next Level)
-		if (nextClassId && nextStartDateDate) {
+		if (
+			!isWaitingList &&
+			nextClassId &&
+			nextStartDateDate &&
+			nextStartDateStr
+		) {
 			const nextReg = await tx.pendaftaranKelas.create({
 				data: {
 					muridId,
 					kelasId: nextClassId,
 					tanggalMulai: nextStartDateStr,
-					isAktif: true,
+					status: StatusPendaftaran.AKTIF,
 				},
 			});
 
@@ -226,9 +257,13 @@ export const createBulkPendaftaran = async ({
 	}
 
 	// D. Update Status Murid -> AKTIF (Bulk)
+	const targetStatusMurid = isWaitingList
+		? StatusMurid.WAITING_LIST
+		: StatusMurid.AKTIF;
+
 	await tx.murid.updateMany({
 		where: { id: { in: muridIds } },
-		data: { statusMurid: StatusMurid.AKTIF },
+		data: { statusMurid: targetStatusMurid },
 	});
 
 	return { success: true, count: muridIds.length };

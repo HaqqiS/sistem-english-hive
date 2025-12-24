@@ -316,7 +316,7 @@ export default function KelasTab() {
 								<CardContent className="p-0">
 									<AccordionItem value={kelas.id} className="border-none">
 										<AccordionTrigger className="hover:bg-muted/30 items-center px-6 py-5 transition-colors hover:no-underline">
-											<div className="flex w-full flex-col gap-4 pr-4">
+											<div className="flex w-full flex-col gap-4">
 												{/* Header: Kode & Badge */}
 												<div className="flex w-full flex-col justify-between gap-2 sm:flex-row sm:items-center">
 													<div className="flex items-center gap-3">
@@ -324,7 +324,7 @@ export default function KelasTab() {
 															{kelas.kodeKelas}
 														</span>
 													</div>
-													<div className="flex flex-wrap items-center gap-2">
+													<div className="flex flex-wrap items-center justify-end gap-2">
 														<Badge
 															variant="secondary"
 															className="flex gap-1.5 px-2.5 py-1"

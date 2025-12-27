@@ -56,6 +56,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							namaLengkap: true,
 							noWA: true,
 							cabangId: true,
+							umur: true,
 						},
 					},
 					Kelas: {
@@ -87,6 +88,9 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						kodeKelas: true,
 						cohortId: true,
 						level: true,
+						jenisKelasRel: {
+							select: { hargaBuku: true },
+						},
 					},
 				}),
 			]);
@@ -97,6 +101,12 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					message: "Murid atau Kelas tidak ditemukan.",
 				});
 			}
+
+			// Map hargaBuku from relation
+			const preparedKelas = {
+				...kelas,
+				hargaBuku: kelas.jenisKelasRel?.hargaBuku ?? 0,
+			};
 
 			// 2. Validasi Konsistensi Data (Murid & Kelas harus satu cabang)
 			if (murid.cabangId !== kelas.cabangId) {
@@ -132,22 +142,30 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
 			try {
 				// 1. Kita butuh harga kelas untuk tagihan
-				const kelas = await db.kelas.findUnique({
-					where: { id: input.kelasId },
-					select: {
-						hargaKelas: true,
-						kodeKelas: true,
-						cohortId: true,
-						level: true,
-					},
-				});
+				// const kelas = await db.kelas.findUnique({
+				// 	where: { id: input.kelasId },
+				// 	select: {
+				// 		hargaKelas: true,
+				// 		kodeKelas: true,
+				// 		cohortId: true,
+				// 		level: true,
+				// 		jenisKelasRel: {
+				// 			select: { hargaBuku: true },
+				// 		},
+				// 	},
+				// });
 
-				if (!kelas) {
-					throw new TRPCError({
-						code: "NOT_FOUND",
-						message: "Kelas yang dipilih tidak ditemukan.",
-					});
-				}
+				// if (!kelas) {
+				// 	throw new TRPCError({
+				// 		code: "NOT_FOUND",
+				// 		message: "Kelas yang dipilih tidak ditemukan.",
+				// 	});
+				// }
+
+				// const preparedKelas = {
+				// 	...kelas,
+				// 	hargaBuku: kelas.jenisKelasRel?.hargaBuku ?? 0,
+				// };
 
 				// Validasi Duplikat Pendaftaran Aktif
 				const existingActive = await db.pendaftaranKelas.findFirst({
@@ -177,7 +195,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							...input,
 							status: input.status ?? StatusPendaftaran.AKTIF,
 						},
-						kelas,
+						kelas: preparedKelas,
 						jumlahSesiBerlalu,
 					});
 				});
@@ -210,6 +228,9 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					kodeKelas: true,
 					level: true,
 					cohortId: true,
+					jenisKelasRel: {
+						select: { hargaBuku: true },
+					},
 				},
 			});
 			if (!kelas)
@@ -217,6 +238,11 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					code: "NOT_FOUND",
 					message: "Kelas tidak ditemukan",
 				});
+
+			const preparedKelas = {
+				...kelas,
+				hargaBuku: kelas.jenisKelasRel?.hargaBuku ?? 0,
+			};
 
 			// Security Check
 			if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
@@ -269,7 +295,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						return createBulkPendaftaran({
 							tx,
 							input,
-							kelas,
+							kelas: preparedKelas,
 							jumlahSesiBerlalu,
 						});
 					},
@@ -479,6 +505,41 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							where: { id: existingRecord.muridId },
 							data: { statusMurid: StatusMurid.AKTIF },
 						});
+
+						// Fallback: Check via relation in Kelas, but we already have existingRecord loaded without relation.
+						// Better to fetch fresh if needed, or rely on logic below.
+						// Let's safe fetch logic:
+						const kelasInfo = await tx.kelas.findUnique({
+							where: { id: existingRecord.kelasId },
+							include: { jenisKelasRel: true },
+						});
+
+						const hargaBuku = kelasInfo?.jenisKelasRel?.hargaBuku ?? 0;
+
+						if (hargaBuku > 0) {
+							// Check duplicate
+							const existingBookBill = await tx.tagihanLain.findFirst({
+								where: {
+									muridId: existingRecord.muridId,
+									kelasId: existingRecord.kelasId,
+									kategori: "BUKU", // Enum string literal KategoriTagihan.BUKU
+								},
+							});
+
+							if (!existingBookBill) {
+								await tx.tagihanLain.create({
+									data: {
+										muridId: existingRecord.muridId,
+										kelasId: existingRecord.kelasId,
+										kategori: "BUKU",
+										judul: "Tagihan Buku Paket",
+										deskripsi: `Auto-Generate via Activation`,
+										jumlah: hargaBuku,
+										status: StatusPembayaran.BELUM_LUNAS,
+									},
+								});
+							}
+						}
 					}
 
 					// C. Tanggal Mulai BERUBAH -> Update Tanggal Jatuh Tempo Tagihan Pertama (jika BELUM LUNAS)
@@ -551,6 +612,9 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							id: true,
 							hargaKelas: true,
 							cabangId: true,
+							jenisKelasRel: {
+								select: { hargaBuku: true },
+							},
 						},
 					},
 					murid: { select: { id: true, namaLengkap: true } },
@@ -565,7 +629,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 			}
 
 			// Security Check (One branch only for now)
-			// Assuming all selected are in valid view, but strictly checking:
 			const firstCabang = pendaftarans[0]?.Kelas.cabangId;
 			if (allowedCabangId && firstCabang !== allowedCabangId) {
 				throw new TRPCError({
@@ -596,7 +659,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 								p.status === StatusPendaftaran.TRIAL) &&
 							status === StatusPendaftaran.AKTIF
 						) {
-							// Generate Bill
+							// Generate Bill (SPP)
 							const jumlahSesiBerlalu = await tx.sesiPertemuanKelas.count({
 								where: { kelasId: p.kelasId },
 							});
@@ -633,12 +696,37 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 								where: { id: p.muridId },
 								data: { statusMurid: StatusMurid.AKTIF },
 							});
+
+							// Generate Tagihan Buku (Logic Update Bulk)
+							const hargaBuku = p.Kelas.jenisKelasRel?.hargaBuku ?? 0;
+							if (hargaBuku > 0) {
+								const existingBookBill = await tx.tagihanLain.findFirst({
+									where: {
+										muridId: p.muridId,
+										kelasId: p.kelasId,
+										kategori: "BUKU",
+									},
+								});
+
+								if (!existingBookBill) {
+									await tx.tagihanLain.create({
+										data: {
+											muridId: p.muridId,
+											kelasId: p.kelasId,
+											kategori: "BUKU",
+											judul: "Tagihan Buku Paket",
+											deskripsi: "Auto-Generate Bulk Activation",
+											jumlah: hargaBuku,
+											status: StatusPembayaran.BELUM_LUNAS,
+										},
+									});
+								}
+							}
 						} else if (
 							p.status === StatusPendaftaran.AKTIF &&
 							status === StatusPendaftaran.NON_AKTIF
 						) {
 							// Logic Deactivation (Optional cleanup)
-							// For now, simple status update.
 						}
 
 						// Update Pendaftaran

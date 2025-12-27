@@ -74,6 +74,9 @@ export default function KelasTab() {
 	const [selectedJenisKelas, setSelectedJenisKelas] = useState<string | "ALL">(
 		"ALL",
 	);
+	const [selectedLevelKelas, setSelectedLevelKelas] = useState<number | "ALL">(
+		"ALL",
+	);
 
 	// 2. Zustand Store Actions
 	const { openDrawer: openKelasDrawer } = useKelasStore();
@@ -94,6 +97,7 @@ export default function KelasTab() {
 		filterCabang: activeCabangId,
 		tipeKelas: selectedTipeKelas,
 		jenisKelas: selectedJenisKelas,
+		levelKelas: selectedLevelKelas,
 		enableQueryGetKelasCount: true,
 
 		onSuccessDelete: () => {
@@ -291,6 +295,28 @@ export default function KelasTab() {
 										<div className="flex items-center gap-2">{jenis.nama}</div>
 									</SelectItem>
 								))}
+						</SelectContent>
+					</Select>
+					<Select
+						value={selectedLevelKelas.toString()}
+						onValueChange={(v) =>
+							setSelectedLevelKelas(v === "ALL" ? "ALL" : Number(v))
+						}
+					>
+						<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[160px]">
+							<div className="flex items-center gap-2">
+								<Filter className="text-muted-foreground h-4 w-4" />
+								<span className="font-medium">
+									<SelectValue placeholder="Semua Level" />
+								</span>
+							</div>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="ALL">Semua Level Kelas</SelectItem>
+							<SelectItem value="1">Level 1</SelectItem>
+							<SelectItem value="2">Level 2</SelectItem>
+							<SelectItem value="3">Level 3</SelectItem>
+							<SelectItem value="4">Level 4</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>

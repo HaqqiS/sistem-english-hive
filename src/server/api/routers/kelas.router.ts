@@ -74,6 +74,7 @@ export const kelasRouter = createTRPCRouter({
 					cabangId: z.string().optional(),
 					tipeKelas: z.string().optional(),
 					jenisKelas: z.string().optional(),
+					levelKelas: z.number().optional(),
 				})
 				.optional(),
 		)
@@ -92,11 +93,14 @@ export const kelasRouter = createTRPCRouter({
 			if (Object.keys(jenisKelasFilters).length > 0) {
 				whereClause.jenisKelasRel = jenisKelasFilters;
 			}
+			if (input?.levelKelas) whereClause.level = input.levelKelas;
 
 			const allKelasData = await db.kelas.findMany({
 				where: whereClause,
-				// distinct: ["cohortId"],
-				orderBy: { createdAt: "desc" },
+				orderBy: [
+					{ jenisKelasRel: { tipe: "asc" } }, // REGULAR ("R") > PRIVATE ("P")
+					{ level: "asc" },
+				],
 
 				select: {
 					id: true,

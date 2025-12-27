@@ -174,7 +174,7 @@ export const muridRouter = createTRPCRouter({
 			const whereClause: Prisma.MuridWhereInput = {
 				OR: [
 					{ pendaftaranKelases: { none: {} } },
-					{ pendaftaranKelases: { every: { isAktif: false } } },
+					{ pendaftaranKelases: { every: { status: "NON_AKTIF" } } },
 				],
 			};
 
@@ -217,7 +217,7 @@ export const muridRouter = createTRPCRouter({
 			const whereClause: Prisma.MuridWhereInput = {
 				OR: [
 					{ pendaftaranKelases: { none: {} } },
-					{ pendaftaranKelases: { every: { isAktif: false } } },
+					{ pendaftaranKelases: { every: { status: "NON_AKTIF" } } },
 				],
 			};
 
@@ -481,11 +481,11 @@ export const muridRouter = createTRPCRouter({
 		.input(
 			RegisterMuridSchema.extend({
 				id: z.string().cuid(),
-			}),
+			}).omit({ withRegistrationFee: true }),
 		)
 		.mutation(async ({ input, ctx }) => {
 			const { db, allowedCabangId } = ctx;
-			const { id, cabangId, withRegistrationFee, ...data } = input;
+			const { id, cabangId, ...data } = input;
 
 			const existingMurid = await db.murid.findUnique({
 				where: { id },

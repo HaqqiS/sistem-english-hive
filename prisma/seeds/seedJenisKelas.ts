@@ -3,29 +3,114 @@ import { PrismaClient, TipeKelas } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const REGULAR_TRACK = [
-	{ name: "TinyTods", price: 300000, type: TipeKelas.REGULAR },
-	{ name: "TinyStar", price: 300000, type: TipeKelas.REGULAR },
-	{ name: "PreLittleStar", price: 300000, type: TipeKelas.REGULAR },
-	{ name: "LittleStar", price: 300000, type: TipeKelas.REGULAR },
-	{ name: "RisingStar", price: 300000, type: TipeKelas.REGULAR },
-	{ name: "PreShiningStar", price: 400000, type: TipeKelas.REGULAR },
-	{ name: "ShiningStar", price: 400000, type: TipeKelas.REGULAR },
-	{ name: "Elementary", price: 400000, type: TipeKelas.REGULAR },
+	{
+		name: "TinyTods",
+		price: 300000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
+	{
+		name: "TinyStar",
+		price: 300000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
+	{
+		name: "PreLittleStar",
+		price: 300000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
+	{
+		name: "LittleStar",
+		price: 300000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
+	{
+		name: "RisingStar",
+		price: 300000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
+	{
+		name: "PreShiningStar",
+		price: 400000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
+	{
+		name: "ShiningStar",
+		price: 400000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
+	{
+		name: "Elementary",
+		price: 400000,
+		type: TipeKelas.REGULAR,
+		hargaBuku: 120000,
+	},
 ];
 
 const PRIVATE_TRACK = [
-	{ name: "TinyTods", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "TinyStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "PreLittleStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "LittleStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "RisingStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "PreShiningStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "ShiningStar", price: 800000, type: TipeKelas.PRIVATE },
-	{ name: "Elementary", price: 800000, type: TipeKelas.PRIVATE },
+	{
+		name: "TinyTods",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
+	{
+		name: "TinyStar",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
+	{
+		name: "PreLittleStar",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
+	{
+		name: "LittleStar",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
+	{
+		name: "RisingStar",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
+	{
+		name: "PreShiningStar",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
+	{
+		name: "ShiningStar",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
+	{
+		name: "Elementary",
+		price: 800000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
 ];
 
 const PRIVATE_DEWASA = [
-	{ name: "General / Dewasa", price: 1200000, type: TipeKelas.PRIVATE },
+	{
+		name: "General / Dewasa",
+		price: 1200000,
+		type: TipeKelas.PRIVATE,
+		hargaBuku: 120000,
+	},
 ];
 
 async function main() {

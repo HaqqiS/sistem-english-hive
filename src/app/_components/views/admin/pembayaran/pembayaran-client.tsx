@@ -211,8 +211,6 @@ export default function PembayaranClient({
 		},
 	});
 
-	console.log(dataTagihanLain);
-
 	// --- HANDLERS TAGIHAN LAIN ---
 	const handleDeleteTagihanLainClick = (item: TypeTagihanLain) => {
 		setTagihanLainToDelete(item);

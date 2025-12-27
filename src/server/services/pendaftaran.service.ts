@@ -1,4 +1,5 @@
 import {
+	KategoriTagihan,
 	type PrismaClient,
 	StatusMurid,
 	StatusPembayaran,
@@ -25,6 +26,7 @@ interface CreatePendaftaranParams {
 	};
 	kelas: {
 		hargaKelas: number;
+		hargaBuku?: number; // Optional, default 150k
 		cohortId: string;
 		level: number;
 	};
@@ -41,6 +43,7 @@ interface CreateBulkPendaftaranParams {
 	};
 	kelas: {
 		hargaKelas: number;
+		hargaBuku?: number; // Optional, default 150k
 		cohortId: string;
 		level: number;
 	};
@@ -96,6 +99,34 @@ export const createPendaftaran = async ({
 				note: billInfo.note,
 			},
 		});
+
+		// B2. Create Tagihan Buku (Jika Ada & Status AKTIF)
+		const hargaBuku = kelas.hargaBuku ?? 0;
+		if (hargaBuku > 0) {
+			// Cek apakah sudah ada tagihan buku untuk murid ini di kelas INI (prevent double)
+			// Note: Idealnya buku dibeli per level/jenis kelas, tapi simplifikasi per pendaftaran dulu
+			const existingBookBill = await tx.tagihanLain.findFirst({
+				where: {
+					muridId: input.muridId,
+					kelasId: input.kelasId,
+					kategori: KategoriTagihan.BUKU,
+				},
+			});
+
+			if (!existingBookBill) {
+				await tx.tagihanLain.create({
+					data: {
+						muridId: input.muridId,
+						kelasId: input.kelasId,
+						kategori: KategoriTagihan.BUKU,
+						judul: "Tagihan Buku Paket",
+						deskripsi: `Buku untuk Level ${kelas.level}`,
+						jumlah: hargaBuku,
+						status: StatusPembayaran.BELUM_LUNAS,
+					},
+				});
+			}
+		}
 	}
 
 	// C. CEK "VERY LATE JOINER" (Sesi 21-24) - SKIP if WAITING_LIST
@@ -253,6 +284,32 @@ export const createBulkPendaftaran = async ({
 					note: "Auto-Registration (Very Late Joiner Bulk)",
 				},
 			});
+		}
+
+		// B2. Create Tagihan Buku (Jika Ada & Status AKTIF & Bukan Waiting List)
+		const hargaBuku = kelas.hargaBuku ?? 0;
+		if (!isWaitingList && hargaBuku > 0) {
+			const existingBookBill = await tx.tagihanLain.findFirst({
+				where: {
+					muridId,
+					kelasId,
+					kategori: KategoriTagihan.BUKU,
+				},
+			});
+
+			if (!existingBookBill) {
+				await tx.tagihanLain.create({
+					data: {
+						muridId,
+						kelasId,
+						kategori: KategoriTagihan.BUKU,
+						judul: "Tagihan Buku Paket",
+						deskripsi: `Buku untuk Level ${kelas.level}`,
+						jumlah: hargaBuku,
+						status: StatusPembayaran.BELUM_LUNAS,
+					},
+				});
+			}
 		}
 	}
 

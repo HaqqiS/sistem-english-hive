@@ -257,7 +257,7 @@ model JenisKelasModel {
     nama      String // e.g., "TinyTods", "Private TinyTods"
     tipe      TipeKelas // REGULAR or PRIVATE
     harga     Int // e.g., 300000 or 800000
-    hargaBuku Int @default(0) // Default harga buku untuk jenis kelas ini
+    hargaBuku Int @default(120000) // Default harga buku untuk jenis kelas ini
     deskripsi String?
 
     // For Auto-Level Up Logic

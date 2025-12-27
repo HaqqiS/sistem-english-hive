@@ -83,6 +83,12 @@ export const columns = ({
 		),
 		enableHiding: false,
 	},
+	{
+		accessorKey: "murid.umur",
+		header: "Umur",
+		cell: ({ row }) => row.original.murid.umur,
+		enableHiding: false,
+	},
 
 	{
 		accessorKey: "murid.noWA",

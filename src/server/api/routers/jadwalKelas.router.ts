@@ -66,9 +66,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 							select: {
 								kodeKelas: true,
 								jenisKelasRel: { select: { nama: true, tipe: true } },
-								// jenisKelas: true,
-								// tipe: true,
-								// Field tambahan yang berguna untuk logic frontend
+								deskripsi: true,
 								level: true,
 								grup: true,
 								hargaKelas: true,
@@ -181,6 +179,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 						select: {
 							kodeKelas: true,
 							jenisKelasRel: { select: { nama: true } },
+							deskripsi: true,
 						},
 					},
 					ruang: {

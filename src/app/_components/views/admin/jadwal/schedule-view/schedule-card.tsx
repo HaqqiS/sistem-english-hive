@@ -1,6 +1,13 @@
 "use client";
 
-import { Clock, MoreHorizontal, Pencil, Trash, User } from "lucide-react";
+import {
+	Album,
+	Clock,
+	MoreHorizontal,
+	Pencil,
+	Trash,
+	User,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -116,6 +123,14 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 								{data.jamMulai} - {data.jamSelesai}
 							</span>
 						</div>
+						{data.originalData.kelas.deskripsi && (
+							<div className="flex items-center gap-1.5">
+								<Album className="h-3 w-3 shrink-0 opacity-70" />
+								<span className="font-mono text-sm">
+									{data.originalData.kelas.deskripsi}
+								</span>
+							</div>
+						)}
 					</div>
 				</div>
 			</HoverCardTrigger>

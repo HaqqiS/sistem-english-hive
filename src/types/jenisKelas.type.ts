@@ -6,6 +6,7 @@ export const jenisKelasSchema = z.object({
 	nama: z.string().min(1, "Nama jenis kelas wajib diisi"),
 	tipe: z.nativeEnum(TipeKelas),
 	harga: z.number().min(0, "Harga tidak boleh negatif"),
+	hargaBuku: z.number().min(0, "Harga buku tidak boleh negatif"),
 	deskripsi: z.string().nullable().optional(),
 	nextLevelId: z.string().nullable().optional(),
 });

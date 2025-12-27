@@ -107,6 +107,29 @@ export function JenisKelasForm({ form, onSubmit }: JenisKelasFormProps) {
 
 			<FormField
 				control={form.control}
+				name="hargaBuku"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Harga Buku</FormLabel>
+						<FormControl>
+							<Input
+								placeholder="120000"
+								{...field}
+								type="text"
+								value={field.value ? toRupiah(field.value) : ""}
+								onChange={(e) => {
+									const val = e.target.value.replace(/[^0-9]/g, "");
+									field.onChange(Number(val));
+								}}
+							/>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
+
+			<FormField
+				control={form.control}
 				name="nextLevelId"
 				render={({ field }) => (
 					<FormItem>

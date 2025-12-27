@@ -121,7 +121,7 @@ export const columns = ({
 	// Ruangan & Cabang
 	{
 		accessorKey: "ruang.namaRuang",
-		header: "Lokasi",
+		header: "Ruangan & Cabang",
 		cell: ({ row }) => (
 			<div className="flex flex-col gap-0.5">
 				<span className="font-medium">{row.original.ruang.namaRuang}</span>
@@ -129,6 +129,18 @@ export const columns = ({
 					<MapPin className="h-3 w-3" />
 					<span>{row.original.ruang.cabang.namaCabang}</span>
 				</div>
+			</div>
+		),
+	},
+
+	{
+		accessorKey: "kelas.deskripsi",
+		header: "Deskripsi",
+		cell: ({ row }) => (
+			<div className="max-w-[250px]" title={row.original.kelas.deskripsi ?? ""}>
+				<span className="text-muted-foreground line-clamp-2 text-xs">
+					{row.original.kelas.deskripsi || "-"}
+				</span>
 			</div>
 		),
 	},

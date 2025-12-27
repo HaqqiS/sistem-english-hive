@@ -34,8 +34,8 @@ interface UseKelasOptions {
 	cohortId?: string;
 	filterCabang?: string;
 	tipeKelas?: TipeKelas | "ALL";
-	// jenisKelas?: JenisKelas | "ALL"; // Legacy Enum
 	jenisKelas?: string | "ALL";
+	levelKelas?: number | "ALL";
 }
 
 export function useKelas(options?: UseKelasOptions) {
@@ -49,6 +49,8 @@ export function useKelas(options?: UseKelasOptions) {
 		options?.tipeKelas !== "ALL" ? options?.tipeKelas : undefined;
 	const jenisKelasPayload =
 		options?.jenisKelas !== "ALL" ? options?.jenisKelas : undefined;
+	const levelKelasPayload =
+		options?.levelKelas !== "ALL" ? options?.levelKelas : undefined;
 	// ========== QUERIES ==========
 
 	const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(
@@ -64,6 +66,7 @@ export function useKelas(options?: UseKelasOptions) {
 			cabangId: cabangIdPayload,
 			tipeKelas: tipeKelasPayload,
 			jenisKelas: jenisKelasPayload,
+			levelKelas: levelKelasPayload,
 		},
 		{
 			enabled: options?.enableQueryGetKelasCount ?? false,

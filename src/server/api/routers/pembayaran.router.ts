@@ -245,7 +245,6 @@ export const pembayaranRouter = createTRPCRouter({
 			const pendaftaranAktif = await db.pendaftaranKelas.findFirst({
 				where: {
 					muridId: input.muridId,
-					isAktif: true, // Pastikan hanya ambil yang aktif
 				},
 				include: {
 					Kelas: { select: { cabangId: true } },

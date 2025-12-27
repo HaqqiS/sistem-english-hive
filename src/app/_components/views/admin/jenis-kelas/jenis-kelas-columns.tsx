@@ -25,28 +25,31 @@ export const jenisKelasColumns = ({
 	{
 		accessorKey: "nama",
 		header: "Nama Program",
-		cell: ({ row }) => (
-			<span className="font-medium">{row.getValue("nama")}</span>
-		),
+		cell: ({ row }) => <span className="font-medium">{row.original.nama}</span>,
 	},
 	{
 		accessorKey: "tipe",
 		header: "Tipe",
-		cell: ({ row }) => <span>{row.getValue("tipe")}</span>,
+		cell: ({ row }) => <span>{row.original.tipe}</span>,
 	},
 	{
 		accessorKey: "harga (per sesi)",
 		header: "Harga",
-		cell: ({ row }) => <span>{toRupiah(row.getValue("harga"))}</span>,
+		cell: ({ row }) => <span>{toRupiah(row.original.harga)}</span>,
 	},
 	{
 		accessorKey: "deskripsi",
 		header: "Deskripsi",
 		cell: ({ row }) => (
 			<span className="text-muted-foreground line-clamp-1 max-w-[300px] text-sm">
-				{row.getValue("deskripsi") || "-"}
+				{row.original.deskripsi || "-"}
 			</span>
 		),
+	},
+	{
+		accessorKey: "hargaBuku",
+		header: "Harga Buku",
+		cell: ({ row }) => <span>{toRupiah(row.original.hargaBuku)}</span>,
 	},
 	{
 		id: "actions",

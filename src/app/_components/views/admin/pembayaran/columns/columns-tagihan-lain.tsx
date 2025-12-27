@@ -7,6 +7,7 @@ import {
 	CheckCircle,
 	Edit2,
 	EllipsisVertical,
+	MessageCircle,
 	Trash,
 	XCircle,
 } from "lucide-react";
@@ -188,6 +189,30 @@ export const columnsTagihanLain = ({
 							<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
 								<XCircle className="mr-2 h-4 w-4 text-red-600" />
 								Batalkan Lunas
+							</DropdownMenuItem>
+						)}
+
+						{/* WhatsApp Reminder - Only show for unpaid bills */}
+						{!isLunas && row.original.murid?.noWA && (
+							<DropdownMenuItem
+								onClick={() => {
+									const noWA = row.original.murid?.noWA;
+									const namaMurid = row.original.murid?.namaLengkap || "Murid";
+									const kategori = row.original.kategori;
+									const judul = row.original.judul;
+									const nominal = new Intl.NumberFormat("id-ID", {
+										style: "currency",
+										currency: "IDR",
+									}).format(row.original.jumlah);
+
+									const message = `Halo ${namaMurid},\n\nKami ingin mengingatkan bahwa terdapat tagihan yang belum diselesaikan:\n\n *${kategori}: ${judul}*\n Nominal: ${nominal}\n\nMohon untuk segera menyelesaikan pembayaran.\n\nTerima kasih!`;
+
+									const url = `https://wa.me/${noWA}?text=${encodeURIComponent(message)}`;
+									window.open(url, "_blank");
+								}}
+							>
+								<MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+								Kirim Tagihan via WA
 							</DropdownMenuItem>
 						)}
 
@@ -377,6 +402,30 @@ export const columnsTagihanLainGlobal = ({
 							<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
 								<XCircle className="mr-2 h-4 w-4 text-red-600" />
 								Batalkan Lunas
+							</DropdownMenuItem>
+						)}
+
+						{/* WhatsApp Reminder - Only show for unpaid bills */}
+						{!isLunas && row.original.murid?.noWA && (
+							<DropdownMenuItem
+								onClick={() => {
+									const noWA = row.original.murid?.noWA;
+									const namaMurid = row.original.murid?.namaLengkap || "Murid";
+									const kategori = row.original.kategori;
+									const judul = row.original.judul;
+									const nominal = new Intl.NumberFormat("id-ID", {
+										style: "currency",
+										currency: "IDR",
+									}).format(row.original.jumlah);
+
+									const message = `Halo ${namaMurid},\n\nKami ingin mengingatkan bahwa terdapat tagihan yang belum diselesaikan:\n\n📋 *${kategori}: ${judul}*\n💰 Nominal: ${nominal}\n\nMohon untuk segera menyelesaikan pembayaran.\n\nTerima kasih! 🙏`;
+
+									const url = `https://wa.me/${noWA}?text=${encodeURIComponent(message)}`;
+									window.open(url, "_blank");
+								}}
+							>
+								<MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+								Kirim Tagihan via WA
 							</DropdownMenuItem>
 						)}
 

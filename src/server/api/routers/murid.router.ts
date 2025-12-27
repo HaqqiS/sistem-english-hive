@@ -485,7 +485,7 @@ export const muridRouter = createTRPCRouter({
 		)
 		.mutation(async ({ input, ctx }) => {
 			const { db, allowedCabangId } = ctx;
-			const { id, ...data } = input;
+			const { id, cabangId, ...data } = input;
 
 			const existingMurid = await db.murid.findUnique({
 				where: { id },
@@ -509,7 +509,7 @@ export const muridRouter = createTRPCRouter({
 
 			// 3. Validasi tambahan: Jangan biarkan Admin memindahkan siswa ke cabang lain
 			// (Manager boleh memindahkan jika perlu)
-			if (allowedCabangId && data.cabangId !== allowedCabangId) {
+			if (allowedCabangId && cabangId !== allowedCabangId) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Anda tidak boleh memindahkan siswa ke cabang lain.",
@@ -519,7 +519,12 @@ export const muridRouter = createTRPCRouter({
 			try {
 				const updatedMurid = await db.murid.update({
 					where: { id },
-					data,
+					data: {
+						...data,
+						cabang: {
+							connect: { id: cabangId },
+						},
+					},
 				});
 				return updatedMurid;
 			} catch (error) {

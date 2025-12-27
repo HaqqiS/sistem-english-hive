@@ -485,7 +485,7 @@ export const muridRouter = createTRPCRouter({
 		)
 		.mutation(async ({ input, ctx }) => {
 			const { db, allowedCabangId } = ctx;
-			const { id, cabangId, ...data } = input;
+			const { id, cabangId, withRegistrationFee, ...data } = input;
 
 			const existingMurid = await db.murid.findUnique({
 				where: { id },

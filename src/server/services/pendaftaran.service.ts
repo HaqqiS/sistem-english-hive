@@ -175,9 +175,14 @@ export const createPendaftaran = async ({
 	// D. Update Status Murid
 	// Jika WAITING_LIST -> Update status murid jadi WAITING_LIST
 	// Jika AKTIF -> Update status murid jadi AKTIF
-	const targetStatusMurid = isWaitingList
-		? StatusMurid.WAITING_LIST
-		: StatusMurid.AKTIF;
+	let targetStatusMurid: StatusMurid = StatusMurid.AKTIF;
+	if (input.status === StatusPendaftaran.TRIAL) {
+		targetStatusMurid = StatusMurid.TRIAL;
+	} else if (input.status === StatusPendaftaran.WAITING_LIST) {
+		targetStatusMurid = StatusMurid.WAITING_LIST;
+	} else if (input.status === StatusPendaftaran.NON_AKTIF) {
+		targetStatusMurid = StatusMurid.NON_AKTIF;
+	}
 
 	await tx.murid.update({
 		where: { id: input.muridId },
@@ -314,9 +319,14 @@ export const createBulkPendaftaran = async ({
 	}
 
 	// D. Update Status Murid -> AKTIF (Bulk)
-	const targetStatusMurid = isWaitingList
-		? StatusMurid.WAITING_LIST
-		: StatusMurid.AKTIF;
+	let targetStatusMurid: StatusMurid = StatusMurid.AKTIF;
+	if (status === StatusPendaftaran.TRIAL) {
+		targetStatusMurid = StatusMurid.TRIAL;
+	} else if (status === StatusPendaftaran.WAITING_LIST) {
+		targetStatusMurid = StatusMurid.WAITING_LIST;
+	} else if (status === StatusPendaftaran.NON_AKTIF) {
+		targetStatusMurid = StatusMurid.NON_AKTIF;
+	}
 
 	await tx.murid.updateMany({
 		where: { id: { in: muridIds } },

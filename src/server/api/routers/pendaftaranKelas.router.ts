@@ -573,6 +573,24 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						updateData.status = input.status;
 					}
 
+					// Sync Murid Status if status changes
+					if (input.status) {
+						let targetMuridStatus: StatusMurid = StatusMurid.AKTIF;
+						if (input.status === StatusPendaftaran.TRIAL) {
+							targetMuridStatus = StatusMurid.TRIAL;
+						} else if (input.status === StatusPendaftaran.WAITING_LIST) {
+							targetMuridStatus = StatusMurid.WAITING_LIST;
+						} else if (input.status === StatusPendaftaran.NON_AKTIF) {
+							targetMuridStatus = StatusMurid.NON_AKTIF;
+						}
+						// AKTIF matches default
+
+						await tx.murid.update({
+							where: { id: existingRecord.muridId },
+							data: { statusMurid: targetMuridStatus },
+						});
+					}
+
 					return tx.pendaftaranKelas.update({
 						where: { id: input.id },
 						data: updateData,
@@ -739,6 +757,21 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 										? tanggalMulai
 										: p.tanggalMulai,
 							},
+						});
+
+						// Sync Murid Status
+						let targetMuridStatus: StatusMurid = StatusMurid.AKTIF;
+						if (status === StatusPendaftaran.TRIAL) {
+							targetMuridStatus = StatusMurid.TRIAL;
+						} else if (status === StatusPendaftaran.WAITING_LIST) {
+							targetMuridStatus = StatusMurid.WAITING_LIST;
+						} else if (status === StatusPendaftaran.NON_AKTIF) {
+							targetMuridStatus = StatusMurid.NON_AKTIF;
+						}
+
+						await tx.murid.update({
+							where: { id: p.muridId },
+							data: { statusMurid: targetMuridStatus },
 						});
 					}
 				});

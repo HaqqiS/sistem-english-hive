@@ -34,6 +34,7 @@ export const tagihanLainRouter = createTRPCRouter({
 							cabang: { select: { namaCabang: true } },
 						},
 					},
+					kelas: { select: { kodeKelas: true, hargaKelas: true } },
 				},
 			});
 		}),
@@ -143,6 +144,7 @@ export const tagihanLainRouter = createTRPCRouter({
 								cabang: { select: { namaCabang: true } },
 							},
 						},
+						kelas: { select: { kodeKelas: true, hargaKelas: true } },
 					},
 				}),
 			]);

@@ -36,7 +36,7 @@ export default function EditPendaftaranKelasForm({
 
 	const {
 		dataAllMuridPaginated: dataAllMurid,
-		isLoadingAllMuridPaginated: isLoadingMurid,
+		// isLoadingAllMuridPaginated: isLoadingMurid,
 	} = useMurid({
 		pagination: {
 			pageSize: 20,
@@ -45,11 +45,13 @@ export default function EditPendaftaranKelasForm({
 		filterCabang: activeCabangId,
 		enableQuery: true,
 	});
-	const { dataKelasAktif: dataKelas, isLoadingKelasAktif: isLoadingKelas } =
-		useKelas({
-			filterCabang: activeCabangId,
-			enableQueryGetKelasAktif: true,
-		});
+	const {
+		dataKelasAktif: dataKelas,
+		//  isLoadingKelasAktif: isLoadingKelas
+	} = useKelas({
+		filterCabang: activeCabangId,
+		enableQueryGetKelasAktif: true,
+	});
 
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -64,7 +66,7 @@ export default function EditPendaftaranKelasForm({
 							<Select
 								onValueChange={field.onChange}
 								value={field.value}
-								disabled={isLoadingMurid}
+								disabled={true}
 							>
 								<SelectTrigger className="w-full">
 									<SelectValue placeholder="Pilih Murid" />
@@ -97,7 +99,7 @@ export default function EditPendaftaranKelasForm({
 							<Select
 								onValueChange={field.onChange}
 								value={field.value}
-								disabled={isLoadingKelas}
+								disabled={true}
 							>
 								<SelectTrigger className="w-full">
 									<SelectValue placeholder="Pilih Program Kelas" />

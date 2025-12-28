@@ -283,7 +283,7 @@ export const columnsTagihanLainGlobal = ({
 				<div className="flex flex-col">
 					<span className="font-medium">{murid?.namaLengkap}</span>
 					<span className="text-muted-foreground text-xs">
-						{murid?.cabang?.namaCabang}
+						{row.original.kelas?.kodeKelas}
 					</span>
 				</div>
 			);

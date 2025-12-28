@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -28,8 +29,8 @@ import {
 	columnsTagihanLain,
 	type TypeTagihanLain,
 } from "../columns/columns-tagihan-lain";
-import EditPembayaran from "../edit-pembayaran";
-import EditTagihanLain from "../edit-tagihan-lain";
+import EditPembayaran from "../drawer/edit-pembayaran";
+// import EditTagihanLain from "../edit-tagihan-lain";
 
 export default function HistoryPembayaranMuridClient() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -44,9 +45,9 @@ export default function HistoryPembayaranMuridClient() {
 	const [tagihanLainToDelete, setTagihanLainToDelete] =
 		useState<TypeTagihanLain | null>(null);
 
-	const [editTagihanLainOpen, setEditTagihanLainOpen] = useState(false);
-	const [tagihanLainToEdit, setTagihanLainToEdit] =
-		useState<TypeTagihanLain | null>(null);
+	// const [editTagihanLainOpen, setEditTagihanLainOpen] = useState(false);
+	// const [tagihanLainToEdit, setTagihanLainToEdit] =
+	// 	useState<TypeTagihanLain | null>(null);
 
 	// 1. Hook Utama SPP
 	const {
@@ -153,9 +154,12 @@ export default function HistoryPembayaranMuridClient() {
 		}
 	};
 
-	const handleEditTagihanLain = (item: TypeTagihanLain) => {
-		setTagihanLainToEdit(item);
-		setEditTagihanLainOpen(true);
+	const handleEditTagihanLain = (_item: TypeTagihanLain) => {
+		// setTagihanLainToEdit(item);
+		// setEditTagihanLainOpen(true);
+		toast("Fitur Edit Tagihan Lain belum tersedia", {
+			description: "Mohon hubungi admin jika butuh perubahan urgent.",
+		});
 	};
 
 	const columnsLain = columnsTagihanLain({
@@ -353,11 +357,11 @@ export default function HistoryPembayaranMuridClient() {
 
 			{/* Drawers & Dialogs */}
 			<EditPembayaran />
-			<EditTagihanLain
+			{/* <EditTagihanLain
 				isOpen={editTagihanLainOpen}
 				onOpenChange={setEditTagihanLainOpen}
 				data={tagihanLainToEdit}
-			/>
+			/> */}
 
 			{/* Delete Dialog SPP */}
 			<DeleteConfirmationDialog

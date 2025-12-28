@@ -12,7 +12,7 @@ import {
 	clientCreatePembayaranSchema,
 	type TypeClientCreatePembayaranSchema,
 } from "@/types/pembayaran.type";
-import PembayaranForm from "./pembayaran-form";
+import PembayaranForm from "../form/pembayaran-form";
 
 export default function TambahPembayaran() {
 	const [isOpen, setIsOpen] = useState(false);

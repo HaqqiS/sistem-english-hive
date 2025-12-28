@@ -36,8 +36,9 @@ import {
 	columnsTagihanLainGlobal,
 	type TypeTagihanLain,
 } from "./columns/columns-tagihan-lain";
-import EditPembayaran from "./edit-pembayaran";
-import TambahPembayaran from "./tambah-pembayaran";
+import EditPembayaran from "./drawer/edit-pembayaran";
+import TambahPembayaran from "./drawer/tambah-pembayaran";
+import TambahTagihanLain from "./drawer/tambah-tagihan-lain";
 
 interface PembayaranClientProps {
 	initialDataPembayaran?: TypePembayaranPaginated;
@@ -530,6 +531,12 @@ export default function PembayaranClient({
 				</TabsContent>
 
 				<TabsContent value="tagihan-buku" className="space-y-4">
+					<div className="flex justify-end">
+						<TambahTagihanLain
+							kategori={KategoriTagihan.BUKU}
+							label="Tambah Tagihan Buku"
+						/>
+					</div>
 					<DeleteConfirmationDialog
 						isOpen={deleteBukuOpen}
 						onOpenChange={setDeleteBukuOpen}
@@ -560,6 +567,12 @@ export default function PembayaranClient({
 				</TabsContent>
 
 				<TabsContent value="fee-registration" className="space-y-4">
+					<div className="flex justify-end">
+						<TambahTagihanLain
+							kategori={KategoriTagihan.REGISTRASI}
+							label="Tambah Biaya Registrasi"
+						/>
+					</div>
 					<DeleteConfirmationDialog
 						isOpen={deleteFeeOpen}
 						onOpenChange={setDeleteFeeOpen}

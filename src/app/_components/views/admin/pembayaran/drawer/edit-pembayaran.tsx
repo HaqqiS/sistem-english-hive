@@ -11,7 +11,7 @@ import {
 	type TypeClientUpdatePembayaranSchema,
 } from "@/types/pembayaran.type";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
-import EditPembayaranForm from "./edit-pembayaran-form";
+import EditPembayaranForm from "../form/edit-pembayaran-form";
 
 export default function EditPembayaran() {
 	const { isDrawerOpen, selectedPembayaran, closeDrawer, clearSelected } =

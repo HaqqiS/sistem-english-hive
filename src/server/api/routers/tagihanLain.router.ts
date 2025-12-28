@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
 import { paginationSchema } from "@/types/pagination.type";
+import { createTagihanLainSchema } from "@/types/tagihanLain.type";
 
 export const tagihanLainRouter = createTRPCRouter({
 	// Get All for a Student
@@ -121,16 +122,7 @@ export const tagihanLainRouter = createTRPCRouter({
 
 	// Create Manually
 	create: cabangProtectedProcedure
-		.input(
-			z.object({
-				muridId: z.string(),
-				kategori: z.nativeEnum(KategoriTagihan),
-				judul: z.string(),
-				jumlah: z.number(),
-				deskripsi: z.string().optional(),
-				status: z.nativeEnum(StatusPembayaran).default("BELUM_LUNAS"),
-			}),
-		)
+		.input(createTagihanLainSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 

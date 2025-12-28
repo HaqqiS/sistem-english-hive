@@ -9,6 +9,7 @@ interface UseProgramKelasOptions {
 	enableQuery?: boolean;
 	initialData?: PendaftaranKelasType[];
 	kelasId?: string;
+	muridId?: string;
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
@@ -28,6 +29,14 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
 			kelasId ? { kelasId } : skipToken,
 			{
 				enabled: options?.enableQuery && !!kelasId,
+			},
+		);
+
+	const activePendaftaranByMuridIdQuery =
+		api.pendaftaranKelas.getActivePendaftaranByMuridId.useQuery(
+			options?.muridId ? { muridId: options.muridId } : skipToken,
+			{
+				enabled: !!options?.muridId,
 			},
 		);
 
@@ -112,6 +121,10 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
 		isErrorByKelasId: daftarMuridByKelasIdQuery.isError,
 		errorByKelasId: daftarMuridByKelasIdQuery.error,
 		refetch: daftarMuridByKelasIdQuery.refetch,
+
+		dataActivePendaftaranByMurid: activePendaftaranByMuridIdQuery.data,
+		isLoadingActivePendaftaranByMurid:
+			activePendaftaranByMuridIdQuery.isLoading,
 
 		// Mutations
 		mutations: {

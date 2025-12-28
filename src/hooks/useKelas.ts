@@ -15,6 +15,8 @@ interface UseKelasOptions {
 	// Query options
 	enableQueryGetKelasAktif?: boolean;
 	enableQueryGetKelasCount?: boolean;
+	enableQueryGetKelasWaitingCount?: boolean;
+	enableQueryGetKelasTrialCount?: boolean;
 	enableQueryGetKelasId?: boolean;
 	enableQueryGetKelasWithSesi?: boolean;
 
@@ -75,6 +77,34 @@ export function useKelas(options?: UseKelasOptions) {
 		},
 	);
 
+	const kelasWaitingCountQuery = api.kelas.getKelasWaitingAndCount.useQuery(
+		{
+			cabangId: cabangIdPayload,
+			tipeKelas: tipeKelasPayload,
+			jenisKelas: jenisKelasPayload,
+			levelKelas: levelKelasPayload,
+		},
+		{
+			enabled: options?.enableQueryGetKelasWaitingCount ?? false,
+			initialData: options?.initialDataKelasCount,
+			refetchOnWindowFocus: false,
+		},
+	);
+
+	const kelasTrialCountQuery = api.kelas.getKelasTrialAndCount.useQuery(
+		{
+			cabangId: cabangIdPayload,
+			tipeKelas: tipeKelasPayload,
+			jenisKelas: jenisKelasPayload,
+			levelKelas: levelKelasPayload,
+		},
+		{
+			enabled: options?.enableQueryGetKelasTrialCount ?? false,
+			initialData: options?.initialDataKelasCount,
+			refetchOnWindowFocus: false,
+		},
+	);
+
 	const kelasByIdQuery = api.kelas.getKelasById.useQuery(
 		kelasId ? { id: kelasId } : skipToken,
 	);
@@ -105,6 +135,8 @@ export function useKelas(options?: UseKelasOptions) {
 		await Promise.all([
 			apiUtils.kelas.getKelasAktif.invalidate(),
 			apiUtils.kelas.getKelasAndCount.invalidate(),
+			apiUtils.kelas.getKelasWaitingAndCount.invalidate(),
+			apiUtils.kelas.getKelasTrialAndCount.invalidate(),
 			apiUtils.kelas.getKelasById.invalidate(),
 		]);
 	};
@@ -216,6 +248,19 @@ export function useKelas(options?: UseKelasOptions) {
 		},
 
 		// Utils untuk manual invalidation jika perlu
+		dataKelasWaiting: kelasWaitingCountQuery.data,
+		isLoadingKelasWaiting: kelasWaitingCountQuery.isLoading,
+		isErrorKelasWaiting: kelasWaitingCountQuery.isError,
+		errorKelasWaiting: kelasWaitingCountQuery.error,
+
+		dataKelasTrial: kelasTrialCountQuery.data,
+		isLoadingKelasTrial: kelasTrialCountQuery.isLoading,
+		isErrorKelasTrial: kelasTrialCountQuery.isError,
+		errorKelasTrial: kelasTrialCountQuery.error,
+
+		refetchKelasWaiting: kelasWaitingCountQuery.refetch,
+		refetchKelasTrial: kelasTrialCountQuery.refetch,
+
 		refetchKelasAktif: kelasAktifQuery.refetch,
 		refetchKelasCount: kelasCountQuery.refetch,
 		refetchById: kelasByIdQuery.refetch,

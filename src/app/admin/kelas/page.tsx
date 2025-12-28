@@ -9,7 +9,6 @@ export const metadata: Metadata = {
 export default async function KelasPage() {
 	await Promise.all([
 		api.kelas.getKelasAndCount.prefetch({}),
-		api.jadwalKelas.getAll.prefetch({}),
 		api.jenisKelas.getJenisKelasList.prefetch(),
 	]);
 

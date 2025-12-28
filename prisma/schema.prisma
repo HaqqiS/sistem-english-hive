@@ -274,6 +274,12 @@ model JenisKelasModel {
     @@map("master_jenis_kelas")
 }
 
+enum StatusKelas {
+    RUNNING
+    WAITING
+    TRIAL
+}
+
 model Kelas {
     id String @id @default(cuid())
 
@@ -282,6 +288,7 @@ model Kelas {
     jenisKelasRel JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
 
     // OLD: Keep as original
+    statusKelas StatusKelas?     @default(WAITING)
     legacyJenisKelas JenisKelas? @map("jenisKelas")
     legacyTipe       TipeKelas?  @map("tipe")
 

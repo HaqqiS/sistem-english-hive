@@ -107,7 +107,7 @@ describe("calculateSisaPertemuan (Hybrid Billing Logic)", () => {
 		};
 
 		vi.mocked(mockDb.pendaftaranKelas.findUnique).mockResolvedValue(
-			mockPendaftaran as MockPendaftaran,
+			mockPendaftaran as unknown as MockPendaftaran,
 		); // Now it matches payload type
 
 		// 2. Mock Pembayaran (Credit)

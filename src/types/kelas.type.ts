@@ -1,5 +1,7 @@
 // import { JenisKelas, TipeKelas } from "@prisma/client";
 // Removed unused imports
+
+import { StatusKelas } from "@prisma/client";
 import z from "zod";
 import type { RouterOutputs } from "@/trpc/react";
 
@@ -32,6 +34,7 @@ const baseKelasSchema = z.object({
 	hargaKelas: z.coerce.number().min(0, "Harga Kelas harus diisi"),
 	kodeKelas: z.string().min(1, "Kode Kelas harus diisi").max(50), //e.g, TinyTods 1-A|reguler|03/2025
 	cabangId: z.string().cuid(),
+	statusKelas: z.nativeEnum(StatusKelas),
 });
 
 export const clientKelasSchema = baseKelasSchema.extend({

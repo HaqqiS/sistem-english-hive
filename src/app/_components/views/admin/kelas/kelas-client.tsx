@@ -1,22 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
-import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
 import EditJadwalKelas from "../jadwal/edit-jadwal";
 import ScheduleGrid from "../jadwal/schedule-view/schedule-grid";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
-import { columns as jadwalColumns } from "./columns/columns-jadwal";
 import KelasTab from "./tabs/kelas-tab";
 
 export default function KelasClient() {
 	const { activeCabangId } = useGlobalCabangStore();
-	const [viewMode, setViewMode] = useState<"GRID" | "TABLE">("GRID");
 
 	const [deleteJadwalDialogOpen, setDeleteJadwalDialogOpen] = useState(false);
 	const [selectedJadwalToDelete, setSelectedJadwalToDelete] = useState<{
@@ -24,10 +19,10 @@ export default function KelasClient() {
 		deskripsi: string;
 	} | null>(null);
 
-	const { openDrawer } = useJadwalKelasStore();
+	// const { openDrawer } = useJadwalKelasStore();
 
-	const { dataJadwal, mutations: jadwalMutation } = useJadwalKelas({
-		enableQueryAll: true,
+	const { mutations: jadwalMutation } = useJadwalKelas({
+		enableQueryAllRunning: true,
 		enableQueryHariIni: false,
 		filterCabang: activeCabangId,
 		onSuccessDelete: () => {
@@ -42,16 +37,16 @@ export default function KelasClient() {
 		await jadwalMutation.delete.mutateAsync({ id: selectedJadwalToDelete.id });
 	};
 
-	const columnsJadwalTabel = jadwalColumns({
-		onEditClick: (item) => {
-			console.log("edit jadwal: ", item);
-			openDrawer("edit", item);
-		},
-		onDeleteClick: (id, deskripsi) => {
-			setSelectedJadwalToDelete({ id, deskripsi });
-			setDeleteJadwalDialogOpen(true);
-		},
-	});
+	// const columnsJadwalTabel = jadwalColumns({
+	// 	onEditClick: (item) => {
+	// 		console.log("edit jadwal: ", item);
+	// 		openDrawer("edit", item);
+	// 	},
+	// 	onDeleteClick: (id, deskripsi) => {
+	// 		setSelectedJadwalToDelete({ id, deskripsi });
+	// 		setDeleteJadwalDialogOpen(true);
+	// 	},
+	// });
 
 	return (
 		<Tabs defaultValue="listKelas">
@@ -70,58 +65,33 @@ export default function KelasClient() {
 				<div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
 					<div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
 						<h1 className="text-xl font-semibold">Penjadwalan</h1>
-						{/* Toggle View Mode (Opsional) */}
-						<div className="bg-muted/20 flex items-center rounded-md border p-1 space-x-2">
-							<Button
-								variant={viewMode === "GRID" ? "default" : "ghost"}
-								size="sm"
-								onClick={() => setViewMode("GRID")}
-							>
-								Kalender
-							</Button>
-							<Button
-								variant={viewMode === "TABLE" ? "default" : "ghost"}
-								size="sm"
-								onClick={() => setViewMode("TABLE")}
-							>
-								Tabel
-							</Button>
-						</div>
 					</div>
 
 					<TambahJadwalKelas />
 				</div>
 
 				<div className="mt-4 h-full flex-1">
-					{/* KONTEN UTAMA */}
-					{viewMode === "GRID" ? (
-						<ScheduleGrid />
-					) : (
-						/* --- FALLBACK VIEW: TABLE --- */
-						<div>
-							<DataTable columns={columnsJadwalTabel} data={dataJadwal ?? []} />
+					<ScheduleGrid />
 
-							<EditJadwalKelas />
-							<DeleteConfirmationDialog
-								isOpen={deleteJadwalDialogOpen}
-								onOpenChange={setDeleteJadwalDialogOpen}
-								title="Hapus Jadwal Kelas"
-								description={
-									<>
-										Yakin ingin menghapus Jadwal Kelas{" "}
-										<span className="text-accent font-bold">
-											{selectedJadwalToDelete?.deskripsi}
-										</span>
-										? Tindakan ini tidak dapat dibatalkan.
-									</>
-								}
-								onConfirm={handleConfirmDeleteJadwal}
-								isLoading={jadwalMutation.delete.isPending}
-								confirmText="Hapus"
-								cancelText="Batal"
-							/>
-						</div>
-					)}
+					<EditJadwalKelas />
+					<DeleteConfirmationDialog
+						isOpen={deleteJadwalDialogOpen}
+						onOpenChange={setDeleteJadwalDialogOpen}
+						title="Hapus Jadwal Kelas"
+						description={
+							<>
+								Yakin ingin menghapus Jadwal Kelas{" "}
+								<span className="text-accent font-bold">
+									{selectedJadwalToDelete?.deskripsi}
+								</span>
+								? Tindakan ini tidak dapat dibatalkan.
+							</>
+						}
+						onConfirm={handleConfirmDeleteJadwal}
+						isLoading={jadwalMutation.delete.isPending}
+						confirmText="Hapus"
+						cancelText="Batal"
+					/>
 				</div>
 			</TabsContent>
 		</Tabs>

@@ -73,6 +73,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 								bulanTahunAjar: true,
 								cohortId: true,
 								cabangId: true,
+								statusKelas: true,
 
 								// Count & History untuk tampilan Matrix
 								_count: {
@@ -107,6 +108,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 					jamMulai: jam?.jamMulai ?? "00:00",
 					jamSelesai: jam?.jamSelesai ?? "00:00",
 					jumlahMurid: s.kelas._count.pendaftaranKelases,
+					statusKelas: s.kelas.statusKelas,
 
 					originalData: s,
 				};
@@ -117,6 +119,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 				schedules: formattedSchedules,
 			};
 		}),
+
 	/**
 	 * Membuat JadwalKelas baru.
 	 * Ini menangani kelas REGULAR (link ke JamSlotTetap)
@@ -155,19 +158,95 @@ export const jadwalKelasRouter = createTRPCRouter({
 			}
 		}),
 
-	getAll: cabangProtectedProcedure
+	getAllRunning: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional() }).optional())
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
 
-			const whereClause: Prisma.JadwalKelasWhereInput = {};
-			if (filterCabangId) {
-				whereClause.kelas = {
-					cabangId: filterCabangId,
-				};
-			}
+			const whereClause: Prisma.JadwalKelasWhereInput = {
+				kelas: {
+					statusKelas: "RUNNING",
+					...(filterCabangId ? { cabangId: filterCabangId } : {}),
+				},
+			};
+
+			return db.jadwalKelas.findMany({
+				where: whereClause,
+				orderBy: {
+					hari: "asc",
+				},
+				include: {
+					kelas: {
+						select: {
+							kodeKelas: true,
+							jenisKelasRel: { select: { nama: true } },
+							deskripsi: true,
+						},
+					},
+					ruang: {
+						select: {
+							namaRuang: true,
+							cabang: { select: { namaCabang: true } },
+						},
+					},
+					jamSlotTetap: true,
+					jamSlotCustom: true,
+				},
+			});
+		}),
+	getAllWaiting: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.JadwalKelasWhereInput = {
+				kelas: {
+					statusKelas: "WAITING",
+					...(filterCabangId ? { cabangId: filterCabangId } : {}),
+				},
+			};
+
+			return db.jadwalKelas.findMany({
+				where: whereClause,
+				orderBy: {
+					hari: "asc",
+				},
+				include: {
+					kelas: {
+						select: {
+							kodeKelas: true,
+							jenisKelasRel: { select: { nama: true } },
+							deskripsi: true,
+						},
+					},
+					ruang: {
+						select: {
+							namaRuang: true,
+							cabang: { select: { namaCabang: true } },
+						},
+					},
+					jamSlotTetap: true,
+					jamSlotCustom: true,
+				},
+			});
+		}),
+	getAllTrial: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.JadwalKelasWhereInput = {
+				kelas: {
+					statusKelas: "TRIAL",
+					...(filterCabangId ? { cabangId: filterCabangId } : {}),
+				},
+			};
 
 			return db.jadwalKelas.findMany({
 				where: whereClause,

@@ -8,7 +8,6 @@ const adminNavItems: NavItem[] = [
 	{ title: "Dashboard", url: "/admin", icon: "Home" },
 	{ title: "Guru", url: "/admin/guru", icon: "Users" },
 	{ title: "Murid", url: "/admin/murid", icon: "GraduationCap" },
-	{ title: "Kelas", url: "/admin/kelas", icon: "School" },
 	{ title: "Pembayaran", url: "/admin/pembayaran", icon: "Banknote" },
 	// { title: "Ruangan", url: "/admin/ruang", icon: "Building" },
 ];
@@ -21,6 +20,14 @@ export default async function AdminLayout({
 	const session = await auth();
 	const isManager = session?.user?.role === UserRole.MANAGER;
 
+	//Kelas collapsible
+	const kelasItems = [
+		{ title: "All Kelas", url: "/admin/kelas", icon: "School" },
+		{ title: "Running", url: "/admin/kelas-running", icon: "School" },
+		{ title: "Trial", url: "/admin/kelas-trial", icon: "School" },
+		{ title: "Waiting", url: "/admin/kelas-waiting", icon: "School" },
+	];
+
 	// Navigasi Collapsible (Master Data)
 	const masterDataItems = [
 		{ title: "Ruang", url: "/admin/ruang", icon: "Building" },
@@ -32,6 +39,11 @@ export default async function AdminLayout({
 	];
 
 	const adminCollapsibleItems: NavCollapsibleItem[] = [
+		{
+			title: "Kelas",
+			isActive: true,
+			items: kelasItems,
+		},
 		{
 			title: "Sub Menu",
 			isActive: false,

@@ -42,6 +42,7 @@ export const kelasRouter = createTRPCRouter({
 					bulanTahunAjar: true,
 					deskripsi: true,
 					hargaKelas: true,
+					statusKelas: true,
 					cohortId: true,
 					cabangId: true,
 					historyGuruKelases: {
@@ -83,7 +84,7 @@ export const kelasRouter = createTRPCRouter({
 
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
 
-			const whereClause: Prisma.KelasWhereInput = {};
+			const whereClause: Prisma.KelasWhereInput = { statusKelas: "RUNNING" };
 			if (filterCabangId) whereClause.cabangId = filterCabangId;
 			const jenisKelasFilters: Prisma.JenisKelasModelWhereInput = {};
 			if (input?.tipeKelas)
@@ -114,6 +115,241 @@ export const kelasRouter = createTRPCRouter({
 					bulanTahunAjar: true,
 					deskripsi: true,
 					hargaKelas: true,
+					statusKelas: true,
+					cohortId: true,
+					cabangId: true,
+					historyGuruKelases: {
+						where: {
+							selesaiPada: null,
+							statusGuru: "ACTIVE",
+						},
+						select: {
+							id: true,
+							kelasId: true,
+							guruId: true,
+							statusGuru: true,
+							mulaiPada: true,
+							selesaiPada: true,
+							guru: {
+								select: {
+									name: true,
+								},
+							},
+						},
+					},
+					sesiPertemuanKelases: {
+						orderBy: {
+							tanggalWaktu: "desc",
+						},
+						take: 1,
+						select: {
+							tanggalWaktu: true,
+						},
+					},
+					pendaftaranKelases: {
+						where: { NOT: [{ status: "NON_AKTIF" }] },
+						select: {
+							id: true,
+							murid: {
+								select: {
+									id: true,
+									namaLengkap: true,
+									statusMurid: true,
+								},
+							},
+						},
+					},
+					jadwalKelas: {
+						select: {
+							id: true,
+							hari: true,
+						},
+					},
+					_count: {
+						select: {
+							sesiPertemuanKelases: true,
+							pendaftaranKelases: {
+								where: {
+									OR: [{ status: "AKTIF" }, { status: "WAITING_LIST" }],
+								},
+							},
+						},
+					},
+				},
+			});
+
+			const filteredKelas = allKelasData.filter(
+				(kelas) => kelas._count.sesiPertemuanKelases < 24,
+			);
+
+			return filteredKelas;
+		}),
+
+	getKelasWaitingAndCount: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+					tipeKelas: z.string().optional(),
+					jenisKelas: z.string().optional(),
+					levelKelas: z.number().optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.KelasWhereInput = { statusKelas: "WAITING" };
+			if (filterCabangId) whereClause.cabangId = filterCabangId;
+			const jenisKelasFilters: Prisma.JenisKelasModelWhereInput = {};
+			if (input?.tipeKelas)
+				jenisKelasFilters.tipe = input.tipeKelas as TipeKelas;
+			if (input?.jenisKelas) jenisKelasFilters.nama = input.jenisKelas;
+
+			if (Object.keys(jenisKelasFilters).length > 0) {
+				whereClause.jenisKelasRel = jenisKelasFilters;
+			}
+			if (input?.levelKelas) whereClause.level = input.levelKelas;
+
+			const allKelasData = await db.kelas.findMany({
+				where: whereClause,
+				orderBy: [
+					{ jenisKelasRel: { tipe: "asc" } }, // REGULAR ("R") > PRIVATE ("P")
+					{ level: "asc" },
+				],
+
+				select: {
+					id: true,
+					jenisKelasId: true,
+					// jenisKelasId: true,
+					jenisKelasRel: { select: { nama: true, tipe: true } },
+					level: true,
+					grup: true,
+					// tipe: true,
+					kodeKelas: true,
+					bulanTahunAjar: true,
+					deskripsi: true,
+					hargaKelas: true,
+					statusKelas: true,
+					cohortId: true,
+					cabangId: true,
+					historyGuruKelases: {
+						where: {
+							selesaiPada: null,
+							statusGuru: "ACTIVE",
+						},
+						select: {
+							id: true,
+							kelasId: true,
+							guruId: true,
+							statusGuru: true,
+							mulaiPada: true,
+							selesaiPada: true,
+							guru: {
+								select: {
+									name: true,
+								},
+							},
+						},
+					},
+					sesiPertemuanKelases: {
+						orderBy: {
+							tanggalWaktu: "desc",
+						},
+						take: 1,
+						select: {
+							tanggalWaktu: true,
+						},
+					},
+					pendaftaranKelases: {
+						where: { NOT: [{ status: "NON_AKTIF" }] },
+						select: {
+							id: true,
+							murid: {
+								select: {
+									id: true,
+									namaLengkap: true,
+									statusMurid: true,
+								},
+							},
+						},
+					},
+					jadwalKelas: {
+						select: {
+							id: true,
+							hari: true,
+						},
+					},
+					_count: {
+						select: {
+							sesiPertemuanKelases: true,
+							pendaftaranKelases: {
+								where: {
+									OR: [{ status: "AKTIF" }, { status: "WAITING_LIST" }],
+								},
+							},
+						},
+					},
+				},
+			});
+
+			const filteredKelas = allKelasData.filter(
+				(kelas) => kelas._count.sesiPertemuanKelases < 24,
+			);
+
+			return filteredKelas;
+		}),
+
+	getKelasTrialAndCount: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+					tipeKelas: z.string().optional(),
+					jenisKelas: z.string().optional(),
+					levelKelas: z.number().optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.KelasWhereInput = { statusKelas: "TRIAL" };
+			if (filterCabangId) whereClause.cabangId = filterCabangId;
+			const jenisKelasFilters: Prisma.JenisKelasModelWhereInput = {};
+			if (input?.tipeKelas)
+				jenisKelasFilters.tipe = input.tipeKelas as TipeKelas;
+			if (input?.jenisKelas) jenisKelasFilters.nama = input.jenisKelas;
+
+			if (Object.keys(jenisKelasFilters).length > 0) {
+				whereClause.jenisKelasRel = jenisKelasFilters;
+			}
+			if (input?.levelKelas) whereClause.level = input.levelKelas;
+
+			const allKelasData = await db.kelas.findMany({
+				where: whereClause,
+				orderBy: [
+					{ jenisKelasRel: { tipe: "asc" } }, // REGULAR ("R") > PRIVATE ("P")
+					{ level: "asc" },
+				],
+
+				select: {
+					id: true,
+					jenisKelasId: true,
+					// jenisKelasId: true,
+					jenisKelasRel: { select: { nama: true, tipe: true } },
+					level: true,
+					grup: true,
+					// tipe: true,
+					kodeKelas: true,
+					bulanTahunAjar: true,
+					deskripsi: true,
+					hargaKelas: true,
+					statusKelas: true,
 					cohortId: true,
 					cabangId: true,
 					historyGuruKelases: {
@@ -388,6 +624,7 @@ export const kelasRouter = createTRPCRouter({
 						deskripsi: input.deskripsi,
 						hargaKelas: input.hargaKelas,
 						cabangId: finalCabangId,
+						statusKelas: input.statusKelas,
 					},
 				});
 				return kelas;
@@ -476,6 +713,7 @@ export const kelasRouter = createTRPCRouter({
 						bulanTahunAjar: input.bulanTahunAjar,
 						deskripsi: input.deskripsi,
 						hargaKelas: input.hargaKelas,
+						statusKelas: input.statusKelas,
 					},
 				});
 				return kelas;

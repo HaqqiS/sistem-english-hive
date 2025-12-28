@@ -27,6 +27,7 @@ export default function EditKelas() {
 					hargaKelas: selectedKelas.hargaKelas,
 					kodeKelas: selectedKelas.kodeKelas,
 					cabangId: selectedKelas.cabangId,
+					statusKelas: selectedKelas.statusKelas ?? "WAITING",
 				}
 			: undefined,
 		defaultValues: {
@@ -38,6 +39,7 @@ export default function EditKelas() {
 			deskripsi: selectedKelas?.deskripsi ?? "",
 			hargaKelas: selectedKelas?.hargaKelas,
 			kodeKelas: selectedKelas?.kodeKelas,
+			statusKelas: selectedKelas?.statusKelas ?? "WAITING",
 		},
 	});
 

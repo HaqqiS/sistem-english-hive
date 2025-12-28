@@ -1,7 +1,7 @@
 "use client";
 
 // import { JenisKelas, TipeKelas } from "@prisma/client";
-import { type JenisKelasModel, TipeKelas } from "@prisma/client";
+import { type JenisKelasModel, StatusKelas, TipeKelas } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
@@ -349,6 +349,39 @@ export default function KelasForm({ onSubmit }: KelasFormProps) {
 								}}
 								required
 							/>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
+
+			<FormField
+				control={form.control}
+				name="statusKelas"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Status Kelas</FormLabel>
+						<FormControl>
+							<Select
+								onValueChange={field.onChange}
+								value={field.value}
+								disabled={isLoadingCabang}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue
+										placeholder={
+											isLoadingCabang ? "Loading..." : "Pilih Status Kelas"
+										}
+									/>
+								</SelectTrigger>
+								<SelectContent>
+									{Object.values(StatusKelas).map((status) => (
+										<SelectItem key={status} value={status}>
+											{status}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</FormControl>
 						<FormMessage />
 					</FormItem>

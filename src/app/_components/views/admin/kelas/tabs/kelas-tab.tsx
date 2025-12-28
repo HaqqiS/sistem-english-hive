@@ -1,43 +1,13 @@
 "use client";
 
 import { type JenisKelasModel, TipeKelas } from "@prisma/client";
-import {
-	Album,
-	AlertCircle,
-	ArrowRight,
-	CalendarClock,
-	CalendarDays,
-	Edit2,
-	EllipsisVertical,
-	FileSpreadsheet,
-	Filter,
-	GraduationCap,
-	RefreshCw,
-	Trash,
-	TrendingUp,
-	User,
-} from "lucide-react";
-import Link from "next/link";
+import { AlertCircle, FileSpreadsheet, Filter, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
 	Select,
 	SelectContent,
@@ -45,21 +15,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useJenisKelas } from "@/hooks/useJenisKelas";
 import { useKelas } from "@/hooks/useKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
 import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
-import { formatToWITA } from "@/utils/dateUtils";
 import { downloadExcel } from "@/utils/exportUtils";
-import { toRupiah } from "@/utils/toRupiah";
 import EditGuruKelas from "../drawers/edit-guru-kelas";
 import EditKelas from "../drawers/edit-kelas";
 import TambahProgramKelas from "../drawers/tambah-kelas";
 import UpLevelKelas from "../drawers/up-level-kelas";
+import { KelasListView } from "./kelas-list-view";
 
 export default function KelasTab() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -91,6 +59,17 @@ export default function KelasTab() {
 		isRefetchingKelasCount,
 		errorKelasCount,
 		refetchKelasCount,
+
+		// Waiting
+		dataKelasWaiting,
+		isLoadingKelasWaiting,
+		refetchKelasWaiting,
+
+		// Trial
+		dataKelasTrial,
+		isLoadingKelasTrial,
+		refetchKelasTrial,
+
 		fetchExportData,
 		mutations: kelasMutations,
 	} = useKelas({
@@ -99,6 +78,8 @@ export default function KelasTab() {
 		jenisKelas: selectedJenisKelas,
 		levelKelas: selectedLevelKelas,
 		enableQueryGetKelasCount: true,
+		enableQueryGetKelasWaitingCount: true,
+		enableQueryGetKelasTrialCount: true,
 
 		onSuccessDelete: () => {
 			setDeleteKelasDialogOpen(false);
@@ -165,6 +146,7 @@ export default function KelasTab() {
 					Level: item.level,
 					Tipe: item.jenisKelasRel?.tipe ?? "Unknown",
 					Grup: item.grup ?? "-",
+					// Status: item.statusKelas ?? "RUNNING",
 					Pengajar: guru,
 					Jadwal: jadwal,
 					"Jumlah Murid": item._count.pendaftaranKelases,
@@ -174,7 +156,9 @@ export default function KelasTab() {
 				};
 			});
 
-			const filename = `Laporan-Kelas-Operasional-${new Date().toISOString().split("T")[0]}`;
+			const filename = `Laporan-Kelas-Operasional-${
+				new Date().toISOString().split("T")[0]
+			}`;
 			downloadExcel(csvData, filename);
 
 			toast.success("Export berhasil!", { id: toastId });
@@ -184,15 +168,14 @@ export default function KelasTab() {
 		}
 	};
 
-	if (isLoadingKelasCount) {
-		return (
-			<div className="space-y-4 pt-4">
-				{Array.from({ length: 3 }, (_, i) => i).map((id) => (
-					<Skeleton key={id} className="h-24 w-full rounded-lg" />
-				))}
-			</div>
-		);
-	}
+	const handleRefetchAll = () => {
+		refetchKelasCount();
+		refetchKelasWaiting();
+		refetchKelasTrial();
+	};
+
+	const isAnyLoading =
+		isLoadingKelasCount || isLoadingKelasWaiting || isLoadingKelasTrial;
 
 	if (isErrorKelasCount) {
 		return (
@@ -226,22 +209,28 @@ export default function KelasTab() {
 							variant="ghost"
 							size="icon"
 							className="h-9 w-9 shrink-0"
-							disabled={isLoadingKelasCount || isRefetchingKelasCount}
-							onClick={() => refetchKelasCount()}
+							disabled={isAnyLoading || isRefetchingKelasCount}
+							onClick={handleRefetchAll}
 							title="Refresh Jadwal"
 						>
 							<RefreshCw
 								className={cn(
 									"h-4 w-4",
-									(isLoadingKelasCount || isRefetchingKelasCount) &&
-										"animate-spin",
+									(isAnyLoading || isRefetchingKelasCount) && "animate-spin",
 								)}
 							/>
 						</Button>
 						<div>
 							<h1 className="text-xl">Daftar Kelas</h1>
 							<p className="text-muted-foreground text-sm">
-								{dataKelasCount?.length} kelas terdaftar
+								{isLoadingKelasCount ? "..." : (dataKelasCount?.length ?? 0)}{" "}
+								Running {" • "}
+								{isLoadingKelasTrial ? "..." : (dataKelasTrial?.length ?? 0)}{" "}
+								Trial {" • "}
+								{isLoadingKelasWaiting
+									? "..."
+									: (dataKelasWaiting?.length ?? 0)}{" "}
+								Waiting
 							</p>
 						</div>
 					</div>
@@ -322,221 +311,52 @@ export default function KelasTab() {
 				</div>
 			</header>
 
-			<Accordion
-				type="single"
-				collapsible
-				className="grid w-full grid-cols-1 items-start gap-4 md:grid-cols-2"
-			>
-				{dataKelasCount && dataKelasCount.length > 0 ? (
-					dataKelasCount.map((kelas) => {
-						const guruAktif =
-							kelas.historyGuruKelases[0]?.guru.name ?? "Belum ada guru";
-						const lastSession = kelas.sesiPertemuanKelases[0]?.tanggalWaktu;
-						const jadwalHari =
-							kelas.jadwalKelas.length > 0
-								? kelas.jadwalKelas.map((j) => j.hari).join(", ")
-								: "Jadwal belum diatur";
-
-						return (
-							<Card className="py-0" key={kelas.id}>
-								<CardContent className="p-0">
-									<AccordionItem value={kelas.id} className="border-none">
-										<AccordionTrigger className="hover:bg-muted/30 items-center px-6 py-5 transition-colors hover:no-underline">
-											<div className="flex w-full flex-col gap-4">
-												{/* Header: Kode & Badge */}
-												<div className="flex w-full flex-col justify-between gap-2 sm:flex-row sm:items-center">
-													<div className="flex items-center gap-3">
-														<span className="text-foreground text-lg font-bold tracking-tight">
-															{kelas.kodeKelas}
-														</span>
-													</div>
-													<div className="flex flex-wrap items-center justify-end gap-2">
-														<Badge
-															variant="secondary"
-															className="flex gap-1.5 px-2.5 py-1"
-														>
-															<GraduationCap className="h-3.5 w-3.5" />
-															<span>{kelas._count.pendaftaranKelases}</span>
-														</Badge>
-														<Badge
-															variant="outline"
-															className="border-primary/30 text-primary flex gap-1.5 px-2.5 py-1"
-														>
-															<CalendarClock className="h-3.5 w-3.5" />
-															<span>{kelas._count.sesiPertemuanKelases}</span>
-														</Badge>
-													</div>
-												</div>
-
-												{/* Subheader: Metadata */}
-												<div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-2 text-xs">
-													<div className="flex items-center gap-1.5">
-														<User className="text-primary h-3.5 w-3.5" />
-														<span className="font-medium">{guruAktif}</span>
-													</div>
-													<div className="flex items-center gap-1.5">
-														<CalendarDays className="text-primary h-3.5 w-3.5" />
-														<span>{jadwalHari}</span>
-													</div>
-													{kelas.deskripsi && (
-														<div className="flex items-center gap-1.5">
-															<Album className="text-primary h-3.5 w-3.5" />
-															<span className="line-clamp-1 max-w-[200px]">
-																{kelas.deskripsi}
-															</span>
-														</div>
-													)}
-												</div>
-											</div>
-										</AccordionTrigger>
-
-										<AccordionContent className="bg-muted/5 border-t px-6 py-5 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-											<div className="flex flex-col gap-6">
-												{/* Info Grid */}
-												<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-													<div className="flex flex-col gap-1 rounded-lg border p-3">
-														<span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
-															Harga Kelas
-														</span>
-														<div className="flex items-baseline gap-1">
-															<span className="text-lg font-semibold">
-																{toRupiah(kelas.hargaKelas)}
-															</span>
-															<span className="text-muted-foreground text-xs">
-																/ sesi
-															</span>
-														</div>
-													</div>
-
-													<div className="flex flex-col gap-1 rounded-lg border p-3">
-														<span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
-															Sesi Terakhir
-														</span>
-														<div className="font-medium">
-															{lastSession ? (
-																formatToWITA(lastSession)
-															) : (
-																<span className="text-muted-foreground italic">
-																	Belum ada sesi
-																</span>
-															)}
-														</div>
-													</div>
-												</div>
-
-												{/* Daftar Murid Aktif */}
-												<div>
-													<p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-														Murid Aktif ({kelas._count.pendaftaranKelases})
-													</p>
-													{kelas.pendaftaranKelases.length > 0 ? (
-														<div className="flex flex-col">
-															{kelas.pendaftaranKelases.map((p, index) => (
-																<div key={p.id} className="flex flex-col">
-																	<div className="flex items-center py-2">
-																		<span className="text-muted-foreground min-w-[24px] text-sm">
-																			{index + 1}.
-																		</span>
-																		<span className="text-sm">
-																			{p.murid?.namaLengkap ?? "Unknown"}
-																		</span>
-																	</div>
-																	{index <
-																		kelas.pendaftaranKelases.length - 1 && (
-																		<Separator />
-																	)}
-																</div>
-															))}
-														</div>
-													) : (
-														<p className="text-sm text-muted-foreground italic">
-															Belum ada murid aktif.
-														</p>
-													)}
-												</div>
-
-												{/* Action Buttons Group */}
-												<div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-													<Button
-														asChild
-														size="sm"
-														variant="ghost"
-														className="w-full justify-start sm:w-auto"
-													>
-														<Link href={`/admin/kelas/sesi/${kelas.id}`}>
-															<CalendarClock className="mr-2 h-4 w-4" />
-															Riwayat Absensi
-														</Link>
-													</Button>
-
-													<div className="flex items-center gap-2">
-														<Button
-															asChild
-															size="sm"
-															className="w-full sm:w-auto"
-														>
-															<Link href={`/admin/kelas/detail/${kelas.id}`}>
-																Detail Kelas
-																<ArrowRight className="ml-2 h-4 w-4" />
-															</Link>
-														</Button>
-
-														<DropdownMenu>
-															<DropdownMenuTrigger asChild>
-																<Button
-																	variant="outline"
-																	size="icon"
-																	className="h-9 w-9 shrink-0"
-																>
-																	<EllipsisVertical className="h-4 w-4" />
-																	<span className="sr-only">Menu</span>
-																</Button>
-															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end" className="w-48">
-																<DropdownMenuItem
-																	onClick={() => handleEditClickKelas(kelas)}
-																>
-																	<Edit2 className="mr-2 h-4 w-4" />
-																	Edit Data Kelas
-																</DropdownMenuItem>
-																<DropdownMenuItem
-																	onClick={() =>
-																		handleEditClickGuruKelas(kelas)
-																	}
-																>
-																	<User className="mr-2 h-4 w-4" />
-																	Ganti Pengajar
-																</DropdownMenuItem>
-																<DropdownMenuSeparator />
-																<DropdownMenuItem
-																	onClick={() => handleUpLevelClick(kelas)}
-																>
-																	<TrendingUp className="mr-2 h-4 w-4" />
-																	Naik Level (Up Level)
-																</DropdownMenuItem>
-																<DropdownMenuSeparator />
-																<DropdownMenuItem
-																	variant="destructive"
-																	onClick={() => handleDeleteClick(kelas)}
-																>
-																	<Trash className="mr-2 h-4 w-4" />
-																	Hapus Kelas
-																</DropdownMenuItem>
-															</DropdownMenuContent>
-														</DropdownMenu>
-													</div>
-												</div>
-											</div>
-										</AccordionContent>
-									</AccordionItem>
-								</CardContent>
-							</Card>
-						);
-					})
-				) : (
-					<p className="text-muted-foreground text-center">Belum ada kelas.</p>
-				)}
-			</Accordion>
+			<Tabs defaultValue="running" className="w-full">
+				<TabsList>
+					<TabsTrigger value="running">
+						Running ({dataKelasCount?.length ?? 0})
+					</TabsTrigger>
+					<TabsTrigger value="trial">
+						Trial ({dataKelasTrial?.length ?? 0})
+					</TabsTrigger>
+					<TabsTrigger value="waiting">
+						Waiting ({dataKelasWaiting?.length ?? 0})
+					</TabsTrigger>
+				</TabsList>
+				<TabsContent value="running" className="mt-4">
+					<KelasListView
+						data={dataKelasCount}
+						isLoading={isLoadingKelasCount}
+						onEditKelas={handleEditClickKelas}
+						onEditGuruKelas={handleEditClickGuruKelas}
+						onUpLevel={handleUpLevelClick}
+						onDelete={handleDeleteClick}
+						emptyMessage="Belum ada kelas berstatus Running."
+					/>
+				</TabsContent>
+				<TabsContent value="trial" className="mt-4">
+					<KelasListView
+						data={dataKelasTrial}
+						isLoading={isLoadingKelasTrial}
+						onEditKelas={handleEditClickKelas}
+						onEditGuruKelas={handleEditClickGuruKelas}
+						onUpLevel={handleUpLevelClick}
+						onDelete={handleDeleteClick}
+						emptyMessage="Belum ada kelas berstatus Trial."
+					/>
+				</TabsContent>
+				<TabsContent value="waiting" className="mt-4">
+					<KelasListView
+						data={dataKelasWaiting}
+						isLoading={isLoadingKelasWaiting}
+						onEditKelas={handleEditClickKelas}
+						onEditGuruKelas={handleEditClickGuruKelas}
+						onUpLevel={handleUpLevelClick}
+						onDelete={handleDeleteClick}
+						emptyMessage="Belum ada kelas berstatus Waiting."
+					/>
+				</TabsContent>
+			</Tabs>
 
 			<EditKelas />
 			<EditGuruKelas />

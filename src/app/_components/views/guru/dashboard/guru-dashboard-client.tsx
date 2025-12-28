@@ -91,7 +91,6 @@ export default function GuruDashboardClient() {
 		errorJadwalHariIni: error,
 	} = useJadwalKelas({
 		enableQueryHariIni: true,
-		enableQueryAll: false,
 		guruId: selectedGuruId, // Pass filter ID ke hook
 	});
 

@@ -10,7 +10,9 @@ import type {
 
 interface useJadwalKelasOptions {
 	// Query options
-	enableQueryAll?: boolean;
+	enableQueryAllRunning?: boolean;
+	enableQueryAllTrial?: boolean;
+	enableQueryAllWaiting?: boolean;
 	enableQueryHariIni?: boolean;
 	enableQueryMatrix?: boolean;
 
@@ -47,10 +49,26 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 		},
 	);
 
-	const getAllJadwal = api.jadwalKelas.getAll.useQuery(
+	const getAllJadwalRunning = api.jadwalKelas.getAllRunning.useQuery(
 		{ cabangId: cabangIdPayload },
 		{
-			enabled: options?.enableQueryAll ?? false,
+			enabled: options?.enableQueryAllRunning ?? false,
+			initialData: options?.initialData,
+		},
+	);
+
+	const getAllJadwalTrial = api.jadwalKelas.getAllTrial.useQuery(
+		{ cabangId: cabangIdPayload },
+		{
+			enabled: options?.enableQueryAllTrial ?? false,
+			initialData: options?.initialData,
+		},
+	);
+
+	const getAllJadwalWaiting = api.jadwalKelas.getAllWaiting.useQuery(
+		{ cabangId: cabangIdPayload },
+		{
+			enabled: options?.enableQueryAllWaiting ?? false,
 			initialData: options?.initialData,
 		},
 	);
@@ -69,7 +87,9 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 
 	const invalidateJadwal = async () => {
 		await Promise.all([
-			apiUtils.jadwalKelas.getAll.invalidate(),
+			apiUtils.jadwalKelas.getAllRunning.invalidate(),
+			apiUtils.jadwalKelas.getAllTrial.invalidate(),
+			apiUtils.jadwalKelas.getAllWaiting.invalidate(),
 			apiUtils.jadwalKelas.getScheduleMatrix.invalidate(),
 		]);
 	};
@@ -124,10 +144,20 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 		errorJadwalHariIni: jadwalHariIniQuery.error,
 		refetchJadwalHariIni: jadwalHariIniQuery.refetch,
 
-		dataJadwal: getAllJadwal.data,
-		isLoadingDataJadwal: getAllJadwal.isLoading,
-		isErrorDataJadwal: getAllJadwal.isError,
-		errorDataJadwal: getAllJadwal.error,
+		dataJadwalRunning: getAllJadwalRunning.data,
+		isLoadingDataJadwalRunning: getAllJadwalRunning.isLoading,
+		isErrorDataJadwalRunning: getAllJadwalRunning.isError,
+		errorDataJadwalRunning: getAllJadwalRunning.error,
+
+		dataJadwalTrial: getAllJadwalTrial.data,
+		isLoadingDataJadwalTrial: getAllJadwalTrial.isLoading,
+		isErrorDataJadwalTrial: getAllJadwalTrial.isError,
+		errorDataJadwalTrial: getAllJadwalTrial.error,
+
+		dataJadwalWaiting: getAllJadwalWaiting.data,
+		isLoadingDataJadwalWaiting: getAllJadwalWaiting.isLoading,
+		isErrorDataJadwalWaiting: getAllJadwalWaiting.isError,
+		errorDataJadwalWaiting: getAllJadwalWaiting.error,
 
 		dataMatrix: getScheduleMatrix.data,
 		isLoadingMatrix: getScheduleMatrix.isLoading,

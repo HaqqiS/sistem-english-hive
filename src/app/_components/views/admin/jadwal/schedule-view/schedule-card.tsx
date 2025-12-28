@@ -2,6 +2,7 @@
 
 import {
 	Album,
+	BadgeQuestionMark,
 	Clock,
 	MoreHorizontal,
 	Pencil,
@@ -34,6 +35,7 @@ interface ScheduleCardProps {
 		jamMulai: string;
 		jamSelesai: string;
 		jumlahMurid: number;
+		statusKelas: string | null;
 
 		originalData: TypeJadwalKelas;
 	};
@@ -44,9 +46,29 @@ interface ScheduleCardProps {
 export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 	const isPrivate = data.tipeKelas === "PRIVATE";
 
-	const cardStyles = isPrivate
-		? "border-l-4 border-l-purple-800 bg-purple-50/50 hover:bg-purple-100/50 dark:bg-purple-900/10 dark:hover:bg-purple-900/20"
-		: "border-l-4 border-l-blue-800 bg-blue-50/50 hover:bg-blue-100/50 dark:bg-blue-900/10 dark:hover:bg-blue-900/20";
+	// Logic warna berdasarkan Status Kelas (Request User)
+	let cardStyles = "";
+	let headerColorClass = "";
+	const status = data.statusKelas ?? "RUNNING"; // Default fallback
+
+	switch (status) {
+		case "TRIAL":
+			cardStyles =
+				"border-l-4 border-l-blue-600 bg-blue-50/50 hover:bg-blue-100/50 dark:bg-blue-900/10 dark:hover:bg-blue-900/20";
+			headerColorClass = "bg-blue-600";
+			break;
+		case "WAITING":
+			cardStyles =
+				"border-l-4 border-l-yellow-500 bg-yellow-50/50 hover:bg-yellow-100/50 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20";
+			headerColorClass = "bg-yellow-500"; // Kuning
+			break;
+		case "RUNNING":
+			// Menggunakan warna Accent (biasanya Primary/Brand)
+			cardStyles =
+				"border-l-4 border-l-primary bg-accent/20 hover:bg-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20";
+			headerColorClass = "bg-primary";
+			break;
+	}
 
 	return (
 		<HoverCard openDelay={200}>
@@ -123,6 +145,11 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 								{data.jamMulai} - {data.jamSelesai}
 							</span>
 						</div>
+						<div className="flex items-center gap-1.5">
+							<BadgeQuestionMark className="h-3 w-3 shrink-0 opacity-70" />
+							<span className="font-mono text-sm">{data.statusKelas}</span>
+						</div>
+
 						{data.originalData.kelas.deskripsi && (
 							<div className="flex items-center gap-1.5">
 								<Album className="h-3 w-3 shrink-0 opacity-70" />
@@ -142,13 +169,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 				side="right"
 				sideOffset={10}
 			>
-				{/* Header Warna */}
-				<div
-					className={cn(
-						"h-2 w-full",
-						isPrivate ? "bg-purple-500" : "bg-blue-500",
-					)}
-				/>
+				<div className={cn("h-2 w-full", headerColorClass)} />
 
 				<div className="flex flex-col gap-3 p-4">
 					<div className="space-y-1.5">

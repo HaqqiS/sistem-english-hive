@@ -1,6 +1,6 @@
 "use client";
 
-import { StatusPembayaran } from "@prisma/client";
+import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { FileSpreadsheet, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -180,7 +180,7 @@ export default function PembayaranClient({
 		onVerifyClick: handleVerifyClick,
 	});
 
-	// --- TAGIHAN LAIN HOOK ---
+	// --- TAGIHAN LAIN (GENERIC / OTHERS) HOOK ---
 	const [tagihanLainPagination, setTagihanLainPagination] =
 		useState<PaginationState>({
 			pageIndex: 0,
@@ -194,15 +194,20 @@ export default function PembayaranClient({
 		useState<TypeTagihanLain | null>(null);
 
 	const {
-		dataGetAllPaginated: dataTagihanLain,
-		pageCount: pageCountTagihanLain,
-		isLoadingGetAllPaginated: isLoadingTagihanLain,
-		refetchGetAllPaginated: refetchTagihanLain,
+		dataGetAllLainnyaPaginated: dataTagihanLain,
+		pageCountLainnya: pageCountTagihanLain,
+		isLoadingGetAllLainnyaPaginated: isLoadingTagihanLain,
+		// refetchGetAllLainnyaPaginated: refetchTagihanLain,
 		mutations: mutationsTagihanLain,
 	} = useTagihanLain({
 		pagination: tagihanLainPagination,
 		filterCabang: activeCabangId,
 		filterStatus: statusFilter === "ALL" ? undefined : statusFilter,
+		// Explicitly filter to OTHERS if desired, or keep generic?
+		// User asked for separation. If I filter generic to `LAINNYA`, then "Tagihan Lain" tab becomes truly "Others".
+		// But let's check KategoriTagihan enum. It has LAINNYA.
+		// I will Assume "Tagihan Lain" tab = Kategori "LAINNYA".
+		filterKategori: KategoriTagihan.LAINNYA,
 		searchQuery: debouncedSearch,
 		enableGetAll: true,
 		onSuccessDelete: () => {
@@ -211,7 +216,65 @@ export default function PembayaranClient({
 		},
 	});
 
-	// --- HANDLERS TAGIHAN LAIN ---
+	// --- TAGIHAN BUKU HOOK ---
+	const [bukuPagination, setBukuPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 10,
+	});
+	const [bukuSorting, setBukuSorting] = useState<SortingState>([]);
+	const [deleteBukuOpen, setDeleteBukuOpen] = useState(false);
+	const [bukuToDelete, setBukuToDelete] = useState<TypeTagihanLain | null>(
+		null,
+	);
+
+	const {
+		dataGetAllBukuPaginated: dataBuku,
+		pageCountBuku,
+		isLoadingGetAllBukuPaginated: isLoadingBuku,
+		refetchGetAllBukuPaginated: refetchBuku,
+		mutations: mutationsBuku,
+	} = useTagihanLain({
+		pagination: bukuPagination,
+		filterCabang: activeCabangId,
+		filterStatus: statusFilter === "ALL" ? undefined : statusFilter,
+		filterKategori: KategoriTagihan.BUKU,
+		searchQuery: debouncedSearch,
+		enableGetAll: true,
+		onSuccessDelete: () => {
+			setDeleteBukuOpen(false);
+			setBukuToDelete(null);
+		},
+	});
+
+	// --- TAGIHAN FEE REGISTRATION HOOK ---
+	const [feePagination, setFeePagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 10,
+	});
+	const [feeSorting, setFeeSorting] = useState<SortingState>([]);
+	const [deleteFeeOpen, setDeleteFeeOpen] = useState(false);
+	const [feeToDelete, setFeeToDelete] = useState<TypeTagihanLain | null>(null);
+
+	const {
+		dataGetAllRegistrasiPaginated: dataFee,
+		pageCountRegistrasi: pageCountFee,
+		isLoadingGetAllRegistrasiPaginated: isLoadingFee,
+		refetchGetAllRegistrasiPaginated: refetchFee,
+		mutations: mutationsFee,
+	} = useTagihanLain({
+		pagination: feePagination,
+		filterCabang: activeCabangId,
+		filterStatus: statusFilter === "ALL" ? undefined : statusFilter,
+		filterKategori: KategoriTagihan.REGISTRASI,
+		searchQuery: debouncedSearch,
+		enableGetAll: true,
+		onSuccessDelete: () => {
+			setDeleteFeeOpen(false);
+			setFeeToDelete(null);
+		},
+	});
+
+	// --- HANDLERS TAGIHAN LAIN (GENERIC) ---
 	const handleDeleteTagihanLainClick = (item: TypeTagihanLain) => {
 		setTagihanLainToDelete(item);
 		setDeleteTagihanLainOpen(true);
@@ -235,11 +298,6 @@ export default function PembayaranClient({
 	};
 
 	const handleEditTagihanLain = (_item: TypeTagihanLain) => {
-		// Untuk fitur edit di admin global view, kita perlu Drawer/Modal yang support pengeditan
-		// Kita bisa reuse component EditTagihanLain yang sudah ada, tapi perlu state untuk membuka modal tsb.
-		// Karena logicnya sama dengan di history murid, kita tambahkan state ini.
-		// Note: Di request awal item ini belum diminta detailnya, tapi best practice sudah ada.
-		// Saya akan tambahkan log warning jika belum implemented atau reuse edit drawer jika ada.
 		toast("Fitur Edit Tagihan Lain dari Global View belum diimplementasikan", {
 			description: "Silakan edit melalui detail siswa",
 		});
@@ -251,13 +309,86 @@ export default function PembayaranClient({
 		onVerifyClick: handleVerifyTagihanLain,
 	});
 
+	// --- HANDLERS BUKU ---
+	const handleDeleteBukuClick = (item: TypeTagihanLain) => {
+		setBukuToDelete(item);
+		setDeleteBukuOpen(true);
+	};
+
+	const handleConfirmDeleteBuku = () => {
+		if (bukuToDelete) {
+			mutationsBuku.delete.mutate({ id: bukuToDelete.id });
+		}
+	};
+
+	const handleVerifyBuku = (item: TypeTagihanLain) => {
+		if (item.status === StatusPembayaran.LUNAS) {
+			mutationsBuku.update.mutate({
+				id: item.id,
+				status: StatusPembayaran.BELUM_LUNAS,
+			});
+		} else {
+			mutationsBuku.markAsPaid.mutate({ id: item.id });
+		}
+	};
+
+	// Reuse generic edit handler logic for now
+	const handleEditBuku = (_item: TypeTagihanLain) => {
+		toast("Fitur Edit Tagihan Buku dari Global View belum diimplementasikan", {
+			description: "Silakan edit melalui detail siswa",
+		});
+	};
+
+	const tableColumnsBuku = columnsTagihanLainGlobal({
+		onDeleteClick: handleDeleteBukuClick,
+		onEditClick: handleEditBuku,
+		onVerifyClick: handleVerifyBuku,
+	});
+
+	// --- HANDLERS FEE ---
+	const handleDeleteFeeClick = (item: TypeTagihanLain) => {
+		setFeeToDelete(item);
+		setDeleteFeeOpen(true);
+	};
+
+	const handleConfirmDeleteFee = () => {
+		if (feeToDelete) {
+			mutationsFee.delete.mutate({ id: feeToDelete.id });
+		}
+	};
+
+	const handleVerifyFee = (item: TypeTagihanLain) => {
+		if (item.status === StatusPembayaran.LUNAS) {
+			mutationsFee.update.mutate({
+				id: item.id,
+				status: StatusPembayaran.BELUM_LUNAS,
+			});
+		} else {
+			mutationsFee.markAsPaid.mutate({ id: item.id });
+		}
+	};
+
+	const handleEditFee = (_item: TypeTagihanLain) => {
+		toast("Fitur Edit Fee dari Global View belum diimplementasikan", {
+			description: "Silakan edit melalui detail siswa",
+		});
+	};
+
+	const tableColumnsFee = columnsTagihanLainGlobal({
+		onDeleteClick: handleDeleteFeeClick,
+		onEditClick: handleEditFee,
+		onVerifyClick: handleVerifyFee,
+	});
+
 	return (
 		<div className="space-y-4">
 			<Tabs defaultValue="list" className="w-full">
 				<div className="flex items-center justify-between">
 					<TabsList>
 						<TabsTrigger value="list">SPP (Tuition)</TabsTrigger>
-						<TabsTrigger value="tagihan-lain">Tagihan Lain</TabsTrigger>
+						<TabsTrigger value="tagihan-buku">Buku</TabsTrigger>
+						<TabsTrigger value="fee-registration">Registration Fee</TabsTrigger>
+						<TabsTrigger value="tagihan-lain">Tagihan Lainnya</TabsTrigger>
 						<TabsTrigger value="jatuh-tempo">Jatuh Tempo</TabsTrigger>
 					</TabsList>
 
@@ -282,13 +413,20 @@ export default function PembayaranClient({
 							className="h-9 w-9 shrink-0"
 							onClick={() => {
 								refetch(); // Refetch SPP
-								refetchTagihanLain(); // Refetch Tagihan Lain
+								refetchBuku(); // Refetch Buku
+								refetchFee(); // Refetch Fee
 							}}
-							disabled={isLoading || isFetching || isLoadingTagihanLain}
+							disabled={
+								isLoading || isFetching || isLoadingBuku || isLoadingFee
+							}
 							title="Refresh"
 						>
 							<RefreshCw
-								className={`h-4 w-4 ${isLoading || isFetching || isLoadingTagihanLain ? "animate-spin" : ""}`}
+								className={`h-4 w-4 ${
+									isLoading || isFetching || isLoadingBuku || isLoadingFee
+										? "animate-spin"
+										: ""
+								}`}
 							/>
 						</Button>
 						<div className="flex flex-col">
@@ -388,6 +526,66 @@ export default function PembayaranClient({
 						isLoading={isLoading || isFetching || isRefetching}
 						sorting={sorting}
 						onSortingChange={setSorting}
+					/>
+				</TabsContent>
+
+				<TabsContent value="tagihan-buku" className="space-y-4">
+					<DeleteConfirmationDialog
+						isOpen={deleteBukuOpen}
+						onOpenChange={setDeleteBukuOpen}
+						title="Hapus Tagihan Buku"
+						description={
+							<>
+								Apakah Anda yakin ingin menghapus tagihan buku{" "}
+								<b>{bukuToDelete?.judul}</b> senilai{" "}
+								<b>{toRupiah(bukuToDelete?.jumlah ?? 0)}</b>?
+							</>
+						}
+						onConfirm={handleConfirmDeleteBuku}
+						isLoading={mutationsBuku.delete.isPending}
+						confirmText="Hapus Tagihan"
+						cancelText="Batal"
+					/>
+
+					<DataTable
+						columns={tableColumnsBuku}
+						data={dataBuku}
+						pageCount={pageCountBuku}
+						pagination={bukuPagination}
+						onPaginationChange={setBukuPagination}
+						isLoading={isLoadingBuku}
+						sorting={bukuSorting}
+						onSortingChange={setBukuSorting}
+					/>
+				</TabsContent>
+
+				<TabsContent value="fee-registration" className="space-y-4">
+					<DeleteConfirmationDialog
+						isOpen={deleteFeeOpen}
+						onOpenChange={setDeleteFeeOpen}
+						title="Hapus Registration Fee"
+						description={
+							<>
+								Apakah Anda yakin ingin menghapus registration fee{" "}
+								<b>{feeToDelete?.judul}</b> senilai{" "}
+								<b>{toRupiah(feeToDelete?.jumlah ?? 0)}</b>?
+							</>
+						}
+						onConfirm={handleConfirmDeleteFee}
+						isLoading={mutationsFee.delete.isPending}
+						confirmText="Hapus Fee"
+						cancelText="Batal"
+					/>
+
+					<DataTable
+						columns={tableColumnsFee}
+						data={dataFee}
+						pageCount={pageCountFee}
+						pagination={feePagination}
+						onPaginationChange={setFeePagination}
+						isLoading={isLoadingFee}
+						sorting={feeSorting}
+						onSortingChange={setFeeSorting}
 					/>
 				</TabsContent>
 

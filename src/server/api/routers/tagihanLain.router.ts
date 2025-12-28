@@ -1,11 +1,16 @@
-import { KategoriTagihan, type Prisma, StatusPembayaran } from "@prisma/client";
+import {
+	KategoriTagihan,
+	type Prisma,
+	type PrismaClient,
+	StatusPembayaran,
+} from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
 import { paginationSchema } from "@/types/pagination.type";
 
 export const tagihanLainRouter = createTRPCRouter({
-	// 1. Get All for a Student
+	// Get All for a Student
 	getAllByMurid: cabangProtectedProcedure
 		.input(z.object({ muridId: z.string() }))
 		.query(async ({ ctx, input }) => {
@@ -39,15 +44,14 @@ export const tagihanLainRouter = createTRPCRouter({
 			});
 		}),
 
-	// 6. Get All Paginated (Global View for Admin/Manager)
-	getAllPaginated: cabangProtectedProcedure
+	// Get All Paginated (Global View for Admin/Manager)
+	getAllBukuPaginated: cabangProtectedProcedure
 		.input(
 			paginationSchema.extend({
 				status: z.nativeEnum(StatusPembayaran).optional(),
 				muridId: z.string().optional(),
 				search: z.string().optional(),
 				cabangId: z.string().optional(),
-				kategori: z.nativeEnum(KategoriTagihan).optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -59,106 +63,63 @@ export const tagihanLainRouter = createTRPCRouter({
 			}),
 		)
 		.query(async ({ ctx, input }) => {
-			const { db, allowedCabangId } = ctx;
-			const { pageIndex, pageSize } = input;
-
-			const filterCabangId = allowedCabangId ?? input.cabangId;
-
-			const whereClause: Prisma.TagihanLainWhereInput = {};
-
-			// Filter by Branch
-			if (filterCabangId) {
-				whereClause.murid = {
-					cabangId: filterCabangId,
-				};
-			}
-
-			// Filter by Murid
-			if (input.muridId) {
-				whereClause.muridId = input.muridId;
-			}
-
-			// Filter by Status
-			if (input.status) {
-				whereClause.status = input.status;
-			}
-
-			// Filter by Kategori
-			if (input.kategori) {
-				whereClause.kategori = input.kategori;
-			}
-
-			// Search (by Judul or Murid Name)
-			if (input.search) {
-				whereClause.OR = [
-					{
-						judul: {
-							contains: input.search,
-							mode: "insensitive",
-						},
-					},
-					{
-						murid: {
-							namaLengkap: {
-								contains: input.search,
-								mode: "insensitive",
-							},
-						},
-					},
-				];
-			}
-
-			// Dynamic Sorting
-			let orderBy: Prisma.TagihanLainOrderByWithRelationInput[] = [
-				{ createdAt: "desc" },
-			];
-
-			if (input.sorting && input.sorting.length > 0) {
-				orderBy = input.sorting.map((sort) => {
-					if (sort.id === "namaMurid") {
-						return {
-							murid: {
-								namaLengkap: sort.desc ? "desc" : "asc",
-							},
-						};
-					}
-					return {
-						[sort.id]: sort.desc ? "desc" : "asc",
-					};
-				});
-			}
-
-			// Transaction: Count + FindMany
-			const [total, data] = await db.$transaction([
-				db.tagihanLain.count({ where: whereClause }),
-				db.tagihanLain.findMany({
-					skip: pageIndex * pageSize,
-					take: pageSize,
-					where: whereClause,
-					orderBy: orderBy,
-					include: {
-						murid: {
-							select: {
-								namaLengkap: true,
-								noWA: true,
-								cabang: { select: { namaCabang: true } },
-							},
-						},
-						kelas: { select: { kodeKelas: true, hargaKelas: true } },
-					},
-				}),
-			]);
-
-			const pageCount = Math.ceil(total / pageSize);
-
-			return {
-				data,
-				pageCount,
-				total,
-			};
+			return getPaginatedTagihan(ctx.db, ctx.allowedCabangId, {
+				...input,
+				kategori: KategoriTagihan.BUKU,
+			});
 		}),
 
-	// 2. Create Manually
+	getAllRegistrasiPaginated: cabangProtectedProcedure
+		.input(
+			paginationSchema.extend({
+				status: z.nativeEnum(StatusPembayaran).optional(),
+				muridId: z.string().optional(),
+				search: z.string().optional(),
+				cabangId: z.string().optional(),
+				sorting: z
+					.array(
+						z.object({
+							id: z.string(),
+							desc: z.boolean(),
+						}),
+					)
+					.optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			return getPaginatedTagihan(ctx.db, ctx.allowedCabangId, {
+				...input,
+				kategori: KategoriTagihan.REGISTRASI,
+			});
+		}),
+
+	getAllLainnyaPaginated: cabangProtectedProcedure
+		.input(
+			paginationSchema.extend({
+				status: z.nativeEnum(StatusPembayaran).optional(),
+				muridId: z.string().optional(),
+				search: z.string().optional(),
+				cabangId: z.string().optional(),
+				sorting: z
+					.array(
+						z.object({
+							id: z.string(),
+							desc: z.boolean(),
+						}),
+					)
+					.optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			return getPaginatedTagihan(ctx.db, ctx.allowedCabangId, {
+				...input,
+				kategori: KategoriTagihan.LAINNYA,
+			});
+		}),
+
+	// Get All Registrasi
+
+	// Create Manually
 	create: cabangProtectedProcedure
 		.input(
 			z.object({
@@ -315,3 +276,115 @@ export const tagihanLainRouter = createTRPCRouter({
 			});
 		}),
 });
+
+async function getPaginatedTagihan(
+	db: PrismaClient,
+	allowedCabangId: string | undefined | null,
+	input: {
+		pageIndex: number;
+		pageSize: number;
+		status?: StatusPembayaran;
+		muridId?: string;
+		search?: string;
+		cabangId?: string;
+		kategori?: KategoriTagihan;
+		sorting?: { id: string; desc: boolean }[];
+	},
+) {
+	const { pageIndex, pageSize } = input;
+
+	const filterCabangId = allowedCabangId ?? input.cabangId;
+
+	const whereClause: Prisma.TagihanLainWhereInput = {};
+
+	// Filter by Branch
+	if (filterCabangId) {
+		whereClause.murid = {
+			cabangId: filterCabangId,
+		};
+	}
+
+	// Filter by Murid
+	if (input.muridId) {
+		whereClause.muridId = input.muridId;
+	}
+
+	// Filter by Status
+	if (input.status) {
+		whereClause.status = input.status;
+	}
+
+	// Filter by Kategori
+	if (input.kategori) {
+		whereClause.kategori = input.kategori;
+	}
+
+	// Search (by Judul or Murid Name)
+	if (input.search) {
+		whereClause.OR = [
+			{
+				judul: {
+					contains: input.search,
+					mode: "insensitive",
+				},
+			},
+			{
+				murid: {
+					namaLengkap: {
+						contains: input.search,
+						mode: "insensitive",
+					},
+				},
+			},
+		];
+	}
+
+	// Dynamic Sorting
+	let orderBy: Prisma.TagihanLainOrderByWithRelationInput[] = [
+		{ createdAt: "desc" },
+	];
+
+	if (input.sorting && input.sorting.length > 0) {
+		orderBy = input.sorting.map((sort) => {
+			if (sort.id === "namaMurid") {
+				return {
+					murid: {
+						namaLengkap: sort.desc ? "desc" : "asc",
+					},
+				};
+			}
+			return {
+				[sort.id]: sort.desc ? "desc" : "asc",
+			};
+		});
+	}
+
+	// Transaction: Count + FindMany
+	const [total, data] = await db.$transaction([
+		db.tagihanLain.count({ where: whereClause }),
+		db.tagihanLain.findMany({
+			skip: pageIndex * pageSize,
+			take: pageSize,
+			where: whereClause,
+			orderBy: orderBy,
+			include: {
+				murid: {
+					select: {
+						namaLengkap: true,
+						noWA: true,
+						cabang: { select: { namaCabang: true } },
+					},
+				},
+				kelas: { select: { kodeKelas: true, hargaKelas: true } },
+			},
+		}),
+	]);
+
+	const pageCount = Math.ceil(total / pageSize);
+
+	return {
+		data,
+		pageCount,
+		total,
+	};
+}

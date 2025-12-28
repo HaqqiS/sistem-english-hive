@@ -288,7 +288,7 @@ model Kelas {
     jenisKelasRel JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
 
     // OLD: Keep as original
-    statusKelas StatusKelas?     @default(WAITING)
+    statusKelas StatusKelas?     @default(RUNNING)
     legacyJenisKelas JenisKelas? @map("jenisKelas")
     legacyTipe       TipeKelas?  @map("tipe")
 

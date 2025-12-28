@@ -36,7 +36,9 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 	const invalidateTagihan = async () => {
 		await Promise.all([
 			utils.tagihanLain.getAllByMurid.invalidate(),
-			utils.tagihanLain.getAllPaginated.invalidate(),
+			utils.tagihanLain.getAllBukuPaginated.invalidate(),
+			utils.tagihanLain.getAllRegistrasiPaginated.invalidate(),
+			utils.tagihanLain.getAllLainnyaPaginated.invalidate(),
 		]);
 	};
 
@@ -50,8 +52,8 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 		},
 	);
 
-	// 2. Get All Paginated (Global List or Student List Paginated)
-	const getAllPaginatedQuery = api.tagihanLain.getAllPaginated.useQuery(
+	// 2. Get All Buku Paginated
+	const getAllBukuPaginatedQuery = api.tagihanLain.getAllBukuPaginated.useQuery(
 		{
 			pageIndex,
 			pageSize,
@@ -59,11 +61,51 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			muridId: options.muridId,
 			cabangId: cabangIdPayload,
 			status: options.filterStatus,
-			kategori: options.filterKategori,
 			search: options.searchQuery,
 		},
-		{ enabled: options.enableGetAll ?? true },
+		{
+			enabled:
+				(options.enableGetAll ?? true) && options.filterKategori === "BUKU",
+		},
 	);
+
+	// 4. Get All Registrasi Paginated
+	const getAllRegistrasiPaginatedQuery =
+		api.tagihanLain.getAllRegistrasiPaginated.useQuery(
+			{
+				pageIndex,
+				pageSize,
+				sorting,
+				muridId: options.muridId,
+				cabangId: cabangIdPayload,
+				status: options.filterStatus,
+				search: options.searchQuery,
+			},
+			{
+				enabled:
+					(options.enableGetAll ?? true) &&
+					options.filterKategori === "REGISTRASI",
+			},
+		);
+
+	// 5. Get All Lainnya Paginated
+	const getAllLainnyaPaginatedQuery =
+		api.tagihanLain.getAllLainnyaPaginated.useQuery(
+			{
+				pageIndex,
+				pageSize,
+				sorting,
+				muridId: options.muridId,
+				cabangId: cabangIdPayload,
+				status: options.filterStatus,
+				search: options.searchQuery,
+			},
+			{
+				enabled:
+					(options.enableGetAll ?? true) &&
+					options.filterKategori === "LAINNYA",
+			},
+		);
 
 	// ========== MUTATIONS ==========
 
@@ -73,7 +115,9 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			toast.success("Tagihan berhasil dibuat");
 			options.onSuccessCreate?.();
 		},
-		onError: (err) => toast.error(`Gagal membuat tagihan: ${err.message}`),
+		onError: (error) => {
+			toast.error(`Gagal membuat tagihan: ${error.message}`);
+		},
 	});
 
 	const updateMutation = api.tagihanLain.update.useMutation({
@@ -82,7 +126,9 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			toast.success("Tagihan berhasil diperbarui");
 			options.onSuccessUpdate?.();
 		},
-		onError: (err) => toast.error(`Gagal memperbarui tagihan: ${err.message}`),
+		onError: (error) => {
+			toast.error(`Gagal memperbarui tagihan: ${error.message}`);
+		},
 	});
 
 	const deleteMutation = api.tagihanLain.delete.useMutation({
@@ -91,7 +137,9 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			toast.success("Tagihan berhasil dihapus");
 			options.onSuccessDelete?.();
 		},
-		onError: (err) => toast.error(`Gagal menghapus tagihan: ${err.message}`),
+		onError: (error) => {
+			toast.error(`Gagal menghapus tagihan: ${error.message}`);
+		},
 	});
 
 	const markAsPaidMutation = api.tagihanLain.markAsPaid.useMutation({
@@ -100,19 +148,36 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			toast.success("Tagihan ditandai lunas");
 			options.onSuccessMarkPaid?.();
 		},
-		onError: (err) => toast.error(`Gagal update status: ${err.message}`),
+		onError: (error) => {
+			toast.error(`Gagal update status: ${error.message}`);
+		},
 	});
 
 	return {
 		// Query Results - standardized names matches usePembayaran
-		dataGetAllPaginated: getAllPaginatedQuery.data?.data ?? [],
-		pageCount: getAllPaginatedQuery.data?.pageCount ?? -1,
-		totalRows: getAllPaginatedQuery.data?.total ?? 0,
-		isLoadingGetAllPaginated: getAllPaginatedQuery.isLoading,
-		isFetchingGetAllPaginated: getAllPaginatedQuery.isFetching,
-		isErrorGetAllPaginated: getAllPaginatedQuery.isError,
-		errorGetAllPaginated: getAllPaginatedQuery.error,
-		refetchGetAllPaginated: getAllPaginatedQuery.refetch,
+		dataGetAllBukuPaginated: getAllBukuPaginatedQuery.data?.data ?? [],
+		pageCountBuku: getAllBukuPaginatedQuery.data?.pageCount ?? -1,
+		totalRowsBuku: getAllBukuPaginatedQuery.data?.total ?? 0,
+		isLoadingGetAllBukuPaginated: getAllBukuPaginatedQuery.isLoading,
+		isFetchingGetAllBukuPaginated: getAllBukuPaginatedQuery.isFetching,
+		refetchGetAllBukuPaginated: getAllBukuPaginatedQuery.refetch,
+
+		dataGetAllRegistrasiPaginated:
+			getAllRegistrasiPaginatedQuery.data?.data ?? [],
+		pageCountRegistrasi: getAllRegistrasiPaginatedQuery.data?.pageCount ?? -1,
+		totalRowsRegistrasi: getAllRegistrasiPaginatedQuery.data?.total ?? 0,
+		isLoadingGetAllRegistrasiPaginated:
+			getAllRegistrasiPaginatedQuery.isLoading,
+		isFetchingGetAllRegistrasiPaginated:
+			getAllRegistrasiPaginatedQuery.isFetching,
+		refetchGetAllRegistrasiPaginated: getAllRegistrasiPaginatedQuery.refetch,
+
+		dataGetAllLainnyaPaginated: getAllLainnyaPaginatedQuery.data?.data ?? [],
+		pageCountLainnya: getAllLainnyaPaginatedQuery.data?.pageCount ?? -1,
+		totalRowsLainnya: getAllLainnyaPaginatedQuery.data?.total ?? 0,
+		isLoadingGetAllLainnyaPaginated: getAllLainnyaPaginatedQuery.isLoading,
+		isFetchingGetAllLainnyaPaginated: getAllLainnyaPaginatedQuery.isFetching,
+		refetchGetAllLainnyaPaginated: getAllLainnyaPaginatedQuery.refetch,
 
 		// Specific Query
 		dataByMurid: getAllByMuridQuery.data,

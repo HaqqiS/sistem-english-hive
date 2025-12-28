@@ -27,7 +27,7 @@ import { toRupiah } from "@/utils/toRupiah";
 
 // Type definition inferred from Router
 export type TypeTagihanLain =
-	RouterOutputs["tagihanLain"]["getAllPaginated"]["data"][number];
+	RouterOutputs["tagihanLain"]["getAllByMurid"][number];
 
 interface ColumnsConfig {
 	onEditClick: (item: TypeTagihanLain) => void;
@@ -374,6 +374,12 @@ export const columnsTagihanLainGlobal = ({
 			const formattedDate = formatDateWITA(row.original.createdAt);
 			return <span className="text-sm">{formattedDate}</span>;
 		},
+	},
+	// Deskripsi
+	{
+		accessorKey: "deskripsi",
+		header: "Deskripsi",
+		cell: ({ row }) => row.original.deskripsi,
 	},
 
 	// Aksi

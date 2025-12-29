@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	createBulkJadwal,
 	updateJadwal,
-} from "../server/services/jadwal.service";
+} from "../../server/services/jadwal.service";
 
 describe("Jadwal Service", () => {
 	const mockTx = {

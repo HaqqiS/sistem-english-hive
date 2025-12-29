@@ -11,7 +11,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	handleAutoLevelUp,
 	handleClassCompletion,
-} from "../server/services/kelas.service";
+} from "../../server/services/kelas.service";
 
 describe("Kelas Service", () => {
 	const mockTx = {

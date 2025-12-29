@@ -4,7 +4,7 @@ import {
 	calculateTotalGaji,
 	GAJI_PER_SESI,
 	getPeriodeGaji,
-} from "../server/services/gaji.service";
+} from "../../server/services/gaji.service";
 
 describe("Gaji Service", () => {
 	describe("getPeriodeGaji", () => {

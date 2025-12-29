@@ -71,7 +71,7 @@ export const columns = ({
 	// Waktu (Logika Gabungan Tetap/Custom)
 	{
 		id: "waktu",
-		header: "Waktu",
+		header: "Ruangan & Waktu",
 		cell: ({ row }) => {
 			const tetap = row.original.jamSlotTetap;
 			const custom = row.original.jamSlotCustom;
@@ -86,7 +86,7 @@ export const columns = ({
 					<div className="flex items-center gap-2 text-sm font-medium">
 						<Clock className="text-muted-foreground h-3 w-3" />
 						<span>
-							{jamMulai} - {jamSelesai}
+							{row.original.ruang.namaRuang} {jamMulai} - {jamSelesai}
 						</span>
 					</div>
 					{isCustom && (
@@ -118,14 +118,13 @@ export const columns = ({
 		),
 	},
 
-	// Ruangan & Cabang
+	// Cabang
 	{
-		accessorKey: "ruang.namaRuang",
-		header: "Ruangan & Cabang",
+		accessorKey: "ruang.cabang.namaCabang",
+		header: "Cabang",
 		cell: ({ row }) => (
 			<div className="flex flex-col gap-0.5">
-				<span className="font-medium">{row.original.ruang.namaRuang}</span>
-				<div className="text-muted-foreground flex items-center gap-1 text-xs">
+				<div className=" flex items-center gap-1 text-sm">
 					<MapPin className="h-3 w-3" />
 					<span>{row.original.ruang.cabang.namaCabang}</span>
 				</div>

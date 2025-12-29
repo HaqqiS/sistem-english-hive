@@ -42,7 +42,7 @@ export default function GuruClient() {
 	const { activeCabangId } = useGlobalCabangStore();
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
-		pageSize: 10,
+		pageSize: 50,
 	});
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [open, setOpen] = useState(false);

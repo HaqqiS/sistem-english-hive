@@ -39,7 +39,7 @@ export default function MuridClient() {
 	const [paginationAllMurid, setPaginationAllMurid] = useState<PaginationState>(
 		{
 			pageIndex: 0,
-			pageSize: 10,
+			pageSize: 50,
 		},
 	);
 	const [sortingAllMurid, setSortingAllMurid] = useState<SortingState>([]);
@@ -47,7 +47,7 @@ export default function MuridClient() {
 	const [paginationNotRegistered, setPaginationNotRegistered] =
 		useState<PaginationState>({
 			pageIndex: 0,
-			pageSize: 10,
+			pageSize: 50,
 		});
 	const [sortingNotRegistered, setSortingNotRegistered] =
 		useState<SortingState>([]);

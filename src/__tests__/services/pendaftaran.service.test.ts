@@ -7,11 +7,11 @@ import {
 	StatusPendaftaran,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as PembayaranService from "../server/services/pembayaran.service";
+import * as PembayaranService from "../../server/services/pembayaran.service";
 import {
 	createBulkPendaftaran,
 	createPendaftaran,
-} from "../server/services/pendaftaran.service";
+} from "../../server/services/pendaftaran.service";
 
 // Mock Pembayaran Service logic
 vi.mock("../server/services/pembayaran.service", () => ({

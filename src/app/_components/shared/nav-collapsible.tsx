@@ -64,7 +64,10 @@ export function NavCollapsible({ items }: NavItemProps) {
 												// Ini adalah link root (cth: /admin). Gunakan exact match.
 												isActive = pathname === subItem.url;
 											} else {
-												isActive = pathname.startsWith(subItem.url);
+												isActive =
+													pathname === subItem.url ||
+													(pathname.startsWith(subItem.url) &&
+														pathname[subItem.url.length] === "/");
 											}
 											return (
 												<SidebarMenuSubItem key={subItem.title}>

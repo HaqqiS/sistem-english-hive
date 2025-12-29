@@ -9,7 +9,7 @@ import {
 	calculateInitialBill,
 	calculateSisaPertemuan,
 	generateTagihan,
-} from "../server/services/pembayaran.service";
+} from "../../server/services/pembayaran.service";
 
 // Mock Data Constants
 const MOCK_PENDAFTARAN_ID = "pendaftaran-1";

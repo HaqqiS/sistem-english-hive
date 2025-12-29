@@ -63,8 +63,14 @@ export default function RuangForm({ onSubmit }: RuangFormProps) {
 							<FormLabel>Pilih Status</FormLabel>
 							<FormControl>
 								<Select
-									onValueChange={field.onChange}
-									value={field.value?.toString()}
+									onValueChange={(value) => field.onChange(value === "true")}
+									value={
+										field.value === undefined
+											? undefined
+											: field.value
+												? "true"
+												: "false"
+									}
 								>
 									<SelectTrigger className="w-full">
 										<SelectValue placeholder="Pilih Status" />

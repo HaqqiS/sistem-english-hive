@@ -78,7 +78,9 @@ export const jadwalKelasRouter = createTRPCRouter({
 								// Count & History untuk tampilan Matrix
 								_count: {
 									select: {
-										pendaftaranKelases: { where: { isAktif: true } },
+										pendaftaranKelases: {
+											where: { NOT: { status: "NON_AKTIF" } },
+										},
 									},
 								},
 								historyGuruKelases: {

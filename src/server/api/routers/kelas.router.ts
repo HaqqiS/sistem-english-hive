@@ -28,7 +28,7 @@ export const kelasRouter = createTRPCRouter({
 			const kelas = await db.kelas.findMany({
 				where: whereClause,
 				distinct: ["cohortId"],
-				orderBy: { createdAt: "desc" },
+				orderBy: [{ jenisKelasRel: { tipe: "asc" } }, { level: "asc" }],
 
 				select: {
 					id: true,
@@ -163,6 +163,8 @@ export const kelasRouter = createTRPCRouter({
 						select: {
 							id: true,
 							hari: true,
+							jamSlotCustom: true,
+							jamSlotTetap: true,
 						},
 					},
 					_count: {
@@ -280,6 +282,8 @@ export const kelasRouter = createTRPCRouter({
 						select: {
 							id: true,
 							hari: true,
+							jamSlotCustom: true,
+							jamSlotTetap: true,
 						},
 					},
 					_count: {
@@ -397,6 +401,8 @@ export const kelasRouter = createTRPCRouter({
 						select: {
 							id: true,
 							hari: true,
+							jamSlotCustom: true,
+							jamSlotTetap: true,
 						},
 					},
 					_count: {

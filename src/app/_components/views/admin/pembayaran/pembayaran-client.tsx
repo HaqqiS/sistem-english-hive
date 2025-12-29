@@ -68,7 +68,7 @@ export default function PembayaranClient({
 	const [itemToDelete, setItemToDelete] = useState<TypePembayaran | null>(null);
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
-		pageSize: 10,
+		pageSize: 50,
 	});
 
 	// --- HOOKS/QUERIES/MUTATIONS ---

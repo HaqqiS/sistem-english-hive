@@ -76,7 +76,17 @@ export function KelasListView({
 					const lastSession = kelas.sesiPertemuanKelases[0]?.tanggalWaktu;
 					const jadwalHari =
 						kelas.jadwalKelas.length > 0
-							? kelas.jadwalKelas.map((j) => j.hari).join(", ")
+							? kelas.jadwalKelas
+									.map((j) => {
+										let timeRange = "";
+										if (j.jamSlotTetap) {
+											timeRange = `(${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai})`;
+										} else if (j.jamSlotCustom) {
+											timeRange = `(${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai})`;
+										}
+										return `${j.hari} ${timeRange}`;
+									})
+									.join(" | ")
 							: "Jadwal belum diatur";
 
 					return (

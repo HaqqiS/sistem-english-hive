@@ -32,13 +32,9 @@ import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { downloadExcel } from "@/utils/exportUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "./columns/columns-pembayaran";
-import {
-	columnsTagihanLainGlobal,
-	type TypeTagihanLain,
-} from "./columns/columns-tagihan-lain";
 import EditPembayaran from "./drawer/edit-pembayaran";
 import TambahPembayaran from "./drawer/tambah-pembayaran";
-import TambahTagihanLain from "./drawer/tambah-tagihan-lain";
+import TagihanLainTab from "./tabs/tagihan-lain-tab";
 
 interface PembayaranClientProps {
 	initialDataPembayaran?: TypePembayaranPaginated;
@@ -181,205 +177,12 @@ export default function PembayaranClient({
 		onVerifyClick: handleVerifyClick,
 	});
 
-	// --- TAGIHAN LAIN (GENERIC / OTHERS) HOOK ---
-	const [tagihanLainPagination, setTagihanLainPagination] =
-		useState<PaginationState>({
-			pageIndex: 0,
-			pageSize: 10,
-		});
-	const [tagihanLainSorting, setTagihanLainSorting] = useState<SortingState>(
-		[],
-	);
-	const [deleteTagihanLainOpen, setDeleteTagihanLainOpen] = useState(false);
-	const [tagihanLainToDelete, setTagihanLainToDelete] =
-		useState<TypeTagihanLain | null>(null);
+	// --- REFRESH UTILS ---
+	// We use this just to expose invalidate capability for the Refresh Button
+	const { invalidateAll: invalidateAllTagihan } = useTagihanLain();
 
-	const {
-		dataGetAllLainnyaPaginated: dataTagihanLain,
-		pageCountLainnya: pageCountTagihanLain,
-		isLoadingGetAllLainnyaPaginated: isLoadingTagihanLain,
-		// refetchGetAllLainnyaPaginated: refetchTagihanLain,
-		mutations: mutationsTagihanLain,
-	} = useTagihanLain({
-		pagination: tagihanLainPagination,
-		filterCabang: activeCabangId,
-		filterStatus: statusFilter === "ALL" ? undefined : statusFilter,
-		// Explicitly filter to OTHERS if desired, or keep generic?
-		// User asked for separation. If I filter generic to `LAINNYA`, then "Tagihan Lain" tab becomes truly "Others".
-		// But let's check KategoriTagihan enum. It has LAINNYA.
-		// I will Assume "Tagihan Lain" tab = Kategori "LAINNYA".
-		filterKategori: KategoriTagihan.LAINNYA,
-		searchQuery: debouncedSearch,
-		enableGetAll: true,
-		onSuccessDelete: () => {
-			setDeleteTagihanLainOpen(false);
-			setTagihanLainToDelete(null);
-		},
-	});
-
-	// --- TAGIHAN BUKU HOOK ---
-	const [bukuPagination, setBukuPagination] = useState<PaginationState>({
-		pageIndex: 0,
-		pageSize: 10,
-	});
-	const [bukuSorting, setBukuSorting] = useState<SortingState>([]);
-	const [deleteBukuOpen, setDeleteBukuOpen] = useState(false);
-	const [bukuToDelete, setBukuToDelete] = useState<TypeTagihanLain | null>(
-		null,
-	);
-
-	const {
-		dataGetAllBukuPaginated: dataBuku,
-		pageCountBuku,
-		isLoadingGetAllBukuPaginated: isLoadingBuku,
-		refetchGetAllBukuPaginated: refetchBuku,
-		mutations: mutationsBuku,
-	} = useTagihanLain({
-		pagination: bukuPagination,
-		filterCabang: activeCabangId,
-		filterStatus: statusFilter === "ALL" ? undefined : statusFilter,
-		filterKategori: KategoriTagihan.BUKU,
-		searchQuery: debouncedSearch,
-		enableGetAll: true,
-		onSuccessDelete: () => {
-			setDeleteBukuOpen(false);
-			setBukuToDelete(null);
-		},
-	});
-
-	// --- TAGIHAN FEE REGISTRATION HOOK ---
-	const [feePagination, setFeePagination] = useState<PaginationState>({
-		pageIndex: 0,
-		pageSize: 10,
-	});
-	const [feeSorting, setFeeSorting] = useState<SortingState>([]);
-	const [deleteFeeOpen, setDeleteFeeOpen] = useState(false);
-	const [feeToDelete, setFeeToDelete] = useState<TypeTagihanLain | null>(null);
-
-	const {
-		dataGetAllRegistrasiPaginated: dataFee,
-		pageCountRegistrasi: pageCountFee,
-		isLoadingGetAllRegistrasiPaginated: isLoadingFee,
-		refetchGetAllRegistrasiPaginated: refetchFee,
-		mutations: mutationsFee,
-	} = useTagihanLain({
-		pagination: feePagination,
-		filterCabang: activeCabangId,
-		filterStatus: statusFilter === "ALL" ? undefined : statusFilter,
-		filterKategori: KategoriTagihan.REGISTRASI,
-		searchQuery: debouncedSearch,
-		enableGetAll: true,
-		onSuccessDelete: () => {
-			setDeleteFeeOpen(false);
-			setFeeToDelete(null);
-		},
-	});
-
-	// --- HANDLERS TAGIHAN LAIN (GENERIC) ---
-	const handleDeleteTagihanLainClick = (item: TypeTagihanLain) => {
-		setTagihanLainToDelete(item);
-		setDeleteTagihanLainOpen(true);
-	};
-
-	const handleConfirmDeleteTagihanLain = () => {
-		if (tagihanLainToDelete) {
-			mutationsTagihanLain.delete.mutate({ id: tagihanLainToDelete.id });
-		}
-	};
-
-	const handleVerifyTagihanLain = (item: TypeTagihanLain) => {
-		if (item.status === StatusPembayaran.LUNAS) {
-			mutationsTagihanLain.update.mutate({
-				id: item.id,
-				status: StatusPembayaran.BELUM_LUNAS,
-			});
-		} else {
-			mutationsTagihanLain.markAsPaid.mutate({ id: item.id });
-		}
-	};
-
-	const handleEditTagihanLain = (_item: TypeTagihanLain) => {
-		toast("Fitur Edit Tagihan Lain dari Global View belum diimplementasikan", {
-			description: "Silakan edit melalui detail siswa",
-		});
-	};
-
-	const tableColumnsTagihanLain = columnsTagihanLainGlobal({
-		onDeleteClick: handleDeleteTagihanLainClick,
-		onEditClick: handleEditTagihanLain,
-		onVerifyClick: handleVerifyTagihanLain,
-	});
-
-	// --- HANDLERS BUKU ---
-	const handleDeleteBukuClick = (item: TypeTagihanLain) => {
-		setBukuToDelete(item);
-		setDeleteBukuOpen(true);
-	};
-
-	const handleConfirmDeleteBuku = () => {
-		if (bukuToDelete) {
-			mutationsBuku.delete.mutate({ id: bukuToDelete.id });
-		}
-	};
-
-	const handleVerifyBuku = (item: TypeTagihanLain) => {
-		if (item.status === StatusPembayaran.LUNAS) {
-			mutationsBuku.update.mutate({
-				id: item.id,
-				status: StatusPembayaran.BELUM_LUNAS,
-			});
-		} else {
-			mutationsBuku.markAsPaid.mutate({ id: item.id });
-		}
-	};
-
-	// Reuse generic edit handler logic for now
-	const handleEditBuku = (_item: TypeTagihanLain) => {
-		toast("Fitur Edit Tagihan Buku dari Global View belum diimplementasikan", {
-			description: "Silakan edit melalui detail siswa",
-		});
-	};
-
-	const tableColumnsBuku = columnsTagihanLainGlobal({
-		onDeleteClick: handleDeleteBukuClick,
-		onEditClick: handleEditBuku,
-		onVerifyClick: handleVerifyBuku,
-	});
-
-	// --- HANDLERS FEE ---
-	const handleDeleteFeeClick = (item: TypeTagihanLain) => {
-		setFeeToDelete(item);
-		setDeleteFeeOpen(true);
-	};
-
-	const handleConfirmDeleteFee = () => {
-		if (feeToDelete) {
-			mutationsFee.delete.mutate({ id: feeToDelete.id });
-		}
-	};
-
-	const handleVerifyFee = (item: TypeTagihanLain) => {
-		if (item.status === StatusPembayaran.LUNAS) {
-			mutationsFee.update.mutate({
-				id: item.id,
-				status: StatusPembayaran.BELUM_LUNAS,
-			});
-		} else {
-			mutationsFee.markAsPaid.mutate({ id: item.id });
-		}
-	};
-
-	const handleEditFee = (_item: TypeTagihanLain) => {
-		toast("Fitur Edit Fee dari Global View belum diimplementasikan", {
-			description: "Silakan edit melalui detail siswa",
-		});
-	};
-
-	const tableColumnsFee = columnsTagihanLainGlobal({
-		onDeleteClick: handleDeleteFeeClick,
-		onEditClick: handleEditFee,
-		onVerifyClick: handleVerifyFee,
-	});
+	// Handlers for SPP are kept here
+	// ...
 
 	return (
 		<div className="space-y-4">
@@ -404,29 +207,23 @@ export default function PembayaranClient({
 					</HeaderActionPortal>
 				</div>
 
-				{/* Shared Filters Header - Consider moving inside TabsContent if filters differ significantly, 
-            but for now they share SEARCH and STATUS filters. KELAS filter applies to SPP usually. */}
+				{/* Shared Filters Header */}
 				<div className="mt-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">
 					<div className="flex flex-1 items-center gap-3">
 						<Button
 							variant="ghost"
 							size="icon"
 							className="h-9 w-9 shrink-0"
-							onClick={() => {
-								refetch(); // Refetch SPP
-								refetchBuku(); // Refetch Buku
-								refetchFee(); // Refetch Fee
+							onClick={async () => {
+								refetch(); // Refetch SPP (from usePembayaran)
+								await invalidateAllTagihan(); // Refetch all tagihan lain
 							}}
-							disabled={
-								isLoading || isFetching || isLoadingBuku || isLoadingFee
-							}
+							disabled={isLoading || isFetching}
 							title="Refresh"
 						>
 							<RefreshCw
 								className={`h-4 w-4 ${
-									isLoading || isFetching || isLoadingBuku || isLoadingFee
-										? "animate-spin"
-										: ""
+									isLoading || isFetching ? "animate-spin" : ""
 								}`}
 							/>
 						</Button>
@@ -437,7 +234,6 @@ export default function PembayaranClient({
 							</p>
 						</div>
 					</div>
-					<TambahPembayaran />
 				</div>
 
 				<div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -472,27 +268,33 @@ export default function PembayaranClient({
 								</SelectItem>
 							</SelectContent>
 						</Select>
-
-						<Select
-							value={kelasIdFilter}
-							onValueChange={(val) => setKelasIdFilter(val as string | "ALL")}
-						>
-							<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
-								<SelectValue placeholder="Filter Kelas (SPP Only)" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="ALL">Semua Kelas</SelectItem>
-								{kelasList?.map((kelas) => (
-									<SelectItem key={kelas.id} value={kelas.id}>
-										{kelas.kodeKelas}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
 					</div>
 				</div>
 
 				<TabsContent value="list" className="space-y-4">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						{/* Filter Kelas khusus SPP */}
+						<div className="flex items-center gap-2">
+							<Select
+								value={kelasIdFilter}
+								onValueChange={(val) => setKelasIdFilter(val as string | "ALL")}
+							>
+								<SelectTrigger className="w-full sm:w-[200px]">
+									<SelectValue placeholder="Filter Kelas" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Kelas</SelectItem>
+									{kelasList?.map((kelas) => (
+										<SelectItem key={kelas.id} value={kelas.id}>
+											{kelas.kodeKelas}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						<TambahPembayaran />
+					</div>
+
 					<EditPembayaran />
 
 					<DeleteConfirmationDialog
@@ -531,104 +333,35 @@ export default function PembayaranClient({
 				</TabsContent>
 
 				<TabsContent value="tagihan-buku" className="space-y-4">
-					<div className="flex justify-end">
-						<TambahTagihanLain
-							kategori={KategoriTagihan.BUKU}
-							label="Tambah Tagihan Buku"
-						/>
-					</div>
-					<DeleteConfirmationDialog
-						isOpen={deleteBukuOpen}
-						onOpenChange={setDeleteBukuOpen}
-						title="Hapus Tagihan Buku"
-						description={
-							<>
-								Apakah Anda yakin ingin menghapus tagihan buku{" "}
-								<b>{bukuToDelete?.judul}</b> senilai{" "}
-								<b>{toRupiah(bukuToDelete?.jumlah ?? 0)}</b>?
-							</>
-						}
-						onConfirm={handleConfirmDeleteBuku}
-						isLoading={mutationsBuku.delete.isPending}
-						confirmText="Hapus Tagihan"
-						cancelText="Batal"
-					/>
-
-					<DataTable
-						columns={tableColumnsBuku}
-						data={dataBuku}
-						pageCount={pageCountBuku}
-						pagination={bukuPagination}
-						onPaginationChange={setBukuPagination}
-						isLoading={isLoadingBuku}
-						sorting={bukuSorting}
-						onSortingChange={setBukuSorting}
+					<TagihanLainTab
+						kategori={KategoriTagihan.BUKU}
+						labelTambah="Tambah Tagihan Buku"
+						filterCabang={activeCabangId}
+						filterStatus={statusFilter}
+						searchQuery={debouncedSearch}
 					/>
 				</TabsContent>
 
 				<TabsContent value="fee-registration" className="space-y-4">
-					<div className="flex justify-end">
-						<TambahTagihanLain
-							kategori={KategoriTagihan.REGISTRASI}
-							label="Tambah Biaya Registrasi"
-						/>
-					</div>
-					<DeleteConfirmationDialog
-						isOpen={deleteFeeOpen}
-						onOpenChange={setDeleteFeeOpen}
-						title="Hapus Registration Fee"
-						description={
-							<>
-								Apakah Anda yakin ingin menghapus registration fee{" "}
-								<b>{feeToDelete?.judul}</b> senilai{" "}
-								<b>{toRupiah(feeToDelete?.jumlah ?? 0)}</b>?
-							</>
-						}
-						onConfirm={handleConfirmDeleteFee}
-						isLoading={mutationsFee.delete.isPending}
-						confirmText="Hapus Fee"
-						cancelText="Batal"
-					/>
-
-					<DataTable
-						columns={tableColumnsFee}
-						data={dataFee}
-						pageCount={pageCountFee}
-						pagination={feePagination}
-						onPaginationChange={setFeePagination}
-						isLoading={isLoadingFee}
-						sorting={feeSorting}
-						onSortingChange={setFeeSorting}
+					<TagihanLainTab
+						kategori={KategoriTagihan.REGISTRASI}
+						labelTambah="Tambah Biaya Registrasi"
+						filterCabang={activeCabangId}
+						filterStatus={statusFilter}
+						searchQuery={debouncedSearch}
 					/>
 				</TabsContent>
 
 				<TabsContent value="tagihan-lain" className="space-y-4">
-					<DeleteConfirmationDialog
-						isOpen={deleteTagihanLainOpen}
-						onOpenChange={setDeleteTagihanLainOpen}
-						title="Hapus Tagihan Lain"
-						description={
-							<>
-								Apakah Anda yakin ingin menghapus tagihan{" "}
-								<b>{tagihanLainToDelete?.judul}</b> senilai{" "}
-								<b>{toRupiah(tagihanLainToDelete?.jumlah ?? 0)}</b>?
-							</>
-						}
-						onConfirm={handleConfirmDeleteTagihanLain}
-						isLoading={mutationsTagihanLain.delete.isPending}
-						confirmText="Hapus Tagihan"
-						cancelText="Batal"
-					/>
-
-					<DataTable
-						columns={tableColumnsTagihanLain}
-						data={dataTagihanLain}
-						pageCount={pageCountTagihanLain}
-						pagination={tagihanLainPagination}
-						onPaginationChange={setTagihanLainPagination}
-						isLoading={isLoadingTagihanLain}
-						sorting={tagihanLainSorting}
-						onSortingChange={setTagihanLainSorting}
+					<TagihanLainTab
+						kategori={KategoriTagihan.LAINNYA}
+						// No "labelTambah" means no add button by default?
+						// Wait, previous code didn't have add button for "Tagihan Lain".
+						// Wait, previous code had `DeleteConfirmationDialog` and `DataTable` but NO `TambahTagihanLain` button.
+						// So I leave labelTambah undefined.
+						filterCabang={activeCabangId}
+						filterStatus={statusFilter}
+						searchQuery={debouncedSearch}
 					/>
 				</TabsContent>
 

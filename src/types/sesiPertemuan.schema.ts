@@ -20,4 +20,11 @@ export type TypeClientSesiPertemuanSchema = z.infer<
 	typeof clientSesiPertemuanSchema
 >;
 
+export const updateSesiPertemuanSchema = z.object({
+	id: z.string().min(1, "ID Sesi harus diisi"),
+	tanggalWaktu: z.date({
+		required_error: "Tanggal dan Waktu harus diisi",
+	}),
+});
+
 export const serverSesiPertemuanSchema = baseSesiPertemuanSchema;

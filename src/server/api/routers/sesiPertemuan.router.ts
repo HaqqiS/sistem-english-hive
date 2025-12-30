@@ -1,7 +1,10 @@
 import { Prisma, type StatusAbsenMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
-import { serverSesiPertemuanSchema } from "@/types/sesiPertemuan.schema";
+import {
+	serverSesiPertemuanSchema,
+	updateSesiPertemuanSchema,
+} from "@/types/sesiPertemuan.schema";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
 export const sesiPertemuanRouter = createTRPCRouter({
@@ -232,5 +235,42 @@ export const sesiPertemuanRouter = createTRPCRouter({
 				}
 				throw error;
 			}
+		}),
+
+	updateSesiPertemuan: cabangProtectedProcedure
+		.input(updateSesiPertemuanSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			// 1. Get Existing Session & Validate Cabang
+			const existingSession = await db.sesiPertemuanKelas.findUnique({
+				where: { id: input.id },
+				include: { kelas: { select: { cabangId: true } } },
+			});
+
+			if (!existingSession) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Sesi pertemuan tidak ditemukan.",
+				});
+			}
+
+			if (
+				allowedCabangId &&
+				existingSession.kelas.cabangId !== allowedCabangId
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak mengubah sesi di cabang ini.",
+				});
+			}
+
+			// 2. Update
+			return await db.sesiPertemuanKelas.update({
+				where: { id: input.id },
+				data: {
+					tanggalWaktu: input.tanggalWaktu,
+				},
+			});
 		}),
 });

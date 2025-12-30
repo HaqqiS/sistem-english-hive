@@ -59,6 +59,16 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
 	});
 
 	// UPDATE
+	const updateMutation = api.sesiPertemuan.updateSesiPertemuan.useMutation({
+		onSuccess: async () => {
+			await invalidateSesi();
+			toast.success("Sesi Pertemuan berhasil diperbarui");
+			options?.onSuccessUpdate?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal memperbarui Sesi Pertemuan: ${error.message}`);
+		},
+	});
 
 	// DELETE
 
@@ -76,6 +86,11 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
 				mutate: createMutation.mutate,
 				mutateAsync: createMutation.mutateAsync,
 				isPending: createMutation.isPending,
+			},
+			update: {
+				mutate: updateMutation.mutate,
+				mutateAsync: updateMutation.mutateAsync,
+				isPending: updateMutation.isPending,
 			},
 		},
 

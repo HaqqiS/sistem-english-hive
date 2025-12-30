@@ -192,9 +192,9 @@ export const columnsJatuhTempo = ({
 		cell: ({ row }) => {
 			const noWA = row.original.pendaftaranKelas.murid.noWA;
 			const namaMurid = row.original.pendaftaranKelas.murid.namaLengkap;
-			const jatuhTempo = row.original.tanggalJatuhTempo;
+			const tipe = `SPP Bulan Ke-${row.original.pembayaranKe}`;
 			const jumlah = row.original.jumlahBayar;
-
+			const jatuhTempo = row.original.tanggalJatuhTempo;
 			return (
 				<div className="flex items-center gap-2">
 					{/* Tombol WA Reminder */}
@@ -206,7 +206,13 @@ export const columnsJatuhTempo = ({
 						title="Kirim Pengingat WA"
 					>
 						<Link
-							href={formatWhatsAppReminder(noWA, namaMurid, jatuhTempo, jumlah)}
+							href={formatWhatsAppReminder(
+								noWA,
+								namaMurid,
+								tipe,
+								jumlah,
+								jatuhTempo,
+							)}
 							target="_blank"
 						>
 							<MessageCircle className="h-4 w-4" />

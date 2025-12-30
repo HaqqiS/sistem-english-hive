@@ -2,7 +2,6 @@
 
 import {
 	Album,
-	BadgeQuestionMark,
 	Clock,
 	MoreHorizontal,
 	Pencil,
@@ -146,18 +145,11 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 							</span>
 						</div>
 						<div className="flex items-center gap-1.5">
-							<BadgeQuestionMark className="h-3 w-3 shrink-0 opacity-70" />
-							<span className="font-mono text-sm">{data.statusKelas}</span>
+							<Album className="h-3 w-3 shrink-0 opacity-70" />
+							<span className="font-mono text-sm">
+								{data.originalData.kelas.deskripsi ?? "-"}
+							</span>
 						</div>
-
-						{data.originalData.kelas.deskripsi && (
-							<div className="flex items-center gap-1.5">
-								<Album className="h-3 w-3 shrink-0 opacity-70" />
-								<span className="font-mono text-sm">
-									{data.originalData.kelas.deskripsi}
-								</span>
-							</div>
-						)}
 					</div>
 				</div>
 			</HoverCardTrigger>
@@ -194,6 +186,14 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 							>
 								{data.jumlahMurid} Siswa Terdaftar
 							</Badge>
+							<Badge
+								className={cn(
+									"h-5 px-1.5 text-[10px] font-normal",
+									headerColorClass,
+								)}
+							>
+								{data.statusKelas}
+							</Badge>
 						</div>
 					</div>
 
@@ -214,6 +214,15 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 							</div>
 							<span className="text-foreground font-mono text-sm font-medium">
 								{data.jamMulai} - {data.jamSelesai}
+							</span>
+						</div>
+						<div className="border-border/50 mt-1 flex items-center justify-between border-t pt-2">
+							<div className="text-muted-foreground flex items-center gap-2">
+								<Album className="h-4 w-4" />
+								<span className="text-sm">Deskripsi</span>
+							</div>
+							<span className="text-foreground font-mono text-sm font-medium">
+								{data.originalData.kelas.deskripsi ?? "-"}
 							</span>
 						</div>
 					</div>

@@ -222,7 +222,7 @@ export default function KelasPageContent({ viewMode }: KelasPageContentProps) {
 				const guru = item.historyGuruKelases[0]?.guru.name ?? "Belum Ada";
 				const jadwal =
 					item.jadwalKelas.length > 0
-						? item.jadwalKelas.map((j) => j.hari).join(", ")
+						? item.jadwalKelas.map((j: { hari: string }) => j.hari).join(", ")
 						: "-";
 
 				return {

@@ -1,0 +1,216 @@
+"use client";
+
+import { useMemo } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { api } from "@/trpc/react";
+
+const DAYS = [
+	"SENIN",
+	"SELASA",
+	"RABU",
+	"KAMIS",
+	"JUMAT",
+	"SABTU",
+	"MINGGU",
+] as const;
+
+interface JadwalGuruTabProps {
+	cabangId?: string;
+}
+
+export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
+	const { data, isLoading } = api.user.getJadwalMatrix.useQuery({
+		cabangId,
+	});
+
+	const processedData = useMemo(() => {
+		if (!data) return [];
+		const { gurus, jamTetap } = data;
+
+		return gurus.map((guru) => {
+			// 1. Collect all custom slots for this guru
+			const customSlots = new Map<
+				string,
+				{ jamMulai: string; jamSelesai: string; isCustom: boolean }
+			>();
+
+			// Add standard slots first
+			jamTetap.forEach((jt) => {
+				const key = `${jt.jamMulai}-${jt.jamSelesai}`;
+				if (!customSlots.has(key)) {
+					customSlots.set(key, {
+						jamMulai: jt.jamMulai,
+						jamSelesai: jt.jamSelesai,
+						isCustom: false,
+					});
+				}
+			});
+
+			// Add custom slots found in guru's schedule
+			guru.historyGuruKelases.forEach((history) => {
+				history.kelas.jadwalKelas.forEach((jadwal) => {
+					if (jadwal.jamSlotCustom) {
+						const { jamMulai, jamSelesai } = jadwal.jamSlotCustom;
+						const key = `${jamMulai}-${jamSelesai}`;
+						if (!customSlots.has(key)) {
+							customSlots.set(key, { jamMulai, jamSelesai, isCustom: true });
+						}
+					}
+				});
+			});
+
+			// Sort slots
+			const sortedSlots = Array.from(customSlots.values()).sort((a, b) =>
+				a.jamMulai.localeCompare(b.jamMulai),
+			);
+
+			// Prepare grid data
+			const rows = sortedSlots.map((slot) => {
+				const dayCells = DAYS.map((day) => {
+					// Find class for this slot & day
+					const foundClass = guru.historyGuruKelases
+						.flatMap((h) =>
+							h.kelas.jadwalKelas.map((j) => ({
+								...j,
+								kodeKelas: h.kelas.kodeKelas,
+								statusKelas: h.kelas.statusKelas,
+								kelasId: h.kelas.id,
+							})),
+						)
+						.find((j) => {
+							// Match Day
+							if (j.hari !== day) return false;
+
+							// Match Time
+							if (j.jamSlotTetap) {
+								return (
+									j.jamSlotTetap.jamMulai === slot.jamMulai &&
+									j.jamSlotTetap.jamSelesai === slot.jamSelesai
+								);
+							} else if (j.jamSlotCustom) {
+								return (
+									j.jamSlotCustom.jamMulai === slot.jamMulai &&
+									j.jamSlotCustom.jamSelesai === slot.jamSelesai
+								);
+							}
+							return false;
+						});
+
+					return foundClass
+						? {
+								kodeKelas: foundClass.kodeKelas,
+								status: foundClass.statusKelas,
+							}
+						: null;
+				});
+
+				return {
+					slot,
+					cells: dayCells,
+				};
+			});
+
+			return {
+				guru,
+				rows,
+			};
+		});
+	}, [data]);
+
+	if (isLoading) {
+		return (
+			<div className="space-y-4">
+				<Skeleton className="h-10 w-full" />
+				<Skeleton className="h-40 w-full" />
+			</div>
+		);
+	}
+
+	return (
+		<div className="rounded-md border p-4 bg-background">
+			<Table>
+				<TableHeader>
+					<TableRow className="bg-muted/50">
+						<TableHead className="w-[150px] border-r">Nama Guru</TableHead>
+						<TableHead className="w-[120px] border-r border-dotted">
+							Jam
+						</TableHead>
+						{DAYS.map((day) => (
+							<TableHead
+								key={day}
+								className="text-center border-r last:border-r-0"
+							>
+								{day}
+							</TableHead>
+						))}
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{processedData.map((item) =>
+						item.rows.map((row, index) => (
+							<TableRow key={`${item.guru.id}-${index}`}>
+								{/* Guru Name Column - Merged */}
+								{index === 0 && (
+									<TableCell
+										rowSpan={item.rows.length}
+										className="font-medium border-r sticky top-0 bg-muted/5 items-center"
+									>
+										<div className="sticky">{item.guru.name}</div>
+									</TableCell>
+								)}
+
+								{/* Time Slot */}
+								<TableCell className="text-sm text-muted-foreground border-r border-dotted font-mono whitespace-nowrap">
+									{row.slot.jamMulai} - {row.slot.jamSelesai}
+								</TableCell>
+
+								{row.cells.map((cellContent, dayIdx) => (
+									<TableCell
+										key={DAYS[dayIdx]}
+										className="p-2 border-r last:border-r-0 text-center"
+									>
+										{cellContent ? (
+											<div
+												className={`flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md ${
+													cellContent.status === "TRIAL"
+														? "border-l-blue-600 bg-blue-50 text-blue-900 dark:bg-blue-900/20 dark:text-blue-100"
+														: cellContent.status === "WAITING"
+															? "border-l-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-100"
+															: "border-l-primary bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
+												}`}
+											>
+												<span className="font-bold tracking-tight">
+													{cellContent.kodeKelas}
+												</span>
+												<span className="text-[10px] font-medium opacity-80">
+													{cellContent.status}
+												</span>
+											</div>
+										) : (
+											<span className="text-muted-foreground/20">-</span>
+										)}
+									</TableCell>
+								))}
+							</TableRow>
+						)),
+					)}
+					{processedData.length === 0 && (
+						<TableRow>
+							<TableCell colSpan={9} className="h-24 text-center">
+								Tidak ada data jadwal.
+							</TableCell>
+						</TableRow>
+					)}
+				</TableBody>
+			</Table>
+		</div>
+	);
+}

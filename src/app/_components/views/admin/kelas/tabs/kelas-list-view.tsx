@@ -77,15 +77,27 @@ export function KelasListView({
 					const jadwalHari =
 						kelas.jadwalKelas.length > 0
 							? kelas.jadwalKelas
-									.map((j) => {
-										let timeRange = "";
-										if (j.jamSlotTetap) {
-											timeRange = `(${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai})`;
-										} else if (j.jamSlotCustom) {
-											timeRange = `(${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai})`;
-										}
-										return `${j.hari} ${timeRange}`;
-									})
+									.map(
+										(j: {
+											hari: string;
+											jamSlotTetap: {
+												jamMulai: string;
+												jamSelesai: string;
+											} | null;
+											jamSlotCustom: {
+												jamMulai: string;
+												jamSelesai: string;
+											} | null;
+										}) => {
+											let timeRange = "";
+											if (j.jamSlotTetap) {
+												timeRange = `(${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai})`;
+											} else if (j.jamSlotCustom) {
+												timeRange = `(${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai})`;
+											}
+											return `${j.hari} ${timeRange}`;
+										},
+									)
 									.join(" | ")
 							: "Jadwal belum diatur";
 
@@ -183,22 +195,24 @@ export function KelasListView({
 												</p>
 												{kelas.pendaftaranKelases.length > 0 ? (
 													<div className="flex flex-col">
-														{kelas.pendaftaranKelases.map((p, index) => (
-															<div key={p.id} className="flex flex-col">
-																<div className="flex items-center py-2">
-																	<span className="text-muted-foreground min-w-[24px] text-sm">
-																		{index + 1}.
-																	</span>
-																	<span className="text-sm">
-																		{p.murid?.namaLengkap ?? "Unknown"}
-																	</span>
+														{kelas.pendaftaranKelases.map(
+															(p, index: number) => (
+																<div key={p.id} className="flex flex-col">
+																	<div className="flex items-center py-2">
+																		<span className="text-muted-foreground min-w-[24px] text-sm">
+																			{index + 1}.
+																		</span>
+																		<span className="text-sm">
+																			{p.murid?.namaLengkap ?? "Unknown"}
+																		</span>
+																	</div>
+																	{index <
+																		kelas.pendaftaranKelases.length - 1 && (
+																		<Separator />
+																	)}
 																</div>
-																{index <
-																	kelas.pendaftaranKelases.length - 1 && (
-																	<Separator />
-																)}
-															</div>
-														))}
+															),
+														)}
 													</div>
 												) : (
 													<p className="text-sm text-muted-foreground italic">

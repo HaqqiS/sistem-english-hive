@@ -160,6 +160,7 @@ export const tagihanLainRouter = createTRPCRouter({
 					jumlah: input.jumlah,
 					deskripsi: input.deskripsi,
 					status: input.status,
+					kelasId: input.kelasId,
 				},
 			});
 		}),

@@ -1,4 +1,10 @@
-import { type Prisma, StatusMurid, StatusPembayaran } from "@prisma/client";
+import {
+	KategoriTagihan,
+	type Prisma,
+	StatusKelas,
+	StatusMurid,
+	StatusPembayaran,
+} from "@prisma/client";
 import z from "zod";
 import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
 import dayjs from "@/utils/dateUtils";
@@ -21,12 +27,22 @@ export const dashboardRouter = createTRPCRouter({
 			const pembayaranFilter: Prisma.PembayaranWhereInput = filterCabangId
 				? { pendaftaranKelas: { Kelas: { cabangId: filterCabangId } } }
 				: {};
+			const tagihanLainFilter: Prisma.TagihanLainWhereInput = filterCabangId
+				? { murid: { cabangId: filterCabangId } }
+				: {};
 
 			// Hitung secara paralel
 			const [
 				totalMuridAktif,
+				totalMuridPendaftarBaru,
+				totalMuridTrial,
+				totalMuridWaiting,
 				totalKelasAktif,
+				totalKelasWaiting,
+				totalKelasTrial,
 				pendingPaymentRaw,
+				pendingPaymentBukuRaw,
+				pendingPaymentRegistrationRaw,
 				attendanceToday,
 			] = await Promise.all([
 				// A. Total Murid Aktif
@@ -36,14 +52,42 @@ export const dashboardRouter = createTRPCRouter({
 						statusMurid: StatusMurid.AKTIF,
 					},
 				}),
+				db.murid.count({
+					where: {
+						...muridFilter,
+						statusMurid: StatusMurid.PENDAFTAR_BARU,
+					},
+				}),
+				db.murid.count({
+					where: {
+						...muridFilter,
+						statusMurid: StatusMurid.TRIAL,
+					},
+				}),
+				db.murid.count({
+					where: {
+						...muridFilter,
+						statusMurid: StatusMurid.WAITING_LIST,
+					},
+				}),
 
-				// B. Total Kelas Aktif (Logic: Ada jadwal di masa depan atau statusnya dianggap aktif)
-				// Sederhananya kita hitung Kelas yang memiliki PendaftaranAktif > 0 atau sekedar count Kelas
-				// Revisi: Kita hitung jumlah UNIQUE kelas yang sedang berjalan periode ini
+				// B. Total Kelas running, waiting, trial (Logic: Ada jadwal di masa depan atau statusnya dianggap aktif)
 				db.kelas.count({
 					where: {
 						...kelasFilter,
-						// Bisa tambahkan filter bulanTahunAjar jika perlu, sementara ambil semua master kelas
+						statusKelas: StatusKelas.RUNNING,
+					},
+				}),
+				db.kelas.count({
+					where: {
+						...kelasFilter,
+						statusKelas: StatusKelas.WAITING,
+					},
+				}),
+				db.kelas.count({
+					where: {
+						...kelasFilter,
+						statusKelas: StatusKelas.TRIAL,
 					},
 				}),
 
@@ -57,6 +101,32 @@ export const dashboardRouter = createTRPCRouter({
 					},
 					_sum: {
 						jumlahBayar: true,
+					},
+				}),
+
+				db.tagihanLain.aggregate({
+					where: {
+						...tagihanLainFilter,
+						kategori: KategoriTagihan.BUKU,
+						status: {
+							in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+						},
+					},
+					_sum: {
+						jumlah: true,
+					},
+				}),
+
+				db.tagihanLain.aggregate({
+					where: {
+						...tagihanLainFilter,
+						kategori: KategoriTagihan.REGISTRASI,
+						status: {
+							in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+						},
+					},
+					_sum: {
+						jumlah: true,
 					},
 				}),
 
@@ -106,8 +176,16 @@ export const dashboardRouter = createTRPCRouter({
 
 			return {
 				totalMuridAktif,
+				totalMuridPendaftarBaru,
+				totalMuridTrial,
+				totalMuridWaiting,
 				totalKelasAktif,
+				totalKelasWaiting,
+				totalKelasTrial,
 				pendingPayment: pendingPaymentRaw._sum.jumlahBayar ?? 0,
+				pendingPaymentBuku: pendingPaymentBukuRaw._sum.jumlah ?? 0,
+				pendingPaymentRegistration:
+					pendingPaymentRegistrationRaw._sum.jumlah ?? 0,
 				attendanceRate: Math.round(attendanceToday.rate),
 			};
 		}),
@@ -181,24 +259,64 @@ export const dashboardRouter = createTRPCRouter({
 				orderBy: { tanggalBayar: "asc" },
 			});
 
-			const grouped = new Map<string, number>();
+			const otherBills = await db.tagihanLain.findMany({
+				where: {
+					updatedAt: { gte: sixMonthsAgo },
+					status: StatusPembayaran.LUNAS,
+					murid: filterCabangId ? { cabangId: filterCabangId } : undefined,
+				},
+				select: {
+					updatedAt: true,
+					jumlah: true,
+					kategori: true,
+				},
+				orderBy: { updatedAt: "asc" },
+			});
+
+			const grouped = new Map<
+				string,
+				{ total: number; spp: number; buku: number; registration: number }
+			>();
 
 			for (let i = 5; i >= 0; i--) {
 				const key = dayjs().subtract(i, "month").format("MMM YYYY");
-				grouped.set(key, 0);
+				grouped.set(key, { total: 0, spp: 0, buku: 0, registration: 0 });
 			}
 
+			// Aggregate SPP
 			for (const p of payments) {
 				if (!p.tanggalBayar) continue;
 				const key = dayjs(p.tanggalBayar).format("MMM YYYY");
 				if (grouped.has(key)) {
-					grouped.set(key, (grouped.get(key) || 0) + p.jumlahBayar);
+					const curr = grouped.get(key);
+					if (!curr) continue;
+					curr.total += p.jumlahBayar;
+					curr.spp += p.jumlahBayar;
+					grouped.set(key, curr);
+				}
+			}
+
+			// Aggregate Other Bills (Buku & Registrasi)
+			for (const bill of otherBills) {
+				const key = dayjs(bill.updatedAt).format("MMM YYYY");
+				if (grouped.has(key)) {
+					const curr = grouped.get(key);
+					if (!curr) continue;
+					curr.total += bill.jumlah;
+					if (bill.kategori === KategoriTagihan.BUKU) {
+						curr.buku += bill.jumlah;
+					} else if (bill.kategori === KategoriTagihan.REGISTRASI) {
+						curr.registration += bill.jumlah;
+					}
+					// Note: If LAINNYA exists, it usually adds to total but maybe not specific category here unless requested.
+					// Current logic: total includes everything, breakdwon specific.
+					grouped.set(key, curr);
 				}
 			}
 
 			return Array.from(grouped.entries()).map(([name, value]) => ({
 				name,
-				value,
+				...value,
 			}));
 		}),
 
@@ -235,7 +353,7 @@ export const dashboardRouter = createTRPCRouter({
 						select: {
 							kodeKelas: true,
 							jenisKelasRel: { select: { nama: true } },
-							// jenisKelas: true,
+							statusKelas: true,
 							// Ambil guru yang sedang aktif mengajar kelas ini
 							historyGuruKelases: {
 								where: {

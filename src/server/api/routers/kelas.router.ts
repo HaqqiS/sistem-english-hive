@@ -1,5 +1,6 @@
 import {
 	Prisma,
+	type PrismaClient,
 	StatusMurid,
 	StatusPembayaran,
 	type TipeKelas,
@@ -28,7 +29,7 @@ export const kelasRouter = createTRPCRouter({
 			const kelas = await db.kelas.findMany({
 				where: whereClause,
 				distinct: ["cohortId"],
-				orderBy: [{ jenisKelasRel: { tipe: "asc" } }, { level: "asc" }],
+				orderBy: { createdAt: "desc" },
 
 				select: {
 					id: true,
@@ -65,7 +66,8 @@ export const kelasRouter = createTRPCRouter({
 					},
 				},
 			});
-			return kelas;
+			const rankMap = await getJenisKelasRankMap(db);
+			return sortKelasWithRank(kelas, rankMap);
 		}),
 
 	getKelasAndCount: cabangProtectedProcedure
@@ -101,6 +103,7 @@ export const kelasRouter = createTRPCRouter({
 				orderBy: [
 					{ jenisKelasRel: { tipe: "asc" } }, // REGULAR ("R") > PRIVATE ("P")
 					{ level: "asc" },
+					{ grup: "asc" },
 				],
 
 				select: {
@@ -184,7 +187,8 @@ export const kelasRouter = createTRPCRouter({
 				(kelas) => kelas._count.sesiPertemuanKelases < 24,
 			);
 
-			return filteredKelas;
+			const rankMap = await getJenisKelasRankMap(db);
+			return sortKelasWithRank(filteredKelas, rankMap);
 		}),
 
 	getKelasWaitingAndCount: cabangProtectedProcedure
@@ -220,6 +224,7 @@ export const kelasRouter = createTRPCRouter({
 				orderBy: [
 					{ jenisKelasRel: { tipe: "asc" } }, // REGULAR ("R") > PRIVATE ("P")
 					{ level: "asc" },
+					{ grup: "asc" },
 				],
 
 				select: {
@@ -303,7 +308,8 @@ export const kelasRouter = createTRPCRouter({
 				(kelas) => kelas._count.sesiPertemuanKelases < 24,
 			);
 
-			return filteredKelas;
+			const rankMap = await getJenisKelasRankMap(db);
+			return sortKelasWithRank(filteredKelas, rankMap);
 		}),
 
 	getKelasTrialAndCount: cabangProtectedProcedure
@@ -339,6 +345,7 @@ export const kelasRouter = createTRPCRouter({
 				orderBy: [
 					{ jenisKelasRel: { tipe: "asc" } }, // REGULAR ("R") > PRIVATE ("P")
 					{ level: "asc" },
+					{ grup: "asc" },
 				],
 
 				select: {
@@ -422,7 +429,8 @@ export const kelasRouter = createTRPCRouter({
 				(kelas) => kelas._count.sesiPertemuanKelases < 24,
 			);
 
-			return filteredKelas;
+			const rankMap = await getJenisKelasRankMap(db);
+			return sortKelasWithRank(filteredKelas, rankMap);
 		}),
 
 	getKelasById: cabangProtectedProcedure
@@ -557,6 +565,7 @@ export const kelasRouter = createTRPCRouter({
 				orderBy: { createdAt: "desc" },
 				select: {
 					kodeKelas: true,
+					jenisKelasId: true,
 					jenisKelasRel: { select: { nama: true, tipe: true } },
 					// level: true, // Keep level? Yes.
 					level: true,
@@ -601,7 +610,8 @@ export const kelasRouter = createTRPCRouter({
 				(kelas) => kelas._count.sesiPertemuanKelases < 24,
 			);
 
-			return filteredKelas;
+			const rankMap = await getJenisKelasRankMap(db);
+			return sortKelasWithRank(filteredKelas, rankMap);
 		}),
 
 	createKelas: cabangProtectedProcedure
@@ -940,3 +950,92 @@ export const kelasRouter = createTRPCRouter({
 			}
 		}),
 });
+
+// --- Helpers for Custom Sorting ---
+
+// Minimal interface needed for sorting
+interface SortableKelas {
+	level: number;
+	grup: string | null;
+	bulanTahunAjar: string;
+	jenisKelasId: string | null;
+	jenisKelasRel: {
+		tipe: TipeKelas;
+	} | null;
+}
+
+// Helper to fetch and build the rank map
+async function getJenisKelasRankMap(
+	db: PrismaClient | Prisma.TransactionClient,
+) {
+	// 1. Fetch all logic nodes
+	const allJenis = await db.jenisKelasModel.findMany({
+		select: { id: true, nextLevelId: true },
+	});
+
+	const nextMap = new Map<string, string | null>();
+	const isTarget = new Set<string>();
+
+	for (const j of allJenis) {
+		nextMap.set(j.id, j.nextLevelId);
+		if (j.nextLevelId) isTarget.add(j.nextLevelId);
+	}
+
+	// Heads are nodes that are not nextLevel of any other node
+	const heads = allJenis.filter((j) => !isTarget.has(j.id)).map((j) => j.id);
+
+	const rankMap = new Map<string, number>();
+
+	for (const headId of heads) {
+		let currentId: string | null | undefined = headId;
+		let rank = 0;
+		// Traverse
+		while (currentId) {
+			if (rankMap.has(currentId)) break; // Cycle or merge
+			rankMap.set(currentId, rank);
+			rank++;
+			currentId = nextMap.get(currentId);
+		}
+	}
+	return rankMap;
+}
+
+// Generic function to sort any list of classes that fits the SortableKelas shape
+function sortKelasWithRank<T extends SortableKelas>(
+	kelasData: T[],
+	rankMap: Map<string, number>,
+): T[] {
+	return kelasData.sort((a, b) => {
+		// 1. Tipe: REGULAR < PRIVATE
+		const tipeA = a.jenisKelasRel?.tipe;
+		const tipeB = b.jenisKelasRel?.tipe;
+
+		if (tipeA !== tipeB) {
+			// REGULAR priority
+			if (tipeA === "REGULAR") return -1;
+			if (tipeB === "REGULAR") return 1;
+			// Fallback string compare (although specific enums are handled above)
+			if (!tipeA) return 1;
+			if (!tipeB) return -1;
+			return tipeA.localeCompare(tipeB);
+		}
+
+		// 2. JenisKelas Rank (Linked List order)
+		const rankA = rankMap.get(a.jenisKelasId ?? "") ?? 9999;
+		const rankB = rankMap.get(b.jenisKelasId ?? "") ?? 9999;
+		if (rankA !== rankB) return rankA - rankB;
+
+		// 3. Level (asc)
+		if (a.level !== b.level) return a.level - b.level;
+
+		// 4. Grup (a-z)
+		const grupA = a.grup ?? "z"; // put nulls last
+		const grupB = b.grup ?? "z";
+		if (grupA !== grupB) return grupA.localeCompare(grupB);
+
+		// 5. BulanTahunAjar (asc)
+		const bulanA = a.bulanTahunAjar;
+		const bulanB = b.bulanTahunAjar;
+		return bulanA.localeCompare(bulanB);
+	});
+}

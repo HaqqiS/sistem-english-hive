@@ -85,8 +85,13 @@ export const columns = ({
 	},
 	{
 		accessorKey: "murid.umur",
-		header: "Umur",
-		cell: ({ row }) => row.original.murid.umur,
+		header: "Umur & Kelas Sekolah",
+		cell: ({ row }) => (
+			<div className="flex items-center gap-2">
+				<div>{row.original.murid.umur}</div> |
+				<div>{row.original.murid.kelasSekolah}</div>
+			</div>
+		),
 		enableHiding: false,
 	},
 

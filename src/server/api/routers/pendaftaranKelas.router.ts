@@ -57,6 +57,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							noWA: true,
 							cabangId: true,
 							umur: true,
+							kelasSekolah: true,
 						},
 					},
 					Kelas: {

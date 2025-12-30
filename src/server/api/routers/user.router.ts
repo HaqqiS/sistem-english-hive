@@ -349,4 +349,54 @@ export const userRouter = createTRPCRouter({
 
 			return { success: true, message: "Kata sandi berhasil diubah." };
 		}),
+
+	getJadwalMatrix: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			// 1. Fetch Global Jam Slot Tetap
+			const jamTetap = await db.jamSlotTetap.findMany({
+				where: filterCabangId ? { cabangId: filterCabangId } : {},
+				orderBy: [{ namaSlot: "asc" }, { jamMulai: "asc" }],
+			});
+
+			// 2. Fetch Guru & Their Active Schedules
+			const gurus = await db.user.findMany({
+				where: {
+					role: UserRole.GURU,
+					...(filterCabangId ? { cabangId: filterCabangId } : {}),
+				},
+				orderBy: { name: "asc" },
+				select: {
+					id: true,
+					name: true,
+					historyGuruKelases: {
+						where: { statusGuru: "ACTIVE" },
+						select: {
+							kelas: {
+								select: {
+									id: true,
+									kodeKelas: true,
+									statusKelas: true,
+									jadwalKelas: {
+										select: {
+											hari: true,
+											jamSlotTetap: true,
+											jamSlotCustom: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			});
+
+			return {
+				gurus,
+				jamTetap,
+			};
+		}),
 });

@@ -136,7 +136,7 @@ export default function KelasTab() {
 				// Gabungkan hari jadwal (misal: "SENIN, RABU")
 				const jadwal =
 					item.jadwalKelas.length > 0
-						? item.jadwalKelas.map((j) => j.hari).join(", ")
+						? item.jadwalKelas.map((j: { hari: string }) => j.hari).join(", ")
 						: "-";
 
 				return {

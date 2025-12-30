@@ -19,9 +19,21 @@ import { useDashboard } from "@/hooks/useDashboard";
 import { toRupiah } from "@/utils/toRupiah";
 
 const chartConfig = {
-	revenue: {
-		label: "Pendapatan",
-		color: "var(--chart-2)",
+	total: {
+		label: "Total",
+		color: "hsl(var(--primary))",
+	},
+	spp: {
+		label: "SPP",
+		color: "#3b82f6", // Blue
+	},
+	buku: {
+		label: "Buku",
+		color: "#f59e0b", // Amber
+	},
+	registration: {
+		label: "Registrasi",
+		color: "#10b981", // Green
 	},
 } satisfies ChartConfig;
 
@@ -34,8 +46,10 @@ export default function RevenueChart() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Tren Pendapatan (Lunas)</CardTitle>
-				<CardDescription>6 Bulan Terakhir</CardDescription>
+				<CardTitle>Tren Pendapatan Breakdown</CardTitle>
+				<CardDescription>
+					6 Bulan Terakhir (SPP, Buku, Registrasi)
+				</CardDescription>
 			</CardHeader>
 			<CardContent className="px-2 sm:p-6">
 				{isLoading ? (
@@ -54,19 +68,57 @@ export default function RevenueChart() {
 							}}
 						>
 							<defs>
-								<linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+								{/* Gradients for each category */}
+								<linearGradient id="fillTotal" x1="0" y1="0" x2="0" y2="1">
 									<stop
 										offset="5%"
-										stopColor="var(--color-revenue)"
-										stopOpacity={0.8}
+										stopColor="var(--color-total)"
+										stopOpacity={0.1}
 									/>
 									<stop
 										offset="95%"
-										stopColor="var(--color-revenue)"
-										stopOpacity={0.1}
+										stopColor="var(--color-total)"
+										stopOpacity={0.01}
+									/>
+								</linearGradient>
+								<linearGradient id="fillSpp" x1="0" y1="0" x2="0" y2="1">
+									<stop
+										offset="5%"
+										stopColor="var(--color-spp)"
+										stopOpacity={0.4}
+									/>
+									<stop
+										offset="95%"
+										stopColor="var(--color-spp)"
+										stopOpacity={0.05}
+									/>
+								</linearGradient>
+								<linearGradient id="fillBuku" x1="0" y1="0" x2="0" y2="1">
+									<stop
+										offset="5%"
+										stopColor="var(--color-buku)"
+										stopOpacity={0.4}
+									/>
+									<stop
+										offset="95%"
+										stopColor="var(--color-buku)"
+										stopOpacity={0.05}
+									/>
+								</linearGradient>
+								<linearGradient id="fillReg" x1="0" y1="0" x2="0" y2="1">
+									<stop
+										offset="5%"
+										stopColor="var(--color-registration)"
+										stopOpacity={0.4}
+									/>
+									<stop
+										offset="95%"
+										stopColor="var(--color-registration)"
+										stopOpacity={0.05}
 									/>
 								</linearGradient>
 							</defs>
+
 							<CartesianGrid vertical={false} />
 							<XAxis
 								dataKey="name"
@@ -79,21 +131,57 @@ export default function RevenueChart() {
 								cursor={false}
 								content={
 									<ChartTooltipContent
-										indicator="dot" // Use dot indicator
 										labelFormatter={(value) => value}
-										formatter={(value) => toRupiah(Number(value))}
+										formatter={(value, name) => (
+											<div className="flex min-w-[120px] items-center justify-between text-xs">
+												<span className="text-muted-foreground mr-2 capitalize">
+													{chartConfig[name as keyof typeof chartConfig]
+														?.label ?? name}
+												</span>
+												<span className="font-bold font-mono">
+													{toRupiah(Number(value))}
+												</span>
+											</div>
+										)}
 									/>
 								}
 							/>
+
+							{/* Total Line (Background reference) */}
 							<Area
-								dataKey="value"
-								// type="natural"
+								dataKey="total"
 								type="monotone"
-								fill="url(#fillRevenue)" // Use the gradient
+								fill="url(#fillTotal)"
 								fillOpacity={0.4}
-								stroke="var(--color-revenue)"
-								strokeWidth={2} // Thicker stroke
-								stackId="a"
+								stroke="var(--color-total)"
+								strokeWidth={1}
+								strokeDasharray="4 4"
+							/>
+
+							{/* Breakdown Lines (Unstacked) */}
+							<Area
+								dataKey="spp"
+								type="monotone"
+								fill="url(#fillSpp)"
+								fillOpacity={0.4}
+								stroke="var(--color-spp)"
+								strokeWidth={2}
+							/>
+							<Area
+								dataKey="buku"
+								type="monotone"
+								fill="url(#fillBuku)"
+								fillOpacity={0.4}
+								stroke="var(--color-buku)"
+								strokeWidth={2}
+							/>
+							<Area
+								dataKey="registration"
+								type="monotone"
+								fill="url(#fillReg)"
+								fillOpacity={0.4}
+								stroke="var(--color-registration)"
+								strokeWidth={2}
 							/>
 						</AreaChart>
 					</ChartContainer>

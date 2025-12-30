@@ -11,6 +11,7 @@ import {
 	Trash,
 	XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA } from "@/utils/dateUtils";
+import { formatWhatsAppReminder } from "@/utils/noWAUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 // Type definition inferred from Router
@@ -170,66 +172,66 @@ export const columnsTagihanLain = ({
 		cell: ({ row }) => {
 			const isLunas = row.original.status === StatusPembayaran.LUNAS;
 
+			const noWA = row.original.murid.noWA;
+			const namaMurid = row.original.murid.namaLengkap;
+			const jumlah = row.original.jumlah;
+			const tipe = `pembayaran ${row.original.kategori}`;
+
 			return (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<EllipsisVertical className="h-4 w-4" />
-							<span className="sr-only">Open menu</span>
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end">
-						{/* Toggle Status */}
-						{!isLunas ? (
-							<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-								<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-								Tandai Lunas
-							</DropdownMenuItem>
-						) : (
-							<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-								<XCircle className="mr-2 h-4 w-4 text-red-600" />
-								Batalkan Lunas
-							</DropdownMenuItem>
-						)}
-
-						{/* WhatsApp Reminder - Only show for unpaid bills */}
-						{!isLunas && row.original.murid?.noWA && (
-							<DropdownMenuItem
-								onClick={() => {
-									const noWA = row.original.murid?.noWA;
-									const namaMurid = row.original.murid?.namaLengkap || "Murid";
-									const kategori = row.original.kategori;
-									const judul = row.original.judul;
-									const nominal = new Intl.NumberFormat("id-ID", {
-										style: "currency",
-										currency: "IDR",
-									}).format(row.original.jumlah);
-
-									const message = `Halo ${namaMurid},\n\nKami ingin mengingatkan bahwa terdapat tagihan yang belum diselesaikan:\n\n *${kategori}: ${judul}*\n Nominal: ${nominal}\n\nMohon untuk segera menyelesaikan pembayaran.\n\nTerima kasih!`;
-
-									const url = `https://wa.me/${noWA}?text=${encodeURIComponent(message)}`;
-									window.open(url, "_blank");
-								}}
-							>
-								<MessageCircle className="mr-2 h-4 w-4 text-green-600" />
-								Kirim Tagihan via WA
-							</DropdownMenuItem>
-						)}
-
-						<DropdownMenuItem onClick={() => onEditClick(row.original)}>
-							<Edit2 className="mr-2 h-4 w-4" />
-							Edit
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							variant="destructive"
-							onClick={() => onDeleteClick(row.original)}
+				<div className="flex items-end gap-2">
+					{/* Tombol WA Cepat */}
+					{!isLunas && row.original.murid?.noWA && (
+						<Button
+							asChild
+							variant="outline"
+							size="icon-sm"
+							className="h-8 w-8 border-green-200 text-green-600 hover:bg-green-50"
+							title="Hubungi via WhatsApp"
 						>
-							<Trash className="mr-2 h-4 w-4" />
-							Hapus
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
+							<Link
+								href={formatWhatsAppReminder(noWA, namaMurid, tipe, jumlah)}
+								target="_blank"
+							>
+								<MessageCircle className="h-4 w-4" />
+							</Link>
+						</Button>
+					)}
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="ghost" className="h-8 w-8 p-0">
+								<EllipsisVertical className="h-4 w-4" />
+								<span className="sr-only">Open menu</span>
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							{/* Toggle Status */}
+							{!isLunas ? (
+								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
+									<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+									Tandai Lunas
+								</DropdownMenuItem>
+							) : (
+								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
+									<XCircle className="mr-2 h-4 w-4 text-red-600" />
+									Batalkan Lunas
+								</DropdownMenuItem>
+							)}
+
+							<DropdownMenuItem onClick={() => onEditClick(row.original)}>
+								<Edit2 className="mr-2 h-4 w-4" />
+								Edit
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								variant="destructive"
+								onClick={() => onDeleteClick(row.original)}
+							>
+								<Trash className="mr-2 h-4 w-4" />
+								Hapus
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
 			);
 		},
 	},
@@ -389,66 +391,89 @@ export const columnsTagihanLainGlobal = ({
 		cell: ({ row }) => {
 			const isLunas = row.original.status === StatusPembayaran.LUNAS;
 
+			const noWA = row.original.murid.noWA;
+			const namaMurid = row.original.murid.namaLengkap;
+			const jumlah = row.original.jumlah;
+			const tipe = `pembayaran ${row.original.kategori}`;
+
 			return (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<EllipsisVertical className="h-4 w-4" />
-							<span className="sr-only">Open menu</span>
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end">
-						{/* Toggle Status */}
-						{!isLunas ? (
-							<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-								<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-								Tandai Lunas
-							</DropdownMenuItem>
-						) : (
-							<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-								<XCircle className="mr-2 h-4 w-4 text-red-600" />
-								Batalkan Lunas
-							</DropdownMenuItem>
-						)}
-
-						{/* WhatsApp Reminder - Only show for unpaid bills */}
-						{!isLunas && row.original.murid?.noWA && (
-							<DropdownMenuItem
-								onClick={() => {
-									const noWA = row.original.murid?.noWA;
-									const namaMurid = row.original.murid?.namaLengkap || "Murid";
-									const kategori = row.original.kategori;
-									const judul = row.original.judul;
-									const nominal = new Intl.NumberFormat("id-ID", {
-										style: "currency",
-										currency: "IDR",
-									}).format(row.original.jumlah);
-
-									const message = `Halo ${namaMurid},\n\nKami ingin mengingatkan bahwa terdapat tagihan yang belum diselesaikan:\n\n📋 *${kategori}: ${judul}*\n💰 Nominal: ${nominal}\n\nMohon untuk segera menyelesaikan pembayaran.\n\nTerima kasih! 🙏`;
-
-									const url = `https://wa.me/${noWA}?text=${encodeURIComponent(message)}`;
-									window.open(url, "_blank");
-								}}
-							>
-								<MessageCircle className="mr-2 h-4 w-4 text-green-600" />
-								Kirim Tagihan via WA
-							</DropdownMenuItem>
-						)}
-
-						<DropdownMenuItem onClick={() => onEditClick(row.original)}>
-							<Edit2 className="mr-2 h-4 w-4" />
-							Edit
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							variant="destructive"
-							onClick={() => onDeleteClick(row.original)}
+				<div className="flex items-end gap-2">
+					{/* Tombol WA Cepat */}
+					{!isLunas && row.original.murid?.noWA && (
+						<Button
+							asChild
+							variant="outline"
+							size="icon-sm"
+							className="h-8 w-8 border-green-200 text-green-600 hover:bg-green-50"
+							title="Hubungi via WhatsApp"
 						>
-							<Trash className="mr-2 h-4 w-4" />
-							Hapus
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
+							<Link
+								href={formatWhatsAppReminder(noWA, namaMurid, tipe, jumlah)}
+								target="_blank"
+							>
+								<MessageCircle className="h-4 w-4" />
+							</Link>
+						</Button>
+					)}
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant="ghost" className="h-8 w-8 p-0">
+								<EllipsisVertical className="h-4 w-4" />
+								<span className="sr-only">Open menu</span>
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							{/* Toggle Status */}
+							{!isLunas ? (
+								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
+									<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+									Tandai Lunas
+								</DropdownMenuItem>
+							) : (
+								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
+									<XCircle className="mr-2 h-4 w-4 text-red-600" />
+									Batalkan Lunas
+								</DropdownMenuItem>
+							)}
+							{/* WhatsApp Reminder - Only show for unpaid bills
+							{!isLunas && row.original.murid?.noWA && (
+								<DropdownMenuItem
+									onClick={() => {
+										const noWA = row.original.murid?.noWA;
+										const namaMurid =
+											row.original.murid?.namaLengkap || "Murid";
+										const kategori = row.original.kategori;
+										const judul = row.original.judul;
+										const nominal = new Intl.NumberFormat("id-ID", {
+											style: "currency",
+											currency: "IDR",
+										}).format(row.original.jumlah);
+
+										const message = `Halo ${namaMurid},\n\nKami ingin mengingatkan bahwa terdapat tagihan yang belum diselesaikan:\n\n📋 *${kategori}: ${judul}*\n💰 Nominal: ${nominal}\n\nMohon untuk segera menyelesaikan pembayaran.\n\nTerima kasih! 🙏`;
+
+										const url = `https://wa.me/${noWA}?text=${encodeURIComponent(message)}`;
+										window.open(url, "_blank");
+									}}
+								>
+									<MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+									Kirim Tagihan via WA
+								</DropdownMenuItem>
+							)} */}
+							<DropdownMenuItem onClick={() => onEditClick(row.original)}>
+								<Edit2 className="mr-2 h-4 w-4" />
+								Edit
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem
+								variant="destructive"
+								onClick={() => onDeleteClick(row.original)}
+							>
+								<Trash className="mr-2 h-4 w-4" />
+								Hapus
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
 			);
 		},
 	},

@@ -36,6 +36,7 @@ import { columns as columnsGuru } from "./columns/columns-guru";
 import EditGuru from "./drawer/edit-guru";
 import EditVerifikasiAbsen from "./drawer/edit-verifikasi-absen";
 import RegistrasiGuru from "./drawer/registrasi-guru";
+import JadwalGuruTab from "./tabs/jadwal-guru-tab";
 
 export default function GuruClient() {
 	// STATES
@@ -226,6 +227,7 @@ export default function GuruClient() {
 			<TabsList>
 				<TabsTrigger value="absen">Verifikasi Absen</TabsTrigger>
 				<TabsTrigger value="guru">List Guru</TabsTrigger>
+				<TabsTrigger value="jadwalGuru">Jadwal Guru</TabsTrigger>
 			</TabsList>
 			<TabsContent value="absen">
 				<HeaderActionPortal>
@@ -425,6 +427,24 @@ export default function GuruClient() {
 						cancelText="Batal"
 					/>
 					<DataTable columns={columnsListGuru} data={dataGuru ?? []} />
+				</div>
+			</TabsContent>
+			<TabsContent value="jadwalGuru">
+				<div>
+					<header className="flex w-full flex-col gap-4 mb-4">
+						<div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+							<div className="flex flex-1 items-center gap-3">
+								<div className="flex flex-col">
+									<h1 className="text-xl">Jadwal Guru</h1>
+									<p className="text-muted-foreground text-sm">
+										Matrix jadwal mengajar guru per hari dan jam.
+									</p>
+								</div>
+							</div>
+						</div>
+					</header>
+
+					<JadwalGuruTab cabangId={activeCabangId} />
 				</div>
 			</TabsContent>
 		</Tabs>

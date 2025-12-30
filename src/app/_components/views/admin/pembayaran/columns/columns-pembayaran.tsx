@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { TypePembayaran } from "@/types/pembayaran.type";
 import { formatDateWITA } from "@/utils/dateUtils";
-import { formatWhatsAppLink } from "@/utils/noWAUtils";
+import { formatWhatsAppReminder } from "@/utils/noWAUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 // Kita gunakan tipe data dari router getAll yang baru
@@ -238,8 +238,13 @@ export const columns = ({
 		id: "actions",
 		header: "Aksi",
 		cell: ({ row }) => {
-			const noWA = row.original.pendaftaranKelas.murid.noWA;
 			const isLunas = row.original.statusBayar === StatusPembayaran.LUNAS;
+
+			const noWA = row.original.pendaftaranKelas.murid.noWA;
+			const namaMurid = row.original.pendaftaranKelas.murid.namaLengkap;
+			const tipe = `SPP Bulan Ke-${row.original.pembayaranKe}`;
+			const jumlah = row.original.jumlahBayar;
+			const jatuhTempo = row.original.tanggalJatuhTempo;
 
 			return (
 				<div className="flex items-center gap-2">
@@ -251,7 +256,16 @@ export const columns = ({
 						className="h-8 w-8 border-green-200 text-green-600 hover:bg-green-50"
 						title="Hubungi via WhatsApp"
 					>
-						<Link href={formatWhatsAppLink(noWA)} target="_blank">
+						<Link
+							href={formatWhatsAppReminder(
+								noWA,
+								namaMurid,
+								tipe,
+								jumlah,
+								jatuhTempo,
+							)}
+							target="_blank"
+						>
 							<MessageCircle className="h-4 w-4" />
 						</Link>
 					</Button>

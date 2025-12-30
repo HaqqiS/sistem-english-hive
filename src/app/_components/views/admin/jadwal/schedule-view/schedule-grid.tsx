@@ -288,7 +288,7 @@ export default function ScheduleGrid() {
 													return (
 														<td
 															key={`${time}-${room.id}`}
-															className="h-38 w-[200px] max-w-[200px] min-w-[200px] border-r border-b p-2 align-top"
+															className="h-auto min-h-40 w-[200px] max-w-[200px] min-w-[200px] border-r border-b p-2 align-top"
 														>
 															{schedule ? (
 																<ScheduleCard

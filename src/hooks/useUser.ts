@@ -7,6 +7,7 @@ interface UseGuruOptions {
 	// Query options
 	enableListQuery?: boolean;
 	enableQuery?: boolean;
+	enableJadwalMatrixQuery?: boolean;
 	initialDataGuru?: TypeGuruSimple[];
 	initialDataGuruComplete?: TypeGuruComplete[];
 
@@ -37,6 +38,13 @@ export function useUser(options?: UseGuruOptions) {
 		{
 			enabled: options?.enableQuery ?? false,
 			initialData: options?.initialDataGuruComplete,
+		},
+	);
+
+	const getJadwalMatrixQuery = api.user.getJadwalMatrix.useQuery(
+		{ cabangId: cabangIdPayload },
+		{
+			enabled: options?.enableJadwalMatrixQuery ?? false,
 		},
 	);
 
@@ -107,6 +115,11 @@ export function useUser(options?: UseGuruOptions) {
 		isLoadingComplete: getAllGuruCompleteQuery.isLoading,
 		isErrorComplete: getAllGuruCompleteQuery.isError,
 		errorComplete: getAllGuruCompleteQuery.error,
+
+		dataJadwalMatrix: getJadwalMatrixQuery.data,
+		isLoadingJadwalMatrix: getJadwalMatrixQuery.isLoading,
+		isErrorJadwalMatrix: getJadwalMatrixQuery.isError,
+		errorJadwalMatrix: getJadwalMatrixQuery.error,
 
 		// Mutations
 		mutations: {

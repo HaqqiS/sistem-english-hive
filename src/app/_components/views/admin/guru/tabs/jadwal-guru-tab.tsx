@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertCircle } from "lucide-react";
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -10,7 +11,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { api } from "@/trpc/react";
+import { useUser } from "@/hooks/useUser";
 
 const DAYS = [
 	"SENIN",
@@ -27,8 +28,13 @@ interface JadwalGuruTabProps {
 }
 
 export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
-	const { data, isLoading } = api.user.getJadwalMatrix.useQuery({
-		cabangId,
+	const {
+		dataJadwalMatrix: data,
+		isLoadingJadwalMatrix: isLoading,
+		isErrorJadwalMatrix: isError,
+	} = useUser({
+		filterCabang: cabangId,
+		enableJadwalMatrixQuery: true,
 	});
 
 	const processedData = useMemo(() => {
@@ -130,6 +136,23 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 			<div className="space-y-4">
 				<Skeleton className="h-10 w-full" />
 				<Skeleton className="h-40 w-full" />
+			</div>
+		);
+	}
+
+	if (isError) {
+		return (
+			<div className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-md border bg-background p-8 text-center">
+				<div className="rounded-full bg-destructive/10 p-3">
+					<AlertCircle className="text-destructive h-6 w-6" />
+				</div>
+				<div className="space-y-1">
+					<h3 className="text-lg font-semibold">Gagal Memuat Jadwal</h3>
+					<p className="text-muted-foreground mx-auto max-w-sm text-sm">
+						Harap pilih spesifik cabang (bukan "Semua Cabang") untuk melihat
+						Kalender Jadwal Guru.
+					</p>
+				</div>
 			</div>
 		);
 	}

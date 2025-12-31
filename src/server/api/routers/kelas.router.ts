@@ -590,6 +590,18 @@ export const kelasRouter = createTRPCRouter({
 						select: { hari: true },
 					},
 
+					// List Murid
+					pendaftaranKelases: {
+						where: { NOT: [{ status: "NON_AKTIF" }] },
+						select: {
+							murid: {
+								select: {
+									namaLengkap: true,
+								},
+							},
+						},
+					},
+
 					// Statistik (Murid & Sesi)
 					_count: {
 						select: {

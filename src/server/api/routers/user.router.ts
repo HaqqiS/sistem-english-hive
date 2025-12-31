@@ -355,6 +355,12 @@ export const userRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
+			if (!filterCabangId) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Harap pilih spesifik cabang untuk melihat Kalender Jadwal.",
+				});
+			}
 
 			// 1. Fetch Global Jam Slot Tetap
 			const jamTetap = await db.jamSlotTetap.findMany({

@@ -2,10 +2,9 @@
 
 import { Hari } from "@prisma/client";
 import dayjs from "dayjs";
-import { CalendarDays, Info, RefreshCw } from "lucide-react";
+import { AlertCircle, CalendarDays, Info, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
@@ -213,13 +212,18 @@ export default function ScheduleGrid() {
 						))}
 					</div>
 				) : isError || !dataMatrix ? (
-					<Alert variant="destructive" className="m-4">
-						<Info className="h-4 w-4" />
-						<AlertTitle>Error</AlertTitle>
-						<AlertDescription>
-							{error?.message ?? "Gagal memuat data jadwal. Silakan coba lagi."}
-						</AlertDescription>
-					</Alert>
+					<div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+						<div className="rounded-full bg-destructive/10 p-3">
+							<AlertCircle className="text-destructive h-6 w-6" />
+						</div>
+						<div className="space-y-1">
+							<h3 className="text-lg font-semibold">Gagal Memuat Jadwal</h3>
+							<p className="text-muted-foreground mx-auto max-w-sm text-sm">
+								{error?.message ??
+									"Gagal memuat data jadwal. Silakan coba lagi."}
+							</p>
+						</div>
+					</div>
 				) : dataMatrix.rooms.length === 0 ? (
 					<div className="text-muted-foreground bg-muted/5 flex h-[200px] items-center justify-center">
 						Belum ada ruangan di cabang ini.

@@ -152,6 +152,10 @@ export default function KelasTab() {
 					"Jumlah Murid": item._count.pendaftaranKelases,
 					"Sesi Berjalan": item._count.sesiPertemuanKelases,
 					Deskripsi: item.deskripsi ?? "-",
+					"Daftar Murid":
+						item.pendaftaranKelases
+							?.map((p) => p.murid.namaLengkap)
+							.join(", ") ?? "-",
 					"Harga Kelas": item.hargaKelas, // Angka murni agar bisa diolah Excel
 				};
 			});

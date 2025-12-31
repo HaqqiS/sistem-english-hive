@@ -238,6 +238,10 @@ export default function KelasPageContent({ viewMode }: KelasPageContentProps) {
 					"Jumlah Murid": item._count.pendaftaranKelases,
 					"Sesi Berjalan": item._count.sesiPertemuanKelases,
 					Deskripsi: item.deskripsi ?? "-",
+					"Daftar Murid":
+						item.pendaftaranKelases
+							?.map((p) => p.murid.namaLengkap)
+							.join(", ") ?? "-",
 					"Harga Kelas": item.hargaKelas,
 				};
 			});

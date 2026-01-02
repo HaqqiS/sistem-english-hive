@@ -73,13 +73,14 @@ export const columns = ({
 		accessorKey: "murid.namaLengkap",
 		header: "Nama Murid",
 		cell: ({ row }) => (
-			<Button
-				variant="link"
-				className="text-foreground w-fit px-0 text-left text-base"
-				onClick={() => onEditClick(row.original)}
-			>
-				{row.original.murid.namaLengkap}
-			</Button>
+			<Link href={`/admin/pembayaran/${row.original.murid.id}`}>
+				<Button
+					variant="link"
+					className="text-foreground w-fit px-0 text-left text-base"
+				>
+					{row.original.murid.namaLengkap}
+				</Button>
+			</Link>
 		),
 		enableHiding: false,
 	},

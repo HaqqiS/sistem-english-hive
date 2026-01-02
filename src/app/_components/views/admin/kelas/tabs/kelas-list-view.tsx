@@ -203,7 +203,8 @@ export function KelasListView({
 																			{index + 1}.
 																		</span>
 																		<span className="text-sm">
-																			{p.murid?.namaLengkap ?? "Unknown"}
+																			{p.murid?.namaLengkap ?? "Unknown"} |{" "}
+																			{p.murid?.umur} | {p.murid?.kelasSekolah}
 																		</span>
 																	</div>
 																	{index <

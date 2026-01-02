@@ -11,4 +11,6 @@ export const jenisKelasSchema = z.object({
 	nextLevelId: z.string().nullable().optional(),
 });
 
-export type TypeJenisKelas = z.infer<typeof jenisKelasSchema>;
+export type TypeJenisKelas = z.infer<typeof jenisKelasSchema> & {
+	nextLevel?: { nama: string } | null;
+};

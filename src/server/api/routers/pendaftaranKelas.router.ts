@@ -53,6 +53,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 				include: {
 					murid: {
 						select: {
+							id: true,
 							namaLengkap: true,
 							noWA: true,
 							cabangId: true,

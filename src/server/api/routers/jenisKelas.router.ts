@@ -7,7 +7,10 @@ import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 export const jenisKelasRouter = createTRPCRouter({
 	getJenisKelasList: cabangProtectedProcedure.query(async ({ ctx }) => {
 		return await ctx.db.jenisKelasModel.findMany({
-			orderBy: { createdAt: "asc" },
+			include: {
+				nextLevel: { select: { nama: true } },
+			},
+			orderBy: [{ tipe: "asc" }, { createdAt: "asc" }],
 		});
 	}),
 

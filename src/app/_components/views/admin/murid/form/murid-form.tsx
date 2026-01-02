@@ -82,10 +82,7 @@ export default function MuridForm({
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel className="text-sm">Langsung Daftar?</FormLabel>
-									<Select
-										onValueChange={field.onChange}
-										defaultValue={field.value}
-									>
+									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
 											<SelectTrigger className="w-full">
 												<SelectValue placeholder="Pilih opsi" />
@@ -156,10 +153,7 @@ export default function MuridForm({
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel className="text-sm">Jenis Kelamin</FormLabel>
-								<Select
-									onValueChange={field.onChange}
-									defaultValue={field.value}
-								>
+								<Select onValueChange={field.onChange} value={field.value}>
 									<FormControl>
 										<SelectTrigger className="w-full">
 											<SelectValue placeholder="Pilih jenis kelamin" />
@@ -228,10 +222,7 @@ export default function MuridForm({
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel className="text-sm">Pilihan Program</FormLabel>
-									<Select
-										onValueChange={field.onChange}
-										defaultValue={field.value}
-									>
+									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
 											<SelectTrigger className="w-full">
 												<SelectValue placeholder="Pilih program" />

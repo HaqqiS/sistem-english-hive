@@ -90,6 +90,15 @@ export const jadwalKelasRouter = createTRPCRouter({
 										guru: { select: { name: true } },
 									},
 								},
+								pendaftaranKelases: {
+									select: {
+										murid: {
+											select: {
+												namaLengkap: true,
+											},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -180,21 +189,31 @@ export const jadwalKelasRouter = createTRPCRouter({
 					hari: "asc",
 				},
 				include: {
-					kelas: {
-						select: {
-							kodeKelas: true,
-							jenisKelasRel: { select: { nama: true } },
-							deskripsi: true,
-						},
-					},
+					jamSlotTetap: true,
+					jamSlotCustom: true,
 					ruang: {
 						select: {
 							namaRuang: true,
 							cabang: { select: { namaCabang: true } },
 						},
 					},
-					jamSlotTetap: true,
-					jamSlotCustom: true,
+					kelas: {
+						select: {
+							kodeKelas: true,
+							jenisKelasRel: { select: { nama: true } },
+							deskripsi: true,
+							pendaftaranKelases: {
+								select: {
+									id: true,
+									murid: {
+										select: {
+											namaLengkap: true,
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			});
 		}),
@@ -218,21 +237,31 @@ export const jadwalKelasRouter = createTRPCRouter({
 					hari: "asc",
 				},
 				include: {
-					kelas: {
-						select: {
-							kodeKelas: true,
-							jenisKelasRel: { select: { nama: true } },
-							deskripsi: true,
-						},
-					},
+					jamSlotTetap: true,
+					jamSlotCustom: true,
 					ruang: {
 						select: {
 							namaRuang: true,
 							cabang: { select: { namaCabang: true } },
 						},
 					},
-					jamSlotTetap: true,
-					jamSlotCustom: true,
+					kelas: {
+						select: {
+							kodeKelas: true,
+							jenisKelasRel: { select: { nama: true } },
+							deskripsi: true,
+							pendaftaranKelases: {
+								select: {
+									id: true,
+									murid: {
+										select: {
+											namaLengkap: true,
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			});
 		}),
@@ -256,21 +285,31 @@ export const jadwalKelasRouter = createTRPCRouter({
 					hari: "asc",
 				},
 				include: {
-					kelas: {
-						select: {
-							kodeKelas: true,
-							jenisKelasRel: { select: { nama: true } },
-							deskripsi: true,
-						},
-					},
+					jamSlotTetap: true,
+					jamSlotCustom: true,
 					ruang: {
 						select: {
 							namaRuang: true,
 							cabang: { select: { namaCabang: true } },
 						},
 					},
-					jamSlotTetap: true,
-					jamSlotCustom: true,
+					kelas: {
+						select: {
+							kodeKelas: true,
+							jenisKelasRel: { select: { nama: true } },
+							deskripsi: true,
+							pendaftaranKelases: {
+								select: {
+									id: true,
+									murid: {
+										select: {
+											namaLengkap: true,
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			});
 		}),

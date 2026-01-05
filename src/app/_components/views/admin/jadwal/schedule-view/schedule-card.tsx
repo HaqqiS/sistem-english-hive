@@ -227,6 +227,30 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 						</div>
 					</div>
 
+					<div className="bg-muted/50 border-border/50 grid grid-cols-1 gap-2 rounded-md border p-3 text-sm">
+						<div className="flex flex-col gap-2">
+							<div className="text-muted-foreground flex items-center gap-2">
+								<User className="h-4 w-4" />
+								<span className="text-sm">Daftar Murid</span>
+							</div>
+							<ul className="text-foreground ml-6 list-disc space-y-1 text-xs font-medium">
+								{data.originalData.kelas.pendaftaranKelases.length > 0 ? (
+									data.originalData.kelas.pendaftaranKelases.map(
+										(pendaftaran) => (
+											<li key={pendaftaran.id}>
+												{pendaftaran.murid.namaLengkap}
+											</li>
+										),
+									)
+								) : (
+									<li className="text-muted-foreground italic list-none">
+										Belum ada murid
+									</li>
+								)}
+							</ul>
+						</div>
+					</div>
+
 					<p className="text-muted-foreground/70 text-center text-[10px] italic">
 						Klik menu titik tiga untuk opsi lainnya
 					</p>

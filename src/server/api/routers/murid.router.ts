@@ -123,6 +123,15 @@ export const muridRouter = createTRPCRouter({
 										Kelas: {
 											select: {
 												kodeKelas: true,
+												historyGuruKelases: {
+													select: {
+														guru: {
+															select: {
+																name: true,
+															},
+														},
+													},
+												},
 											},
 										},
 									},

@@ -2,9 +2,17 @@
 
 import { Hari } from "@prisma/client";
 import dayjs from "dayjs";
-import { AlertCircle, CalendarDays, Info, RefreshCw } from "lucide-react";
+import {
+	AlertCircle,
+	CalendarDays,
+	FileSpreadsheet,
+	Info,
+	RefreshCw,
+} from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
@@ -21,6 +29,7 @@ import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
+import { downloadExcel } from "@/utils/exportUtils";
 import EditJadwalKelas from "../edit-jadwal";
 import { ScheduleCard } from "./schedule-card";
 
@@ -97,7 +106,7 @@ export default function ScheduleGrid() {
 		return map;
 	}, [dataMatrix]);
 
-	// --- HANDLERS ---
+	// --- API HANDLERS ---
 	const handleDelete = (id: string, kode: string) => {
 		setItemToDelete({ id, kode });
 		setDeleteDialogOpen(true);
@@ -106,6 +115,53 @@ export default function ScheduleGrid() {
 	const handleConfirmDelete = () => {
 		if (itemToDelete) {
 			mutations.delete.mutate({ id: itemToDelete.id });
+		}
+	};
+
+	const handleExport = () => {
+		if (!dataMatrix || !dataMatrix.schedules.length) {
+			toast.error("Tidak ada data jadwal untuk diexport");
+			return;
+		}
+
+		try {
+			// 1. Siapkan struktur data untuk excel
+			// Row: Waktu, Col: Ruang A, Ruang B, ...
+			const exportData = timeSlots.map((time) => {
+				const rowData: Record<string, string> = {
+					Waktu: time,
+				};
+
+				dataMatrix.rooms.forEach((room) => {
+					const schedule = scheduleMap[time]?.[room.id];
+					if (schedule) {
+						// Format Cell Content
+						// Contoh: "KELAS-001 (Mr. Budi)\n08:00 - 09:30 (REGULER)"
+						const teacherName = schedule.guru || "Belum ada guru";
+						const type = schedule.tipeKelas;
+						const status = schedule.statusKelas || "";
+
+						rowData[room.namaRuang] =
+							`[${schedule.kodeKelas}] - ${teacherName}\n` +
+							`${schedule.jamMulai} - ${schedule.jamSelesai}\n` +
+							`(${type} - ${status})` +
+							(schedule.jumlahMurid ? `\n${schedule.jumlahMurid} Murid` : "");
+					} else {
+						rowData[room.namaRuang] = "-";
+					}
+				});
+
+				return rowData;
+			});
+
+			const dateStr = dayjs().format("YYYY-MM-DD");
+			const filename = `Jadwal-${selectedHari}-${dateStr}`;
+
+			downloadExcel(exportData, filename);
+			toast.success("Berhasil mengunduh jadwal");
+		} catch (error) {
+			console.error("Export error:", error);
+			toast.error("Gagal mengunduh jadwal");
 		}
 	};
 
@@ -131,6 +187,13 @@ export default function ScheduleGrid() {
 							)}
 						/>
 					</Button>
+
+					<HeaderActionPortal>
+						<Button variant="ghost" size="sm" onClick={handleExport}>
+							<FileSpreadsheet className="mr-2 h-4 w-4" />
+							Export Excel
+						</Button>
+					</HeaderActionPortal>
 
 					{/* <Select value={activeCabangId} onValueChange={setSelectedCabangId}>
             <SelectTrigger className="bg-background h-9 w-full lg:w-[200px]">

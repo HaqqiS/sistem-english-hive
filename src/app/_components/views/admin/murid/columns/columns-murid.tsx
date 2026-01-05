@@ -125,6 +125,11 @@ export const columns = ({
 				<span className="text-muted-foreground text-xs">
 					{row.original.pendaftaranKelases.length > 0
 						? row.original.pendaftaranKelases[0]?.Kelas.kodeKelas
+						: "-"}{" "}
+					|{" "}
+					{row.original.pendaftaranKelases.length > 0
+						? row.original.pendaftaranKelases[0]?.Kelas.historyGuruKelases[0]
+								?.guru.name
 						: "-"}
 				</span>
 			</div>

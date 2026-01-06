@@ -32,6 +32,7 @@ import EditMurid from "./drawer/edit-murid";
 import EditMuridNotRegistered from "./drawer/edit-murid-not-registered";
 import RegistrasiMurid from "./drawer/registrasi-murid";
 import TambahPendaftaranKelas from "./drawer/tambah-pendaftaran-kelas";
+import { RegisteredStudentsTable } from "./registered-students-table";
 
 export default function MuridClient() {
 	// STATE
@@ -100,6 +101,8 @@ export default function MuridClient() {
 		isLoadingNotRegisteredPaginated,
 		isFetchingNotRegisteredPaginated,
 		refetchNotRegisteredPaginated,
+		dataKelasWithActiveStudents,
+		isLoadingKelasWithActiveStudents,
 	} = useMurid({
 		pagination: paginationNotRegistered,
 		filterCabang: activeCabangId,
@@ -222,10 +225,9 @@ export default function MuridClient() {
 	return (
 		<Tabs defaultValue="daftarMurid">
 			<TabsList>
-				<TabsTrigger value="daftarMurid">
-					Pendaftaran Murid ke Kelas
-				</TabsTrigger>
+				<TabsTrigger value="daftarMurid">List yang Tidak Terdaftar</TabsTrigger>
 				<TabsTrigger value="listMurid">List Semua Murid</TabsTrigger>
+				<TabsTrigger value="registeredMurid">List yang Terdaftar</TabsTrigger>
 			</TabsList>
 			<TabsContent value="daftarMurid">
 				<div>
@@ -559,6 +561,50 @@ export default function MuridClient() {
 					/>
 				</div>
 			</TabsContent>
+
+			<TabsContent value="registeredMurid">
+				<div>
+					<header className="flex w-full flex-col gap-4">
+						{/* --- TOP ROW: Refresh + Title --- */}
+						<div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+							<div className="flex flex-1 items-center gap-3">
+								{/* <Button
+									variant="ghost"
+									size="icon"
+									className="h-9 w-9 shrink-0"
+									disabled={
+										isLoadingAllMuridPaginated || isFetchingAllMuridPaginated
+									}
+									onClick={() => refetchPaginated()}
+									title="Refresh"
+								>
+									<RefreshCw
+										className={cn(
+											"h-4 w-4",
+											(isLoadingAllMuridPaginated ||
+												isFetchingAllMuridPaginated) &&
+												"animate-spin",
+										)}
+									/>
+								</Button> */}
+
+								<div className="flex flex-col">
+									<h1 className="text-xl">Daftar Murid yang terdaftar</h1>
+									<p className="text-muted-foreground text-sm leading-tight">
+										Halaman ini menampilkan daftar semua murid yang terdaftar.
+									</p>
+								</div>
+							</div>
+						</div>
+					</header>
+
+					<RegisteredStudentsTable
+						data={dataKelasWithActiveStudents ?? []}
+						isLoading={isLoadingKelasWithActiveStudents}
+					/>
+				</div>
+			</TabsContent>
+
 			<EditMuridNotRegistered />
 		</Tabs>
 	);

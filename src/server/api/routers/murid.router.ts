@@ -322,6 +322,76 @@ export const muridRouter = createTRPCRouter({
 			};
 		}),
 
+	getKelasWithActiveStudents: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.KelasWhereInput = {
+				pendaftaranKelases: {
+					some: {
+						status: "AKTIF",
+					},
+				},
+			};
+
+			if (filterCabangId) {
+				whereClause.cabangId = filterCabangId;
+			}
+
+			const data = await db.kelas.findMany({
+				where: whereClause,
+				orderBy: { kodeKelas: "asc" },
+				select: {
+					id: true,
+					kodeKelas: true,
+					jadwalKelas: {
+						select: {
+							id: true,
+							hari: true,
+							ruang: {
+								select: {
+									id: true,
+									namaRuang: true,
+								},
+							},
+							jamSlotTetap: {
+								select: {
+									namaSlot: true,
+									jamMulai: true,
+									jamSelesai: true,
+								},
+							},
+							jamSlotCustom: {
+								select: {
+									jamMulai: true,
+									jamSelesai: true,
+								},
+							},
+						},
+					},
+					pendaftaranKelases: {
+						where: { status: "AKTIF" },
+						select: {
+							id: true,
+							murid: {
+								select: {
+									id: true,
+									namaLengkap: true,
+									umur: true,
+									kelasSekolah: true,
+									noWA: true,
+								},
+							},
+						},
+					},
+				},
+			});
+
+			return data;
+		}),
+
 	getForExport: cabangProtectedProcedure
 		.input(
 			z.object({

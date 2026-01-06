@@ -127,6 +127,16 @@ export function useMurid(options?: useMuridOptions) {
 		},
 	);
 
+	const kelasWithActiveStudentsQuery =
+		api.murid.getKelasWithActiveStudents.useQuery(
+			{
+				cabangId: cabangIdPayload,
+			},
+			{
+				enabled: options?.enableQuery ?? true, // Default to true if not specified, or match others
+			},
+		);
+
 	const fetchExportData = async () => {
 		return await apiUtils.murid.getForExport.fetch({
 			search: options?.searchFilterAll,
@@ -200,6 +210,9 @@ export function useMurid(options?: useMuridOptions) {
 		isLoadingMuridNotRegistered: MuridNotRegisteredQuery.isLoading,
 		isErrorMuridNotRegistered: MuridNotRegisteredQuery.isError,
 		errorMuridNotRegistered: MuridNotRegisteredQuery.error,
+
+		dataKelasWithActiveStudents: kelasWithActiveStudentsQuery.data, // Added
+		isLoadingKelasWithActiveStudents: kelasWithActiveStudentsQuery.isLoading, // Added
 
 		dataNotRegisteredPaginated:
 			MuridNotRegisteredPaginatedQuery.data?.data ?? [],

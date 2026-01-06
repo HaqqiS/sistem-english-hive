@@ -8,6 +8,7 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import EditJadwalKelas from "../jadwal/edit-jadwal";
 import ScheduleGrid from "../jadwal/schedule-view/schedule-grid";
 import TambahJadwalKelas from "../jadwal/tambah-jadwal";
+import JadwalTableView from "./tabs/jadwal-table-view";
 import KelasTab from "./tabs/kelas-tab";
 
 export default function KelasClient() {
@@ -37,22 +38,12 @@ export default function KelasClient() {
 		await jadwalMutation.delete.mutateAsync({ id: selectedJadwalToDelete.id });
 	};
 
-	// const columnsJadwalTabel = jadwalColumns({
-	// 	onEditClick: (item) => {
-	// 		console.log("edit jadwal: ", item);
-	// 		openDrawer("edit", item);
-	// 	},
-	// 	onDeleteClick: (id, deskripsi) => {
-	// 		setSelectedJadwalToDelete({ id, deskripsi });
-	// 		setDeleteJadwalDialogOpen(true);
-	// 	},
-	// });
-
 	return (
 		<Tabs defaultValue="listKelas">
 			<TabsList>
 				<TabsTrigger value="listKelas">List Kelas</TabsTrigger>
 				<TabsTrigger value="penjadwalanKelas">Penjadwalan Kelas</TabsTrigger>
+				<TabsTrigger value="jadwalTable">Table Jadwal</TabsTrigger>
 			</TabsList>
 			<TabsContent value="listKelas">
 				<KelasTab />
@@ -93,6 +84,10 @@ export default function KelasClient() {
 						cancelText="Batal"
 					/>
 				</div>
+			</TabsContent>
+
+			<TabsContent value="jadwalTable" className="mt-4">
+				<JadwalTableView />
 			</TabsContent>
 		</Tabs>
 	);

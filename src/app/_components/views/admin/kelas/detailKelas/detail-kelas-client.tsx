@@ -1,10 +1,11 @@
 "use client";
 
-import { Edit, History } from "lucide-react";
+import { Edit, FileText, History } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
 import {
 	Sheet,
@@ -22,6 +23,7 @@ import {
 	useGuruKelasStore,
 	usePendaftaranKelasStore,
 } from "@/store/useKelasStore";
+import { exportAbsensiPDF } from "@/utils/pdfExportUtils";
 import { columns as guru } from "../columns/columns-list-guru";
 import { columns as murid } from "../columns/columns-list-murid";
 import EditGuruKelas from "../drawers/edit-guru-kelas";
@@ -109,6 +111,27 @@ export default function DetailKelasClient() {
 		});
 	};
 
+	const handleExportAbsensi = () => {
+		if (!dataByKelasId || !dataById) return;
+
+		// 1. Siapkan Info Kelas
+		const classInfo = {
+			kodeKelas: dataById.kodeKelas,
+			level: dataById.level,
+			grup: dataById.grup,
+			bulanTahun: dataById.bulanTahunAjar,
+			pengajar: activeGuruHistory?.guru?.name ?? undefined,
+		};
+
+		// 2. Siapkan Data Murid
+		const students = dataByKelasId.map((item) => ({
+			namaMurid: item.murid.namaLengkap,
+		}));
+
+		// 3. Export PDF
+		exportAbsensiPDF(classInfo, students);
+	};
+
 	// COLUMNS
 	const columnsMurid = murid({
 		onEditClick: (item) => {
@@ -135,6 +158,22 @@ export default function DetailKelasClient() {
 
 	return (
 		<div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+			{/* <Button
+				variant="outline"
+				size="sm"
+				onClick={handleExportAbsensi}
+				title="Export untuk Absen Kertas"
+			>
+				<Download className="mr-2 h-4 w-4" />
+				Export Absen
+			</Button> */}
+			<HeaderActionPortal>
+				<Button variant="ghost" size="sm" onClick={handleExportAbsensi}>
+					<FileText className="mr-2 h-4 w-4" />
+					Export PDF Absen
+				</Button>
+			</HeaderActionPortal>
+
 			{/* --- KOLOM KIRI (UTAMA): Murid & Guru --- */}
 			<div className="space-y-8 lg:col-span-2">
 				{/* HEADER & MURID */}
@@ -242,7 +281,6 @@ export default function DetailKelasClient() {
 					<DataTable data={dataGuruByKelasId ?? []} columns={columnsGuru} />
 				</div>
 			</div>
-
 			{/* --- KOLOM KANAN (SIDEBAR): Class History & Info --- */}
 			<div className="space-y-6">
 				{/* Mobile Only Trigger for History (Hidden on Desktop) */}

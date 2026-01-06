@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import {
 	AlertCircle,
 	CalendarDays,
-	FileSpreadsheet,
+	FileText,
 	Info,
 	RefreshCw,
 } from "lucide-react";
@@ -29,7 +29,7 @@ import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
-import { downloadExcel } from "@/utils/exportUtils";
+import { exportJadwalMatrixPDF } from "@/utils/pdfExportUtils";
 import EditJadwalKelas from "../edit-jadwal";
 import { ScheduleCard } from "./schedule-card";
 
@@ -125,40 +125,14 @@ export default function ScheduleGrid() {
 		}
 
 		try {
-			// 1. Siapkan struktur data untuk excel
-			// Row: Waktu, Col: Ruang A, Ruang B, ...
-			const exportData = timeSlots.map((time) => {
-				const rowData: Record<string, string> = {
-					Waktu: time,
-				};
-
-				dataMatrix.rooms.forEach((room) => {
-					const schedule = scheduleMap[time]?.[room.id];
-					if (schedule) {
-						// Format Cell Content
-						// Contoh: "KELAS-001 (Mr. Budi)\n08:00 - 09:30 (REGULER)"
-						const teacherName = schedule.guru || "Belum ada guru";
-						const type = schedule.tipeKelas;
-						const status = schedule.statusKelas || "";
-
-						rowData[room.namaRuang] =
-							`[${schedule.kodeKelas}] - ${teacherName}\n` +
-							`${schedule.jamMulai} - ${schedule.jamSelesai}\n` +
-							`(${type} - ${status})` +
-							(schedule.jumlahMurid ? `\n${schedule.jumlahMurid} Murid` : "");
-					} else {
-						rowData[room.namaRuang] = "-";
-					}
-				});
-
-				return rowData;
-			});
-
-			const dateStr = dayjs().format("YYYY-MM-DD");
-			const filename = `Jadwal-${selectedHari}-${dateStr}`;
-
-			downloadExcel(exportData, filename);
-			toast.success("Berhasil mengunduh jadwal");
+			// Call PDF Export
+			exportJadwalMatrixPDF(
+				selectedHari as string,
+				dataMatrix.rooms,
+				timeSlots,
+				scheduleMap,
+			);
+			toast.success("Berhasil mengunduh jadwal PDF");
 		} catch (error) {
 			console.error("Export error:", error);
 			toast.error("Gagal mengunduh jadwal");
@@ -190,8 +164,8 @@ export default function ScheduleGrid() {
 
 					<HeaderActionPortal>
 						<Button variant="ghost" size="sm" onClick={handleExport}>
-							<FileSpreadsheet className="mr-2 h-4 w-4" />
-							Export Excel
+							<FileText className="mr-2 h-4 w-4" />
+							Export PDF
 						</Button>
 					</HeaderActionPortal>
 

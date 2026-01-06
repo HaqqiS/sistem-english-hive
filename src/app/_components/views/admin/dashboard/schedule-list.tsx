@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusKelas } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -11,6 +12,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
+import { cn } from "@/lib/utils";
 import dayjs from "@/utils/dateUtils";
 
 export default function ScheduleList() {
@@ -26,7 +28,7 @@ export default function ScheduleList() {
 				<CardDescription>{dayjs().format("dddd, D MMMM YYYY")}</CardDescription>
 			</CardHeader>
 			<CardContent className="p-0">
-				<ScrollArea className="h-[300px]">
+				<ScrollArea className="h-[calc(100vh-200px)]">
 					<div className="flex flex-col gap-0">
 						{isLoading ? (
 							[1, 2, 3].map((id) => (
@@ -81,7 +83,18 @@ export default function ScheduleList() {
 												{jadwal.kelas.kodeKelas}
 											</div>
 											<div className="flex items-center justify-between text-xs text-muted-foreground">
-												<span>{jadwal.kelas.statusKelas}</span>
+												<Badge
+													className={cn(
+														"h-5 border-0 px-1.5 text-[10px] font-normal",
+														jadwal.kelas.statusKelas === StatusKelas.RUNNING
+															? "bg-primary text-primary-foreground"
+															: jadwal.kelas.statusKelas === StatusKelas.WAITING
+																? "bg-yellow-500 text-yellow-50 dark:bg-yellow-500 dark:text-yellow-50"
+																: "bg-blue-500 text-blue-50 dark:bg-blue-500 dark:text-blue-50",
+													)}
+												>
+													{jadwal.kelas.statusKelas}
+												</Badge>
 												<span>Guru: {guruName}</span>
 											</div>
 										</div>

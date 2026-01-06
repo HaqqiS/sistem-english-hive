@@ -231,29 +231,9 @@ export default function MuridForm({
 										<SelectContent>
 											<SelectGroup>
 												<SelectLabel>Reguler</SelectLabel>
-												<SelectItem value="regulerPG">
+												<SelectItem value="regulerSekolah">
 													<span translate="no" className="notranslate">
-														Program Reguler (PG)
-													</span>
-												</SelectItem>
-												<SelectItem value="regulerTK">
-													<span translate="no" className="notranslate">
-														Program Reguler (TK)
-													</span>
-												</SelectItem>
-												<SelectItem value="regulerSD">
-													<span translate="no" className="notranslate">
-														Program Reguler (SD)
-													</span>
-												</SelectItem>
-												<SelectItem value="regulerSMP">
-													<span translate="no" className="notranslate">
-														Program Reguler (SMP)
-													</span>
-												</SelectItem>
-												<SelectItem value="regulerSMA">
-													<span translate="no" className="notranslate">
-														Program Reguler (SMA)
+														Reguler Sekolah (5-12 Siswa)
 													</span>
 												</SelectItem>
 											</SelectGroup>
@@ -261,12 +241,12 @@ export default function MuridForm({
 												<SelectLabel>Privat</SelectLabel>
 												<SelectItem value="privatSekolah">
 													<span translate="no" className="notranslate">
-														Program Privat (Sekolah)
+														Privat Sekolah (1 Siswa 1 Tutor)
 													</span>
 												</SelectItem>
 												<SelectItem value="privatDewasa">
 													<span translate="no" className="notranslate">
-														Program Privat (Dewasa/Kerja)
+														Privat Dewasa/Kerja (1 Siswa 1 Tutor)
 													</span>
 												</SelectItem>
 											</SelectGroup>

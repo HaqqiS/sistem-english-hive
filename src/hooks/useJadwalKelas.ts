@@ -136,7 +136,15 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 		},
 	});
 
+	// Utils FETCH
+	const fetchScheduleMatrix = async (cabangId: string) => {
+		return await apiUtils.jadwalKelas.getScheduleMatrix.fetch({
+			cabangId,
+		});
+	};
+
 	return {
+		fetchScheduleMatrix,
 		// Query results
 		dataJadwalHariIni: jadwalHariIniQuery.data,
 		isLoadingJadwalHariIni: jadwalHariIniQuery.isLoading,

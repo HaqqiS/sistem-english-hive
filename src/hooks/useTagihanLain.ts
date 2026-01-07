@@ -210,5 +210,14 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 
 		// Utils
 		invalidateAll: invalidateTagihan,
+		fetchExportData: async (kategori: KategoriTagihan) => {
+			return utils.tagihanLain.getForExport.fetch({
+				kategori,
+				status: options.filterStatus,
+				muridId: options.muridId,
+				search: options.searchQuery,
+				cabangId: cabangIdPayload,
+			});
+		},
 	};
 };

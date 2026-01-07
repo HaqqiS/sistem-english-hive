@@ -38,6 +38,7 @@ interface UseKelasOptions {
 	tipeKelas?: TipeKelas | "ALL";
 	jenisKelas?: string | "ALL";
 	levelKelas?: number | "ALL";
+	guruId?: string | "ALL";
 }
 
 export function useKelas(options?: UseKelasOptions) {
@@ -53,6 +54,7 @@ export function useKelas(options?: UseKelasOptions) {
 		options?.jenisKelas !== "ALL" ? options?.jenisKelas : undefined;
 	const levelKelasPayload =
 		options?.levelKelas !== "ALL" ? options?.levelKelas : undefined;
+	const guruIdPayload = options?.guruId !== "ALL" ? options?.guruId : undefined;
 	// ========== QUERIES ==========
 
 	const kelasAktifQuery = api.kelas.getKelasAktif.useQuery(
@@ -69,6 +71,7 @@ export function useKelas(options?: UseKelasOptions) {
 			tipeKelas: tipeKelasPayload,
 			jenisKelas: jenisKelasPayload,
 			levelKelas: levelKelasPayload,
+			guruId: guruIdPayload,
 		},
 		{
 			enabled: options?.enableQueryGetKelasCount ?? false,
@@ -83,6 +86,7 @@ export function useKelas(options?: UseKelasOptions) {
 			tipeKelas: tipeKelasPayload,
 			jenisKelas: jenisKelasPayload,
 			levelKelas: levelKelasPayload,
+			guruId: guruIdPayload,
 		},
 		{
 			enabled: options?.enableQueryGetKelasWaitingCount ?? false,
@@ -97,6 +101,7 @@ export function useKelas(options?: UseKelasOptions) {
 			tipeKelas: tipeKelasPayload,
 			jenisKelas: jenisKelasPayload,
 			levelKelas: levelKelasPayload,
+			guruId: guruIdPayload,
 		},
 		{
 			enabled: options?.enableQueryGetKelasTrialCount ?? false,

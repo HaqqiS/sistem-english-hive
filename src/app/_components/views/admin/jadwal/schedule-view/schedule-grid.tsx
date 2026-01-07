@@ -14,6 +14,12 @@ import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
 	Select,
@@ -29,6 +35,7 @@ import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
+import type { TypeScheduleMatrixItem } from "@/types/jadwalKelas.type";
 import { exportJadwalMatrixPDF } from "@/utils/pdfExportUtils";
 import EditJadwalKelas from "../edit-jadwal";
 import { ScheduleCard } from "./schedule-card";
@@ -60,15 +67,16 @@ export default function ScheduleGrid() {
 	const {
 		dataMatrix,
 		isLoadingMatrix: isLoading,
-		isErrorMatrix: isError,
-		refetchMatrix: refetch,
 		isRefetchingMatrix: isRefetching,
+		isErrorMatrix: isError,
 		errorMatrix: error,
+		refetchMatrix: refetch,
 		mutations,
+		fetchScheduleMatrix,
 	} = useJadwalKelas({
-		enableQueryMatrix: true,
 		filterCabang: activeCabangId,
-		hari: selectedHari,
+		hari: selectedHari as Hari,
+		enableQueryMatrix: !!activeCabangId,
 		onSuccessDelete: () => {
 			setDeleteDialogOpen(false);
 			setItemToDelete(null);
@@ -107,6 +115,8 @@ export default function ScheduleGrid() {
 	}, [dataMatrix]);
 
 	// --- API HANDLERS ---
+	// const apiUtils = api.useUtils(); // Moved to hook
+
 	const handleDelete = (id: string, kode: string) => {
 		setItemToDelete({ id, kode });
 		setDeleteDialogOpen(true);
@@ -118,24 +128,92 @@ export default function ScheduleGrid() {
 		}
 	};
 
-	const handleExport = () => {
+	const buildScheduleMap = (schedules: TypeScheduleMatrixItem[]) => {
+		const map: Record<string, Record<string, TypeScheduleMatrixItem>> = {};
+		schedules.forEach((s) => {
+			let timeSlot = map[s.jamMulai];
+			if (!timeSlot) {
+				timeSlot = {};
+				map[s.jamMulai] = timeSlot;
+			}
+			timeSlot[s.ruangId] = s;
+		});
+		return map;
+	};
+
+	const handleExportCurrent = () => {
 		if (!dataMatrix || !dataMatrix.schedules.length) {
 			toast.error("Tidak ada data jadwal untuk diexport");
 			return;
 		}
 
 		try {
-			// Call PDF Export
 			exportJadwalMatrixPDF(
-				selectedHari as string,
+				[
+					{
+						hari: selectedHari as string,
+						scheduleMap: scheduleMap,
+					},
+				],
 				dataMatrix.rooms,
 				timeSlots,
-				scheduleMap,
 			);
 			toast.success("Berhasil mengunduh jadwal PDF");
 		} catch (error) {
 			console.error("Export error:", error);
 			toast.error("Gagal mengunduh jadwal");
+		}
+	};
+
+	const handleExportAll = async () => {
+		if (!activeCabangId) return;
+		const toastId = toast.loading("Mengambil data semua hari...");
+		try {
+			const data = await fetchScheduleMatrix(activeCabangId);
+
+			if (!data || !data.schedules.length) {
+				toast.dismiss(toastId);
+				toast.error("Tidak ada data jadwal");
+				return;
+			}
+
+			// Group by Hari
+			const pages: {
+				hari: string;
+				scheduleMap: Record<string, Record<string, TypeScheduleMatrixItem>>;
+			}[] = [];
+			const daysOrder = Object.values(Hari); // [SENIN, SELASA, ...]
+
+			for (const hari of daysOrder) {
+				const schedulesForDay = data.schedules.filter((s) => s.hari === hari);
+				if (schedulesForDay.length > 0) {
+					// Build Map
+					const map = buildScheduleMap(schedulesForDay);
+					pages.push({
+						hari: hari,
+						scheduleMap: map,
+					});
+				}
+			}
+
+			if (pages.length === 0) {
+				toast.dismiss(toastId);
+				toast.info("Data kosong");
+				return;
+			}
+
+			// Recalculate TimeSlots for ALL days (union)
+			const allTimes = new Set(data.schedules.map((s) => s.jamMulai));
+			const sortedTimes = Array.from(allTimes).sort();
+
+			exportJadwalMatrixPDF(pages, data.rooms, sortedTimes);
+
+			toast.dismiss(toastId);
+			toast.success("Berhasil export semua hari");
+		} catch (err) {
+			console.error(err);
+			toast.dismiss(toastId);
+			toast.error("Gagal export semua hari");
 		}
 	};
 
@@ -163,10 +241,22 @@ export default function ScheduleGrid() {
 					</Button>
 
 					<HeaderActionPortal>
-						<Button variant="ghost" size="sm" onClick={handleExport}>
-							<FileText className="mr-2 h-4 w-4" />
-							Export PDF
-						</Button>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant="ghost" size="sm">
+									<FileText className="mr-2 h-4 w-4" />
+									Export PDF
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem onClick={handleExportCurrent}>
+									Export Hari Ini ({selectedHari})
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={handleExportAll}>
+									Export Semua Hari (Full Minggu)
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					</HeaderActionPortal>
 
 					{/* <Select value={activeCabangId} onValueChange={setSelectedCabangId}>

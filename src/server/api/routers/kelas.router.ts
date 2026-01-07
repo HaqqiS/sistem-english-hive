@@ -78,6 +78,7 @@ export const kelasRouter = createTRPCRouter({
 					tipeKelas: z.string().optional(),
 					jenisKelas: z.string().optional(),
 					levelKelas: z.number().optional(),
+					guruId: z.string().optional(),
 				})
 				.optional(),
 		)
@@ -93,6 +94,7 @@ export const kelasRouter = createTRPCRouter({
 					tipeKelas: z.string().optional(),
 					jenisKelas: z.string().optional(),
 					levelKelas: z.number().optional(),
+					guruId: z.string().optional(),
 				})
 				.optional(),
 		)
@@ -108,6 +110,7 @@ export const kelasRouter = createTRPCRouter({
 					tipeKelas: z.string().optional(),
 					jenisKelas: z.string().optional(),
 					levelKelas: z.number().optional(),
+					guruId: z.string().optional(),
 				})
 				.optional(),
 		)
@@ -122,7 +125,15 @@ export const kelasRouter = createTRPCRouter({
 
 			const kelas = await db.kelas.findUnique({
 				where: { id: input.id },
-				include: { jenisKelasRel: true },
+				include: {
+					jenisKelasRel: true,
+					jadwalKelas: {
+						include: {
+							jamSlotTetap: true,
+							jamSlotCustom: true,
+						},
+					},
+				},
 			});
 
 			if (!kelas) return null;
@@ -654,6 +665,7 @@ async function getKelasByStatus(
 				tipeKelas?: string;
 				jenisKelas?: string;
 				levelKelas?: number;
+				guruId?: string;
 		  }
 		| undefined,
 	statusKelas: "RUNNING" | "WAITING" | "TRIAL",
@@ -671,8 +683,19 @@ async function getKelasByStatus(
 	if (Object.keys(jenisKelasFilters).length > 0) {
 		whereClause.jenisKelasRel = jenisKelasFilters;
 	}
+
 	if (input?.levelKelas) whereClause.level = input.levelKelas;
 
+	const guruFilters: Prisma.HistoryGuruKelasWhereInput = {};
+	if (input?.guruId) {
+		guruFilters.guruId = input.guruId;
+		guruFilters.statusGuru = "ACTIVE";
+	}
+	if (Object.keys(guruFilters).length > 0) {
+		whereClause.historyGuruKelases = {
+			some: guruFilters,
+		};
+	}
 	const allKelasData = await db.kelas.findMany({
 		where: whereClause,
 		orderBy: [

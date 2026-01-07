@@ -15,6 +15,22 @@ export type TypeJadwalHariIniItem = TypeJadwalHariIni[number];
 export type TypeJadwalKelas =
 	RouterOutputs["jadwalKelas"]["getAllRunning"][number];
 
+export interface TypeScheduleMatrixItem {
+	id: string;
+	hari: Hari;
+	ruangId: string;
+	kelasId: string;
+	kodeKelas: string;
+	tipeKelas: string;
+	guru: string;
+	jamMulai: string;
+	jamSelesai: string;
+	jumlahMurid: number;
+	statusKelas: string | null;
+	// biome-ignore lint/suspicious/noExplicitAny: Raw prisma data
+	originalData: any;
+}
+
 /**
  * Skema dasar yang dibutuhkan oleh kedua tipe jadwal.
  */

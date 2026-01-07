@@ -17,7 +17,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 		.input(
 			z.object({
 				cabangId: z.string().optional(),
-				hari: z.nativeEnum(Hari),
+				hari: z.nativeEnum(Hari).optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
@@ -46,7 +46,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 				// 2. Ambil Jadwal (Terfilter specific hari & cabang)
 				db.jadwalKelas.findMany({
 					where: {
-						hari: input.hari,
+						...(input.hari ? { hari: input.hari } : {}),
 						ruang: {
 							cabangId: finalCabangId,
 						},
@@ -111,6 +111,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 
 				return {
 					id: s.id,
+					hari: s.hari,
 					ruangId: s.ruangId,
 					kelasId: s.kelasId,
 					kodeKelas: s.kelas.kodeKelas,

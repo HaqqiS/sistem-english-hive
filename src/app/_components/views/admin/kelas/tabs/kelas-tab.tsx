@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useJenisKelas } from "@/hooks/useJenisKelas";
 import { useKelas } from "@/hooks/useKelas";
+import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useGuruKelasStore, useKelasStore } from "@/store/useKelasStore";
@@ -45,12 +46,17 @@ export default function KelasTab() {
 	const [selectedLevelKelas, setSelectedLevelKelas] = useState<number | "ALL">(
 		"ALL",
 	);
+	const [selectedGuruKelas, setSelectedGuruKelas] = useState<string | "ALL">(
+		"ALL",
+	);
 
 	// 2. Zustand Store Actions
 	const { openDrawer: openKelasDrawer } = useKelasStore();
 	const { openDrawer: openGuruKelasDrawer } = useGuruKelasStore();
 
 	const { data: jenisKelasList } = useJenisKelas();
+
+	const { dataGuruList: guruList } = useUser();
 
 	const {
 		dataKelasCount,
@@ -77,6 +83,7 @@ export default function KelasTab() {
 		tipeKelas: selectedTipeKelas,
 		jenisKelas: selectedJenisKelas,
 		levelKelas: selectedLevelKelas,
+		guruId: selectedGuruKelas,
 		enableQueryGetKelasCount: true,
 		enableQueryGetKelasWaitingCount: true,
 		enableQueryGetKelasTrialCount: true,
@@ -310,6 +317,28 @@ export default function KelasTab() {
 							<SelectItem value="2">Level 2</SelectItem>
 							<SelectItem value="3">Level 3</SelectItem>
 							<SelectItem value="4">Level 4</SelectItem>
+						</SelectContent>
+					</Select>
+
+					<Select
+						value={selectedGuruKelas}
+						onValueChange={(v) => setSelectedGuruKelas(v === "ALL" ? "ALL" : v)}
+					>
+						<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[160px]">
+							<div className="flex items-center gap-2">
+								<Filter className="text-muted-foreground h-4 w-4" />
+								<span className="font-medium">
+									<SelectValue placeholder="Semua Level" />
+								</span>
+							</div>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="ALL">Semua Guru</SelectItem>
+							{guruList?.map((guru) => (
+								<SelectItem key={guru.id} value={guru.id}>
+									{guru.name}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 				</div>

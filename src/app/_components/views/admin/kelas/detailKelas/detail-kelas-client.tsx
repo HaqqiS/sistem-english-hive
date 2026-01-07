@@ -114,6 +114,17 @@ export default function DetailKelasClient() {
 	const handleExportAbsensi = () => {
 		if (!dataByKelasId || !dataById) return;
 
+		// 0. Format String Jadwal
+		// dataById seharusnya sekarang sudah include jadwalKelas (karena update backend)
+		// Namun jika tipe belum update, kita bisa casting atau access safe
+		// biome-ignore lint/suspicious/noExplicitAny: Backend baru diupdate
+		const jadwalList = (dataById as any).jadwalKelas?.map((j: any) => {
+			const slot = j.jamSlotTetap || j.jamSlotCustom;
+			if (!slot) return `${j.hari}`;
+			return `${j.hari} (${slot.jamMulai} - ${slot.jamSelesai})`;
+		});
+		const jadwalString = jadwalList?.join(" & ") ?? "-";
+
 		// 1. Siapkan Info Kelas
 		const classInfo = {
 			kodeKelas: dataById.kodeKelas,
@@ -121,6 +132,7 @@ export default function DetailKelasClient() {
 			grup: dataById.grup,
 			bulanTahun: dataById.bulanTahunAjar,
 			pengajar: activeGuruHistory?.guru?.name ?? undefined,
+			jadwal: jadwalString,
 		};
 
 		// 2. Siapkan Data Murid
@@ -158,15 +170,6 @@ export default function DetailKelasClient() {
 
 	return (
 		<div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-			{/* <Button
-				variant="outline"
-				size="sm"
-				onClick={handleExportAbsensi}
-				title="Export untuk Absen Kertas"
-			>
-				<Download className="mr-2 h-4 w-4" />
-				Export Absen
-			</Button> */}
 			<HeaderActionPortal>
 				<Button variant="ghost" size="sm" onClick={handleExportAbsensi}>
 					<FileText className="mr-2 h-4 w-4" />

@@ -2,10 +2,16 @@
 
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
+import { FileSpreadsheet } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { Button } from "@/components/ui/button";
 import { useTagihanLain } from "@/hooks/useTagihanLain";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import { downloadExcel } from "@/utils/exportUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import {
 	columnsTagihanLainGlobal,
@@ -62,7 +68,7 @@ export default function TagihanLainTab({
 		dataGetAllLainnyaPaginated,
 		pageCountLainnya,
 		isLoadingGetAllLainnyaPaginated,
-
+		fetchExportData,
 		mutations,
 	} = useTagihanLain({
 		pagination,
@@ -129,6 +135,35 @@ export default function TagihanLainTab({
 		setEditDialogOpen(true);
 	};
 
+	const handleExport = async () => {
+		const toastId = toast.loading("Sedang mengunduh data...");
+		try {
+			const rawData = await fetchExportData(kategori);
+
+			const formattedData = rawData.map((item) => ({
+				"Nama Murid": item.murid.namaLengkap,
+				"No WA": item.murid.noWA ?? "-",
+				Cabang: item.murid.cabang.namaCabang,
+				Kelas: item.kelas?.kodeKelas ?? "-",
+				Judul: item.judul,
+				Kategori: item.kategori,
+				"Jumlah (Rp)": item.jumlah,
+				Status: item.status,
+				"Dibuat Pada": formatDateToYYYYMMDD(item.createdAt),
+				Deskripsi: item.deskripsi ?? "-",
+			}));
+
+			const filename = `Laporan-${kategori === "BUKU" ? "Buku" : kategori === "REGISTRASI" ? "Registrasi" : "TagihanLain"}-${new Date().toISOString().split("T")[0]}`;
+
+			downloadExcel(formattedData, filename);
+
+			toast.success("Export berhasil!", { id: toastId });
+		} catch (error) {
+			toast.error("Gagal mengexport data", { id: toastId });
+			console.error(error);
+		}
+	};
+
 	const tableColumns = columnsTagihanLainGlobal({
 		onDeleteClick: handleDeleteClick,
 		onEditClick: handleEditClick,
@@ -142,6 +177,13 @@ export default function TagihanLainTab({
 				onOpenChange={setEditDialogOpen}
 				data={itemToEdit}
 			/>
+
+			<HeaderActionPortal>
+				<Button variant="ghost" size="sm" onClick={handleExport}>
+					<FileSpreadsheet className="mr-2 h-4 w-4" />
+					Export Excel
+				</Button>
+			</HeaderActionPortal>
 
 			<div className="flex justify-end">
 				{labelTambah && (

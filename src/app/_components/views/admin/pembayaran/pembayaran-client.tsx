@@ -195,16 +195,6 @@ export default function PembayaranClient({
 						<TabsTrigger value="tagihan-lain">Tagihan Lainnya</TabsTrigger>
 						<TabsTrigger value="jatuh-tempo">Jatuh Tempo</TabsTrigger>
 					</TabsList>
-
-					<HeaderActionPortal>
-						<div className="flex items-center gap-2">
-							{/* Anda bisa taruh tombol Export di sini */}
-							<Button variant="ghost" size="sm" onClick={handleExport}>
-								<FileSpreadsheet className="mr-2 h-4 w-4" />
-								Export Excel
-							</Button>
-						</div>
-					</HeaderActionPortal>
 				</div>
 
 				{/* Shared Filters Header */}
@@ -272,6 +262,14 @@ export default function PembayaranClient({
 				</div>
 
 				<TabsContent value="list" className="space-y-4">
+					<HeaderActionPortal>
+						<div className="flex items-center gap-2">
+							<Button variant="ghost" size="sm" onClick={handleExport}>
+								<FileSpreadsheet className="mr-2 h-4 w-4" />
+								Export Excel
+							</Button>
+						</div>
+					</HeaderActionPortal>
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						{/* Filter Kelas khusus SPP */}
 						<div className="flex items-center gap-2">

@@ -660,6 +660,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					Kelas: {
 						select: {
 							id: true,
+							level: true,
 							hargaKelas: true,
 							cabangId: true,
 							jenisKelasRel: {
@@ -764,8 +765,8 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 											muridId: p.muridId,
 											kelasId: p.kelasId,
 											kategori: "BUKU",
-											judul: "Tagihan Buku Paket",
-											deskripsi: "Auto-Generate Bulk Activation",
+											judul: `Tagihan Buku ${p.Kelas.level}`,
+											deskripsi: "Auto-Generate Bulk Activation Status",
 											jumlah: hargaBuku,
 											status: StatusPembayaran.BELUM_LUNAS,
 										},

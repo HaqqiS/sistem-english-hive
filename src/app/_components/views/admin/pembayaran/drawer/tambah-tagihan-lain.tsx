@@ -141,8 +141,8 @@ export default function TambahTagihanLain({
 	const onSubmit = (values: CreateTagihanLainInput) => {
 		// Ensure kategori is consistent with prop
 		const payload = { ...values, kategori: kategori };
-		// Jika REGISTRASI, pastikan kelasId undefined agar bersih (opsional)
-		if (kategori === "REGISTRASI") {
+		// Jika BUKAN BUKU, pastikan kelasId undefined agar bersih
+		if (kategori !== "BUKU") {
 			delete payload.kelasId;
 		}
 		mutations.create.mutate(payload);

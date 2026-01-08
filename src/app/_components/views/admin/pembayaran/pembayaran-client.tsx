@@ -353,10 +353,7 @@ export default function PembayaranClient({
 				<TabsContent value="tagihan-lain" className="space-y-4">
 					<TagihanLainTab
 						kategori={KategoriTagihan.LAINNYA}
-						// No "labelTambah" means no add button by default?
-						// Wait, previous code didn't have add button for "Tagihan Lain".
-						// Wait, previous code had `DeleteConfirmationDialog` and `DataTable` but NO `TambahTagihanLain` button.
-						// So I leave labelTambah undefined.
+						labelTambah="Tambah Tagihan Lain"
 						filterCabang={activeCabangId}
 						filterStatus={statusFilter}
 						searchQuery={debouncedSearch}

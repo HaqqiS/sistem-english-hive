@@ -4,7 +4,6 @@ import { AlertCircle } from "lucide-react";
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-	Table,
 	TableBody,
 	TableCell,
 	TableHead,
@@ -158,18 +157,20 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 	}
 
 	return (
-		<div className="rounded-md border p-4 bg-background">
-			<Table>
-				<TableHeader>
-					<TableRow className="bg-muted/50">
-						<TableHead className="w-[150px] border-r">Nama Guru</TableHead>
-						<TableHead className="w-[120px] border-r border-dotted">
+		<div className="rounded-md border bg-background overflow-auto h-[calc(100vh-200px)] relative">
+			<table className="w-full caption-bottom text-sm">
+				<TableHeader className="sticky top-0 z-40 bg-muted shadow-sm">
+					<TableRow className="hover:bg-muted">
+						<TableHead className="w-[150px] border-r bg-muted sticky top-0 left-0 z-50">
+							Nama Guru
+						</TableHead>
+						<TableHead className="w-[120px] border-r border-dotted bg-muted sticky top-0 left-[150px] z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
 							Jam
 						</TableHead>
 						{DAYS.map((day) => (
 							<TableHead
 								key={day}
-								className="text-center border-r last:border-r-0"
+								className="text-center border-r last:border-r-0 bg-muted sticky top-0 z-40"
 							>
 								{day}
 							</TableHead>
@@ -184,14 +185,16 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 								{index === 0 && (
 									<TableCell
 										rowSpan={item.rows.length}
-										className="font-medium border-r sticky top-0 bg-muted/5 items-center"
+										className="font-medium border-r sticky top-[41px] left-0 z-30 bg-background/95 align-top p-0 min-w-[150px]"
 									>
-										<div className="sticky">{item.guru.name}</div>
+										<div className="p-4 sticky top-[41px] left-0">
+											{item.guru.name}
+										</div>
 									</TableCell>
 								)}
 
 								{/* Time Slot */}
-								<TableCell className="text-sm text-muted-foreground border-r border-dotted font-mono whitespace-nowrap">
+								<TableCell className="text-sm text-muted-foreground border-r border-dotted font-mono whitespace-nowrap sticky left-[150px] z-20 bg-background shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
 									{row.slot.jamMulai} - {row.slot.jamSelesai}
 								</TableCell>
 
@@ -233,7 +236,7 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 						</TableRow>
 					)}
 				</TableBody>
-			</Table>
+			</table>
 		</div>
 	);
 }

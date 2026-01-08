@@ -1,4 +1,4 @@
-import { Calendar, Clock, MessageCircle } from "lucide-react";
+import { Calendar, Clock, MessageCircle, User } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,14 @@ export function RegisteredStudentsTable({
 											</span>
 											<span className="font-bold text-lg text-primary">
 												{kelas.kodeKelas}
+											</span>
+										</div>
+
+										<div className="flex items-center gap-2 text-sm text-foreground/80 mt-1">
+											<User className="h-4 w-4 text-muted-foreground" />
+											<span className="font-medium">
+												{kelas.historyGuruKelases[0]?.guru.name ??
+													"Belum ada guru"}
 											</span>
 										</div>
 

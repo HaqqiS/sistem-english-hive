@@ -223,165 +223,12 @@ export default function MuridClient() {
 	});
 
 	return (
-		<Tabs defaultValue="daftarMurid">
+		<Tabs defaultValue="listMurid">
 			<TabsList>
-				<TabsTrigger value="daftarMurid">List yang Tidak Terdaftar</TabsTrigger>
 				<TabsTrigger value="listMurid">List Semua Murid</TabsTrigger>
-				<TabsTrigger value="registeredMurid">List yang Terdaftar</TabsTrigger>
+				<TabsTrigger value="daftarMurid">List Tidak Terdaftar</TabsTrigger>
+				<TabsTrigger value="registeredMurid">List Terdaftar</TabsTrigger>
 			</TabsList>
-			<TabsContent value="daftarMurid">
-				<div>
-					<header className="flex w-full flex-col gap-4">
-						<div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-							<div className="flex flex-1 items-center gap-3">
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-9 w-9 shrink-0"
-									disabled={
-										isLoadingNotRegisteredPaginated ||
-										isFetchingNotRegisteredPaginated
-									}
-									onClick={() => refetchNotRegisteredPaginated()}
-									title="Refresh Jadwal"
-								>
-									<RefreshCw
-										className={cn(
-											"h-4 w-4",
-											(isLoadingNotRegisteredPaginated ||
-												isFetchingNotRegisteredPaginated) &&
-												"animate-spin",
-										)}
-									/>
-								</Button>
-								<div className="flex flex-col">
-									<h1 className="text-xl">
-										Daftar Murid Belum Terdaftar ke Kelas
-									</h1>
-									<p className="text-muted-foreground text-sm">
-										Halaman ini menampilkan daftar murid yang belum terdaftar ke
-										kelas.
-									</p>
-								</div>
-							</div>
-
-							<TambahPendaftaranKelas />
-						</div>
-
-						{/* --- SEARCH + FILTER: mobile-first, turun ke bawah --- */}
-						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-							{/* Search */}
-							<div className="relative w-full sm:max-w-xs">
-								<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-								<Input
-									placeholder="Cari nama murid..."
-									className="pl-8"
-									value={searchQueryNotRegistered}
-									onChange={(e) => setSearchQueryNotRegistered(e.target.value)}
-								/>
-							</div>
-
-							<div className="flex flex-wrap gap-2">
-								{/* Filter Duplicate WA */}
-								{dataDuplicateNoWA.length > 0 && (
-									<Select
-										value={filterNoWANotRegistered ?? "ALL"}
-										onValueChange={(val) => {
-											setFilterNoWANotRegistered(val === "ALL" ? null : val);
-											setPaginationNotRegistered((prev) => ({
-												...prev,
-												pageIndex: 0,
-											}));
-										}}
-									>
-										<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
-											<div className="text-muted-foreground flex items-center gap-2">
-												<Filter className="h-3.5 w-3.5" />
-												<SelectValue placeholder="Filter Duplikat WA" />
-											</div>
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="ALL">Semua No WA</SelectItem>
-											{dataDuplicateNoWA.map((item) => (
-												<SelectItem key={item.noWA} value={item.noWA}>
-													{item.noWA} ({item.count})
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								)}
-
-								{/* Filter Tipe Program */}
-								<Select
-									value={tipeProgramFilterNotRegistered}
-									onValueChange={(val) => {
-										setTipeProgramFilterNotRegistered(
-											val as "REGULER" | "PRIVAT" | "ALL",
-										);
-										setPaginationNotRegistered((prev) => ({
-											...prev,
-											pageIndex: 0,
-										}));
-									}}
-								>
-									<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
-										<div className="text-muted-foreground flex items-center gap-2">
-											<Filter className="h-3.5 w-3.5" />
-											<SelectValue placeholder="Status" />
-										</div>
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="ALL">Semua Tipe Program</SelectItem>
-										<SelectItem value="REGULER">Reguler</SelectItem>
-										<SelectItem value="PRIVAT">Privat</SelectItem>
-									</SelectContent>
-								</Select>
-
-								{/* Filter Status */}
-								<Select
-									value={statusFilterNotRegistered}
-									onValueChange={(val) => {
-										setStatusFilterNotRegistered(val as StatusMurid | "ALL");
-										setPaginationNotRegistered((prev) => ({
-											...prev,
-											pageIndex: 0,
-										}));
-									}}
-								>
-									<SelectTrigger className="w-full sm:w-fit sm:min-w-40">
-										<div className="text-muted-foreground flex items-center gap-2">
-											<Filter className="h-3.5 w-3.5" />
-											<SelectValue placeholder="Status" />
-										</div>
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="ALL">Semua Status</SelectItem>
-										{Object.values(StatusMurid).map((status) => (
-											<SelectItem key={status} value={status}>
-												{status
-													.replaceAll("_", " ")
-													.toLowerCase()
-													.replace(/\b\w/g, (c) => c.toUpperCase())}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-					</header>
-
-					<DataTablePagination
-						columns={columnsMuridNotRegistered}
-						data={dataNotRegisteredPaginated ?? []}
-						pageCount={pageCountNotRegistered}
-						pagination={paginationNotRegistered}
-						onPaginationChange={setPaginationNotRegistered}
-						isLoading={isFetchingNotRegisteredPaginated}
-						sorting={sortingNotRegistered}
-						onSortingChange={setSortingNotRegistered}
-					/>
-				</div>
-			</TabsContent>
 
 			<TabsContent value="listMurid">
 				<HeaderActionPortal>
@@ -558,6 +405,160 @@ export default function MuridClient() {
 						isLoading={isFetchingAllMuridPaginated}
 						sorting={sortingAllMurid}
 						onSortingChange={setSortingAllMurid}
+					/>
+				</div>
+			</TabsContent>
+
+			<TabsContent value="daftarMurid">
+				<div>
+					<header className="flex w-full flex-col gap-4">
+						<div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+							<div className="flex flex-1 items-center gap-3">
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-9 w-9 shrink-0"
+									disabled={
+										isLoadingNotRegisteredPaginated ||
+										isFetchingNotRegisteredPaginated
+									}
+									onClick={() => refetchNotRegisteredPaginated()}
+									title="Refresh Jadwal"
+								>
+									<RefreshCw
+										className={cn(
+											"h-4 w-4",
+											(isLoadingNotRegisteredPaginated ||
+												isFetchingNotRegisteredPaginated) &&
+												"animate-spin",
+										)}
+									/>
+								</Button>
+								<div className="flex flex-col">
+									<h1 className="text-xl">
+										Daftar Murid Belum Terdaftar ke Kelas
+									</h1>
+									<p className="text-muted-foreground text-sm">
+										Halaman ini menampilkan daftar murid yang belum terdaftar ke
+										kelas.
+									</p>
+								</div>
+							</div>
+
+							<TambahPendaftaranKelas />
+						</div>
+
+						{/* --- SEARCH + FILTER: mobile-first, turun ke bawah --- */}
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							{/* Search */}
+							<div className="relative w-full sm:max-w-xs">
+								<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+								<Input
+									placeholder="Cari nama murid..."
+									className="pl-8"
+									value={searchQueryNotRegistered}
+									onChange={(e) => setSearchQueryNotRegistered(e.target.value)}
+								/>
+							</div>
+
+							<div className="flex flex-wrap gap-2">
+								{/* Filter Duplicate WA */}
+								{dataDuplicateNoWA.length > 0 && (
+									<Select
+										value={filterNoWANotRegistered ?? "ALL"}
+										onValueChange={(val) => {
+											setFilterNoWANotRegistered(val === "ALL" ? null : val);
+											setPaginationNotRegistered((prev) => ({
+												...prev,
+												pageIndex: 0,
+											}));
+										}}
+									>
+										<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
+											<div className="text-muted-foreground flex items-center gap-2">
+												<Filter className="h-3.5 w-3.5" />
+												<SelectValue placeholder="Filter Duplikat WA" />
+											</div>
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="ALL">Semua No WA</SelectItem>
+											{dataDuplicateNoWA.map((item) => (
+												<SelectItem key={item.noWA} value={item.noWA}>
+													{item.noWA} ({item.count})
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+
+								{/* Filter Tipe Program */}
+								<Select
+									value={tipeProgramFilterNotRegistered}
+									onValueChange={(val) => {
+										setTipeProgramFilterNotRegistered(
+											val as "REGULER" | "PRIVAT" | "ALL",
+										);
+										setPaginationNotRegistered((prev) => ({
+											...prev,
+											pageIndex: 0,
+										}));
+									}}
+								>
+									<SelectTrigger className="w-full sm:w-fit sm:min-w-50">
+										<div className="text-muted-foreground flex items-center gap-2">
+											<Filter className="h-3.5 w-3.5" />
+											<SelectValue placeholder="Status" />
+										</div>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="ALL">Semua Tipe Program</SelectItem>
+										<SelectItem value="REGULER">Reguler</SelectItem>
+										<SelectItem value="PRIVAT">Privat</SelectItem>
+									</SelectContent>
+								</Select>
+
+								{/* Filter Status */}
+								<Select
+									value={statusFilterNotRegistered}
+									onValueChange={(val) => {
+										setStatusFilterNotRegistered(val as StatusMurid | "ALL");
+										setPaginationNotRegistered((prev) => ({
+											...prev,
+											pageIndex: 0,
+										}));
+									}}
+								>
+									<SelectTrigger className="w-full sm:w-fit sm:min-w-40">
+										<div className="text-muted-foreground flex items-center gap-2">
+											<Filter className="h-3.5 w-3.5" />
+											<SelectValue placeholder="Status" />
+										</div>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="ALL">Semua Status</SelectItem>
+										{Object.values(StatusMurid).map((status) => (
+											<SelectItem key={status} value={status}>
+												{status
+													.replaceAll("_", " ")
+													.toLowerCase()
+													.replace(/\b\w/g, (c) => c.toUpperCase())}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					</header>
+
+					<DataTablePagination
+						columns={columnsMuridNotRegistered}
+						data={dataNotRegisteredPaginated ?? []}
+						pageCount={pageCountNotRegistered}
+						pagination={paginationNotRegistered}
+						onPaginationChange={setPaginationNotRegistered}
+						isLoading={isFetchingNotRegisteredPaginated}
+						sorting={sortingNotRegistered}
+						onSortingChange={setSortingNotRegistered}
 					/>
 				</div>
 			</TabsContent>

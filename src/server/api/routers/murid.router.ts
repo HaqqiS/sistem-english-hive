@@ -346,6 +346,15 @@ export const muridRouter = createTRPCRouter({
 				select: {
 					id: true,
 					kodeKelas: true,
+					historyGuruKelases: {
+						select: {
+							guru: {
+								select: {
+									name: true,
+								},
+							},
+						},
+					},
 					jadwalKelas: {
 						select: {
 							id: true,

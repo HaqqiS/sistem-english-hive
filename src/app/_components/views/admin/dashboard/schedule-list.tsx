@@ -68,6 +68,8 @@ export default function ScheduleList() {
 									const guruName =
 										jadwal.kelas.historyGuruKelases[0]?.guru?.name ?? "-";
 
+									const isAttended = jadwal.sesiPertemuanKelases.length > 0;
+
 									return (
 										<div
 											key={jadwal.id}
@@ -75,9 +77,19 @@ export default function ScheduleList() {
 										>
 											<div className="flex items-center justify-between">
 												<span className="font-semibold">{jamMulai}</span>
-												<Badge variant="outline">
-													{jadwal.ruang.namaRuang}
-												</Badge>
+												<div className="flex items-center gap-2">
+													{isAttended && (
+														<Badge
+															variant="default"
+															className="bg-green-600 hover:bg-green-700 text-xs px-1.5 h-5"
+														>
+															Sudah Absen
+														</Badge>
+													)}
+													<Badge variant="outline">
+														{jadwal.ruang.namaRuang}
+													</Badge>
+												</div>
 											</div>
 											<div className="text-sm font-medium">
 												{jadwal.kelas.kodeKelas}

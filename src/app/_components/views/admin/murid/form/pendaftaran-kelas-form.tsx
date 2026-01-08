@@ -21,6 +21,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -61,6 +62,32 @@ export default function PendaftaranKelasForm({
 
 	// State for MultiSelect Popover
 	const [open, setOpen] = React.useState(false);
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [ageFilter, setAgeFilter] = React.useState({
+		min: "",
+		max: "",
+	});
+
+	const filteredMurid = dataMuridNotRegistered
+		?.filter((murid) => {
+			const age = murid.umur ?? 0;
+			const min = ageFilter.min ? Number(ageFilter.min) : 0;
+			const max = ageFilter.max ? Number(ageFilter.max) : Infinity;
+
+			// Filter Age
+			if (age < min || age > max) return false;
+
+			// Filter Search
+			if (
+				searchQuery &&
+				!murid.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase())
+			) {
+				return false;
+			}
+
+			return true;
+		})
+		.slice(0, 50);
 
 	// Helper to remove selected item
 	const handleUnselect = (item: string) => {
@@ -100,12 +127,51 @@ export default function PendaftaranKelasForm({
 								</FormControl>
 							</PopoverTrigger>
 							<PopoverContent className="w-md p-0">
-								<Command>
-									<CommandInput placeholder="Cari murid..." />
+								<Command shouldFilter={false}>
+									<CommandInput
+										placeholder="Cari murid..."
+										value={searchQuery}
+										onValueChange={setSearchQuery}
+									/>
+									<div className="p-2 border-b space-y-2">
+										<p className="text-xs font-medium text-muted-foreground">
+											Filter Umur
+										</p>
+										<div className="flex gap-2">
+											<div className="space-y-1">
+												<Input
+													placeholder="Min"
+													type="number"
+													className="h-7 text-xs"
+													value={ageFilter.min}
+													onChange={(e) =>
+														setAgeFilter((prev) => ({
+															...prev,
+															min: e.target.value,
+														}))
+													}
+												/>
+											</div>
+											<div className="space-y-1">
+												<Input
+													placeholder="Max"
+													type="number"
+													className="h-7 text-xs"
+													value={ageFilter.max}
+													onChange={(e) =>
+														setAgeFilter((prev) => ({
+															...prev,
+															max: e.target.value,
+														}))
+													}
+												/>
+											</div>
+										</div>
+									</div>
 									<CommandList>
 										<CommandEmpty>Tidak ada murid ditemukan.</CommandEmpty>
-										<CommandGroup className="max-h-64 overflow-auto">
-											{dataMuridNotRegistered?.map((murid) => (
+										<CommandGroup>
+											{filteredMurid?.map((murid) => (
 												<CommandItem
 													key={murid.id}
 													value={murid.namaLengkap}

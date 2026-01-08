@@ -10,18 +10,15 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
-	SelectGroup,
 	SelectItem,
-	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useKelas } from "@/hooks/useKelas";
-import { useMurid } from "@/hooks/useMurid";
-import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { usePendaftaranKelasStore } from "@/store/useKelasStore";
 import type { TypeClientUpdatePendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
 
 interface EditPendaftaranKelasFormProps {
@@ -31,95 +28,33 @@ interface EditPendaftaranKelasFormProps {
 export default function EditPendaftaranKelasForm({
 	onSubmit,
 }: EditPendaftaranKelasFormProps) {
-	const { activeCabangId } = useGlobalCabangStore();
+	// const { activeCabangId } = useGlobalCabangStore(); // Unused
 	const form = useFormContext<TypeClientUpdatePendaftaranKelasSchema>();
+	const { selectedPendaftaran } = usePendaftaranKelasStore();
 
-	const {
-		dataAllMuridPaginated: dataAllMurid,
-		// isLoadingAllMuridPaginated: isLoadingMurid,
-	} = useMurid({
-		pagination: {
-			pageSize: 20,
-			pageIndex: 0,
-		},
-		filterCabang: activeCabangId,
-		enableQuery: true,
-	});
-	const {
-		dataKelasAktif: dataKelas,
-		//  isLoadingKelasAktif: isLoadingKelas
-	} = useKelas({
-		filterCabang: activeCabangId,
-		enableQueryGetKelasAktif: true,
-	});
+	// Removed heavy hooks: useMurid, useKelas
 
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-			{/* Murid Selection */}
-			<FormField
-				control={form.control}
-				name="muridId"
-				render={({ field }) => (
-					<FormItem>
-						<FormLabel>Murid</FormLabel>
-						<FormControl>
-							<Select
-								onValueChange={field.onChange}
-								value={field.value}
-								disabled={true}
-							>
-								<SelectTrigger className="w-full">
-									<SelectValue placeholder="Pilih Murid" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										<SelectLabel>Pilih Murid</SelectLabel>
-										{dataAllMurid?.map((murid) => (
-											<SelectItem key={murid.id} value={murid.id}>
-												{murid.namaLengkap}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						</FormControl>
-						<FormMessage />
-					</FormItem>
-				)}
-			/>
+			{/* Murid Selection - Disabled / Read Only */}
+			<div className="space-y-2">
+				<FormLabel>Murid</FormLabel>
+				<Input
+					disabled
+					value={selectedPendaftaran?.murid.namaLengkap || "-"}
+					placeholder="Nama Murid"
+				/>
+			</div>
 
-			{/* Kelas Selection */}
-			<FormField
-				control={form.control}
-				name="kelasId"
-				render={({ field }) => (
-					<FormItem>
-						<FormLabel>Program Kelas</FormLabel>
-						<FormControl>
-							<Select
-								onValueChange={field.onChange}
-								value={field.value}
-								disabled={true}
-							>
-								<SelectTrigger className="w-full">
-									<SelectValue placeholder="Pilih Program Kelas" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										<SelectLabel>Tipe Program Kelas</SelectLabel>
-										{dataKelas?.map((kelas) => (
-											<SelectItem key={kelas.id} value={kelas.id}>
-												{kelas.kodeKelas}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						</FormControl>
-						<FormMessage />
-					</FormItem>
-				)}
-			/>
+			{/* Kelas Selection - Disabled / Read Only */}
+			<div className="space-y-2">
+				<FormLabel>Program Kelas</FormLabel>
+				<Input
+					disabled
+					value={selectedPendaftaran?.Kelas.kodeKelas || "-"}
+					placeholder="Kode Kelas"
+				/>
+			</div>
 
 			<FormField
 				control={form.control}

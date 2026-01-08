@@ -385,6 +385,17 @@ export const dashboardRouter = createTRPCRouter({
 							jamMulai: true,
 						},
 					},
+					sesiPertemuanKelases: {
+						where: {
+							tanggalWaktu: {
+								gte: dayjs().startOf("day").toDate(),
+								lte: dayjs().endOf("day").toDate(),
+							},
+						},
+						select: {
+							id: true,
+						},
+					},
 				},
 				// Order by jam mulai (sedikit tricky karena ada 2 source, kita bisa sort di JS atau terima order database apa adanya lalu sort di client/server)
 				// Untuk simpelnya kita tidak sorting di level DB dulu karena conditional column sorting

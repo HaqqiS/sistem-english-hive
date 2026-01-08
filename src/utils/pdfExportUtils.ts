@@ -177,7 +177,10 @@ export const exportJadwalMatrixPDF = (
 		const head = [["WAKTU", ...rooms.map((r) => r.namaRuang)]];
 
 		// BODY
-		const body = timeSlots.map((time) => {
+		// Determine time slots DYNAMICALLY for this page/day only
+		const pageTimeSlots = Object.keys(scheduleMap).sort();
+
+		const body = pageTimeSlots.map((time) => {
 			const row: (string | { content: string; raw: TypeScheduleMatrixItem })[] =
 				[time]; // First col is Time
 			rooms.forEach((room) => {
@@ -200,6 +203,7 @@ export const exportJadwalMatrixPDF = (
 						"", // Spacer
 						`${schedule.jamMulai} - ${schedule.jamSelesai}`,
 						statusLine,
+						schedule.deskripsi || "",
 					].join("\n");
 
 					row.push({
@@ -341,6 +345,20 @@ export const exportJadwalMatrixPDF = (
 							xText + doc.getTextWidth(schedule.statusKelas || "-"),
 							currentY,
 						);
+					}
+
+					// 7. DESKRIPSI (Optional)
+					if (schedule.deskripsi) {
+						currentY += 3.5; // Spacing
+						doc.setFont("helvetica", "normal"); // Reset to normal instead of italic if preferred, or italic
+						doc.setFontSize(7);
+						doc.setTextColor(100, 100, 100);
+
+						const descLines = doc.splitTextToSize(
+							schedule.deskripsi,
+							maxTextWidth,
+						);
+						doc.text(descLines, xText, currentY);
 					}
 				}
 			},

@@ -23,21 +23,13 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
-import type { TypeJadwalKelas } from "@/types/jadwalKelas.type";
+import type {
+	TypeJadwalKelas,
+	TypeScheduleMatrixItem,
+} from "@/types/jadwalKelas.type";
 
 interface ScheduleCardProps {
-	data: {
-		id: string;
-		kodeKelas: string;
-		tipeKelas: string;
-		guru: string;
-		jamMulai: string;
-		jamSelesai: string;
-		jumlahMurid: number;
-		statusKelas: string | null;
-
-		originalData: TypeJadwalKelas;
-	};
+	data: TypeScheduleMatrixItem;
 	onDelete: (id: string, kode: string) => void;
 	onEdit?: (item: TypeJadwalKelas) => void;
 }
@@ -146,9 +138,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 						</div>
 						<div className="flex items-center gap-1.5">
 							<Album className="h-3 w-3 shrink-0 opacity-70" />
-							<span className="font-mono text-sm">
-								{data.originalData.kelas.deskripsi ?? "-"}
-							</span>
+							<span className="font-mono text-sm">{data.deskripsi ?? "-"}</span>
 						</div>
 					</div>
 				</div>
@@ -222,7 +212,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 								<span className="text-sm">Deskripsi</span>
 							</div>
 							<span className="text-foreground font-mono text-sm font-medium">
-								{data.originalData.kelas.deskripsi ?? "-"}
+								{data.deskripsi ?? "-"}
 							</span>
 						</div>
 					</div>

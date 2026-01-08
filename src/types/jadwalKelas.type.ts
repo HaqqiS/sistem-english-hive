@@ -27,8 +27,9 @@ export interface TypeScheduleMatrixItem {
 	jamSelesai: string;
 	jumlahMurid: number;
 	statusKelas: string | null;
-	// biome-ignore lint/suspicious/noExplicitAny: Raw prisma data
-	originalData: any;
+	deskripsi: string | null;
+
+	originalData: TypeJadwalKelas;
 }
 
 /**

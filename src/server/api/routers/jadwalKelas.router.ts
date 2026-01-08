@@ -121,6 +121,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 					jamSelesai: jam?.jamSelesai ?? "00:00",
 					jumlahMurid: s.kelas._count.pendaftaranKelases,
 					statusKelas: s.kelas.statusKelas,
+					deskripsi: s.kelas.deskripsi,
 
 					originalData: s,
 				};

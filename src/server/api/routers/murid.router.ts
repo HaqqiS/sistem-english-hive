@@ -309,6 +309,13 @@ export const muridRouter = createTRPCRouter({
 						noWA: true,
 						jamPulang: true,
 						createdAt: true,
+						cabangId: true,
+						email: true,
+						gender: true,
+						asalSekolah: true,
+						alamat: true,
+						deskripsi: true,
+						sumberInfo: true,
 					},
 				}),
 			]);

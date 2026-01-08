@@ -77,6 +77,21 @@ export function KelasListView({
 					const jadwalHari =
 						kelas.jadwalKelas.length > 0
 							? kelas.jadwalKelas
+									.slice()
+									.sort((a, b) => {
+										const hariOrder: Record<string, number> = {
+											SENIN: 1,
+											SELASA: 2,
+											RABU: 3,
+											KAMIS: 4,
+											JUMAT: 5,
+											SABTU: 6,
+											MINGGU: 7,
+										};
+										return (
+											(hariOrder[a.hari] ?? 99) - (hariOrder[b.hari] ?? 99)
+										);
+									})
 									.map(
 										(j: {
 											hari: string;

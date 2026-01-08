@@ -201,11 +201,16 @@ export default function MuridClient() {
 
 	// COLUMNS
 	const columnsMuridNotRegistered = createColumnsMuridNotRegistered({
+		onEditClick: (item) => {
+			// Reuse the edit drawer for normal edit
+			openDrawer("edit", item as unknown as TypeAllMurid);
+		},
 		onEditStatusClick: (item) => {
 			handleEditNotRegistered(item);
 		},
-		onDeleteClick: (pendaftaranId) => {
-			console.log("deleted", pendaftaranId);
+		onDeleteClick: (id, namaLengkap) => {
+			setSelectedMuridToDelete({ id, namaLengkap });
+			setDeleteMuridDialogOpen(true);
 		},
 	});
 
@@ -224,9 +229,31 @@ export default function MuridClient() {
 
 	return (
 		<Tabs defaultValue="listMurid">
+			<EditMurid />
+			<DeleteConfirmationDialog
+				isOpen={deleteMuridDialogOpen}
+				onOpenChange={setDeleteMuridDialogOpen}
+				title="Hapus Murid"
+				description={
+					<>
+						Yakin ingin menghapus Murid{" "}
+						<span className="text-accent font-bold">
+							{selectedMuridToDelete?.namaLengkap}
+						</span>
+						? Tindakan ini tidak dapat dibatalkan.
+					</>
+				}
+				onConfirm={handleConfirmDeleteMurid}
+				isLoading={mutations.delete.isPending}
+				confirmText="Hapus"
+				cancelText="Batal"
+			/>
+
 			<TabsList>
 				<TabsTrigger value="listMurid">List Semua Murid</TabsTrigger>
-				<TabsTrigger value="daftarMurid">List Tidak Terdaftar</TabsTrigger>
+				<TabsTrigger value="unregisteredMurid">
+					List Tidak Terdaftar
+				</TabsTrigger>
 				<TabsTrigger value="registeredMurid">List Terdaftar</TabsTrigger>
 			</TabsList>
 
@@ -376,26 +403,6 @@ export default function MuridClient() {
 						</div>
 					</header>
 
-					<EditMurid />
-					<DeleteConfirmationDialog
-						isOpen={deleteMuridDialogOpen}
-						onOpenChange={setDeleteMuridDialogOpen}
-						title="Hapus Murid"
-						description={
-							<>
-								Yakin ingin menghapus Murid{" "}
-								<span className="text-accent font-bold">
-									{selectedMuridToDelete?.namaLengkap}
-								</span>
-								? Tindakan ini tidak dapat dibatalkan.
-							</>
-						}
-						onConfirm={handleConfirmDeleteMurid}
-						isLoading={mutations.delete.isPending}
-						confirmText="Hapus"
-						cancelText="Batal"
-					/>
-
 					<DataTablePagination
 						columns={columnsAllMurid}
 						data={dataAllMuridPaginated}
@@ -409,7 +416,7 @@ export default function MuridClient() {
 				</div>
 			</TabsContent>
 
-			<TabsContent value="daftarMurid">
+			<TabsContent value="unregisteredMurid">
 				<div>
 					<header className="flex w-full flex-col gap-4">
 						<div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">

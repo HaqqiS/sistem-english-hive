@@ -10,7 +10,10 @@ import {
 	BATAS_SISA_UNTUK_TAGIHAN,
 	JUMLAH_PERTEMUAN_PER_BLOK,
 } from "@/constants/pembayaran";
-import { calculateSisaPertemuan } from "@/server/services/pembayaran.service";
+import {
+	calculateSisaPertemuan,
+	generateTagihan,
+} from "@/server/services/pembayaran.service";
 import dayjs from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
@@ -210,17 +213,14 @@ export const absenMuridRouter = createTRPCRouter({
 							const paket =
 								billingStatus.paketPertemuan ?? JUMLAH_PERTEMUAN_PER_BLOK;
 							const totalTagihan = harga * paket;
-							const jatuhTempo = dayjs().add(1, "day").toDate();
+							const jatuhTempo = dayjs().add(7, "day").toDate();
 
-							await db.pembayaran.create({
-								data: {
-									pendaftaranKelasId: pendaftaran.id,
-									pembayaranKe: billingStatus.nextBillPembayaranKe,
-									jumlahBayar: totalTagihan,
-									tanggalJatuhTempo: jatuhTempo,
-									statusBayar: StatusPembayaran.BELUM_LUNAS,
-									note: `Auto-Generate: Kuota sisa ${billingStatus.sisaPertemuan}. Paket ${paket} Sesi berikutnya.`,
-								},
+							await generateTagihan(db, {
+								pendaftaranId: pendaftaran.id,
+								pembayaranKe: billingStatus.nextBillPembayaranKe,
+								jumlahBayar: totalTagihan,
+								jatuhTempo: jatuhTempo,
+								note: `Auto-Generate: Kuota sisa ${billingStatus.sisaPertemuan}. Paket ${paket} Sesi berikutnya.`,
 							});
 						} else {
 							// [CLEANUP] Jika revisi absen membuat kuota kembali aman

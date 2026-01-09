@@ -7,7 +7,10 @@ import {
 import { TRPCError } from "@trpc/server";
 import dayjs from "dayjs";
 import z from "zod";
-import { calculateInitialBill } from "@/server/services/pembayaran.service";
+import {
+	calculateInitialBill,
+	generateTagihan,
+} from "@/server/services/pembayaran.service";
 import {
 	createBulkPendaftaran,
 	createPendaftaran,
@@ -440,17 +443,14 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						});
 
 						if (targetKelas) {
-							await tx.pembayaran.create({
-								data: {
-									pendaftaranKelasId: newRegistration.id,
-									pembayaranKe: 1,
-									jumlahBayar: targetKelas.hargaKelas * 8, // Atau logika prorate
-									statusBayar: StatusPembayaran.BELUM_LUNAS,
-									tanggalJatuhTempo: input.tanggalMulai
-										? new Date(input.tanggalMulai)
-										: new Date(),
-									note: "Tagihan Pindahan Kelas / Koreksi Data",
-								},
+							await generateTagihan(tx, {
+								pendaftaranId: newRegistration.id,
+								pembayaranKe: 1,
+								jumlahBayar: targetKelas.hargaKelas * 8, // Atau logika prorate
+								jatuhTempo: input.tanggalMulai
+									? new Date(input.tanggalMulai)
+									: new Date(),
+								note: "Tagihan Pindahan Kelas / Koreksi Data",
 							});
 						}
 
@@ -520,15 +520,12 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						});
 
 						if (!existingBill) {
-							await tx.pembayaran.create({
-								data: {
-									pendaftaranKelasId: input.id,
-									pembayaranKe: infoTagihan.pembayaranKe,
-									jumlahBayar: infoTagihan.totalTagihan,
-									tanggalJatuhTempo: dayjs(input.tanggalMulai).toDate(),
-									statusBayar: StatusPembayaran.BELUM_LUNAS,
-									note: infoTagihan.note,
-								},
+							await generateTagihan(tx, {
+								pendaftaranId: input.id,
+								pembayaranKe: infoTagihan.pembayaranKe,
+								jumlahBayar: infoTagihan.totalTagihan,
+								jatuhTempo: dayjs(input.tanggalMulai).toDate(),
+								note: infoTagihan.note,
 							});
 						}
 
@@ -728,17 +725,14 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							});
 
 							if (!existingBill) {
-								await tx.pembayaran.create({
-									data: {
-										pendaftaranKelasId: p.id,
-										pembayaranKe: infoTagihan.pembayaranKe,
-										jumlahBayar: infoTagihan.totalTagihan,
-										tanggalJatuhTempo: tanggalMulai
-											? dayjs(tanggalMulai).toDate()
-											: new Date(),
-										statusBayar: StatusPembayaran.BELUM_LUNAS,
-										note: infoTagihan.note,
-									},
+								await generateTagihan(tx, {
+									pendaftaranId: p.id,
+									pembayaranKe: infoTagihan.pembayaranKe,
+									jumlahBayar: infoTagihan.totalTagihan,
+									jatuhTempo: tanggalMulai
+										? dayjs(tanggalMulai).toDate()
+										: new Date(),
+									note: infoTagihan.note,
 								});
 							}
 

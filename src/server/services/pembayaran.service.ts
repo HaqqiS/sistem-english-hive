@@ -241,7 +241,7 @@ export const calculateSisaPertemuan = async (
 };
 
 export const generateTagihan = async (
-	db: PrismaClient,
+	db: PrismaClient | Prisma.TransactionClient,
 	params: {
 		pendaftaranId: string;
 		pembayaranKe: number;

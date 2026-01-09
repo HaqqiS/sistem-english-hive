@@ -1,4 +1,9 @@
-import { Prisma, StatusAbsenMurid, StatusPembayaran } from "@prisma/client";
+import {
+	Prisma,
+	StatusAbsenMurid,
+	StatusPembayaran,
+	StatusPendaftaran,
+} from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import {
@@ -164,7 +169,7 @@ export const absenMuridRouter = createTRPCRouter({
 						where: {
 							muridId: muridId,
 							kelasId: sesi.kelasId,
-							isAktif: true,
+							status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated
 						},
 					});
 

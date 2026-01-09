@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { StatusPembayaran } from "@prisma/client";
+import { StatusPembayaran, StatusPendaftaran } from "@prisma/client";
 import { BATAS_SESI, JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import dayjs from "@/utils/dateUtils";
 
@@ -149,7 +149,7 @@ export const handleAutoLevelUp = async ({
 	}
 	// C. Pindahkan Murid Aktif
 	const activeStudents = await tx.pendaftaranKelas.findMany({
-		where: { kelasId: currentClass.id, isAktif: true },
+		where: { kelasId: currentClass.id, status: StatusPendaftaran.AKTIF }, // UPDATED: isAktif is deprecated
 	});
 
 	const totalTagihan = newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;

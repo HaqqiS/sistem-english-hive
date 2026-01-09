@@ -3,6 +3,7 @@ import {
 	type PrismaClient,
 	StatusMurid,
 	StatusPembayaran,
+	StatusPendaftaran,
 	type TipeKelas,
 } from "@prisma/client";
 
@@ -298,7 +299,9 @@ export const kelasRouter = createTRPCRouter({
 					// Statistik (Murid & Sesi)
 					_count: {
 						select: {
-							pendaftaranKelases: { where: { isAktif: true } },
+							pendaftaranKelases: {
+								where: { status: StatusPendaftaran.AKTIF },
+							}, // UPDATED: isAktif is deprecated
 							sesiPertemuanKelases: true,
 						},
 					},
@@ -550,7 +553,7 @@ export const kelasRouter = createTRPCRouter({
 				const activeStudents = await db.pendaftaranKelas.findMany({
 					where: {
 						kelasId: oldKelasId,
-						isAktif: true,
+						status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated
 					},
 				});
 
@@ -584,10 +587,10 @@ export const kelasRouter = createTRPCRouter({
 					await tx.pendaftaranKelas.updateMany({
 						where: {
 							kelasId: oldKelasId,
-							isAktif: true,
+							status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated
 						},
 						data: {
-							isAktif: false,
+							status: StatusPendaftaran.NON_AKTIF, // UPDATED: isAktif is deprecated
 						},
 					});
 
@@ -603,7 +606,7 @@ export const kelasRouter = createTRPCRouter({
 								muridId: student.muridId,
 								kelasId: newKelas.id,
 								tanggalMulai: newTanggalMulai,
-								isAktif: true,
+								status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated. Using Enum.
 							},
 						});
 

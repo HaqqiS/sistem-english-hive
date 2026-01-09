@@ -10,6 +10,7 @@ import {
 	BATAS_SISA_UNTUK_TAGIHAN,
 	JUMLAH_PERTEMUAN_PER_BLOK,
 } from "@/constants/pembayaran";
+import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 
 // Definisi tipe kembalian agar TypeScript tidak bingung
 type PendaftaranWithRelations = Prisma.PendaftaranKelasGetPayload<{
@@ -143,7 +144,7 @@ export const calculateSisaPertemuan = async (
 		where: {
 			kelasId: pendaftaran.kelasId,
 			tanggalWaktu: {
-				lte: new Date(), // Sesi yang sudah lewat
+				lte: dayjs().tz(TIMEZONE_BISNIS).endOf("day").toDate(), // Sesi yang sudah lewat
 			},
 		},
 	});

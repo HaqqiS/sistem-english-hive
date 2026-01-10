@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusPendaftaran } from "@prisma/client";
 import {
 	Album,
 	ArrowRight,
@@ -213,15 +214,55 @@ export function KelasListView({
 														{kelas.pendaftaranKelases.map(
 															(p, index: number) => (
 																<div key={p.id} className="flex flex-col">
-																	<div className="flex items-center py-2">
-																		<span className="text-muted-foreground min-w-[24px] text-sm">
-																			{index + 1}.
-																		</span>
-																		<span className="text-sm">
-																			{p.murid?.namaLengkap ?? "Unknown"} |{" "}
-																			{p.murid?.umur} | {p.murid?.kelasSekolah}
-																		</span>
+																	<div className="flex items-center justify-between py-2">
+																		<div className="flex items-center py-2">
+																			<span className="text-muted-foreground min-w-[24px] text-sm">
+																				{index + 1}.
+																			</span>
+																			<span className="text-sm">
+																				{p.murid?.namaLengkap ?? "Unknown"} |{" "}
+																				{p.murid?.umur} |{" "}
+																				{p.murid?.kelasSekolah}
+																			</span>
+																		</div>
+																		<div>
+																			{(() => {
+																				const status = p.status;
+																				let variant:
+																					| "default"
+																					| "secondary"
+																					| "destructive"
+																					| "outline" = "default";
+																				let label = "Aktif";
+
+																				switch (status) {
+																					case StatusPendaftaran.AKTIF:
+																						variant = "default";
+																						label = "Aktif";
+																						break;
+																					case StatusPendaftaran.TRIAL:
+																						variant = "secondary";
+																						label = "Trial";
+																						break;
+																					case StatusPendaftaran.WAITING_LIST:
+																						variant = "outline";
+																						label = "Waiting List";
+																						break;
+																					case StatusPendaftaran.NON_AKTIF:
+																						variant = "destructive";
+																						label = "Non-Aktif";
+																						break;
+																				}
+
+																				return (
+																					<Badge variant={variant}>
+																						{label}
+																					</Badge>
+																				);
+																			})()}
+																		</div>
 																	</div>
+
 																	{index <
 																		kelas.pendaftaranKelases.length - 1 && (
 																		<Separator />

@@ -754,6 +754,7 @@ async function getKelasByStatus(
 				where: { NOT: [{ status: "NON_AKTIF" }] },
 				select: {
 					id: true,
+					status: true,
 					murid: {
 						select: {
 							id: true,

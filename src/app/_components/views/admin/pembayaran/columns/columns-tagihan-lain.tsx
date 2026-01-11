@@ -79,6 +79,13 @@ export const columnsTagihanLain = ({
 		enableHiding: false,
 	},
 
+	{
+		id: "nomer",
+		accessorKey: "nomer",
+		header: "Nomer",
+		cell: ({ row }) => row.index + 1,
+	},
+
 	// Kategori
 	{
 		accessorKey: "kategori",

@@ -79,6 +79,13 @@ export const columns = ({
 		enableHiding: false,
 	},
 
+	{
+		id: "nomer",
+		accessorKey: "nomer",
+		header: "Nomer",
+		cell: ({ row }) => row.index + 1,
+	},
+
 	// Nama Murid
 	{
 		accessorFn: (row) => row.pendaftaranKelas.murid.namaLengkap,

@@ -13,6 +13,11 @@ const teacherNavItems: NavItem[] = [
 		url: "/guru/absen",
 		icon: "Users",
 	},
+	{
+		title: "Jadwal",
+		url: "/guru/jadwal",
+		icon: "CalendarDays",
+	},
 ];
 
 export default async function TeacherLayout({

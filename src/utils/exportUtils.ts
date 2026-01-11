@@ -15,6 +15,12 @@ export function downloadExcel<T extends ExportRecord>(
 	}
 
 	try {
+		// Add "No" column to data
+		const dataWithNumbering = data.map((item, index) => ({
+			No: index + 1,
+			...item,
+		}));
+
 		let worksheet: XLSX.WorkSheet;
 
 		if (customHeaders && customHeaders.length > 0) {
@@ -23,11 +29,11 @@ export function downloadExcel<T extends ExportRecord>(
 
 			// Tambahkan data JSON dengan offset (beri jarak 1 baris kosong)
 			// customHeaders.length baris terisi -> baris berikutnya kosong -> mulai data
-			XLSX.utils.sheet_add_json(worksheet, data, {
+			XLSX.utils.sheet_add_json(worksheet, dataWithNumbering, {
 				origin: `A${customHeaders.length + 2}`,
 			});
 		} else {
-			worksheet = XLSX.utils.json_to_sheet(data);
+			worksheet = XLSX.utils.json_to_sheet(dataWithNumbering);
 		}
 
 		const workbook = XLSX.utils.book_new();

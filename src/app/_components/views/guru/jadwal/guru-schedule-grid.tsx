@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,40 +29,28 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useIsMobile } from "@/hooks/use-mobile"; // Import hook
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
-import { useJadwalKelasStore } from "@/store/useJadwalKelasStore";
 import type { TypeScheduleMatrixItem } from "@/types/jadwalKelas.type";
 import { exportJadwalMatrixPDF } from "@/utils/pdfExportUtils";
-import EditJadwalKelas from "../edit-jadwal";
-import { ScheduleCard } from "./schedule-card";
+import { GuruScheduleCard } from "./guru-schedule-card";
 
-export default function ScheduleGrid() {
+export default function GuruScheduleGrid() {
 	// --- STATE ---
 	const { activeCabangId } = useGlobalCabangStore();
-	// Default hari ini (jika hari minggu/libur, bisa fallback ke SENIN jika mau)
+	// Default hari ini
 	const [selectedHari, setSelectedHari] = useState<Hari>(
 		(dayjs().format("dddd").toUpperCase() as Hari) in Hari
 			? (dayjs().format("dddd").toUpperCase() as Hari)
 			: Hari.SENIN,
 	);
 
-	const { openDrawer } = useJadwalKelasStore();
-
 	// Detect Mobile View
 	const isMobile = useIsMobile();
 
-	// State untuk Delete Dialog
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-	const [itemToDelete, setItemToDelete] = useState<{
-		id: string;
-		kode: string;
-	} | null>(null);
-
 	// --- DATA FETCHING ---
-	// const { data: listCabang } = useCabang({ enableQuery: true });
 	const {
 		dataMatrix,
 		isLoadingMatrix: isLoading,
@@ -71,24 +58,12 @@ export default function ScheduleGrid() {
 		isErrorMatrix: isError,
 		errorMatrix: error,
 		refetchMatrix: refetch,
-		mutations,
 		fetchScheduleMatrix,
 	} = useJadwalKelas({
 		filterCabang: activeCabangId,
 		hari: selectedHari as Hari,
 		enableQueryMatrix: !!activeCabangId,
-		onSuccessDelete: () => {
-			setDeleteDialogOpen(false);
-			setItemToDelete(null);
-		},
 	});
-
-	// Set default cabang
-	// useEffect(() => {
-	//   if (!selectedCabangId && listCabang && listCabang.length > 0) {
-	//     setSelectedCabangId(listCabang[0]!.id);
-	//   }
-	// }, [listCabang, selectedCabangId]);
 
 	// --- LOGIC MATRIKS ---
 	const timeSlots = useMemo(() => {
@@ -113,20 +88,6 @@ export default function ScheduleGrid() {
 		});
 		return map;
 	}, [dataMatrix]);
-
-	// --- API HANDLERS ---
-	// const apiUtils = api.useUtils(); // Moved to hook
-
-	const handleDelete = (id: string, kode: string) => {
-		setItemToDelete({ id, kode });
-		setDeleteDialogOpen(true);
-	};
-
-	const handleConfirmDelete = () => {
-		if (itemToDelete) {
-			mutations.delete.mutate({ id: itemToDelete.id });
-		}
-	};
 
 	const buildScheduleMap = (schedules: TypeScheduleMatrixItem[]) => {
 		const map: Record<string, Record<string, TypeScheduleMatrixItem>> = {};
@@ -219,7 +180,7 @@ export default function ScheduleGrid() {
 
 	// --- RENDER ---
 	return (
-		<div className="flex h-full flex-col gap-4">
+		<div className="flex flex-col gap-4">
 			{/* --- FILTERS --- */}
 			<div className="flex gap-4 lg:flex-row lg:items-center lg:justify-between">
 				{/* 2. REFRESH */}
@@ -409,11 +370,7 @@ export default function ScheduleGrid() {
 															className="h-auto min-h-40 w-[200px] max-w-[200px] min-w-[200px] border-r border-b p-2 align-top"
 														>
 															{schedule ? (
-																<ScheduleCard
-																	data={schedule}
-																	onDelete={handleDelete}
-																	onEdit={(item) => openDrawer("edit", item)}
-																/>
+																<GuruScheduleCard data={schedule} />
 															) : (
 																// Empty Cell
 																<div className="hover:border-muted-foreground/20 h-full w-full rounded-md border border-dashed border-transparent transition-colors" />
@@ -424,7 +381,7 @@ export default function ScheduleGrid() {
 											</tr>
 										);
 									})}
-									{/* Filler Row untuk mengisi ruang kosong di bawah jika ada */}
+									{/* Filler Row removed to avoid empty space */}
 									<tr className="h-full">
 										<td className="bg-background sticky left-0 z-30 border-r"></td>
 										{dataMatrix.rooms.map((r) => (
@@ -439,26 +396,6 @@ export default function ScheduleGrid() {
 					</ScrollArea>
 				)}
 			</div>
-
-			{/* Delete Dialog */}
-
-			<EditJadwalKelas />
-			<DeleteConfirmationDialog
-				isOpen={deleteDialogOpen}
-				onOpenChange={setDeleteDialogOpen}
-				title="Hapus Jadwal"
-				description={
-					<>
-						Yakin ingin menghapus jadwal untuk kelas{" "}
-						<span className="text-foreground font-bold">
-							{itemToDelete?.kode}
-						</span>
-						?
-					</>
-				}
-				onConfirm={handleConfirmDelete}
-				isLoading={mutations.delete.isPending}
-			/>
 		</div>
 	);
 }

@@ -561,7 +561,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 										muridId: existingRecord.muridId,
 										kelasId: existingRecord.kelasId,
 										kategori: "BUKU",
-										judul: "Tagihan Buku Paket",
+										judul: `Tagihan Buku ${kelasInfo?.level}`,
 										deskripsi: `Auto-Generate via Activation`,
 										jumlah: hargaBuku,
 										status: StatusPembayaran.BELUM_LUNAS,

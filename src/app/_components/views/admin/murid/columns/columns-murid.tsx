@@ -100,6 +100,13 @@ export const columns = ({
 		enableHiding: false,
 	},
 
+	{
+		id: "nomer",
+		accessorKey: "nomer",
+		header: "Nomer",
+		cell: ({ row }) => row.index + 1,
+	},
+
 	// 1. Nama & Email
 	{
 		accessorKey: "namaLengkap",

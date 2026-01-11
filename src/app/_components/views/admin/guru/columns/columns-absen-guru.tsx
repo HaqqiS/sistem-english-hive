@@ -61,6 +61,13 @@ export const columns = ({
 	},
 
 	{
+		id: "nomer",
+		accessorKey: "nomer",
+		header: "Nomer",
+		cell: ({ row }) => row.index + 1,
+	},
+
+	{
 		id: "namaGuru", // Changed ID to match backend
 		accessorKey: "guru.name",
 		header: ({ column }) => (

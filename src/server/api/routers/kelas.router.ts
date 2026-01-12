@@ -132,6 +132,7 @@ export const kelasRouter = createTRPCRouter({
 						include: {
 							jamSlotTetap: true,
 							jamSlotCustom: true,
+							ruang: true,
 						},
 					},
 				},

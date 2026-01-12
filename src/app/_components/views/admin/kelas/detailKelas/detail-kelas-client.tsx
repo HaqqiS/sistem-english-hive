@@ -23,7 +23,9 @@ import {
 	useGuruKelasStore,
 	usePendaftaranKelasStore,
 } from "@/store/useKelasStore";
+import type { TypeKelasDetail } from "@/types/kelas.type";
 import { exportAbsensiPDF } from "@/utils/pdfExportUtils";
+
 import { columns as guru } from "../columns/columns-list-guru";
 import { columns as murid } from "../columns/columns-list-murid";
 import EditGuruKelas from "../drawers/edit-guru-kelas";
@@ -115,22 +117,25 @@ export default function DetailKelasClient() {
 		if (!dataByKelasId || !dataById) return;
 
 		// 0. Format String Jadwal
-		// dataById seharusnya sekarang sudah include jadwalKelas (karena update backend)
-		// Namun jika tipe belum update, kita bisa casting atau access safe
-		// biome-ignore lint/suspicious/noExplicitAny: Backend baru diupdate
-		const jadwalList = (dataById as any).jadwalKelas?.map((j: any) => {
+		// Type safety: Explicitly cast using RouterOutputs (or inferred)
+		const kelas = dataById as TypeKelasDetail;
+
+		const jadwalList = kelas.jadwalKelas?.map((j) => {
 			const slot = j.jamSlotTetap || j.jamSlotCustom;
-			if (!slot) return `${j.hari}`;
-			return `${j.hari} (${slot.jamMulai} - ${slot.jamSelesai})`;
+			// Append Ruang if available
+			const ruangStr = j.ruang?.namaRuang ? ` ${j.ruang.namaRuang}` : "";
+
+			if (!slot) return `${j.hari}${ruangStr}`;
+			return `${j.hari} (${slot.jamMulai} - ${slot.jamSelesai})${ruangStr}`;
 		});
 		const jadwalString = jadwalList?.join(" & ") ?? "-";
 
 		// 1. Siapkan Info Kelas
 		const classInfo = {
-			kodeKelas: dataById.kodeKelas,
-			level: dataById.level,
-			grup: dataById.grup,
-			bulanTahun: dataById.bulanTahunAjar,
+			kodeKelas: kelas.kodeKelas,
+			level: kelas.level,
+			grup: kelas.grup,
+			bulanTahun: kelas.bulanTahunAjar,
 			pengajar: activeGuruHistory?.guru?.name ?? undefined,
 			jadwal: jadwalString,
 		};

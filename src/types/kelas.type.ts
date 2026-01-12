@@ -16,6 +16,9 @@ export type TypeSesiPertemuanShort =
 	TypeKelasByGuruId["sesiPertemuanKelases"][number];
 export type TypeKelasHistory =
 	RouterOutputs["kelas"]["getKelasHistory"][number];
+export type TypeKelasDetail = NonNullable<
+	RouterOutputs["kelas"]["getKelasById"]
+>;
 
 const baseKelasSchema = z.object({
 	jenisKelasId: z.string().cuid("Jenis Kelas harus dipilih"),

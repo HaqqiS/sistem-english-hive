@@ -29,7 +29,7 @@ export const exportAbsensiPDF = (
 	const doc = new jsPDF({ orientation: "landscape" });
 
 	// === CONFIG ===
-	let currentY = 15;
+	// let currentY = 20;
 
 	// === HEADER: INFORMASI KELAS ===
 	// Layout:
@@ -42,7 +42,7 @@ export const exportAbsensiPDF = (
 
 	// We use autoTable for the header to keep alignment clean, similar to before but updated fields
 	autoTable(doc, {
-		startY: currentY,
+		// startY: currentY,
 		body: [
 			["Kelas", `: ${classInfo.kodeKelas || "-"}`],
 			["Teacher", `: ${classInfo.pengajar || "-"}`],
@@ -58,11 +58,10 @@ export const exportAbsensiPDF = (
 			0: { cellWidth: 25 }, // Label width
 			1: { cellWidth: "auto" }, // Value width
 		},
-		margin: { left: 14, right: 14 },
+		margin: { left: 14, right: 14, top: 25 },
 	});
 
-	// biome-ignore lint/suspicious/noExplicitAny: jspdf-autotable adds lastAutoTable
-	currentY = (doc as any).lastAutoTable.finalY + 5;
+	// currentY = (doc as any).lastAutoTable.finalY + 5;
 
 	// === TABLE: DAFTAR MURID (1-24 Columns) ===
 
@@ -111,7 +110,7 @@ export const exportAbsensiPDF = (
 	}
 
 	autoTable(doc, {
-		startY: currentY,
+		// startY: currentY,
 		head: [headerRow1, headerRow2],
 		body: tableBody,
 		theme: "grid",
@@ -125,7 +124,7 @@ export const exportAbsensiPDF = (
 			valign: "middle",
 		},
 		styles: {
-			fontSize: 10,
+			fontSize: 11,
 			cellPadding: 2,
 			lineColor: 0,
 			lineWidth: 0.1,

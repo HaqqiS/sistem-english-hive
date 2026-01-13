@@ -88,14 +88,15 @@ export const columns = ({
 		accessorKey: "murid.umur",
 		header: "Umur & Kelas Sekolah",
 		cell: ({ row }) => (
-			<div className="flex items-center gap-2">
-				<div>{row.original.murid.umur}</div> |
-				<div>{row.original.murid.kelasSekolah}</div>
+			<div>
+				<div>{row.original.murid.umur} Tahun</div>
+				<div className="text-muted-foreground text-xs">
+					{row.original.murid.kelasSekolah}
+				</div>
 			</div>
 		),
 		enableHiding: false,
 	},
-
 	{
 		accessorKey: "murid.noWA",
 		header: ({ column }) => (
@@ -131,7 +132,6 @@ export const columns = ({
 			);
 		},
 	},
-
 	{
 		accessorKey: "status",
 		header: ({ column }) => (
@@ -179,7 +179,6 @@ export const columns = ({
 			return String(cell) === String(value);
 		},
 	},
-
 	{
 		accessorKey: "tanggalMulai",
 		header: () => <div className="w-full text-center">Tanggal Masuk Kelas</div>,
@@ -191,7 +190,6 @@ export const columns = ({
 			</div>
 		),
 	},
-
 	{
 		id: "actions",
 		cell: ({ row }) => {

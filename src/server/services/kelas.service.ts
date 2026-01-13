@@ -174,7 +174,7 @@ export const handleAutoLevelUp = async ({
 					muridId: student.muridId,
 					kelasId: newKelas.id,
 					tanggalMulai: estimasiMulaiString,
-					isAktif: true,
+					status: StatusPendaftaran.AKTIF,
 				},
 			});
 
@@ -223,7 +223,7 @@ export const handleClassCompletion = async (
 		// Matikan Pendaftaran Lama
 		await tx.pendaftaranKelas.updateMany({
 			where: { kelasId: kelasId },
-			data: { isAktif: false },
+			data: { status: StatusPendaftaran.NON_AKTIF },
 		});
 
 		// Hapus Jadwal Lama

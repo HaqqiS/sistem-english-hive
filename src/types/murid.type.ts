@@ -12,21 +12,14 @@ export type TypeMuridNotRegisteredPaginated =
 
 export const RegisterMuridSchema = z.object({
 	namaLengkap: z.string().trim().min(1, "Nama lengkap harus diisi").max(200),
-	email: z
-		.string()
-		.trim()
-		.toLowerCase() // Standarisasi email menjadi lowercase
-		.email("Email tidak valid")
-		.max(200),
-
-	alamat: z.string().trim().min(1, "Alamat harus diisi").max(500),
+	// email, alamat, kelasSekolah removed
 	gender: z.enum([Gender.LAKI_LAKI, Gender.PEREMPUAN], {
 		required_error: "Jenis kelamin harus dipilih.", // Pesan jika 'undefined'
 	}),
 	umur: z.coerce.number().min(3, "Umur minimal 3 tahun").max(100),
 	asalSekolah: z.string().trim().min(1, "Asal sekolah harus diisi").max(200),
 	kelasSekolah: z.string().trim().min(1, "Kelas harus diisi").max(20),
-	jamPulang: z.string().trim().min(1, "Jam pulang harus diisi").max(225),
+	// jamPulang: z.string().trim().min(1, "Jam pulang harus diisi").max(225),
 	noWA: z
 		.string()
 		.trim()
@@ -49,6 +42,7 @@ export const RegisterMuridSchema = z.object({
 			}
 			return val;
 		}),
+	instagram: z.string().optional(),
 	cabangId: z.string().min(1, "Tempat kursus harus dipilih"),
 	pilihanProgram: z.string().min(1, "Pilihan program harus diisi").max(100),
 	sumberInfo: z.string().min(1, "Sumber informasi harus diisi").max(100),

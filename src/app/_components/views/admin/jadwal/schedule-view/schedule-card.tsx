@@ -8,6 +8,7 @@ import {
 	Trash,
 	User,
 } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,18 +67,19 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 			<HoverCardTrigger asChild>
 				<div
 					className={cn(
-						"group/card relative flex h-full w-full cursor-pointer flex-col justify-between rounded-r-md border border-l-0 p-2.5 text-xs shadow-sm transition-all hover:shadow-md",
+						"group/card relative flex h-full w-full flex-col justify-between rounded-r-md border border-l-0 p-2.5 text-xs shadow-sm transition-all hover:shadow-md",
 						cardStyles,
 					)}
 				>
 					{/* Header Card: Kode Kelas & Actions */}
 					<div className="flex items-start justify-between gap-2">
-						<span
-							className="text-foreground/90 line-clamp-2 text-base leading-tight font-bold"
+						<Link
+							href={`/admin/kelas/${data.kelasId}`}
+							className="text-foreground/90 hover:text-primary line-clamp-2 text-base leading-tight font-bold hover:underline"
 							title={data.kodeKelas}
 						>
 							{data.kodeKelas}
-						</span>
+						</Link>
 
 						{/* Action Dropdown */}
 						<DropdownMenu>

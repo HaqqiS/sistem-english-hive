@@ -1,6 +1,12 @@
 "use client";
 
-import { Edit, FileText, History } from "lucide-react";
+import {
+	CalendarClock,
+	CalendarDays,
+	Edit,
+	FileText,
+	History,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
@@ -318,6 +324,55 @@ export default function DetailKelasClient() {
 				</div>
 
 				{/* Desktop View: Always Visible */}
+				<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
+					<div className="flex flex-col space-y-1.5 p-6">
+						<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">
+							<CalendarClock className="text-primary h-4 w-4" />
+							Jadwal Kelas
+						</h3>
+						<p className="text-muted-foreground text-sm">
+							Informasi hari, jam, dan ruang.
+						</p>
+					</div>
+					<div className="p-6 pt-0">
+						{dataById?.jadwalKelas && dataById.jadwalKelas.length > 0 ? (
+							<div className="grid gap-3">
+								{dataById.jadwalKelas.map((j) => {
+									let timeRange = "-";
+									if (j.jamSlotTetap) {
+										timeRange = `${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai}`;
+									} else if (j.jamSlotCustom) {
+										timeRange = `${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai}`;
+									}
+									return (
+										<div
+											key={j.id}
+											className="border-border/50 flex items-center justify-between rounded-md border p-2 text-sm"
+										>
+											<div className="flex items-center gap-2 font-medium">
+												<CalendarDays className="text-muted-foreground h-4 w-4" />
+												<span>{j.hari}</span>
+											</div>
+											<div className="text-right">
+												<div className="font-mono text-xs">{timeRange}</div>
+												{j.ruang && (
+													<div className="text-muted-foreground text-xs">
+														{j.ruang.namaRuang}
+													</div>
+												)}
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						) : (
+							<p className="text-muted-foreground text-sm italic">
+								Belum ada jadwal diatur.
+							</p>
+						)}
+					</div>
+				</div>
+
 				<div className="bg-card text-card-foreground hidden rounded-xl border shadow-sm lg:block">
 					<div className="flex flex-col space-y-1.5 p-6">
 						<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">

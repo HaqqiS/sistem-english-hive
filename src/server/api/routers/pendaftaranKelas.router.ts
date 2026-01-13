@@ -423,7 +423,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						// 1a. Non-aktifkan pendaftaran lama
 						await tx.pendaftaranKelas.update({
 							where: { id: input.id },
-							data: { isAktif: false },
+							data: { status: StatusPendaftaran.NON_AKTIF },
 						});
 
 						// 1b. Buat Pendaftaran Baru

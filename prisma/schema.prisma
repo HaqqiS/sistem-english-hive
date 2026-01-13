@@ -207,13 +207,14 @@ enum StatusMurid {
 model Murid {
     id             String      @id @default(cuid())
     namaLengkap    String
-    email          String
-    alamat         String
+    // email          String
+    instagram      String?
+    // alamat         String
     gender         Gender
     umur           Int
     asalSekolah    String
     kelasSekolah   String
-    jamPulang      String //textarea
+    // jamPulang      String //textarea
     noWA           String
     pilihanProgram String?
     sumberInfo     String
@@ -287,10 +288,7 @@ model Kelas {
     jenisKelasId  String?
     jenisKelasRel JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
 
-    // OLD: Keep as original
     statusKelas StatusKelas?     @default(RUNNING)
-    legacyJenisKelas JenisKelas? @map("jenisKelas")
-    legacyTipe       TipeKelas?  @map("tipe")
 
     level Int // e.g., 1, 2, 3
 
@@ -424,7 +422,7 @@ model PendaftaranKelas {
     muridId      String
     kelasId      String
     tanggalMulai String?  @db.VarChar(10) // format: "YYYY-MM-DD"
-    isAktif      Boolean?  //false jika murid sudah tidak ikut kelas ini lagi/ kelas selesai
+    // isAktif      Boolean?  //false jika murid sudah tidak ikut kelas ini lagi/ kelas selesai
     status       StatusPendaftaran @default(AKTIF)
 
     createdAt DateTime @default(now())

@@ -23,13 +23,14 @@ export default function EditMurid() {
 		values: selectedMurid
 			? {
 					namaLengkap: selectedMurid.namaLengkap,
-					email: selectedMurid.email,
-					alamat: selectedMurid.alamat,
+					// email: selectedMurid.email,
+					// alamat: selectedMurid.alamat,
 					gender: selectedMurid.gender,
 					umur: selectedMurid.umur,
 					asalSekolah: selectedMurid.asalSekolah,
 					kelasSekolah: selectedMurid.kelasSekolah,
-					jamPulang: selectedMurid.jamPulang,
+					instagram: selectedMurid.instagram ?? "", // [NEW]
+					// jamPulang: selectedMurid.jamPulang,
 					noWA: selectedMurid.noWA,
 					cabangId: selectedMurid.cabangId,
 					pilihanProgram: selectedMurid.pilihanProgram ?? "",
@@ -41,13 +42,14 @@ export default function EditMurid() {
 			: undefined,
 		defaultValues: {
 			namaLengkap: "",
-			email: "",
-			alamat: "",
+			// email: "",
+			// alamat: "",
 			gender: undefined as unknown as "LAKI_LAKI" | "PEREMPUAN",
 			umur: undefined as unknown as number,
 			asalSekolah: "",
 			kelasSekolah: "",
-			jamPulang: "",
+			instagram: "", // [NEW]
+			// jamPulang: "",
 			noWA: "",
 			cabangId: "",
 			pilihanProgram: "",

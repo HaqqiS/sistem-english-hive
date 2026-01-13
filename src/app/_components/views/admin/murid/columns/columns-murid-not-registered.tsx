@@ -6,7 +6,7 @@ import {
 	ArrowUpDown,
 	Copy,
 	EllipsisVertical,
-	MapPin,
+	Instagram,
 	MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
@@ -70,7 +70,7 @@ export const columns = ({
 	{
 		id: "nomer",
 		accessorKey: "nomer",
-		header: "Nomer",
+		header: "No",
 		cell: ({ row }) => row.index + 1,
 	},
 
@@ -155,21 +155,17 @@ export const columns = ({
 						}}
 					/>
 				</div>
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<div className="text-muted-foreground flex cursor-help items-center gap-1 text-xs">
-								<MapPin className="h-3 w-3 shrink-0" />
-								<span className="max-w-[120px] truncate">
-									{row.original.alamat}
-								</span>
-							</div>
-						</TooltipTrigger>
-						<TooltipContent>
-							<p className="max-w-xs wrap-break-word">{row.original.alamat}</p>
-						</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
+				{/* Instagram Info */}
+				{row.original.instagram && (
+					<Link
+						href={`https://instagram.com/${row.original.instagram.replace("@", "")}`}
+						target="_blank"
+						className="flex items-center gap-1.5 font-medium text-pink-600 hover:underline"
+					>
+						<Instagram className="h-3 w-3" />
+						{row.original.instagram}
+					</Link>
+				)}
 			</div>
 		),
 	},
@@ -187,10 +183,10 @@ export const columns = ({
 					{row.original.pilihanProgram ?? "-"}
 				</span>
 				<span
-					className="text-muted-foreground truncate text-xs"
-					title={row.original.jamPulang}
+					className="truncate font-medium"
+					title={row.original.pilihanProgram ?? "-"}
 				>
-					Plg: {row.original.jamPulang}
+					{row.original.pilihanProgram ?? "-"}
 				</span>
 			</div>
 		),

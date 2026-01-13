@@ -115,37 +115,9 @@ export default function MuridForm({
 						)}
 					/>
 
-					<FormField
-						control={form.control}
-						name="email"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel className="text-sm">Email</FormLabel>
-								<FormControl>
-									<Input
-										type="email"
-										placeholder="email@example.com"
-										{...field}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
+					{/* Email removed */}
 
-					<FormField
-						control={form.control}
-						name="alamat"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel className="text-sm">Alamat</FormLabel>
-								<FormControl>
-									<Input placeholder="Masukkan alamat" {...field} />
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
+					{/* Alamat removed */}
 
 					<FormField
 						control={form.control}
@@ -177,7 +149,7 @@ export default function MuridForm({
 						)}
 					/>
 
-					{/* Inner Grid: Umur & WA */}
+					{/* Inner Grid: Umur & WA & Instagram */}
 					<div className={cn("grid gap-2", gridColsClass)}>
 						<FormField
 							control={form.control}
@@ -207,6 +179,24 @@ export default function MuridForm({
 									<FormLabel className="text-sm">No. WA</FormLabel>
 									<FormControl>
 										<Input type="tel" placeholder="08..." {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="instagram"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel className="text-sm">Instagram</FormLabel>
+									<FormControl>
+										<Input
+											placeholder="@username"
+											{...field}
+											value={field.value ?? ""}
+										/>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -327,22 +317,7 @@ export default function MuridForm({
 						)}
 					/>
 
-					<FormField
-						control={form.control}
-						name="jamPulang"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel className="text-sm">Jam Pulang Sekolah</FormLabel>
-								<FormControl>
-									<Textarea
-										placeholder="Contoh: Senin-Jumat: 13.00"
-										{...field}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
+					{/* Jam Pulang removed */}
 
 					<FormField
 						control={form.control}

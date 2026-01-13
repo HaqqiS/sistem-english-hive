@@ -32,13 +32,13 @@ export default function Registration() {
 		resolver: zodResolver(RegisterMuridSchema),
 		defaultValues: {
 			namaLengkap: "",
-			email: "",
-			alamat: "",
+			// email, alamat, kelasSekolah removed
 			gender: undefined as unknown as "LAKI_LAKI" | "PEREMPUAN",
 			umur: undefined as unknown as number,
 			asalSekolah: "",
 			kelasSekolah: "",
-			jamPulang: "",
+			instagram: "", // [NEW]
+			// jamPulang: "",
 			noWA: "",
 			cabangId: "",
 			pilihanProgram: "",

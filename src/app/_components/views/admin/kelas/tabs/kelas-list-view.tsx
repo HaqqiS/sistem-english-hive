@@ -104,6 +104,9 @@ export function KelasListView({
 												jamMulai: string;
 												jamSelesai: string;
 											} | null;
+											ruang: {
+												namaRuang: string;
+											} | null;
 										}) => {
 											let timeRange = "";
 											if (j.jamSlotTetap) {
@@ -111,7 +114,10 @@ export function KelasListView({
 											} else if (j.jamSlotCustom) {
 												timeRange = `(${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai})`;
 											}
-											return `${j.hari} ${timeRange}`;
+											const ruangInfo = j.ruang
+												? ` - ${j.ruang.namaRuang}`
+												: "";
+											return `${j.hari} ${timeRange}${ruangInfo}`;
 										},
 									)
 									.join(" | ")
@@ -222,7 +228,7 @@ export function KelasListView({
 																			<span className="text-sm">
 																				{p.murid?.namaLengkap ?? "Unknown"} |{" "}
 																				{p.murid?.umur} |{" "}
-																				{p.murid?.kelasSekolah}
+																				{/* {p.murid?.kelasSekolah} */}
 																			</span>
 																		</div>
 																		<div>

@@ -63,7 +63,7 @@ export const columns = ({
 	{
 		id: "nomer",
 		accessorKey: "nomer",
-		header: "Nomer",
+		header: "No",
 		cell: ({ row }) => row.index + 1,
 	},
 

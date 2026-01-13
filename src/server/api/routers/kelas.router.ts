@@ -762,7 +762,6 @@ async function getKelasByStatus(
 							namaLengkap: true,
 							statusMurid: true,
 							umur: true,
-							kelasSekolah: true,
 						},
 					},
 				},
@@ -771,6 +770,7 @@ async function getKelasByStatus(
 				select: {
 					id: true,
 					hari: true,
+					ruang: true,
 					jamSlotCustom: true,
 					jamSlotTetap: true,
 				},

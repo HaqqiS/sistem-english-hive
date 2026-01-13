@@ -163,7 +163,6 @@ export default function MuridClient() {
 			}
 
 			// Format CSV
-			// Format CSV
 			const csvData = data.map((m) => {
 				const activeClasses = m.pendaftaranKelases
 					.map((p) => p.Kelas.kodeKelas)
@@ -174,14 +173,14 @@ export default function MuridClient() {
 					Cabang: m.cabang.namaCabang,
 					"Jenis Kelamin": m.gender,
 					Umur: m.umur,
-					Alamat: m.alamat,
 					"No. WA": m.noWA ? `'${m.noWA}` : "-", // Tambah kutip agar excel baca text (bukan angka ilmiah)
-					Email: m.email,
+					Instagram: m.instagram ?? "-", // [NEW]
+					// Email: m.email,
 					"Asal Sekolah": m.asalSekolah,
 					"Kelas Sekolah": m.kelasSekolah,
 					"Kelas Aktif": activeClasses || "-",
 					"Program Minat": m.pilihanProgram ?? "-",
-					"Jam Pulang": m.jamPulang,
+					// "Jam Pulang": m.jamPulang,
 					"Sumber Info": m.sumberInfo,
 					Status: m.statusMurid,
 					Deskripsi: m.deskripsi,

@@ -74,7 +74,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 					{/* Header Card: Kode Kelas & Actions */}
 					<div className="flex items-start justify-between gap-2">
 						<Link
-							href={`/admin/kelas/${data.kelasId}`}
+							href={`/admin/kelas/detail/${data.kelasId}`}
 							className="text-foreground/90 hover:text-primary line-clamp-2 text-base leading-tight font-bold hover:underline"
 							title={data.kodeKelas}
 						>

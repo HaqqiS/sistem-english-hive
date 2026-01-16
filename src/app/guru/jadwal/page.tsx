@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import GuruScheduleGrid from "@/app/_components/views/guru/jadwal/guru-schedule-grid";
 import { HydrateClient } from "@/trpc/server";
+
+export const metadata: Metadata = {
+	title: "Jadwal Kelas",
+};
 
 export default function Page() {
 	return (

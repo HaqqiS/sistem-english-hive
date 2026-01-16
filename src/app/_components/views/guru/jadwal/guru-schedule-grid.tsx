@@ -1,7 +1,6 @@
 "use client";
 
 import { Hari } from "@prisma/client";
-import dayjs from "dayjs";
 import {
 	AlertCircle,
 	CalendarDays,
@@ -34,6 +33,7 @@ import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { TypeScheduleMatrixItem } from "@/types/jadwalKelas.type";
+import dayjs from "@/utils/dateUtils";
 import { exportJadwalMatrixPDF } from "@/utils/pdfExportUtils";
 import { GuruScheduleCard } from "./guru-schedule-card";
 

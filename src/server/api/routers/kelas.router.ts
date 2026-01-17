@@ -762,6 +762,7 @@ async function getKelasByStatus(
 							namaLengkap: true,
 							statusMurid: true,
 							umur: true,
+							kelasSekolah: true,
 						},
 					},
 				},

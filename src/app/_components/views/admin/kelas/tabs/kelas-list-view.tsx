@@ -228,7 +228,7 @@ export function KelasListView({
 																			<span className="text-sm">
 																				{p.murid?.namaLengkap ?? "Unknown"} |{" "}
 																				{p.murid?.umur} |{" "}
-																				{/* {p.murid?.kelasSekolah} */}
+																				{p.murid?.kelasSekolah}
 																			</span>
 																		</div>
 																		<div>

@@ -6,6 +6,7 @@ import { ArrowUpDown, CheckCircle, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { TypePembayaranJatuhTempo } from "@/types/pembayaran.type";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppReminder } from "@/utils/noWAUtils";
@@ -33,6 +34,36 @@ const getStatusBadgeVariant = (
 export const columnsJatuhTempo = ({
 	onVerifyClick,
 }: ColumnsJatuhTempoConfig): ColumnDef<TypePembayaranJatuhTempo>[] => [
+	{
+		id: "select",
+		header: ({ table }) => (
+			<Checkbox
+				checked={
+					table.getIsAllPageRowsSelected() ||
+					(table.getIsSomePageRowsSelected() && "indeterminate")
+				}
+				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+				aria-label="Select all"
+			/>
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				checked={row.getIsSelected()}
+				onCheckedChange={(value) => row.toggleSelected(!!value)}
+				aria-label="Select row"
+			/>
+		),
+		enableSorting: false,
+		enableHiding: false,
+	},
+
+	{
+		id: "nomer",
+		accessorKey: "nomer",
+		header: "No",
+		cell: ({ row }) => row.index + 1,
+	},
+
 	// Nama Murid & Kelas
 	{
 		accessorFn: (row) => row.pendaftaranKelas.murid.namaLengkap,

@@ -292,10 +292,7 @@ export function KelasListView({
 													variant="ghost"
 													className="w-full justify-start sm:w-auto"
 												>
-													<Link
-														href={`/admin/kelas/sesi/${kelas.id}`}
-														target="_blank"
-													>
+													<Link href={`/admin/kelas/sesi/${kelas.id}`}>
 														<CalendarClock className="mr-2 h-4 w-4" />
 														Riwayat Absensi
 													</Link>
@@ -307,10 +304,7 @@ export function KelasListView({
 														size="sm"
 														className="w-full sm:w-auto"
 													>
-														<Link
-															href={`/admin/kelas/detail/${kelas.id}`}
-															target="_blank"
-														>
+														<Link href={`/admin/kelas/detail/${kelas.id}`}>
 															Detail Kelas
 															<ArrowRight className="ml-2 h-4 w-4" />
 														</Link>

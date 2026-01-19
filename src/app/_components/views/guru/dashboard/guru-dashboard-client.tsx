@@ -301,7 +301,9 @@ export default function GuruDashboardClient() {
 									<p className="text-muted-foreground text-sm">
 										Pengajar:{" "}
 										<span className="text-foreground font-medium">
-											{jadwal.guru.name}
+											{jadwal.gurus && jadwal.gurus.length > 0
+												? jadwal.gurus.map((g) => g.name).join(" & ")
+												: jadwal.guru.name}
 										</span>
 									</p>
 								)}

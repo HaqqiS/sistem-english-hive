@@ -12,6 +12,16 @@ import { useMemo, useState } from "react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
 	Sheet,
@@ -61,6 +71,13 @@ export default function DetailKelasClient() {
 		setSelectedHistoryGuruKelasToDelete,
 	] = useState<{ id: string; namaGuru: string } | null>(null);
 
+	const [toggleStatusDialogOpen, setToggleStatusDialogOpen] = useState(false);
+	const [selectedGuruToToggle, setSelectedGuruToToggle] = useState<{
+		id: string;
+		namaGuru: string;
+		currentStatus: "ACTIVE" | "INACTIVE";
+	} | null>(null);
+
 	const { openDrawer: openGuruDrawer } = useGuruKelasStore();
 	const { openDrawer: openPendaftaranDrawer } = usePendaftaranKelasStore();
 
@@ -92,17 +109,48 @@ export default function DetailKelasClient() {
 		},
 	});
 
-	const activeGuruHistory = useMemo(
-		() => dataGuruByKelasId?.find((h) => h.statusGuru === "ACTIVE"),
+	const activeGuruHistories = useMemo(
+		() => dataGuruByKelasId?.filter((h) => h.statusGuru === "ACTIVE") ?? [],
 		[dataGuruByKelasId],
 	);
 
 	// HANDLERS
 	const handleOpenEditDrawer = () => {
-		if (activeGuruHistory) {
-			openGuruDrawer("edit", activeGuruHistory);
+		const guruToEdit = activeGuruHistories[0];
+		if (activeGuruHistories.length === 1 && guruToEdit) {
+			openGuruDrawer("edit", guruToEdit);
 		}
 	};
+
+	const handleToggleStatus = (
+		id: string,
+		currentStatus: "ACTIVE" | "INACTIVE",
+		namaGuru: string,
+	) => {
+		setSelectedGuruToToggle({ id, namaGuru, currentStatus });
+		setToggleStatusDialogOpen(true);
+	};
+
+	const handleConfirmToggleStatus = () => {
+		if (!selectedGuruToToggle) return;
+
+		const newStatus =
+			selectedGuruToToggle.currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+		historyGuruKelasMutations.toggleStatus.mutate(
+			{
+				id: selectedGuruToToggle.id,
+				status: newStatus,
+			},
+			{
+				onSuccess: () => {
+					setToggleStatusDialogOpen(false);
+					setSelectedGuruToToggle(null);
+				},
+			},
+		);
+	};
+	// ... existing handlers ...
 
 	const handleConfirmDeletePendaftaranKelas = () => {
 		if (!selectedPendaftaranKelasToDelete) return;
@@ -137,12 +185,18 @@ export default function DetailKelasClient() {
 		const jadwalString = jadwalList?.join(" & ") ?? "-";
 
 		// 1. Siapkan Info Kelas
+		// Join all active teacher names
+		const pengajarNames =
+			activeGuruHistories.length > 0
+				? activeGuruHistories.map((h) => h.guru.name).join(" & ")
+				: undefined;
+
 		const classInfo = {
 			kodeKelas: kelas.kodeKelas,
 			level: kelas.level,
 			grup: kelas.grup,
 			bulanTahun: kelas.bulanTahunAjar,
-			pengajar: activeGuruHistory?.guru?.name ?? undefined,
+			pengajar: pengajarNames,
 			jadwal: jadwalString,
 		};
 
@@ -177,6 +231,7 @@ export default function DetailKelasClient() {
 			setSelectedHistoryGuruKelasToDelete({ id, namaGuru });
 			setDeleteHistoryGuruKelasDialogOpen(true);
 		},
+		onToggleStatus: handleToggleStatus,
 	});
 
 	return (
@@ -187,6 +242,49 @@ export default function DetailKelasClient() {
 					Export PDF Absen
 				</Button>
 			</HeaderActionPortal>
+
+			<AlertDialog
+				open={toggleStatusDialogOpen}
+				onOpenChange={setToggleStatusDialogOpen}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Konfirmasi Perubahan Status</AlertDialogTitle>
+						<AlertDialogDescription>
+							Apakah Anda yakin ingin mengubah status{" "}
+							<span className="text-foreground font-bold">
+								{selectedGuruToToggle?.namaGuru}
+							</span>{" "}
+							menjadi{" "}
+							<span className="text-foreground font-bold">
+								{selectedGuruToToggle?.currentStatus === "ACTIVE"
+									? "Tidak Aktif"
+									: "Aktif"}
+							</span>
+							?
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Batal</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={(e) => {
+								e.preventDefault();
+								handleConfirmToggleStatus();
+							}}
+							className={
+								selectedGuruToToggle?.currentStatus === "ACTIVE"
+									? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+									: ""
+							}
+							disabled={historyGuruKelasMutations.toggleStatus.isPending}
+						>
+							{historyGuruKelasMutations.toggleStatus.isPending
+								? "Memproses..."
+								: "Ya, Ubah Status"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			{/* --- KOLOM KIRI (UTAMA): Murid & Guru --- */}
 			<div className="space-y-8 lg:col-span-2">
@@ -264,13 +362,18 @@ export default function DetailKelasClient() {
 							<EditGuruKelas />
 							{loadingGuru ? (
 								<Skeleton className="h-9 w-32 rounded-md" />
-							) : activeGuruHistory ? (
-								<Button variant="outline" onClick={handleOpenEditDrawer}>
-									<Edit className="mr-2 h-4 w-4" />
-									Edit Guru Aktif
-								</Button>
 							) : (
-								<TambahGuruKelas kelasId={kelasId} />
+								<>
+									{/* Only show "Edit Active" if exactly one is active */}
+									{activeGuruHistories.length === 1 && (
+										<Button variant="outline" onClick={handleOpenEditDrawer}>
+											<Edit className="mr-2 h-4 w-4" />
+											Edit Guru Aktif
+										</Button>
+									)}
+									{/* Always allow adding more teachers (Double Guru support) */}
+									<TambahGuruKelas kelasId={kelasId} />
+								</>
 							)}
 							<DeleteConfirmationDialog
 								isOpen={deleteHistoryGuruKelasDialogOpen}

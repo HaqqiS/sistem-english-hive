@@ -70,18 +70,19 @@ export const historyGuruKelasRouter = createTRPCRouter({
 			}
 
 			try {
-				const existingGuruRecord = await db.historyGuruKelas.findFirst({
-					where: {
-						kelasId: input.kelasId,
-						statusGuru: "ACTIVE",
-					},
-				});
+				// DISABLED: Allow double active teacher
+				// const existingGuruRecord = await db.historyGuruKelas.findFirst({
+				// 	where: {
+				// 		kelasId: input.kelasId,
+				// 		statusGuru: "ACTIVE",
+				// 	},
+				// });
 
-				if (existingGuruRecord) {
-					throw new Error(
-						"Sudah ada guru yang ditugaskan pada kelas ini dan masih aktif.",
-					);
-				}
+				// if (existingGuruRecord) {
+				// 	throw new Error(
+				// 		"Sudah ada guru yang ditugaskan pada kelas ini dan masih aktif.",
+				// 	);
+				// }
 				const newHistoryGuruKelas = await db.historyGuruKelas.create({
 					data: {
 						kelasId: input.kelasId,
@@ -228,5 +229,49 @@ export const historyGuruKelasRouter = createTRPCRouter({
 				}
 				throw error;
 			}
+		}),
+
+	toggleStatusHistoryGuruKelas: cabangProtectedProcedure
+		.input(
+			z.object({
+				id: z.string().cuid("Id Tidak Valid"),
+				status: z.enum(["ACTIVE", "INACTIVE"]),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const record = await db.historyGuruKelas.findUnique({
+				where: { id: input.id },
+				include: { kelas: { select: { cabangId: true } } },
+			});
+
+			if (!record) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Data tidak ditemukan.",
+				});
+			}
+
+			if (allowedCabangId && record.kelas.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak mengubah data dari cabang lain.",
+				});
+			}
+
+			// Logic: Jika INACTIVE -> Set selesaiPada hari ini. Jika ACTIVE -> Clear selesaiPada
+			const selesaiPada =
+				input.status === "INACTIVE"
+					? new Date().toISOString().split("T")[0]
+					: null;
+
+			return await db.historyGuruKelas.update({
+				where: { id: input.id },
+				data: {
+					statusGuru: input.status,
+					selesaiPada: selesaiPada,
+				},
+			});
 		}),
 });

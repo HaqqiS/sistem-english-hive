@@ -73,7 +73,9 @@ export function KelasListView({
 			{data && data.length > 0 ? (
 				data.map((kelas) => {
 					const guruAktif =
-						kelas.historyGuruKelases[0]?.guru.name ?? "Belum ada guru";
+						kelas.historyGuruKelases.length > 0
+							? kelas.historyGuruKelases.map((h) => h.guru.name).join(" & ")
+							: "Belum ada guru";
 					const lastSession = kelas.sesiPertemuanKelases[0]?.tanggalWaktu;
 					const jadwalHari =
 						kelas.jadwalKelas.length > 0

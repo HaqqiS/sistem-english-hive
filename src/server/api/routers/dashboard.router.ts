@@ -359,7 +359,7 @@ export const dashboardRouter = createTRPCRouter({
 								where: {
 									statusGuru: "ACTIVE",
 								},
-								take: 1, // Ambil 1 guru aktif
+								// take: 1, // Ambil semua guru aktif
 								include: {
 									guru: {
 										select: {

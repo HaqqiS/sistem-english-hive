@@ -17,21 +17,22 @@ import { formatDateWITA } from "@/utils/dateUtils";
 export const columns = ({
 	onEditClick,
 	onDeleteClick,
+	onToggleStatus,
 }: {
 	onEditClick: (item: TypeHistoryGuruKelasByKelasId) => void;
 	onDeleteClick: (id: string, namaGuru: string) => void;
+	onToggleStatus: (
+		id: string,
+		currentStatus: "ACTIVE" | "INACTIVE",
+		namaGuru: string,
+	) => void;
 }): ColumnDef<TypeHistoryGuruKelasByKelasId>[] => [
 	{
 		id: "number",
-		header: () =>
-			// <div className="text-muted-foreground w-full text-center">No</div>
-			null,
-
-		cell: ({ row }) => {
-			return (
-				<div className="text-muted-foreground text-center">{row.index + 1}</div>
-			);
-		},
+		header: "No",
+		cell: ({ row }) => (
+			<div className="text-muted-foreground text-center">{row.index + 1}</div>
+		),
 	},
 	{
 		accessorKey: "",
@@ -117,6 +118,17 @@ export const columns = ({
 					<DropdownMenuContent align="end" className="w-32">
 						<DropdownMenuItem onClick={() => onEditClick(row.original)}>
 							Edit
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() =>
+								onToggleStatus(
+									row.original.id,
+									row.original.statusGuru,
+									row.original.guru.name ?? "Guru",
+								)
+							}
+						>
+							Ubah Status
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem

@@ -202,6 +202,7 @@ enum StatusMurid {
     ON_GOING //murid sedang dalam tahap on going
     WAITING_LIST //murid sedang dalam tahap waiting list
     TUNGGU_KONFIRMASI //murid sedang dalam tahap tunggu konfirmasi
+    OFF //
 }
 
 model Murid {

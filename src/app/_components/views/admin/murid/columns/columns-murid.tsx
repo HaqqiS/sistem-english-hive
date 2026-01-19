@@ -67,6 +67,8 @@ export const getStatusColorBadge = (status: StatusMurid): string => {
 			return "bg-yellow-500 hover:bg-yellow-600 text-white";
 		case StatusMurid.TUNGGU_KONFIRMASI:
 			return "bg-lime-500 hover:bg-lime-600 text-white";
+		case StatusMurid.OFF:
+			return "bg-slate-500 hover:bg-slate-600 text-white";
 		default:
 			return "bg-gray-500 text-white";
 	}

@@ -66,7 +66,11 @@ export default function ScheduleList() {
 										jadwal.jamSlotCustom?.jamMulai ??
 										"-";
 									const guruName =
-										jadwal.kelas.historyGuruKelases[0]?.guru?.name ?? "-";
+										jadwal.kelas.historyGuruKelases.length > 0
+											? jadwal.kelas.historyGuruKelases
+													.map((h) => h.guru.name)
+													.join(" & ")
+											: "-";
 
 									const isAttended = jadwal.sesiPertemuanKelases.length > 0;
 

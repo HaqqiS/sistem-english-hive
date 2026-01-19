@@ -85,7 +85,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 								},
 								historyGuruKelases: {
 									where: { statusGuru: "ACTIVE" },
-									take: 1,
+									// take: 1, // Allow multiple teachers
 									select: {
 										guru: { select: { name: true } },
 									},
@@ -116,7 +116,10 @@ export const jadwalKelasRouter = createTRPCRouter({
 					kelasId: s.kelasId,
 					kodeKelas: s.kelas.kodeKelas,
 					tipeKelas: s.kelas.jenisKelasRel?.tipe ?? "-",
-					guru: s.kelas.historyGuruKelases[0]?.guru.name ?? "Belum ada guru",
+					guru:
+						s.kelas.historyGuruKelases.length > 0
+							? s.kelas.historyGuruKelases.map((h) => h.guru.name).join(" & ")
+							: "Belum ada guru",
 					jamMulai: jam?.jamMulai ?? "00:00",
 					jamSelesai: jam?.jamSelesai ?? "00:00",
 					jumlahMurid: s.kelas._count.pendaftaranKelases,
@@ -372,7 +375,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 										},
 									},
 								},
-								take: 1,
+								// take: 1, // Allow multiple teachers
 							},
 						},
 					},
@@ -429,7 +432,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 			const hasil = jadwalHariIni.map((jadwal) => {
 				const jam = jadwal.jamSlotTetap ?? jadwal.jamSlotCustom;
 				const sesiId = sesiMap.get(jadwal.id) ?? null;
-				const guruAktif = jadwal.kelas.historyGuruKelases[0]?.guru;
+				const guruList = jadwal.kelas.historyGuruKelases.map((h) => h.guru);
 
 				return {
 					jadwalId: jadwal.id,
@@ -439,7 +442,11 @@ export const jadwalKelasRouter = createTRPCRouter({
 					namaRuang: jadwal.ruang.namaRuang,
 					jamMulai: jam?.jamMulai ?? "N/A",
 					jamSelesai: jam?.jamSelesai ?? "N/A",
-					guru: guruAktif ? { id: guruAktif.id, name: guruAktif.name } : null,
+					gurus: guruList.map((g) => ({ id: g.id, name: g.name })),
+					// Backwards compatibility for UI (optional, or remove if updated everywhere)
+					guru: guruList[0]
+						? { id: guruList[0].id, name: guruList[0].name }
+						: null,
 					sesiIdSudahDibuat: sesiId,
 					isJadwalPengganti: targetGuruId !== session.user.id,
 				};

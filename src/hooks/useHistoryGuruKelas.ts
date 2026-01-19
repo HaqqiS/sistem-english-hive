@@ -77,6 +77,29 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
 			},
 		});
 
+	// TOGGLE STATUS
+	const toggleStatusMutation =
+		api.historyGuruKelas.toggleStatusHistoryGuruKelas.useMutation({
+			onSuccess: async (data) => {
+				// Invalidate data history guru untuk kelas ini
+				const targetKelasId = data.kelasId; // data result dari mutation update return object historyGuruKelas
+
+				await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
+					kelasId: targetKelasId,
+				});
+
+				// Jika opsi global kelasId berbeda/tidak ada, kita tetap aman karena invalidasi menggunakan ID spesifik
+				// Tapi jika kita juga mau invalidate queries lain yang mungkin terkait (misal detail kelas count), bisa ditambahkan:
+				await apiUtils.kelas.getKelasAndCount.invalidate();
+
+				toast.success("Status guru berhasil diperbarui");
+				options?.onSuccessUpdate?.();
+			},
+			onError: (error) => {
+				toast.error(`Gagal memperbarui status guru: ${error.message}`);
+			},
+		});
+
 	return {
 		dataById: historyGuruKelasQuery.data,
 		isLoadingById: historyGuruKelasQuery.isLoading,
@@ -99,6 +122,11 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
 				mutate: deleteMutation.mutate,
 				mutateAsync: deleteMutation.mutateAsync,
 				isPending: deleteMutation.isPending,
+			},
+			toggleStatus: {
+				mutate: toggleStatusMutation.mutate,
+				mutateAsync: toggleStatusMutation.mutateAsync,
+				isPending: toggleStatusMutation.isPending,
 			},
 		},
 

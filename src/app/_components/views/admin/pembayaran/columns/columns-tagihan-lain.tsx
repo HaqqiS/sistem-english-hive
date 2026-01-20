@@ -12,6 +12,17 @@ import {
 	XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -212,16 +223,60 @@ export const columnsTagihanLain = ({
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							{/* Toggle Status */}
+							{/* Toggle Status */}
 							{!isLunas ? (
-								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-									<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-									Tandai Lunas
-								</DropdownMenuItem>
+								<AlertDialog>
+									<AlertDialogTrigger asChild>
+										<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+											<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+											Tandai Lunas
+										</DropdownMenuItem>
+									</AlertDialogTrigger>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>Konfirmasi Pembayaran</AlertDialogTitle>
+											<AlertDialogDescription>
+												Apakah anda yakin ingin mengubah status tagihan ini
+												menjadi Lunas?
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel>Batal</AlertDialogCancel>
+											<AlertDialogAction
+												onClick={() => onVerifyClick(row.original)}
+											>
+												Ya, Lunas
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
 							) : (
-								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-									<XCircle className="mr-2 h-4 w-4 text-red-600" />
-									Batalkan Lunas
-								</DropdownMenuItem>
+								<AlertDialog>
+									<AlertDialogTrigger asChild>
+										<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+											<XCircle className="mr-2 h-4 w-4 text-red-600" />
+											Batalkan Lunas
+										</DropdownMenuItem>
+									</AlertDialogTrigger>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>Konfirmasi Pembatalan</AlertDialogTitle>
+											<AlertDialogDescription>
+												Apakah anda yakin ingin membatalkan status lunas tagihan
+												ini?
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel>Batal</AlertDialogCancel>
+											<AlertDialogAction
+												className="bg-destructive hover:bg-destructive/80"
+												onClick={() => onVerifyClick(row.original)}
+											>
+												Ya, Batalkan
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
 							)}
 
 							<DropdownMenuItem onClick={() => onEditClick(row.original)}>
@@ -431,16 +486,60 @@ export const columnsTagihanLainGlobal = ({
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							{/* Toggle Status */}
+							{/* Toggle Status */}
 							{!isLunas ? (
-								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-									<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-									Tandai Lunas
-								</DropdownMenuItem>
+								<AlertDialog>
+									<AlertDialogTrigger asChild>
+										<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+											<CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+											Tandai Lunas
+										</DropdownMenuItem>
+									</AlertDialogTrigger>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>Konfirmasi Pembayaran</AlertDialogTitle>
+											<AlertDialogDescription>
+												Apakah anda yakin ingin mengubah status tagihan ini
+												menjadi Lunas?
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel>Batal</AlertDialogCancel>
+											<AlertDialogAction
+												onClick={() => onVerifyClick(row.original)}
+											>
+												Ya, Lunas
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
 							) : (
-								<DropdownMenuItem onClick={() => onVerifyClick(row.original)}>
-									<XCircle className="mr-2 h-4 w-4 text-red-600" />
-									Batalkan Lunas
-								</DropdownMenuItem>
+								<AlertDialog>
+									<AlertDialogTrigger asChild>
+										<DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+											<XCircle className="mr-2 h-4 w-4 text-red-600" />
+											Batalkan Lunas
+										</DropdownMenuItem>
+									</AlertDialogTrigger>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>Konfirmasi Pembatalan</AlertDialogTitle>
+											<AlertDialogDescription>
+												Apakah anda yakin ingin membatalkan status lunas tagihan
+												ini?
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel>Batal</AlertDialogCancel>
+											<AlertDialogAction
+												className="bg-destructive hover:bg-destructive/80"
+												onClick={() => onVerifyClick(row.original)}
+											>
+												Ya, Batalkan
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
 							)}
 							{/* WhatsApp Reminder - Only show for unpaid bills
 							{!isLunas && row.original.murid?.noWA && (

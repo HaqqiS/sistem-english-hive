@@ -4,6 +4,17 @@ import { StatusPembayaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, CheckCircle, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -252,16 +263,34 @@ export const columnsJatuhTempo = ({
 					</Button>
 
 					{/* Tombol Quick Verify (Check) */}
-					<Button
-						variant="default"
-						size="sm"
-						onClick={() => onVerifyClick(row.original)}
-						title="Verifikasi Lunas"
-						className="h-8 gap-2"
-					>
-						<CheckCircle className="h-4 w-4" />
-						<span className="hidden xl:inline">Lunas</span>
-					</Button>
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<Button
+								variant="default"
+								size="sm"
+								title="Verifikasi Lunas"
+								className="h-8 gap-2"
+							>
+								<CheckCircle className="h-4 w-4" />
+								<span className="hidden xl:inline">Lunas</span>
+							</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Konfirmasi Pembayaran</AlertDialogTitle>
+								<AlertDialogDescription>
+									Apakah anda yakin ingin memverifikasi pembayaran ini sebagai
+									Lunas?
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Batal</AlertDialogCancel>
+								<AlertDialogAction onClick={() => onVerifyClick(row.original)}>
+									Ya, Verifikasi
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
 				</div>
 			);
 		},

@@ -53,10 +53,39 @@ export const absenMuridRouter = createTRPCRouter({
 				});
 			}
 
-			// 2. Dapatkan semua murid yang terdaftar & aktif di kelas ini
+			// 2. Dapatkan data absensi yang SUDAH ADA untuk sesi ini
+			const existingAbsensi = await db.absensiMurid.findMany({
+				where: {
+					sesiPertemuanKelasId: sesiId,
+				},
+				select: {
+					id: true,
+					muridId: true,
+					status: true,
+				},
+			});
+
+			// 3. Buat Map untuk lookup absensi & Set untuk filter query
+			const absensiMap = new Map(
+				existingAbsensi.map((a) => [a.muridId, { id: a.id, status: a.status }]),
+			);
+			const existingMuridIds = existingAbsensi.map((a) => a.muridId);
+
+			// 4. Dapatkan semua murid yang terdaftar & aktif di kelas ini (ATAU punya history absensi)
 			const pendaftar = await db.pendaftaranKelas.findMany({
 				where: {
 					kelasId: sesi.kelasId,
+					OR: [
+						{
+							status: StatusPendaftaran.AKTIF,
+						},
+						{
+							status: StatusPendaftaran.TRIAL,
+						},
+						{
+							muridId: { in: existingMuridIds },
+						},
+					],
 				},
 				select: {
 					id: true,
@@ -71,23 +100,6 @@ export const absenMuridRouter = createTRPCRouter({
 					murid: { namaLengkap: "asc" },
 				},
 			});
-
-			// 3. Dapatkan data absensi yang SUDAH ADA untuk sesi ini
-			const existingAbsensi = await db.absensiMurid.findMany({
-				where: {
-					sesiPertemuanKelasId: sesiId,
-				},
-				select: {
-					id: true,
-					muridId: true,
-					status: true,
-				},
-			});
-
-			// 4. Buat Map untuk lookup absensi
-			const absensiMap = new Map(
-				existingAbsensi.map((a) => [a.muridId, { id: a.id, status: a.status }]),
-			);
 
 			// 5. Gabungkan data
 			const muridList = pendaftar.map((p) => {
@@ -142,6 +154,46 @@ export const absenMuridRouter = createTRPCRouter({
 					code: "FORBIDDEN",
 					message: "Anda tidak berhak mengubah absensi di cabang lain.",
 				});
+			}
+
+			// VALIDASI: Pastikan Murid Aktif/Trial ATAU Sudah Punya History Absensi
+			const pendaftaran = await db.pendaftaranKelas.findFirst({
+				where: {
+					muridId: muridId,
+					kelasId: sesiCheck.kelasId,
+				},
+				select: { id: true, status: true },
+			});
+
+			if (!pendaftaran) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Murid tidak terdaftar di kelas ini.",
+				});
+			}
+
+			const isStatusValid =
+				pendaftaran.status === StatusPendaftaran.AKTIF ||
+				pendaftaran.status === StatusPendaftaran.TRIAL;
+
+			if (!isStatusValid) {
+				// Cek apakah ini update data lama (history)
+				const existingAbsen = await db.absensiMurid.findUnique({
+					where: {
+						muridId_sesiPertemuanKelasId: {
+							muridId: muridId,
+							sesiPertemuanKelasId: sesiId,
+						},
+					},
+				});
+
+				if (!existingAbsen) {
+					throw new TRPCError({
+						code: "PRECONDITION_FAILED",
+						message:
+							"Tidak dapat presensi: Status murid Tidak Aktif dan belum ada riwayat.",
+					});
+				}
 			}
 
 			try {

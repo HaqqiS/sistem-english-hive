@@ -99,6 +99,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 					: undefined,
 			muridId: options?.muridIdFilter,
 			search: options?.searchFilter,
+			sorting,
 		});
 	};
 

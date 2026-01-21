@@ -17,6 +17,7 @@ interface UseGuruOptions {
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
 	onSuccessStartSesi?: (newSesiId: string, isFinished: boolean) => void;
+	onSuccessCreateManual?: () => void;
 	onSuccessUpdate?: () => void;
 	onSuccessUpdateStatus?: () => void;
 	onSuccessDelete?: () => void;
@@ -141,6 +142,17 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 		},
 	});
 
+	const createManualMutation = api.absenGuru.createManualAbsensi.useMutation({
+		onSuccess: async () => {
+			await apiUtils.absenGuru.getAllAbsensi.invalidate();
+			toast.success("Absensi manual berhasil dibuat");
+			options?.onSuccessCreateManual?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal membuat absensi manual: ${error.message}`);
+		},
+	});
+
 	// DELETE
 	const deleteMutation = api.absenGuru.deleteAbsenGuru.useMutation({
 		onSuccess: async () => {
@@ -180,6 +192,11 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 				mutateAsync: startSesiMutation.mutateAsync,
 				isPending: startSesiMutation.isPending,
 				variables: startSesiMutation.variables,
+			},
+			createManual: {
+				mutate: createManualMutation.mutate,
+				mutateAsync: createManualMutation.mutateAsync,
+				isPending: createManualMutation.isPending,
 			},
 			verify: {
 				mutate: updateStatusMutation.mutate,

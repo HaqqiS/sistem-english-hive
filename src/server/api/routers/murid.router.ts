@@ -434,7 +434,7 @@ export const muridRouter = createTRPCRouter({
 			// Ambil data untuk CSV (Pilih field yang relevan untuk marketing/db)
 			return await db.murid.findMany({
 				where: whereClause,
-				orderBy: { namaLengkap: "asc" },
+				orderBy: [{ statusMurid: "asc" }, { createdAt: "desc" }],
 				include: {
 					cabang: {
 						select: { namaCabang: true },

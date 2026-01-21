@@ -66,3 +66,17 @@ export const verifyAbsensiSchema = z.object({
 	absensiId: z.string().cuid(),
 	isVerified: z.boolean(),
 });
+
+export const clientCreateManualAbsensiSchema = z.object({
+	guruId: z.string().cuid("Guru harus dipilih"),
+	kelasId: z.string().cuid("Kelas harus dipilih"), // For UI selection only, not sent to mutation directly
+	sesiPertemuanKelasId: z.string().cuid("Sesi harus dipilih"),
+	status: z.nativeEnum(StatusAbsenGuru, {
+		required_error: "Status harus dipilih",
+	}),
+	isVerified: z.boolean(),
+});
+
+export type TypeClientCreateManualAbsensiSchema = z.infer<
+	typeof clientCreateManualAbsensiSchema
+>;

@@ -177,6 +177,14 @@ export const pembayaranRouter = createTRPCRouter({
 				muridId: z.string().optional(),
 				search: z.string().optional(),
 				cabangId: z.string().optional(),
+				sorting: z
+					.array(
+						z.object({
+							id: z.string(),
+							desc: z.boolean(),
+						}),
+					)
+					.optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
@@ -209,9 +217,42 @@ export const pembayaranRouter = createTRPCRouter({
 				whereClause.statusBayar = input.status;
 			}
 
+			// Dynamic Sorting
+			let orderBy: Prisma.PembayaranOrderByWithRelationInput[] = [
+				{ tanggalJatuhTempo: "desc" },
+			];
+
+			if (input.sorting && input.sorting.length > 0) {
+				orderBy = input.sorting.map((sort) => {
+					// Handle nested relationship sorting manually if needed
+					if (sort.id === "namaMurid") {
+						return {
+							pendaftaranKelas: {
+								murid: {
+									namaLengkap: sort.desc ? "desc" : "asc",
+								},
+							},
+						};
+					}
+					if (sort.id === "kelas") {
+						return {
+							pendaftaranKelas: {
+								Kelas: {
+									kodeKelas: sort.desc ? "desc" : "asc",
+								},
+							},
+						};
+					}
+
+					return {
+						[sort.id]: sort.desc ? "desc" : "asc",
+					};
+				});
+			}
+
 			const data = await db.pembayaran.findMany({
 				where: whereClause,
-				orderBy: { tanggalJatuhTempo: "desc" },
+				orderBy: orderBy,
 				select: {
 					pembayaranKe: true,
 					jumlahBayar: true,

@@ -36,6 +36,7 @@ import { columns as columnsGuru } from "./columns/columns-guru";
 import EditGuru from "./drawer/edit-guru";
 import EditVerifikasiAbsen from "./drawer/edit-verifikasi-absen";
 import RegistrasiGuru from "./drawer/registrasi-guru";
+import TambahAbsensiManual from "./drawer/tambah-absensi-manual";
 import JadwalGuruTab from "./tabs/jadwal-guru-tab";
 
 export default function GuruClient() {
@@ -196,7 +197,6 @@ export default function GuruClient() {
 	// COLUMNS
 	const columnsAbsensiGuru = columnsAbsen({
 		onEditClick: (item) => {
-			console.log(item);
 			openAbsenDrawer("edit", item);
 		},
 		onDeleteClick: (id, kodeKelasTanggalWaktu) => {
@@ -260,9 +260,10 @@ export default function GuruClient() {
 									</p>
 								</div>
 							</div>
-						</div>
 
-						{/* COMPONENT ADD */}
+							{/* COMPONENT ADD */}
+							<TambahAbsensiManual />
+						</div>
 
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 							<div className="relative w-full sm:max-w-xs">

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, StatusAbsenGuru } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import dayjs from "dayjs";
 import z from "zod";
@@ -657,6 +657,153 @@ export const absenGuruRouter = createTRPCRouter({
 						throw new TRPCError({
 							code: "NOT_FOUND",
 							message: "Absensi tidak ditemukan atau sudah dihapus.",
+						});
+					}
+				}
+				throw error;
+			}
+		}),
+
+	getSesiTanpaGuru: cabangProtectedProcedure
+		.input(
+			z.object({
+				kelasId: z.string().cuid(),
+				cabangId: z.string().optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const { kelasId, cabangId } = input;
+			const filterCabangId = allowedCabangId ?? cabangId;
+
+			// Security: Pastikan kelas milik cabang yang diizinkan
+			if (filterCabangId) {
+				const kelas = await db.kelas.findUnique({
+					where: { id: kelasId },
+					select: { cabangId: true },
+				});
+
+				if (!kelas) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Kelas tidak ditemukan.",
+					});
+				}
+
+				if (kelas.cabangId !== filterCabangId) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Anda tidak berhak mengakses kelas dari cabang ini.",
+					});
+				}
+			}
+
+			// Logic: Ambil sesi yang belum punya AbsensiGuru
+			const sesiList = await db.sesiPertemuanKelas.findMany({
+				where: {
+					kelasId: kelasId,
+					absensiGurus: {
+						none: {}, // <--- Filter: Tidak ada record AbsensiGuru
+					},
+				},
+				select: {
+					id: true,
+					tanggalWaktu: true,
+					ruang: {
+						select: {
+							namaRuang: true,
+						},
+					},
+					jadwalKelas: {
+						select: {
+							hari: true,
+							jamSlotTetap: {
+								select: {
+									jamMulai: true,
+									jamSelesai: true,
+								},
+							},
+						},
+					},
+				},
+				orderBy: {
+					tanggalWaktu: "desc",
+				},
+			});
+
+			return sesiList;
+		}),
+
+	createManualAbsensi: cabangProtectedProcedure
+		.input(
+			z.object({
+				guruId: z.string().cuid(),
+				sesiPertemuanKelasId: z.string().cuid(),
+				status: z.nativeEnum(StatusAbsenGuru),
+				isVerified: z.boolean(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
+			const { guruId, sesiPertemuanKelasId, status, isVerified } = input;
+
+			// 1. Permission Check (Admin/Manager only for manual entry)
+			if (
+				session.user.role !== UserRole.ADMIN &&
+				session.user.role !== UserRole.MANAGER
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Hanya Admin/Manager yang dapat membuat absensi manual.",
+				});
+			}
+
+			// 2. Fetch Session & Security Check
+			const sesi = await db.sesiPertemuanKelas.findUnique({
+				where: { id: sesiPertemuanKelasId },
+				include: {
+					kelas: {
+						select: { cabangId: true },
+					},
+				},
+			});
+
+			if (!sesi) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Sesi pertemuan tidak ditemukan.",
+				});
+			}
+
+			if (allowedCabangId && sesi.kelas.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak membuat absensi untuk cabang ini.",
+				});
+			}
+
+			// 3. Create AbsensiGuru
+			// Note: createdAt MUST be equal to sesi.tanggalWaktu
+			try {
+				const newAbsensi = await db.absensiGuru.create({
+					data: {
+						guruId,
+						sesiPertemuanKelasId,
+						status,
+						isVerified: isVerified,
+						verifiedById: isVerified ? session.user.id : null, // Auto-verify if requested
+						createdAt: sesi.tanggalWaktu, // <--- CRITICAL REQUIREMENT
+					},
+				});
+
+				return newAbsensi;
+			} catch (error) {
+				if (error instanceof Prisma.PrismaClientKnownRequestError) {
+					// P2002: Unique constraint failed (Guru already absent for this session)
+					if (error.code === "P2002") {
+						throw new TRPCError({
+							code: "CONFLICT",
+							message: "Guru ini sudah memiliki absen di sesi tersebut.",
 						});
 					}
 				}

@@ -37,7 +37,7 @@ export default function TambahAbsensiManual() {
 	});
 
 	const onSubmit = (values: TypeClientCreateManualAbsensiSchema) => {
-		const { kelasId, ...payload } = values;
+		const { kelasId: _kelasId, ...payload } = values;
 		mutations.createManual.mutate(payload);
 	};
 

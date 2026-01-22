@@ -17,28 +17,28 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const testimonials = [
 	{
-		name: "Sarah Wijaya",
-		role: "Marketing Manager",
-		avatar: "SW",
+		name: "Wawan",
+		role: "Wali Murid",
+		avatar: "W",
 		rating: 5,
-		text: "English Hive benar-benar mengubah cara saya berbahasa Inggris. Dari yang awalnya malu dan tidak percaya diri, sekarang saya bisa presentasi di kantor dengan lancar!",
-		program: "Business English",
+		text: "Untuk kelanjutan kelas kami berkenan sesuai pembicaraan kemarin. Menurut anak saya,kelasnya seru Dan nyaman. Gurunya menyengkan 😍",
+		program: "Kelas Regular",
 	},
 	{
-		name: "Ahmad Fadli",
-		role: "College Student",
-		avatar: "AF",
+		name: "Titin",
+		role: "Wali Murid",
+		avatar: "T",
 		rating: 5,
-		text: "Persiapan TOEFL saya di English Hive sangat membantu. Score saya naik dari 450 menjadi 550 dalam 3 bulan! Tutornya sabar dan materinya sangat terstruktur.",
-		program: "TOEFL Prep",
+		text: "bagus, membuat semangat anak, ruang nyaman, bersih, memuaskan.",
+		program: "Kelas Regular",
 	},
 	{
-		name: "Rina Kartika",
-		role: "Entrepreneur",
-		avatar: "RK",
+		name: "Wahyu",
+		role: "Wali Murid",
+		avatar: "W",
 		rating: 5,
-		text: "Metode pembelajaran di English Hive sangat fun dan tidak membosankan. Saya yang sudah lama tidak belajar bahasa Inggris jadi semangat lagi. Highly recommended!",
-		program: "General English",
+		text: "Tempatnya nyaman, gurunya ramah, dan cara ngajarnya enak diikuti. Anak saya enjoy selama kelas dan tidak merasa tertekan. Recommended 👍",
+		program: "Kelas Private",
 	},
 	{
 		name: "David Tan",
@@ -46,7 +46,7 @@ const testimonials = [
 		avatar: "DT",
 		rating: 5,
 		text: "Sebagai siswa SMA, jadwal di English Hive sangat fleksibel. Kelasnya interaktif dan saya jadi lebih percaya diri saat ujian sekolah. Thanks English Hive!",
-		program: "Kids & Teens",
+		program: "Kelas Private",
 	},
 	{
 		name: "Galih Ramadhan",
@@ -54,7 +54,7 @@ const testimonials = [
 		avatar: "GR",
 		rating: 5,
 		text: "Kelas di English Hive seru banget! Gurunya asik dan cara mengajarnya gampang dimengerti. Nilai bahasa Inggris saya di sekolah jadi naik terus.",
-		program: "Kids & Teens",
+		program: "Kelas Private",
 	},
 ];
 

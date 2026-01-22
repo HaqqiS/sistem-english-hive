@@ -84,18 +84,17 @@ export default function Hero() {
 					{/* RIGHT: Image Illustration */}
 					{/* Mobile: Order 2 (di bawah teks), Desktop: Order 2 (di kanan) */}
 					<div className="relative order-2 flex items-center justify-center">
-						<ScrollAnimation
-							delay={0.3}
-							className="relative aspect-square w-full max-w-[400px] lg:max-w-[500px]"
-						>
+						<ScrollAnimation delay={0.3} className="relative w-fit">
 							{/* Abstract Shape behind image */}
 							<div className="from-accent/30 to-secondary/30 absolute inset-0 scale-95 rotate-6 rounded-4xl bg-linear-to-tr" />
 
-							<div className="relative h-full w-full overflow-hidden rounded-2xl border-4 border-white/50 shadow-2xl">
+							<div className="relative h-fit w-fit overflow-hidden rounded-2xl border-4 border-white/50 shadow-2xl">
 								<Image
-									src="/miss_desak.webp" // Pastikan path ini benar
+									src="/hero_image.webp"
+									// src="/miss_desak.webp"
 									alt="English Learning Activity"
-									fill
+									height={400}
+									width={300}
 									className="object-contain object-top transition-transform duration-700 hover:scale-105"
 									priority
 								/>

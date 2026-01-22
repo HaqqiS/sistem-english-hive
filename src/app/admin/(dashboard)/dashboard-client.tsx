@@ -5,6 +5,7 @@ import RegistrationChart from "@/app/_components/views/admin/dashboard/registrat
 import RevenueChart from "@/app/_components/views/admin/dashboard/revenue-chart";
 import ScheduleList from "@/app/_components/views/admin/dashboard/schedule-list";
 import CardJatuhTempo from "@/app/_components/views/admin/pembayaran/card-jatuh-tempo";
+import CardTagihanLainBelumLunas from "@/app/_components/views/admin/pembayaran/card-tagihan-lain-belum-lunas";
 
 export default function DashboardClientPage() {
 	return (
@@ -23,8 +24,11 @@ export default function DashboardClientPage() {
 				{/* Schedule List (1/3 width on large screens) */}
 				<ScheduleList />
 
-				{/* Tagihan Jatuh Tempo (2/3 width on large screens) */}
-				<CardJatuhTempo className="col-span-1 lg:col-span-2" />
+				{/* Tagihan Jatuh Tempo & Tagihan Lain (2/3 width on large screens) */}
+				<div className="col-span-1 space-y-4 lg:col-span-2">
+					<CardJatuhTempo />
+					<CardTagihanLainBelumLunas />
+				</div>
 			</div>
 		</div>
 	);

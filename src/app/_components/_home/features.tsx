@@ -19,7 +19,7 @@ const features = [
 		title: "Materi Terstruktur",
 		description:
 			"Kurikulum yang dirancang sistematis dari level dasar hingga mahir.",
-		color: "text-secondary",
+		color: "text-primary",
 	},
 	{
 		icon: Award,
@@ -33,7 +33,7 @@ const features = [
 		title: "Jadwal Fleksibel",
 		description:
 			"Pilih waktu belajar yang sesuai dengan aktivitas Anda (Pagi/Siang/Malam).",
-		color: "text-secondary",
+		color: "text-primary",
 	},
 ];
 

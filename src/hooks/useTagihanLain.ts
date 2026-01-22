@@ -39,6 +39,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			utils.tagihanLain.getAllBukuPaginated.invalidate(),
 			utils.tagihanLain.getAllRegistrasiPaginated.invalidate(),
 			utils.tagihanLain.getAllLainnyaPaginated.invalidate(),
+			utils.tagihanLain.getAllBelumLunas.invalidate(),
 		]);
 	};
 
@@ -106,6 +107,10 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 					options.filterKategori === "LAINNYA",
 			},
 		);
+
+	const getAllBelumLunasQuery = api.tagihanLain.getAllBelumLunas.useQuery({
+		cabangId: cabangIdPayload,
+	});
 
 	// ========== MUTATIONS ==========
 
@@ -183,6 +188,11 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 		dataByMurid: getAllByMuridQuery.data,
 		isLoadingByMurid: getAllByMuridQuery.isLoading,
 		isErrorByMurid: getAllByMuridQuery.isError,
+
+		dataGetAllBelumLunas: getAllBelumLunasQuery.data,
+		isLoadingGetAllBelumLunas: getAllBelumLunasQuery.isLoading,
+		isFetchingGetAllBelumLunas: getAllBelumLunasQuery.isFetching,
+		refetchGetAllBelumLunas: getAllBelumLunasQuery.refetch,
 
 		// Mutations Grouped
 		mutations: {

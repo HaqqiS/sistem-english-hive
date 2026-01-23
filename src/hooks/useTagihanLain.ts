@@ -110,6 +110,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 
 	const getAllBelumLunasQuery = api.tagihanLain.getAllBelumLunas.useQuery({
 		cabangId: cabangIdPayload,
+		kategori: options.filterKategori,
 	});
 
 	// ========== MUTATIONS ==========

@@ -123,7 +123,14 @@ export const tagihanLainRouter = createTRPCRouter({
 
 	// Get All Belum Lunas (Similar to Tagihan Jatuh Tempo)
 	getAllBelumLunas: cabangProtectedProcedure
-		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+					kategori: z.nativeEnum(KategoriTagihan).optional(),
+				})
+				.optional(),
+		)
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
@@ -131,6 +138,10 @@ export const tagihanLainRouter = createTRPCRouter({
 			const whereClause: Prisma.TagihanLainWhereInput = {
 				status: StatusPembayaran.BELUM_LUNAS,
 			};
+
+			if (input?.kategori) {
+				whereClause.kategori = input.kategori;
+			}
 
 			if (filterCabangId) {
 				whereClause.murid = {

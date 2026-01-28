@@ -52,11 +52,9 @@ export const absenGuruRouter = createTRPCRouter({
 			if (month && month !== "") {
 				const { startDate, endDate } = getPeriodeGaji(month);
 
-				whereClause.sesiPertemuanKelas = {
-					tanggalWaktu: {
-						gte: startDate,
-						lte: endDate,
-					},
+				sesiFilter.tanggalWaktu = {
+					gte: startDate,
+					lte: endDate,
 				};
 			}
 

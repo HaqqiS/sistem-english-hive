@@ -17,6 +17,10 @@ export const useDashboard = () => {
 	const revenueTrend = api.dashboard.getRevenueTrend.useQuery({
 		cabangId: payloadCabangId,
 	});
+	const sumberInfoDistribution =
+		api.dashboard.getSumberInfoDistribution.useQuery({
+			cabangId: payloadCabangId,
+		});
 	const todaySchedule = api.dashboard.getTodaySchedule.useQuery({
 		cabangId: payloadCabangId,
 	});
@@ -31,6 +35,7 @@ export const useDashboard = () => {
 		kpiStats,
 		registrationTrend,
 		revenueTrend,
+		sumberInfoDistribution,
 		todaySchedule,
 		invalidateDashboard,
 	};

@@ -22,13 +22,13 @@ export default function ScheduleList() {
 	const hasSchedule = data && data.length > 0;
 
 	return (
-		<Card className="col-span-1 md:col-span-2 lg:col-span-1">
+		<Card>
 			<CardHeader>
 				<CardTitle>Jadwal Hari Ini</CardTitle>
 				<CardDescription>{dayjs().format("dddd, D MMMM YYYY")}</CardDescription>
 			</CardHeader>
 			<CardContent className="p-0">
-				<ScrollArea className="h-[calc(100vh-200px)]">
+				<ScrollArea className="h-[300px]">
 					<div className="flex flex-col gap-0">
 						{isLoading ? (
 							[1, 2, 3].map((id) => (

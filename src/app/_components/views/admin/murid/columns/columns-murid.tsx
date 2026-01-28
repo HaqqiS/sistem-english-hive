@@ -105,7 +105,7 @@ export const columns = ({
 	{
 		id: "nomer",
 		accessorKey: "nomer",
-		header: "Nomer",
+		header: "No",
 		cell: ({ row }) => row.index + 1,
 	},
 
@@ -124,13 +124,15 @@ export const columns = ({
 		),
 		cell: ({ row }) => (
 			<div className="flex flex-col">
-				<Button
-					variant="link"
-					className="text-foreground h-auto w-fit justify-start px-0 py-0 text-left font-medium"
-					onClick={() => onEditClick(row.original)}
-				>
-					{row.original.namaLengkap}
-				</Button>
+				<Link href={`/admin/pembayaran/${row.original.id}`}>
+					<Button
+						variant="link"
+						className="text-foreground h-auto w-fit justify-start px-0 py-0 text-left font-medium"
+						onClick={() => onEditClick(row.original)}
+					>
+						{row.original.namaLengkap}
+					</Button>
+				</Link>
 				<span className="text-muted-foreground text-xs">
 					{row.original.pendaftaranKelases.length > 0
 						? row.original.pendaftaranKelases[0]?.Kelas.kodeKelas

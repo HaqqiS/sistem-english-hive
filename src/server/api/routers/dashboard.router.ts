@@ -401,4 +401,52 @@ export const dashboardRouter = createTRPCRouter({
 				// Untuk simpelnya kita tidak sorting di level DB dulu karena conditional column sorting
 			});
 		}),
+
+	// 5. Distribusi Sumber Info (Pie Chart)
+	getSumberInfoDistribution: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const result = await db.murid.groupBy({
+				by: ["sumberInfo"],
+				where: {
+					cabangId: filterCabangId ?? undefined,
+				},
+				_count: {
+					sumberInfo: true,
+				},
+			});
+
+			// Grouping into specific categories
+			const categories = {
+				Instagram: 0,
+				WhatsApp: 0,
+				Teman: 0,
+				Other: 0,
+			};
+
+			for (const item of result) {
+				if (item.sumberInfo === "Instagram") {
+					categories.Instagram += item._count.sumberInfo;
+				} else if (item.sumberInfo === "WhatsApp") {
+					categories.WhatsApp += item._count.sumberInfo;
+				} else if (item.sumberInfo === "Teman") {
+					categories.Teman += item._count.sumberInfo;
+				} else {
+					categories.Other += item._count.sumberInfo;
+				}
+			}
+
+			// Transform to array format
+			const finalResult = Object.entries(categories)
+				.map(([key, value]) => ({
+					sumberInfo: key,
+					count: value,
+				}))
+				.filter((item) => item.count > 0); // Only return categories with data
+
+			return finalResult;
+		}),
 });

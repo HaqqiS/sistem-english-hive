@@ -30,9 +30,9 @@ const features = [
 	},
 	{
 		icon: Clock,
-		title: "Jadwal Fleksibel",
+		title: "Jadwal",
 		description:
-			"Pilih waktu belajar yang sesuai dengan aktivitas Anda (Pagi/Siang/Malam).",
+			"Pilih waktu belajar yang sesuai dengan aktivitas Anda (Siang/Sore/Malam).",
 		color: "text-primary",
 	},
 ];

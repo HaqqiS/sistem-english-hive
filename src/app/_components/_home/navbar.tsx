@@ -32,8 +32,8 @@ export default function Navbar() {
 	}, [isOpen]);
 
 	const navLinks = [
-		{ label: "Program", href: "#programs" },
-		{ label: "Biaya", href: "#pricing" },
+		{ label: "Jenjang", href: "#programs" },
+		{ label: "Program", href: "#pricing" },
 		{ label: "Jadwal", href: "#schedule" },
 		{ label: "Tentang", href: "#about" },
 	];

@@ -23,7 +23,7 @@ const faqs = [
 	{
 		question: "Bagaimana sistem pembayarannya?",
 		answer:
-			"Pembayaran dapat dilakukan bulanan atau paket (3/12 bulan) dengan harga lebih hemat. Kami menerima transfer bank, e-wallet.",
+			"pembayaran dapat dilakukan per 8x pertemuan dengan sistem cicilan atau langsung melunaskan 1 level (24x pertemuan). Kami menerima transfer bank, e-wallet, dan Tunai.",
 	},
 	{
 		question: "Apakah ada kelas online?",

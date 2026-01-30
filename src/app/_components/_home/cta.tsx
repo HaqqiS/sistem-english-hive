@@ -1,4 +1,5 @@
 import { ArrowRight, MessageCircle } from "lucide-react";
+import Link from "next/link";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
 import { Button } from "@/components/ui/button";
 
@@ -24,14 +25,16 @@ export default function CTA() {
 							Daftar Sekarang
 							<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
 						</Button>
-						<Button
-							size="lg"
-							variant="outline"
-							className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 gap-2 bg-transparent"
-						>
-							<MessageCircle className="h-4 w-4" />
-							Hubungi Kami
-						</Button>
+						<Link href="https://wa.me/+62895803512835" target="_blank">
+							<Button
+								size="lg"
+								variant="outline"
+								className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 gap-2 bg-transparent"
+							>
+								<MessageCircle className="h-4 w-4" />
+								Hubungi Kami
+							</Button>
+						</Link>
 					</div>
 				</div>
 			</ScrollAnimation>

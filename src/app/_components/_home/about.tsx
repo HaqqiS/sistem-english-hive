@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const stats = [
-	{ number: "350+", label: "Siswa Aktif" },
-	{ number: "10+", label: "Tutor Ahli" },
+	{ number: "500+", label: "Siswa Aktif" },
+	{ number: "15+", label: "Tutor Ahli" },
 	{ number: "95%", label: "Puas" },
 	{ number: "2+", label: "Tahun" },
 ];
@@ -51,9 +51,8 @@ export default function About() {
 								mencapai kemampuan bahasa Inggris optimal.
 							</p>
 							<p>
-								Metode inovatif kami didukung oleh tutor berkualifikasi
-								internasional yang siap membimbing setiap langkah Anda menuju
-								kefasihan.
+								Metode inovatif kami didukung oleh tutor ahli yang siap
+								membimbing setiap langkah Anda menuju kefasihan.
 							</p>
 						</div>
 
@@ -79,10 +78,6 @@ export default function About() {
 								</ScrollAnimation>
 							))}
 						</div>
-
-						<Button variant="outline" className="mt-4">
-							Pelajari Lebih Lanjut
-						</Button>
 					</ScrollAnimation>
 				</div>
 			</div>

@@ -127,10 +127,6 @@ export default function Schedule() {
 					</h2>
 					<p className="text-muted-foreground mt-4">
 						Pilih cabang terdekat untuk melihat jadwal sesi yang tersedia.
-						<br />
-						<span className="text-primary text-xs italic">
-							*Jadwal Private dapat disesuaikan (Flexible)
-						</span>
 					</p>
 				</ScrollAnimation>
 

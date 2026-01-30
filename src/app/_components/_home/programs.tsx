@@ -18,7 +18,7 @@ import { useScrollDirection } from "@/hooks/use-scroll-direction";
 const programs = [
 	{
 		title: "TinyTods",
-		age: "3-4 Tahun",
+		level: "1 - 4 Level",
 		description:
 			"Pengenalan Bahasa Inggris melalui lagu, gerak, dan permainan sensorik.",
 		icon: Star,
@@ -26,7 +26,7 @@ const programs = [
 	},
 	{
 		title: "PreLittleStar",
-		age: "4-5 Tahun",
+		level: "1 - 4 Level",
 		description:
 			"Membangun kosakata dasar dan kepercayaan diri untuk berbicara.",
 		icon: Sun,
@@ -34,35 +34,35 @@ const programs = [
 	},
 	{
 		title: "LittleStar",
-		age: "5-6 Tahun",
+		level: "1 - 4 Level",
 		description: "Fokus pada phonics dasar dan pembentukan kalimat sederhana.",
 		icon: Sparkles,
 		color: "text-purple-500",
 	},
 	{
 		title: "RisingStar",
-		age: "SD Kelas 1-2",
+		level: "1 - 4 Level",
 		description: "Penguatan grammar dasar dan reading comprehension awal.",
 		icon: Rocket,
 		color: "text-blue-500",
 	},
 	{
 		title: "PreShiningStar",
-		age: "SD Kelas 3-4",
+		level: "1 - 4 Level",
 		description: "Peningkatan kemampuan speaking dan listening interaktif.",
 		icon: BookOpen,
 		color: "text-green-500",
 	},
 	{
 		title: "ShiningStar",
-		age: "SD Kelas 5-6",
+		level: "1 - 4 Level",
 		description: "Persiapan menuju tingkat lanjut dengan materi komprehensif.",
 		icon: Trophy,
 		color: "text-red-500",
 	},
 	{
 		title: "Elementary",
-		age: "SMP / Umum",
+		level: "1 - 4 Level",
 		description:
 			"Program intensif mencakup 4 skill utama: Speaking, Listening, Reading, Writing.",
 		icon: GraduationCap,
@@ -147,7 +147,7 @@ export default function Programs() {
 												variant="secondary"
 												className="text-xs font-medium"
 											>
-												{program.age}
+												{program.level}
 											</Badge>
 										</div>
 										<CardTitle className="text-xl">{program.title}</CardTitle>

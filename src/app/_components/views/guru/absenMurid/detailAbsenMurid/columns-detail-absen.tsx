@@ -3,9 +3,15 @@
 import { StatusAbsenMurid } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { UseTRPCMutationResult } from "@trpc/react-query/shared";
+import { Check, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label"; //
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; //
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { RouterInputs, RouterOutputs } from "@/trpc/react";
 import type { MuridForAbsensi } from "@/types/absenMurid.type";
 
@@ -21,6 +27,25 @@ interface CreateColumnsProps {
 	mutation: AbsensiMutation;
 }
 
+/**
+ * Helper untuk mendapatkan teks dan varian badge berdasarkan status absensi
+ */
+function getBadgeContent(status: StatusAbsenMurid | null): {
+	text: string;
+	variant: "default" | "destructive" | "secondary" | "outline";
+} {
+	switch (status) {
+		case StatusAbsenMurid.HADIR:
+			return { text: "H", variant: "default" }; // Hijau
+		case StatusAbsenMurid.ALPA:
+			return { text: "A", variant: "destructive" }; // Merah
+		case StatusAbsenMurid.OFF_SEMENTARA:
+			return { text: "Off", variant: "secondary" }; // Abu-abu
+		default:
+			return { text: "-", variant: "outline" }; // Kosong
+	}
+}
+
 export const createDetailAbsenMuridColumns = ({
 	sesiId,
 	mutation,
@@ -34,7 +59,7 @@ export const createDetailAbsenMuridColumns = ({
 	},
 	{
 		accessorKey: "status",
-		header: "Status Kehadiran",
+		header: "Status",
 		cell: ({ row }) => {
 			// Mutasi untuk update absensi
 			const { mutate, isPending, variables } = mutation;
@@ -42,7 +67,7 @@ export const createDetailAbsenMuridColumns = ({
 			const isThisRowPending =
 				isPending && variables?.muridId === currentMuridId;
 
-			// Handler saat radio button diubah
+			// Handler saat status diubah
 			const handleChange = (value: string) => {
 				if (value) {
 					mutate({
@@ -53,37 +78,66 @@ export const createDetailAbsenMuridColumns = ({
 				}
 			};
 
+			const status = row.original.status as StatusAbsenMurid | null;
+			const { text, variant } = getBadgeContent(status);
+
 			return (
-				<RadioGroup
-					// Gunakan defaultValue agar komponen ter-load dengan status dari DB
-					defaultValue={row.original.status ?? ""}
-					onValueChange={handleChange}
-					className="flex space-x-4"
-					disabled={isThisRowPending}
-				>
-					<div className="flex items-center space-x-2">
-						<RadioGroupItem
-							value={StatusAbsenMurid.HADIR}
-							id={`hadir-${row.original.muridId}`}
-						/>
-						<Label htmlFor={`hadir-${row.original.muridId}`}>Hadir</Label>
-					</div>
-					<div className="flex items-center space-x-2">
-						<RadioGroupItem
-							value={StatusAbsenMurid.ALPA}
-							id={`alpa-${row.original.muridId}`}
-						/>
-						<Label htmlFor={`alpa-${row.original.muridId}`}>Alpa</Label>
-					</div>
-					<div className="flex items-center space-x-2">
-						<RadioGroupItem
-							value={StatusAbsenMurid.OFF_SEMENTARA}
-							id={`off-${row.original.muridId}`}
-						/>
-						<Label htmlFor={`off-${row.original.muridId}`}>Off Sementara</Label>
-					</div>
-					{isThisRowPending && <Badge variant="secondary">Menyimpan...</Badge>}
-				</RadioGroup>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant={variant}
+							className={`h-7 w-9 p-0 text-xs ${status === null ? "opacity-50" : ""}`}
+							disabled={isThisRowPending}
+						>
+							{isThisRowPending ? (
+								<Loader2 className="h-3 w-3 animate-spin" />
+							) : (
+								text
+							)}
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="center">
+						<DropdownMenuItem
+							onClick={() => handleChange(StatusAbsenMurid.HADIR)}
+						>
+							<div className="flex items-center gap-2">
+								<Badge variant="default" className="w-5 justify-center">
+									H
+								</Badge>{" "}
+								Hadir
+								{status === StatusAbsenMurid.HADIR && (
+									<Check className="h-3 w-3 ml-auto" />
+								)}
+							</div>
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() => handleChange(StatusAbsenMurid.ALPA)}
+						>
+							<div className="flex items-center gap-2">
+								<Badge variant="destructive" className="w-5 justify-center">
+									A
+								</Badge>{" "}
+								Alpa
+								{status === StatusAbsenMurid.ALPA && (
+									<Check className="h-3 w-3 ml-auto" />
+								)}
+							</div>
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() => handleChange(StatusAbsenMurid.OFF_SEMENTARA)}
+						>
+							<div className="flex items-center gap-2">
+								<Badge variant="secondary" className="w-5 justify-center">
+									O
+								</Badge>{" "}
+								Off
+								{status === StatusAbsenMurid.OFF_SEMENTARA && (
+									<Check className="h-3 w-3 ml-auto" />
+								)}
+							</div>
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 			);
 		},
 	},

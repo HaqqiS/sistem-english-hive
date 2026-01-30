@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const stats = [

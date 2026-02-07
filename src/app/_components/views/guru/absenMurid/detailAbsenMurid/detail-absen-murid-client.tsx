@@ -156,22 +156,27 @@ export default function DetailAbsenMuridClient() {
 							<AlertDialogTitle>
 								{isAllMarked ? "Konfirmasi Selesai" : "Absensi Belum Lengkap"}
 							</AlertDialogTitle>
-							<AlertDialogDescription>
-								{isAllMarked ? (
-									"Semua murid telah diabsen. Anda yakin ingin kembali ke menu utama?"
-								) : (
-									<div className="space-y-2">
+							<AlertDialogDescription asChild>
+								<div>
+									{isAllMarked ? (
 										<p>
-											Terdapat <strong>{unmarkedMuridList.length}</strong> murid
-											yang belum diabsen.
+											Semua murid telah diabsen. Anda yakin ingin kembali ke
+											menu utama?
 										</p>
-										<p>
-											Murid yang tidak diabsen tidak akan tercatat datanya. Anda
-											bisa menandai sisanya sebagai <strong>Alpa</strong> secara
-											otomatis.
-										</p>
-									</div>
-								)}
+									) : (
+										<div className="space-y-2">
+											<p>
+												Terdapat <strong>{unmarkedMuridList.length}</strong>{" "}
+												murid yang belum diabsen.
+											</p>
+											<p>
+												Murid yang tidak diabsen tidak akan tercatat datanya.
+												Anda bisa menandai sisanya sebagai <strong>Alpa</strong>{" "}
+												secara otomatis.
+											</p>
+										</div>
+									)}
+								</div>
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter className="sm:space-x-2">

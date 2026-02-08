@@ -25,6 +25,14 @@ const programs = [
 		color: "text-yellow-500",
 	},
 	{
+		title: "TinyStars",
+		level: "1 - 4 Level",
+		description:
+			"Fokus pada interaksi sosial dan kemandirian melalui permainan edukatif.",
+		icon: Star,
+		color: "text-pink-500",
+	},
+	{
 		title: "PreLittleStar",
 		level: "1 - 4 Level",
 		description:

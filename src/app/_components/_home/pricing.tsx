@@ -39,7 +39,7 @@ const pricingOptions = [
 		features: [
 			"1-on-1 dengan Tutor (Eksklusif)",
 			"Materi Customized (Sesuai target)",
-			"Jadwal Fleksibel (Sesuai kesepakatan)",
+			"Jadwal (Sesuai kesepakatan)",
 			"Progress monitoring intensif",
 			"Bisa request fokus materi (Cth: Speaking)",
 			"Sertifikat & Laporan personal",

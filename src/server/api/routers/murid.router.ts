@@ -124,6 +124,9 @@ export const muridRouter = createTRPCRouter({
 											select: {
 												kodeKelas: true,
 												historyGuruKelases: {
+													where: {
+														statusGuru: "ACTIVE",
+													},
 													select: {
 														guru: {
 															select: {

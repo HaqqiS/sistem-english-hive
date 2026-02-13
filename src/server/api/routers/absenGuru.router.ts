@@ -736,16 +736,25 @@ export const absenGuruRouter = createTRPCRouter({
 		.input(
 			z.object({
 				guruId: z.string().cuid(),
-				sesiPertemuanKelasId: z.string().cuid(),
+				kelasId: z.string().cuid().optional(), // Wajib jika sesiPertemuanKelasId kosong
+				sesiPertemuanKelasId: z.string().cuid().optional(),
+				tanggalWaktu: z.date().optional(), // Wajib jika sesiPertemuanKelasId kosong
 				status: z.nativeEnum(StatusAbsenGuru),
 				isVerified: z.boolean(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			const { db, session, allowedCabangId } = ctx;
-			const { guruId, sesiPertemuanKelasId, status, isVerified } = input;
+			const {
+				guruId,
+				sesiPertemuanKelasId,
+				kelasId,
+				tanggalWaktu,
+				status,
+				isVerified,
+			} = input;
 
-			// 1. Permission Check (Admin/Manager only for manual entry)
+			// 1. Permission Check
 			if (
 				session.user.role !== UserRole.ADMIN &&
 				session.user.role !== UserRole.MANAGER
@@ -756,56 +765,159 @@ export const absenGuruRouter = createTRPCRouter({
 				});
 			}
 
-			// 2. Fetch Session & Security Check
-			const sesi = await db.sesiPertemuanKelas.findUnique({
-				where: { id: sesiPertemuanKelasId },
-				include: {
-					kelas: {
-						select: { cabangId: true },
+			// CASE A: Add Attendance to EXISTING Session
+			if (sesiPertemuanKelasId) {
+				// 2a. Fetch Session & Security Check
+				const sesi = await db.sesiPertemuanKelas.findUnique({
+					where: { id: sesiPertemuanKelasId },
+					include: {
+						kelas: {
+							select: { cabangId: true },
+						},
 					},
+				});
+
+				if (!sesi) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Sesi pertemuan tidak ditemukan.",
+					});
+				}
+
+				if (allowedCabangId && sesi.kelas.cabangId !== allowedCabangId) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Anda tidak berhak membuat absensi untuk cabang ini.",
+					});
+				}
+
+				// 3a. Create AbsensiGuru
+				try {
+					return await db.absensiGuru.create({
+						data: {
+							guruId,
+							sesiPertemuanKelasId,
+							status,
+							isVerified: isVerified,
+							verifiedById: isVerified ? session.user.id : null,
+							createdAt: sesi.tanggalWaktu, // Follow session date
+						},
+					});
+				} catch (error) {
+					if (error instanceof Prisma.PrismaClientKnownRequestError) {
+						if (error.code === "P2002") {
+							throw new TRPCError({
+								code: "CONFLICT",
+								message: "Guru ini sudah absen di sesi tersebut.",
+							});
+						}
+					}
+					throw error;
+				}
+			}
+
+			// CASE B: Create NEW Session & Attendance (Manual / Substitute / Forgotten)
+			if (!kelasId || !tanggalWaktu) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"Kelas dan Tanggal Waktu wajib diisi jika membuat sesi baru.",
+				});
+			}
+
+			// 2b. Find Default Room from Schedule & Validate Branch
+			const jadwal = await db.jadwalKelas.findFirst({
+				where: { kelasId: kelasId },
+				select: {
+					id: true,
+					ruangId: true,
+					kelas: { select: { cabangId: true } },
+					// We might want to match the Day of Week if we want to be smarter,
+					// but user requirement says just pick one.
 				},
 			});
 
-			if (!sesi) {
+			// Fallback: If no schedule, maybe check if class exists to validate branch?
+			// But requirement says "Find JadwalKelas... Throw error if no schedule/room found."
+			if (!jadwal) {
 				throw new TRPCError({
 					code: "NOT_FOUND",
-					message: "Sesi pertemuan tidak ditemukan.",
+					message:
+						"Jadwal Kelas tidak ditemukan. Tidak dapat menentukan ruangan default.",
 				});
 			}
 
-			if (allowedCabangId && sesi.kelas.cabangId !== allowedCabangId) {
+			if (allowedCabangId && jadwal.kelas.cabangId !== allowedCabangId) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
-					message: "Anda tidak berhak membuat absensi untuk cabang ini.",
+					message: "Anda tidak berhak membuat sesi untuk kelas di cabang lain.",
 				});
 			}
 
-			// 3. Create AbsensiGuru
-			// Note: createdAt MUST be equal to sesi.tanggalWaktu
-			try {
-				const newAbsensi = await db.absensiGuru.create({
+			// 3b. Transaction: Create Session -> Create Attendance -> Handle Hooks
+			const result = await db.$transaction(async (tx) => {
+				// Create Session
+				const newSesi = await tx.sesiPertemuanKelas.create({
 					data: {
-						guruId,
-						sesiPertemuanKelasId,
-						status,
-						isVerified: isVerified,
-						verifiedById: isVerified ? session.user.id : null, // Auto-verify if requested
-						createdAt: sesi.tanggalWaktu, // <--- CRITICAL REQUIREMENT
+						kelasId: kelasId,
+						ruangId: jadwal.ruangId,
+						tanggalWaktu: tanggalWaktu,
+						jadwalKelasId: jadwal.id, // Optional linkage
 					},
 				});
 
-				return newAbsensi;
-			} catch (error) {
-				if (error instanceof Prisma.PrismaClientKnownRequestError) {
-					// P2002: Unique constraint failed (Guru already absent for this session)
-					if (error.code === "P2002") {
-						throw new TRPCError({
-							code: "CONFLICT",
-							message: "Guru ini sudah memiliki absen di sesi tersebut.",
-						});
+				// Create Attendance
+				const newAbsensi = await tx.absensiGuru.create({
+					data: {
+						guruId: guruId,
+						sesiPertemuanKelasId: newSesi.id,
+						status: status,
+						isVerified: isVerified,
+						verifiedById: isVerified ? session.user.id : null,
+						createdAt: tanggalWaktu,
+					},
+				});
+
+				// === SERVICE LOGIC HANDLERS ===
+				// Hitung Total Sesi (Termasuk yang baru dibuat)
+				const totalSesi = await tx.sesiPertemuanKelas.count({
+					where: { kelasId: kelasId },
+				});
+
+				// Level Up (Sesi 20)
+				// Note: handleAutoLevelUp usually needs a full `jadwal` object with included relations.
+				// We need to fetch full jadwal or adjust the service.
+				// Let's create a 'mock' jadwal or fetch it properly if we want to support Level Up here.
+				// For safety/speed, let's re-fetch the full jadwal struct expected by service if needed.
+				// or just skip if it's too complex for "manual" entry?
+				// Plan said "Trigger handleAutoLevelUp... logic".
+				// Let's try to do it best effort.
+
+				if (totalSesi === 20 || totalSesi === 24) {
+					// We need full jadwal for auto level up
+					const fullJadwal = await tx.jadwalKelas.findUnique({
+						where: { id: jadwal.id },
+						include: {
+							kelas: {
+								include: {
+									jenisKelasRel: true,
+								},
+							},
+						},
+					});
+
+					if (fullJadwal) {
+						if (totalSesi === 20) {
+							await handleAutoLevelUp({ tx, jadwal: fullJadwal });
+						}
+						// Class Completion (Sesi 24)
+						await handleClassCompletion(tx, kelasId, totalSesi);
 					}
 				}
-				throw error;
-			}
+
+				return newAbsensi;
+			});
+
+			return result;
 		}),
 });

@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import TambahAbsensiManual from "@/app/_components/views/admin/guru/drawer/tambah-absensi-manual";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -151,6 +152,7 @@ export default function DetailGuruClient() {
 	return (
 		<div className="space-y-4">
 			<HeaderActionPortal>
+				<TambahAbsensiManual defaultGuruId={guruId} />
 				<Button variant="ghost" size="sm" onClick={handleExport}>
 					<FileSpreadsheet className="mr-2 h-4 w-4" />
 					Export Slip Gaji

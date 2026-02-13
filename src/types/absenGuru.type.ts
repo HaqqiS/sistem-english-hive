@@ -69,14 +69,41 @@ export const verifyAbsensiSchema = z.object({
 
 export const clientCreateManualAbsensiSchema = z.object({
 	guruId: z.string().cuid("Guru harus dipilih"),
-	kelasId: z.string().cuid("Kelas harus dipilih"), // For UI selection only, not sent to mutation directly
-	sesiPertemuanKelasId: z.string().cuid("Sesi harus dipilih"),
+	kelasId: z.string().cuid("Kelas harus dipilih"),
+	/**
+	 * Opsional: Jika dipilih, berarti absen susulan untuk sesi yg sudah ada.
+	 * Jika kosong, berarti buat sesi baru (kasus Lupa Absen / Kelas Pengganti Dadakan).
+	 */
+	sesiPertemuanKelasId: z.string().cuid().optional(),
 	status: z.nativeEnum(StatusAbsenGuru, {
 		required_error: "Status harus dipilih",
 	}),
 	isVerified: z.boolean(),
+	/**
+	 * Wajib diisi jika sesiPertemuanKelasId kosong (Buat Sesi Baru).
+	 * Format Date Object dari UI component.
+	 */
+	tanggalWaktu: z.date().optional(),
+	/**
+	 * Opsional: ID Guru Asli yg digantikan (jika ini kelas pengganti).
+	 * Hanya untuk UI logic agar bisa memfilter kelas milik guru asli tsb.
+	 */
+	guruAsliId: z.string().cuid().optional(),
 });
 
 export type TypeClientCreateManualAbsensiSchema = z.infer<
 	typeof clientCreateManualAbsensiSchema
+>;
+
+/**
+ * SCHEMA: FORM UI (Extended for Manual Absensi Form)
+ * Menambahkan field UI specific seperti isSubstitute dan time.
+ */
+export const manualAbsensiFormSchema = clientCreateManualAbsensiSchema.extend({
+	isSubstitute: z.boolean(),
+	time: z.string(),
+});
+
+export type TypeManualAbsensiFormSchema = z.infer<
+	typeof manualAbsensiFormSchema
 >;

@@ -30,7 +30,7 @@ interface AddDrawerProps {
 	title: string;
 	description?: string;
 	children: React.ReactNode;
-	onSubmit: () => void;
+	onSubmit: (e?: any) => void | Promise<void>;
 	isPending?: boolean;
 	submitText?: string;
 	cancelText?: string;

@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { StatusAbsenGuru } from "@prisma/client";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
@@ -10,44 +11,82 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import {
-	clientCreateManualAbsensiSchema,
+	manualAbsensiFormSchema,
 	type TypeClientCreateManualAbsensiSchema,
+	type TypeManualAbsensiFormSchema,
 } from "@/types/absenGuru.type";
 import ManualAbsensiForm from "../form/manual-absensi-form";
 
-export default function TambahAbsensiManual() {
-	const [isOpen, setIsOpen] = useState(false);
+interface TambahAbsensiManualProps {
+	defaultGuruId?: string;
+}
 
-	const form = useForm<TypeClientCreateManualAbsensiSchema>({
-		resolver: zodResolver(clientCreateManualAbsensiSchema),
+export default function TambahAbsensiManual({
+	defaultGuruId,
+}: TambahAbsensiManualProps) {
+	const [isOpen, setIsOpen] = useState(false);
+	const router = useRouter();
+
+	const form = useForm<TypeManualAbsensiFormSchema>({
+		resolver: zodResolver(manualAbsensiFormSchema),
 		defaultValues: {
-			guruId: "",
+			guruId: defaultGuruId ?? "",
 			kelasId: "",
-			sesiPertemuanKelasId: "",
 			status: StatusAbsenGuru.HADIR,
 			isVerified: true,
+			isSubstitute: false,
+			time: "09:00",
 		},
 	});
 
 	const { mutations } = useAbsenGuru({
-		onSuccessCreateManual: () => {
+		onSuccessCreateManual: (data: any) => {
+			// Get verified kelasId BEFORE reset
+			const kelasId = form.getValues("kelasId");
+
 			form.reset();
 			setIsOpen(false);
+
+			// Redirect to Sesi Detail / Kelas Sesi
+			if (data?.sesiPertemuanKelasId && kelasId) {
+				router.push(`/admin/kelas/sesi/${kelasId}`);
+			}
 		},
 	});
 
-	const onSubmit = (values: TypeClientCreateManualAbsensiSchema) => {
-		const { kelasId: _kelasId, ...payload } = values;
+	const onSubmit = (values: TypeManualAbsensiFormSchema) => {
+		const { isSubstitute, time, tanggalWaktu, guruAsliId, ...rest } = values;
+
+		const finalDate = tanggalWaktu;
+		if (finalDate && time) {
+			const [hours, minutes] = time.split(":").map(Number);
+			if (hours !== undefined && minutes !== undefined) {
+				finalDate.setHours(hours, minutes);
+			}
+		}
+
+		// Prepare Payload
+		const payload: TypeClientCreateManualAbsensiSchema = {
+			...rest,
+			tanggalWaktu: finalDate,
+			// If not substitute, clean guruAsliId? It's optional anyway.
+			// The router doesn't use guruAsliId, it uses guruId.
+			// If isSubstitute is TRUE, guruId IS the attendee (which is correct).
+			// If isSubstitute is FALSE, guruId IS the attendee (which is correct).
+			// We just need to make sure we don't send garbage.
+			guruAsliId: isSubstitute ? guruAsliId : undefined,
+		};
+
 		mutations.createManual.mutate(payload);
 	};
 
 	return (
 		<AddDrawer
 			title="Buat Absensi Manual"
-			description="Buat absensi guru secara manual untuk sesi yang belum ada datanya."
+			description="Buat absensi guru secara manual untuk sesi yang terlupakan atau guru pengganti."
 			onSubmit={form.handleSubmit(onSubmit)}
 			isPending={mutations.createManual.isPending}
-			submitText="Simpan Absensi"
+			submitText="Simpan & Buka Sesi"
 			cancelText="Batal"
 			trigger={
 				<Button>
@@ -59,7 +98,7 @@ export default function TambahAbsensiManual() {
 			onOpenChange={setIsOpen}
 		>
 			<Form {...form}>
-				<ManualAbsensiForm onSubmit={onSubmit} />
+				<ManualAbsensiForm onSubmit={onSubmit} defaultGuruId={defaultGuruId} />
 			</Form>
 		</AddDrawer>
 	);

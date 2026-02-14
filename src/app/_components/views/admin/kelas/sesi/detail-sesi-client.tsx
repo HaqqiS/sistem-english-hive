@@ -211,7 +211,7 @@ export default function DetailSesiClient() {
 								<TableRow>
 									<TableHead
 										rowSpan={3}
-										className="bg-muted sticky left-0 min-w-40 border-r align-middle"
+										className="bg-muted sticky left-0 min-w-40 border-r align-middle z-20"
 									>
 										Nama Siswa
 									</TableHead>
@@ -283,7 +283,7 @@ export default function DetailSesiClient() {
 								{rowData.map((row) => (
 									<TableRow key={row.studentId}>
 										{/* Kolom Nama Siswa (Sticky) */}
-										<TableCell className="bg-background sticky left-0 border-r font-medium text-sm">
+										<TableCell className="bg-background sticky left-0 border-r font-medium text-sm z-20">
 											{row.namaSiswa}
 										</TableCell>
 

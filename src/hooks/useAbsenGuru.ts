@@ -6,6 +6,7 @@ import { api } from "@/trpc/react";
 import type {
 	TypeAbsensiGuruHistory,
 	TypeAbsensiGuruPaginated,
+	TypeCreateManualAbsensiData,
 } from "@/types/absenGuru.type";
 
 interface UseGuruOptions {
@@ -17,7 +18,7 @@ interface UseGuruOptions {
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
 	onSuccessStartSesi?: (newSesiId: string, isFinished: boolean) => void;
-	onSuccessCreateManual?: (data?: any) => void;
+	onSuccessCreateManual?: (data: TypeCreateManualAbsensiData) => void;
 	onSuccessUpdate?: () => void;
 	onSuccessUpdateStatus?: () => void;
 	onSuccessDelete?: () => void;

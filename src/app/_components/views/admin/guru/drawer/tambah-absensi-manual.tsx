@@ -13,6 +13,7 @@ import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import {
 	manualAbsensiFormSchema,
 	type TypeClientCreateManualAbsensiSchema,
+	type TypeCreateManualAbsensiData,
 	type TypeManualAbsensiFormSchema,
 } from "@/types/absenGuru.type";
 import ManualAbsensiForm from "../form/manual-absensi-form";
@@ -40,7 +41,7 @@ export default function TambahAbsensiManual({
 	});
 
 	const { mutations } = useAbsenGuru({
-		onSuccessCreateManual: (data: any) => {
+		onSuccessCreateManual: (data: TypeCreateManualAbsensiData) => {
 			// Get verified kelasId BEFORE reset
 			const kelasId = form.getValues("kelasId");
 

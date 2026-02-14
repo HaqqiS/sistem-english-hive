@@ -107,3 +107,7 @@ export const manualAbsensiFormSchema = clientCreateManualAbsensiSchema.extend({
 export type TypeManualAbsensiFormSchema = z.infer<
 	typeof manualAbsensiFormSchema
 >;
+
+/** Tipe Return dari Mutation Create Manual Absensi */
+export type TypeCreateManualAbsensiData =
+	RouterOutputs["absenGuru"]["createManualAbsensi"];

@@ -142,7 +142,7 @@ export default function ManualAbsensiForm({
 								onCheckedChange={(val) => {
 									field.onChange(val);
 									// Reset related fields
-									form.setValue("guruAsliId", "");
+									form.setValue("guruAsliId", undefined);
 									form.setValue("kelasId", "");
 								}}
 							/>

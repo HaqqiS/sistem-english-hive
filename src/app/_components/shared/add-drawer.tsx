@@ -2,6 +2,7 @@
 "use client";
 
 import { Loader2, Plus } from "lucide-react";
+import type React from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -30,7 +31,7 @@ interface AddDrawerProps {
 	title: string;
 	description?: string;
 	children: React.ReactNode;
-	onSubmit: (e?: any) => void | Promise<void>;
+	onSubmit: (e?: React.SyntheticEvent) => void | Promise<void>;
 	isPending?: boolean;
 	submitText?: string;
 	cancelText?: string;

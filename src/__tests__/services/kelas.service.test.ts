@@ -1,7 +1,7 @@
 import type {
 	HistoryGuruKelas,
 	JadwalKelas,
-	JenisKelas,
+	JenisKelasModel,
 	Kelas,
 	PendaftaranKelas,
 	PrismaClient,
@@ -56,7 +56,7 @@ describe("Kelas Service", () => {
 	describe("handleAutoLevelUp", () => {
 		// Types for Mocks
 		type MockKelasWithRelations = Kelas & {
-			jenisKelasRel: JenisKelas & { nextLevel: JenisKelas | null };
+			jenisKelasRel: JenisKelasModel & { nextLevel: JenisKelasModel | null };
 		};
 
 		it("should return null if class or master data not found", async () => {

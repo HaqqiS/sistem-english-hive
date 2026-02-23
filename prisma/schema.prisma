@@ -8,19 +8,6 @@ datasource db {
     url       = env("DATABASE_URL")
 }
 
-// test trpc
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([createdById])
-    @@index([name])
-}
 
 // Necessary for Next auth
 model Account {
@@ -75,7 +62,6 @@ model User {
 
     accounts Account[]
     sessions Session[]
-    posts    Post[]
 
     absensiGurus            AbsensiGuru[]      @relation("guruRelation")
     absenDiverifikasis      AbsensiGuru[]      @relation("verifiedByRelation")
@@ -241,17 +227,6 @@ model Murid {
 enum TipeKelas {
     REGULAR
     PRIVATE
-}
-
-enum JenisKelas {
-    TinyTods
-    TinyStar
-    PreLittleStar
-    LittleStar
-    RisingStar
-    PreShiningStar
-    ShiningStar
-    Elementary
 }
 
 model JenisKelasModel {

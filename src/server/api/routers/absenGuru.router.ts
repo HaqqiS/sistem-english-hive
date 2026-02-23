@@ -392,51 +392,54 @@ export const absenGuruRouter = createTRPCRouter({
 				const tanggalWaktuSesi = dayjs().tz(TIMEZONE_BISNIS).toDate();
 
 				// 4. Transaction: Buat Sesi -> Cek Level Up -> Cek Finish
-				const result = await db.$transaction(async (tx) => {
-					// 4a. Buat SesiPertemuanKelas (Realisasi)
-					const newSesi = await tx.sesiPertemuanKelas.create({
-						data: {
-							kelasId: jadwal.kelasId,
-							ruangId: finalRuangId,
-							tanggalWaktu: tanggalWaktuSesi,
-							jadwalKelasId: jadwalKelasId,
-						},
-						select: { id: true },
-					});
+				const result = await db.$transaction(
+					async (tx) => {
+						// 4a. Buat SesiPertemuanKelas (Realisasi)
+						const newSesi = await tx.sesiPertemuanKelas.create({
+							data: {
+								kelasId: jadwal.kelasId,
+								ruangId: finalRuangId,
+								tanggalWaktu: tanggalWaktuSesi,
+								jadwalKelasId: jadwalKelasId,
+							},
+							select: { id: true },
+						});
 
-					// 4b. Buat AbsensiGuru
-					await tx.absensiGuru.create({
-						data: {
-							guruId,
-							sesiPertemuanKelasId: newSesi.id,
-							status,
-							isVerified: false,
-						},
-					});
+						// 4b. Buat AbsensiGuru
+						await tx.absensiGuru.create({
+							data: {
+								guruId,
+								sesiPertemuanKelasId: newSesi.id,
+								status,
+								isVerified: false,
+							},
+						});
 
-					// Hitung Total Sesi (Termasuk yang baru dibuat)
-					const totalSesi = await tx.sesiPertemuanKelas.count({
-						where: { kelasId: jadwal.kelasId },
-					});
+						// Hitung Total Sesi (Termasuk yang baru dibuat)
+						const totalSesi = await tx.sesiPertemuanKelas.count({
+							where: { kelasId: jadwal.kelasId },
+						});
 
-					// === SERVICE CALL: LEVEL UP (Trigger di Sesi 20) ===
-					if (totalSesi === 20) {
-						await handleAutoLevelUp({ tx, jadwal });
-					}
+						// === SERVICE CALL: LEVEL UP (Trigger di Sesi 20) ===
+						if (totalSesi === 20) {
+							await handleAutoLevelUp({ tx, jadwal });
+						}
 
-					// === SERVICE CALL: CLASS COMPLETION (Trigger di Sesi 24) ===
-					const isFinished = await handleClassCompletion(
-						tx,
-						jadwal.kelasId,
-						totalSesi,
-					);
+						// === SERVICE CALL: CLASS COMPLETION (Trigger di Sesi 24) ===
+						const isFinished = await handleClassCompletion(
+							tx,
+							jadwal.kelasId,
+							totalSesi,
+						);
 
-					return {
-						newSesiId: newSesi.id,
-						absensiId: null,
-						isFinished: isFinished,
-					};
-				});
+						return {
+							newSesiId: newSesi.id,
+							absensiId: null,
+							isFinished: isFinished,
+						};
+					},
+					{ timeout: 20000 },
+				); // Tambah timeout ke 20 detik karena create banyak tagihan dan data
 
 				return result;
 			} catch (error) {

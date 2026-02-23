@@ -76,21 +76,23 @@ export const handleAutoLevelUp = async ({
 	const oldKode = currentClass.kodeKelas;
 
 	// Logic replace string kode kelas
-	// Replace JenisKelas Name in string if changed
+	// Replace JenisKelas Name in string if changed (case-insensitive)
 	let newKodeKelas = oldKode;
+
+	const escapeRegExp = (str: string) =>
+		str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+	const oldNameStr = `${currentClass.jenisKelasRel.nama} ${currentClass.level}`;
+	const oldNameRegex = new RegExp(escapeRegExp(oldNameStr), "i");
 
 	if (nextJenisKelasId !== currentClass.jenisKelasRel.id) {
 		// Replace Old Name with New Name
-		newKodeKelas = newKodeKelas.replace(
-			`${currentClass.jenisKelasRel.nama} ${currentClass.level}`,
-			`${nextJenisKelasNama} ${nextLevel}`,
-		);
+		const newNameStr = `${nextJenisKelasNama} ${nextLevel}`.toUpperCase();
+		newKodeKelas = newKodeKelas.replace(oldNameRegex, newNameStr);
 	} else {
 		// Just increment level
-		newKodeKelas = newKodeKelas.replace(
-			`${currentClass.jenisKelasRel.nama} ${currentClass.level}`,
-			`${currentClass.jenisKelasRel.nama} ${nextLevel}`,
-		);
+		const newNameStr =
+			`${currentClass.jenisKelasRel.nama} ${nextLevel}`.toUpperCase();
+		newKodeKelas = newKodeKelas.replace(oldNameRegex, newNameStr);
 	}
 
 	newKodeKelas = newKodeKelas.replace(

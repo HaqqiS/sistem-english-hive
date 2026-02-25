@@ -27,4 +27,12 @@ export const updateSesiPertemuanSchema = z.object({
 	}),
 });
 
+export const deleteSesiPertemuanSchema = z.object({
+	id: z.string().min(1, "ID Sesi harus diisi"),
+});
+
+export type TypeDeleteSesiPertemuanSchema = z.infer<
+	typeof deleteSesiPertemuanSchema
+>;
+
 export const serverSesiPertemuanSchema = baseSesiPertemuanSchema;

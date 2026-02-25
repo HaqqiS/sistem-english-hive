@@ -71,6 +71,16 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
 	});
 
 	// DELETE
+	const deleteMutation = api.sesiPertemuan.deleteSesiPertemuan.useMutation({
+		onSuccess: async () => {
+			await invalidateSesi();
+			toast.success("Sesi Pertemuan berhasil dihapus");
+			options?.onSuccessDelete?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal menghapus Sesi Pertemuan: ${error.message}`);
+		},
+	});
 
 	return {
 		// Query results
@@ -91,6 +101,11 @@ export function useSesiPertemuan(options?: UseSesiPertemuanOptions) {
 				mutate: updateMutation.mutate,
 				mutateAsync: updateMutation.mutateAsync,
 				isPending: updateMutation.isPending,
+			},
+			delete: {
+				mutate: deleteMutation.mutate,
+				mutateAsync: deleteMutation.mutateAsync,
+				isPending: deleteMutation.isPending,
 			},
 		},
 

@@ -1,11 +1,28 @@
 "use client";
 
 import { StatusAbsenMurid } from "@prisma/client";
-import { AlertCircle, Check, Edit, FileText, Loader2 } from "lucide-react";
+import {
+	AlertCircle,
+	Check,
+	Edit,
+	FileText,
+	Loader2,
+	Trash2,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,6 +99,10 @@ export default function DetailSesiClient() {
 	// Format string untuk input datetime-local: "YYYY-MM-DDTHH:mm"
 	const [editDateValue, setEditDateValue] = useState<string>("");
 
+	// Delete Alert State
+	const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+	const [deletingSesiId, setDeletingSesiId] = useState<string | null>(null);
+
 	// 1. Ambil data summary menggunakan hook
 	const {
 		dataSummary,
@@ -132,6 +153,22 @@ export default function DetailSesiClient() {
 
 			setIsEditDialogOpen(false);
 			setEditingSesiId(null);
+		} catch (_error) {
+			// Error handled in hook
+		}
+	};
+
+	const handleDeleteClick = (sesiId: string) => {
+		setDeletingSesiId(sesiId);
+		setIsDeleteAlertOpen(true);
+	};
+
+	const handleConfirmDelete = async () => {
+		if (!deletingSesiId) return;
+		try {
+			await mutations.delete.mutateAsync({ id: deletingSesiId });
+			setIsDeleteAlertOpen(false);
+			setDeletingSesiId(null);
 		} catch (_error) {
 			// Error handled in hook
 		}
@@ -236,20 +273,30 @@ export default function DetailSesiClient() {
 													</TooltipContent>
 												</Tooltip>
 
-												{/* Edit Button */}
-												<Button
-													variant="ghost"
-													size="icon"
-													className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-													onClick={() =>
-														handleEditDateClick(
-															col.sesiId,
-															new Date(col.tanggal),
-														)
-													}
-												>
-													<Edit className="h-3 w-3" />
-												</Button>
+												{/* Edit & Delete Buttons */}
+												<div className="flex flex-row gap-0.5">
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+														onClick={() =>
+															handleEditDateClick(
+																col.sesiId,
+																new Date(col.tanggal),
+															)
+														}
+													>
+														<Edit className="h-3 w-3" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+														onClick={() => handleDeleteClick(col.sesiId)}
+													>
+														<Trash2 className="h-3 w-3" />
+													</Button>
+												</div>
 											</div>
 										</TableHead>
 									))}
@@ -437,6 +484,41 @@ export default function DetailSesiClient() {
 						</DialogFooter>
 					</DialogContent>
 				</Dialog>
+
+				{/* Alert Dialog Konfirmasi Hapus Sesi */}
+				<AlertDialog
+					open={isDeleteAlertOpen}
+					onOpenChange={setIsDeleteAlertOpen}
+				>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Hapus Sesi Pertemuan?</AlertDialogTitle>
+							<AlertDialogDescription>
+								Tindakan ini tidak dapat dibatalkan. Sesi pertemuan beserta
+								seluruh data absensi di dalamnya akan dihapus secara permanen.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel disabled={mutations.delete.isPending}>
+								Batal
+							</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={handleConfirmDelete}
+								disabled={mutations.delete.isPending}
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							>
+								{mutations.delete.isPending ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Menghapus...
+									</>
+								) : (
+									"Ya, Hapus"
+								)}
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			</Card>
 		</TooltipProvider>
 	);

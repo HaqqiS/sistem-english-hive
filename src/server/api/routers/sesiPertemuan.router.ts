@@ -2,6 +2,7 @@ import { Prisma, type StatusAbsenMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import {
+	deleteSesiPertemuanSchema,
 	serverSesiPertemuanSchema,
 	updateSesiPertemuanSchema,
 } from "@/types/sesiPertemuan.schema";
@@ -271,6 +272,40 @@ export const sesiPertemuanRouter = createTRPCRouter({
 				data: {
 					tanggalWaktu: input.tanggalWaktu,
 				},
+			});
+		}),
+
+	deleteSesiPertemuan: cabangProtectedProcedure
+		.input(deleteSesiPertemuanSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			// 1. Cari sesi & validasi kepemilikan cabang
+			const existingSession = await db.sesiPertemuanKelas.findUnique({
+				where: { id: input.id },
+				include: { kelas: { select: { cabangId: true } } },
+			});
+
+			if (!existingSession) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Sesi pertemuan tidak ditemukan.",
+				});
+			}
+
+			if (
+				allowedCabangId &&
+				existingSession.kelas.cabangId !== allowedCabangId
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak menghapus sesi di cabang ini.",
+				});
+			}
+
+			// 2. Hapus (absensi murid & guru akan cascade delete via Prisma relation)
+			return await db.sesiPertemuanKelas.delete({
+				where: { id: input.id },
 			});
 		}),
 });

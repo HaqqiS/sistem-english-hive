@@ -135,6 +135,10 @@ export default function TagihanLainTab({
 		setEditDialogOpen(true);
 	};
 
+	const handleUpdateDeskripsi = (id: string, deskripsi: string | null) => {
+		mutations.update.mutate({ id, deskripsi });
+	};
+
 	const handleExport = async () => {
 		const toastId = toast.loading("Sedang mengunduh data...");
 		try {
@@ -168,6 +172,7 @@ export default function TagihanLainTab({
 		onDeleteClick: handleDeleteClick,
 		onEditClick: handleEditClick,
 		onVerifyClick: handleVerifyClick,
+		onUpdateDeskripsi: handleUpdateDeskripsi,
 	});
 
 	return (

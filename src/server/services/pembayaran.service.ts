@@ -32,6 +32,7 @@ type BillingStatus = {
 	sisaPertemuan: number;
 	needNewBill: boolean;
 	nextBillPembayaranKe: number;
+	nextBillAmount: number; // Nominal tagihan berikutnya (memperhitungkan kelebihan bayar)
 	pendaftaranData: PendaftaranWithRelations;
 	hargaPerSesi: number;
 	paketPertemuan: number;
@@ -73,6 +74,7 @@ export const calculateSisaPertemuan = async (
 			sisaPertemuan: 999, // Unlimited
 			needNewBill: false,
 			nextBillPembayaranKe: 0,
+			nextBillAmount: 0,
 			pendaftaranData: pendaftaran,
 			hargaPerSesi: 0,
 			paketPertemuan,
@@ -197,6 +199,13 @@ export const calculateSisaPertemuan = async (
 		nextBillPembayaranKe = maxPembayaranKe + 1;
 	}
 
+	// --- HITUNG NOMINAL TAGIHAN BERIKUTNYA (dengan kredit kelebihan bayar) ---
+	// Formula: jika total uang masuk tidak habis dibagi hargaBlok (ada sisa/kelebihan),
+	// maka tagihan berikutnya dikurangi sisa tersebut.
+	const hargaBlok = hargaPerSesi * paketPertemuan;
+	const sisaKredit = hargaBlok > 0 ? totalUangMasuk % hargaBlok : 0;
+	const nextBillAmount = sisaKredit > 0 ? hargaBlok - sisaKredit : hargaBlok;
+
 	// // Jika sisa pertemuan sudah sedikit (<= BATAS)
 	// if (sisaPertemuan <= BATAS_SISA_UNTUK_TAGIHAN) {
 	//   // --- LOGIKA BARU: CEK BERDASARKAN JUMLAH TAGIHAN YANG ADA ---
@@ -234,6 +243,7 @@ export const calculateSisaPertemuan = async (
 		sisaPertemuan,
 		needNewBill,
 		nextBillPembayaranKe,
+		nextBillAmount,
 		pendaftaranData: pendaftaran,
 		hargaPerSesi,
 		paketPertemuan,

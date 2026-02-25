@@ -6,10 +6,7 @@ import {
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
-import {
-	BATAS_SISA_UNTUK_TAGIHAN,
-	JUMLAH_PERTEMUAN_PER_BLOK,
-} from "@/constants/pembayaran";
+import { BATAS_SISA_UNTUK_TAGIHAN } from "@/constants/pembayaran";
 import {
 	calculateSisaPertemuan,
 	generateTagihan,
@@ -261,10 +258,9 @@ export const absenMuridRouter = createTRPCRouter({
 							}
 
 							// Buat Tagihan Baru
-							const harga = billingStatus.hargaPerSesi ?? 0;
-							const paket =
-								billingStatus.paketPertemuan ?? JUMLAH_PERTEMUAN_PER_BLOK;
-							const totalTagihan = harga * paket;
+							// nextBillAmount sudah memperhitungkan kelebihan bayar sebelumnya
+							// Contoh: jika ke-2 bayar 420k (lebih 120k dari 300k), maka ke-3 = 300k - 120k = 180k
+							const totalTagihan = billingStatus.nextBillAmount;
 							const jatuhTempo = dayjs().add(7, "day").toDate();
 
 							await generateTagihan(db, {
@@ -272,7 +268,7 @@ export const absenMuridRouter = createTRPCRouter({
 								pembayaranKe: billingStatus.nextBillPembayaranKe,
 								jumlahBayar: totalTagihan,
 								jatuhTempo: jatuhTempo,
-								note: `Auto-Generate: Kuota sisa ${billingStatus.sisaPertemuan}. Paket ${paket} Sesi berikutnya.`,
+								note: `Auto-Generate: Kuota sisa ${billingStatus.sisaPertemuan}. Tagihan berikutnya Rp ${billingStatus.nextBillAmount.toLocaleString("id-ID")}.`,
 							});
 						} else {
 							// [CLEANUP] Jika revisi absen membuat kuota kembali aman

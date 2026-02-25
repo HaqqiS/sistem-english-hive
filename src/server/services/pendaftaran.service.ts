@@ -30,6 +30,7 @@ interface CreatePendaftaranParams {
 	kelas: {
 		hargaKelas: number;
 		hargaBuku?: number; // Optional, default 150k
+		jenisKelasNama?: string;
 		cohortId: string;
 		level: number;
 	};
@@ -47,6 +48,7 @@ interface CreateBulkPendaftaranParams {
 	kelas: {
 		hargaKelas: number;
 		hargaBuku?: number; // Optional, default 150k
+		jenisKelasNama?: string;
 		cohortId: string;
 		level: number;
 	};
@@ -119,7 +121,7 @@ export const createPendaftaran = async ({
 						muridId: input.muridId,
 						kelasId: input.kelasId,
 						kategori: KategoriTagihan.BUKU,
-						judul: `Tagihan Buku ${kelas.level}`,
+						judul: `Buku ${kelas.jenisKelasNama} Level ${kelas.level}`,
 						deskripsi: `Auto-Generate Pendaftaran`,
 						jumlah: hargaBuku,
 						status: StatusPembayaran.BELUM_LUNAS,
@@ -332,7 +334,7 @@ export const createBulkPendaftaran = async ({
 						muridId,
 						kelasId,
 						kategori: KategoriTagihan.BUKU,
-						judul: `Tagihan Buku ${kelas.level}`,
+						judul: `Buku ${kelas.jenisKelasNama} Level ${kelas.level}`,
 						deskripsi: "Auto-Generate Bulk Pendaftaran",
 						jumlah: hargaBuku,
 						status: StatusPembayaran.BELUM_LUNAS,

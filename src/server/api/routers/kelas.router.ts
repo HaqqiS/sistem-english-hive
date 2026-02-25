@@ -409,8 +409,9 @@ export const kelasRouter = createTRPCRouter({
 					const hasPembayaran = await db.pembayaran.findFirst({
 						where: {
 							pendaftaranKelas: { kelasId: input.id },
+							statusBayar: StatusPembayaran.LUNAS,
 						},
-						select: { id: true }, // Cukup ambil ID untuk efisiensi
+						select: { id: true, statusBayar: true }, // Cukup ambil ID untuk efisiensi
 					});
 
 					// Opsi tambahan: Cek apakah sudah ada sesi berjalan

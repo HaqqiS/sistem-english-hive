@@ -124,7 +124,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						cohortId: true,
 						level: true,
 						jenisKelasRel: {
-							select: { hargaBuku: true },
+							select: { hargaBuku: true, nama: true },
 						},
 					},
 				}),
@@ -141,6 +141,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 			const preparedKelas = {
 				...kelas,
 				hargaBuku: kelas.jenisKelasRel?.hargaBuku ?? 0,
+				jenisKelasNama: kelas.jenisKelasRel?.nama ?? "",
 			};
 
 			// 2. Validasi Konsistensi Data (Murid & Kelas harus satu cabang)
@@ -264,7 +265,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					level: true,
 					cohortId: true,
 					jenisKelasRel: {
-						select: { hargaBuku: true },
+						select: { hargaBuku: true, nama: true },
 					},
 				},
 			});
@@ -277,6 +278,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 			const preparedKelas = {
 				...kelas,
 				hargaBuku: kelas.jenisKelasRel?.hargaBuku ?? 0,
+				jenisKelasNama: kelas.jenisKelasRel?.nama ?? "",
 			};
 
 			// Security Check
@@ -661,7 +663,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							hargaKelas: true,
 							cabangId: true,
 							jenisKelasRel: {
-								select: { hargaBuku: true },
+								select: { hargaBuku: true, nama: true },
 							},
 						},
 					},
@@ -759,7 +761,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 											muridId: p.muridId,
 											kelasId: p.kelasId,
 											kategori: "BUKU",
-											judul: `Tagihan Buku ${p.Kelas.level}`,
+											judul: `Buku ${p.Kelas.jenisKelasRel?.nama} Level ${p.Kelas.level}`,
 											deskripsi: "Auto-Generate Bulk Activation Status",
 											jumlah: hargaBuku,
 											status: StatusPembayaran.BELUM_LUNAS,

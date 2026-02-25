@@ -65,7 +65,8 @@ model User {
 
     absensiGurus            AbsensiGuru[]      @relation("guruRelation")
     absenDiverifikasis      AbsensiGuru[]      @relation("verifiedByRelation")
-    pembayaranDiverifikasis Pembayaran[]
+    pembayaranDiverifikasis     Pembayaran[]
+    tagihanLainDiverifikasis    TagihanLain[]
     historyGuruKelases      HistoryGuruKelas[]
 
     @@index([role])
@@ -468,7 +469,11 @@ model TagihanLain {
     judul     String
     deskripsi String?
     jumlah    Int
-    status    StatusPembayaran @default(BELUM_LUNAS)
+    status       StatusPembayaran @default(BELUM_LUNAS)
+    tanggalBayar DateTime?
+
+    verifiedById String?
+    verifiedBy   User?   @relation(fields: [verifiedById], references: [id], onDelete: SetNull)
 
     // Opsional: Link ke Kelas jika tagihan ini muncul karena masuk kelas tertentu
     kelasId String?
@@ -479,4 +484,5 @@ model TagihanLain {
 
     @@index([muridId])
     @@index([kelasId])
+    @@index([verifiedById])
 }

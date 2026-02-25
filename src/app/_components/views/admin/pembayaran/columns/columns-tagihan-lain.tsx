@@ -462,7 +462,7 @@ export const columnsTagihanLainGlobal = ({
 				variant="ghost"
 				onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 			>
-				Tanggal
+				Tanggal Dibuat
 				<ArrowUpDown className="ml-2 h-4 w-4" />
 			</Button>
 		),
@@ -471,7 +471,36 @@ export const columnsTagihanLainGlobal = ({
 			return <span className="text-sm">{formattedDate}</span>;
 		},
 	},
-	// Deskripsi / Status Buku
+
+	// Tanggal Bayar & Verifikasi (gabungan)
+	{
+		id: "tanggal",
+		header: "Bayar / Verif",
+		cell: ({ row }) => {
+			const tanggalBayar = row.original.tanggalBayar;
+			const verifiedByName = row.original.verifiedBy?.name;
+			return (
+				<div className="flex flex-col gap-1 text-sm">
+					<div className="flex items-center gap-2">
+						<span className="text-muted-foreground w-12 text-xs">Bayar:</span>
+						{tanggalBayar ? (
+							<span className="font-medium text-green-600">
+								{formatDateWITA(tanggalBayar)}
+							</span>
+						) : (
+							<span className="text-muted-foreground italic">-</span>
+						)}
+					</div>
+					{verifiedByName && (
+						<span className="text-muted-foreground text-[10px]">
+							Verif: {verifiedByName}
+						</span>
+					)}
+				</div>
+			);
+		},
+	},
+
 	{
 		accessorKey: "deskripsi",
 		header: "Deskripsi",

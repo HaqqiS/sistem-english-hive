@@ -154,6 +154,10 @@ export default function TagihanLainTab({
 				"Jumlah (Rp)": item.jumlah,
 				Status: item.status,
 				"Dibuat Pada": formatDateToYYYYMMDD(item.createdAt),
+				"Tgl. Bayar": item.tanggalBayar
+					? formatDateToYYYYMMDD(item.tanggalBayar)
+					: "-",
+				"Diverifikasi Oleh": item.verifiedBy?.name ?? "-",
 				Deskripsi: item.deskripsi ?? "-",
 			}));
 

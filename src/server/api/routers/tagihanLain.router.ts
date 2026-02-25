@@ -44,6 +44,7 @@ export const tagihanLainRouter = createTRPCRouter({
 						},
 					},
 					kelas: { select: { kodeKelas: true, hargaKelas: true } },
+					verifiedBy: { select: { name: true } },
 				},
 			});
 		}),
@@ -161,6 +162,7 @@ export const tagihanLainRouter = createTRPCRouter({
 						},
 					},
 					kelas: { select: { kodeKelas: true, hargaKelas: true } },
+					verifiedBy: { select: { name: true } },
 				},
 			});
 		}),
@@ -236,6 +238,8 @@ export const tagihanLainRouter = createTRPCRouter({
 				where: { id: input.id },
 				data: {
 					status: "LUNAS",
+					tanggalBayar: new Date(),
+					verifiedById: ctx.session.user.id,
 				},
 			});
 		}),
@@ -273,6 +277,10 @@ export const tagihanLainRouter = createTRPCRouter({
 					deskripsi: input.deskripsi,
 					status: input.status,
 					kelasId: input.kelasId,
+					// Bersihkan audit trail jika status dikembalikan ke belum lunas
+					...(input.status === "BELUM_LUNAS" || input.status === "PENDING"
+						? { tanggalBayar: null, verifiedById: null }
+						: {}),
 				},
 			});
 		}),
@@ -370,6 +378,7 @@ export const tagihanLainRouter = createTRPCRouter({
 						},
 					},
 					kelas: { select: { kodeKelas: true, hargaKelas: true } },
+					verifiedBy: { select: { name: true } },
 				},
 			});
 		}),
@@ -438,6 +447,7 @@ async function getPaginatedTagihan(
 					},
 				},
 				kelas: { select: { kodeKelas: true, hargaKelas: true } },
+				verifiedBy: { select: { name: true } },
 			},
 		}),
 	]);

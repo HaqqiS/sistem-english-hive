@@ -261,16 +261,16 @@ export const dashboardRouter = createTRPCRouter({
 
 			const otherBills = await db.tagihanLain.findMany({
 				where: {
-					updatedAt: { gte: sixMonthsAgo },
+					tanggalBayar: { gte: sixMonthsAgo },
 					status: StatusPembayaran.LUNAS,
 					murid: filterCabangId ? { cabangId: filterCabangId } : undefined,
 				},
 				select: {
-					updatedAt: true,
+					tanggalBayar: true,
 					jumlah: true,
 					kategori: true,
 				},
-				orderBy: { updatedAt: "asc" },
+				orderBy: { tanggalBayar: "asc" },
 			});
 
 			const grouped = new Map<
@@ -298,7 +298,8 @@ export const dashboardRouter = createTRPCRouter({
 
 			// Aggregate Other Bills (Buku & Registrasi)
 			for (const bill of otherBills) {
-				const key = dayjs(bill.updatedAt).format("MMM YYYY");
+				if (!bill.tanggalBayar) continue;
+				const key = dayjs(bill.tanggalBayar).format("MMM YYYY");
 				if (grouped.has(key)) {
 					const curr = grouped.get(key);
 					if (!curr) continue;
@@ -308,8 +309,6 @@ export const dashboardRouter = createTRPCRouter({
 					} else if (bill.kategori === KategoriTagihan.REGISTRASI) {
 						curr.registration += bill.jumlah;
 					}
-					// Note: If LAINNYA exists, it usually adds to total but maybe not specific category here unless requested.
-					// Current logic: total includes everything, breakdwon specific.
 					grouped.set(key, curr);
 				}
 			}

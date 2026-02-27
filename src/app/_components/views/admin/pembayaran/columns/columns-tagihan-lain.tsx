@@ -77,6 +77,7 @@ interface ColumnsConfig {
 	onDeleteClick: (item: TypeTagihanLain) => void;
 	onVerifyClick: (item: TypeTagihanLain) => void;
 	onUpdateDeskripsi?: (id: string, deskripsi: string | null) => void;
+	isBuku?: boolean;
 }
 
 const getStatusBadgeVariant = (
@@ -335,6 +336,7 @@ export const columnsTagihanLainGlobal = ({
 	onDeleteClick,
 	onVerifyClick,
 	onUpdateDeskripsi,
+	isBuku,
 }: ColumnsConfig): ColumnDef<TypeTagihanLain>[] => [
 	// Checkbox selection
 	{
@@ -503,7 +505,46 @@ export const columnsTagihanLainGlobal = ({
 
 	{
 		accessorKey: "deskripsi",
-		header: "Deskripsi",
+		header: ({ column }) => {
+			if (!isBuku) return "Deskripsi";
+
+			const filterValue = column.getFilterValue() as string;
+
+			return (
+				<div className="flex items-center gap-2">
+					<Select
+						value={filterValue ?? "ALL"}
+						onValueChange={(val) =>
+							column.setFilterValue(val === "ALL" ? undefined : val)
+						}
+					>
+						<SelectTrigger className="h-8 border-dashed bg-transparent w-[140px] text-xs">
+							<div className="flex items-center gap-2">
+								<span className="text-muted-foreground mr-1">Status:</span>
+								<SelectValue placeholder="Semua" />
+							</div>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="ALL" className="text-xs">
+								Semua Status
+							</SelectItem>
+							{DESKRIPSI_BUKU_OPTIONS.map((opt) => (
+								<SelectItem
+									key={opt.value}
+									value={opt.value}
+									className="text-xs"
+								>
+									<div className="flex items-center gap-2">
+										<opt.Icon className={`h-3.5 w-3.5 ${opt.colorClass}`} />
+										{opt.label}
+									</div>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+			);
+		},
 		cell: ({ row }) => {
 			const isBuku = row.original.kategori === "BUKU";
 			const deskripsi = row.original.deskripsi;

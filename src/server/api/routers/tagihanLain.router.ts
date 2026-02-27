@@ -56,6 +56,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				status: z.nativeEnum(StatusPembayaran).optional(),
 				muridId: z.string().optional(),
 				search: z.string().optional(),
+				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				sorting: z
 					.array(
@@ -80,6 +81,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				status: z.nativeEnum(StatusPembayaran).optional(),
 				muridId: z.string().optional(),
 				search: z.string().optional(),
+				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				sorting: z
 					.array(
@@ -104,6 +106,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				status: z.nativeEnum(StatusPembayaran).optional(),
 				muridId: z.string().optional(),
 				search: z.string().optional(),
+				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				sorting: z
 					.array(
@@ -323,6 +326,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				status: z.nativeEnum(StatusPembayaran).optional(),
 				muridId: z.string().optional(),
 				search: z.string().optional(),
+				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				sorting: z
 					.array(
@@ -342,6 +346,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				cabangId: filterCabangId,
 				muridId: input.muridId,
 				status: input.status,
+				deskripsi: input.deskripsi,
 				kategori: input.kategori,
 				search: input.search,
 			});
@@ -391,6 +396,7 @@ async function getPaginatedTagihan(
 		pageIndex: number;
 		pageSize: number;
 		status?: StatusPembayaran;
+		deskripsi?: string;
 		muridId?: string;
 		search?: string;
 		cabangId?: string;
@@ -406,6 +412,7 @@ async function getPaginatedTagihan(
 		cabangId: filterCabangId,
 		muridId: input.muridId,
 		status: input.status,
+		deskripsi: input.deskripsi,
 		kategori: input.kategori,
 		search: input.search,
 	});
@@ -465,6 +472,7 @@ function createTagihanWhereClause(input: {
 	cabangId?: string | null;
 	muridId?: string;
 	status?: StatusPembayaran;
+	deskripsi?: string;
 	kategori?: KategoriTagihan;
 	search?: string;
 }) {
@@ -485,6 +493,11 @@ function createTagihanWhereClause(input: {
 	// Filter by Status
 	if (input.status) {
 		whereClause.status = input.status;
+	}
+
+	// Filter by Deskripsi
+	if (input.deskripsi !== undefined) {
+		whereClause.deskripsi = input.deskripsi;
 	}
 
 	// Filter by Kategori

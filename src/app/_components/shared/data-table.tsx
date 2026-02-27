@@ -63,6 +63,8 @@ interface DataTableProps<TData, TValue> {
 	isLoading?: boolean;
 	sorting?: SortingState;
 	onSortingChange?: OnChangeFn<SortingState>;
+	columnFilters?: ColumnFiltersState;
+	onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
 }
 
 export function DataTable<TData, TValue>({
@@ -77,15 +79,21 @@ export function DataTable<TData, TValue>({
 	isLoading,
 	sorting: externalSorting,
 	onSortingChange: externalOnSortingChange,
+	columnFilters: externalColumnFilters,
+	onColumnFiltersChange: externalOnColumnFiltersChange,
 }: DataTableProps<TData, TValue>) {
 	// const [sorting, setSorting] = useState<SortingState>([]);
 	const [internalSorting, setInternalSorting] = useState<SortingState>([]);
-	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+	const [internalColumnFilters, setInternalColumnFilters] =
+		useState<ColumnFiltersState>([]);
 	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 	const [rowSelection, setRowSelection] = useState({});
 
 	const sorting = externalSorting ?? internalSorting;
 	const onSortingChange = externalOnSortingChange ?? setInternalSorting;
+	const columnFilters = externalColumnFilters ?? internalColumnFilters;
+	const onColumnFiltersChange =
+		externalOnColumnFiltersChange ?? setInternalColumnFilters;
 
 	const table = useReactTable({
 		data,
@@ -93,7 +101,7 @@ export function DataTable<TData, TValue>({
 		pageCount: pageCount ?? -1,
 		// onSortingChange: setSorting,
 		onSortingChange: onSortingChange,
-		onColumnFiltersChange: setColumnFilters,
+		onColumnFiltersChange: onColumnFiltersChange,
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),

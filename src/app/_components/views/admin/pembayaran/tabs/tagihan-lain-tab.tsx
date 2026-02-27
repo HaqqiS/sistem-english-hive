@@ -1,7 +1,11 @@
 "use client";
 
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
-import type { PaginationState, SortingState } from "@tanstack/react-table";
+import type {
+	ColumnFiltersState,
+	PaginationState,
+	SortingState,
+} from "@tanstack/react-table";
 import { FileSpreadsheet } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -41,6 +45,10 @@ export default function TagihanLainTab({
 		pageSize: 50,
 	});
 	const [sorting, setSorting] = useState<SortingState>([]);
+	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+	const filterDeskripsi = columnFilters.find((f) => f.id === "deskripsi")
+		?.value as string | undefined;
 
 	// Delete State
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -76,6 +84,7 @@ export default function TagihanLainTab({
 		filterCabang,
 		filterStatus: filterStatus === "ALL" ? undefined : filterStatus,
 		filterKategori: kategori,
+		filterDeskripsi: filterDeskripsi,
 		searchQuery: searchQuery,
 		enableGetAll: true,
 		onSuccessDelete: () => {
@@ -177,6 +186,7 @@ export default function TagihanLainTab({
 		onEditClick: handleEditClick,
 		onVerifyClick: handleVerifyClick,
 		onUpdateDeskripsi: handleUpdateDeskripsi,
+		isBuku: kategori === KategoriTagihan.BUKU,
 	});
 
 	return (
@@ -225,6 +235,8 @@ export default function TagihanLainTab({
 				isLoading={isLoading}
 				sorting={sorting}
 				onSortingChange={setSorting}
+				columnFilters={columnFilters}
+				onColumnFiltersChange={setColumnFilters}
 			/>
 		</div>
 	);

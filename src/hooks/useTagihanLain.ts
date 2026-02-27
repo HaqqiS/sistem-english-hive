@@ -14,6 +14,7 @@ interface UseTagihanLainOptions {
 	filterCabang?: string;
 	filterStatus?: StatusPembayaran;
 	filterKategori?: KategoriTagihan;
+	filterDeskripsi?: string;
 	searchQuery?: string;
 
 	// Mutation callbacks
@@ -62,6 +63,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			muridId: options.muridId,
 			cabangId: cabangIdPayload,
 			status: options.filterStatus,
+			deskripsi: options.filterDeskripsi,
 			search: options.searchQuery,
 		},
 		{
@@ -80,6 +82,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 				muridId: options.muridId,
 				cabangId: cabangIdPayload,
 				status: options.filterStatus,
+				deskripsi: options.filterDeskripsi,
 				search: options.searchQuery,
 			},
 			{
@@ -99,6 +102,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 				muridId: options.muridId,
 				cabangId: cabangIdPayload,
 				status: options.filterStatus,
+				deskripsi: options.filterDeskripsi,
 				search: options.searchQuery,
 			},
 			{
@@ -225,6 +229,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			return utils.tagihanLain.getForExport.fetch({
 				kategori,
 				status: options.filterStatus,
+				deskripsi: options.filterDeskripsi,
 				muridId: options.muridId,
 				search: options.searchQuery,
 				cabangId: cabangIdPayload,

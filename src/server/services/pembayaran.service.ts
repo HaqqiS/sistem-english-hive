@@ -199,12 +199,19 @@ export const calculateSisaPertemuan = async (
 		nextBillPembayaranKe = maxPembayaranKe + 1;
 	}
 
-	// --- HITUNG NOMINAL TAGIHAN BERIKUTNYA (dengan kredit kelebihan bayar) ---
-	// Formula: jika total uang masuk tidak habis dibagi hargaBlok (ada sisa/kelebihan),
-	// maka tagihan berikutnya dikurangi sisa tersebut.
+	// --- HITUNG NOMINAL TAGIHAN BERIKUTNYA ---
+	// PERHATIAN: Tidak menggunakan modulo (totalUangMasuk % hargaBlok) karena
+	// formula modulo tidak bisa membedakan antara:
+	//   1. Prorata late joiner (misal ke-1 = 150k karena bergabung di tengah blok) → bukan kelebihan!
+	//   2. Overpayment aktual (misal ke-2 = 420k padahal tagihan 300k) → kelebihan nyata
+	//
+	// Formula yang benar: bandingkan total yang DITAGIH vs total yang DIBAYAR (LUNAS).
+	// Selisih positif (dibayar > ditagih) = kelebihan nyata yang boleh dikreditkan.
 	const hargaBlok = hargaPerSesi * paketPertemuan;
-	const sisaKredit = hargaBlok > 0 ? totalUangMasuk % hargaBlok : 0;
-	const nextBillAmount = sisaKredit > 0 ? hargaBlok - sisaKredit : hargaBlok;
+	// totalUangDitagih sudah dihitung di atas (sum of allBills.jumlahBayar).
+	const kelebihanBayar = Math.max(0, totalUangMasuk - totalUangDitagih);
+	const nextBillAmount =
+		kelebihanBayar > 0 ? Math.max(0, hargaBlok - kelebihanBayar) : hargaBlok;
 
 	// // Jika sisa pertemuan sudah sedikit (<= BATAS)
 	// if (sisaPertemuan <= BATAS_SISA_UNTUK_TAGIHAN) {

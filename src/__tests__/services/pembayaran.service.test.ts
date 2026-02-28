@@ -518,19 +518,17 @@ describe("calculateSisaPertemuan — nextBillAmount (8 Case Billing)", () => {
 	});
 
 	// ── CASE 6: True Overpayment (murid bayar lebih dari tagihan) ─────────────
-	it("Case 6: Overpayment — bayar 420k tapi ditagih 300k → nextBillAmount harus 180k", async () => {
+	it("Case 6: Overpayment — bayar 420k (db terupdate 420k) tapi tagihan seharusnya 300k → nextBillAmount harus 180k", async () => {
 		// ke-1: ditagih 300k, dibayar 300k
-		// ke-2: ditagih 300k, dibayar 420k (murid transfer lebih 120k)
-		// total ditagih = 600k, total lunas = 720k → kelebihan = 120k → next = 180k
+		// ke-2: expected 300k, dibayar 420k (murid transfer lebih 120k, misal admin update DB jadi 420k)
+		// total expected = 600k, total lunas = 720k → kelebihan = 120k → next = 180k
 		const ke1Billed = HARGA_BLOK; // 300k
-		const ke2Paid = HARGA_BLOK + 120_000; // 420k (aktual dibayar)
+		const ke2Paid = HARGA_BLOK + 120_000; // 420k (aktual dibayar AND db value)
 
-		// Catatan: dalam sistem ini jumlahBayar di DB = yang ditagih (bukan yang dibayar).
-		// Overpayment hanya terdeteksi jika admin membuat bill ke-2 dengan jumlahBayar = 420k.
 		setupAdvanced(
 			[
 				{ pembayaranKe: 1, jumlahBayar: ke1Billed, lunas: true },
-				{ pembayaranKe: 2, jumlahBayar: ke2Paid, lunas: true }, // admin set 420k di bill
+				{ pembayaranKe: 2, jumlahBayar: ke2Paid, lunas: true },
 			],
 			14,
 			14,
@@ -538,28 +536,19 @@ describe("calculateSisaPertemuan — nextBillAmount (8 Case Billing)", () => {
 
 		const result = await calculateSisaPertemuan(mockDb, "p-1");
 
-		// totalDitagih = 300k + 420k = 720k, totalLunas = 720k → kelebihan = 0
-		// Catatan: jika billed=paid, kelebihan = 0, next = 300k (limitasi skema)
-		// Tapi jika billed ≠ paid (scenario ideal), next = 180k
-		// Test ini memverifikasi behavior saat ini (300k) agar tidak regres.
-		expect(result.nextBillAmount).toBe(HARGA_BLOK);
+		// Dulu limitasi skema membuat next = 300k.
+		// Dengan `totalExpectedDitagih`, sistem cerdas mendeteksi Bill 2 expected-nya hanya 300k.
+		expect(result.nextBillAmount).toBe(HARGA_BLOK - 120_000); // 180k
 	});
 
-	it("Case 6b: True Overpayment (ideal — billed < paid) → nextBillAmount harus 180k", async () => {
-		// Skenario: ke-1=300k LUNAS, ke-2 ditagih 300k tapi murid bayar 420k
-		// Admin TIDAK membuat bill baru, langsung mark ke-2 LUNAS dengan jumlahBayar tetap 300k
-		// Lalu uang sisa 120k dicatat di luar sistem (e.g. catatan manual)
-		// Di sini: totalLunas (420k manual) > totalBilled (600k) — ini edge case ideal
-		// SIMULASI: override lunas total dengan cara setup bills berbeda nominal
-
-		// ke-1: billed 300k, ke-2: billed 300k tapi lunas datanya 420k via pembayaran manual
-		// Karena in-schema ini tidak bisa terjadi (jumlahBayar = satu field),
-		// test ini mendokumentasikan LIMITASI formula saat ini.
+	it("Case 6b: Overpayment di Tagihan Pertama Prorata (bayar 200k, prorata db 200k) → nextBillAmount harus 300k", async () => {
+		// Pengecualian: Jika tagihan PERTAMA di-overpay (jarang terjadi), karena kita asumsi tagihan
+		// pertama = jumlahBayar di DB (max hargaBlok), maka sistem menganggap "expect"nya ya 200k.
+		// ke-1: Expected = 200k (karena jumlahBayar DB = 200k), lunas = 200k.
+		// Kelebihan = 0.
 		setupAdvanced(
 			[
-				{ pembayaranKe: 1, jumlahBayar: HARGA_BLOK, lunas: true }, // billed=300k, lunas=300k
-				{ pembayaranKe: 2, jumlahBayar: HARGA_BLOK, lunas: false }, // billed=300k, belum lunas
-				// Murid bayar 420k → admin perlu edit jumlahBayar ke-2 jadi 420k untuk override
+				{ pembayaranKe: 1, jumlahBayar: 200_000, lunas: true }, // admin input 200k
 			],
 			6,
 			6,
@@ -567,8 +556,7 @@ describe("calculateSisaPertemuan — nextBillAmount (8 Case Billing)", () => {
 
 		const result = await calculateSisaPertemuan(mockDb, "p-1");
 
-		// Limitasi: kelebihan = max(0, 300k - 600k) = 0 → next = 300k
-		// Ini adalah behavior yang DITERIMA karena keterbatasan skema.
+		// Limitasi tersisa: Overpayment di bill pertama akan "tertelan" jika prorata.
 		expect(result.nextBillAmount).toBe(HARGA_BLOK);
 	});
 

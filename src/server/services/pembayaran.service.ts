@@ -200,16 +200,25 @@ export const calculateSisaPertemuan = async (
 	}
 
 	// --- HITUNG NOMINAL TAGIHAN BERIKUTNYA ---
-	// PERHATIAN: Tidak menggunakan modulo (totalUangMasuk % hargaBlok) karena
-	// formula modulo tidak bisa membedakan antara:
-	//   1. Prorata late joiner (misal ke-1 = 150k karena bergabung di tengah blok) → bukan kelebihan!
-	//   2. Overpayment aktual (misal ke-2 = 420k padahal tagihan 300k) → kelebihan nyata
-	//
-	// Formula yang benar: bandingkan total yang DITAGIH vs total yang DIBAYAR (LUNAS).
-	// Selisih positif (dibayar > ditagih) = kelebihan nyata yang boleh dikreditkan.
+	// PERHATIAN: Admin sering mengedit jumlahBayar = nominal aktual yang dibayar murid
+	// (misal tagihan 300k murid tf 420k -> DB diedit jadi 420k).
+	// Jika kita hanya sum(jumlahBayar) dari DB, totalDitagih = 420k, maka kelebihan = 0 (SALAH).
+	// Solusi: Hitung Tagihan yang SEHARUSNYA ditarik (Expected):
+	// - Tagihan Pertama Murid: Bisa jadi Prorata atau > 1 blok (jika very late join). Ambil jumlahBayar asli dari DB.
+	// - Tagihan Selanjutnya: Beban murni SELALU seharga 1 blok penuh.
 	const hargaBlok = hargaPerSesi * paketPertemuan;
-	// totalUangDitagih sudah dihitung di atas (sum of allBills.jumlahBayar).
-	const kelebihanBayar = Math.max(0, totalUangMasuk - totalUangDitagih);
+
+	const minPembayaranKe =
+		allBills.length > 0 ? Math.min(...allBills.map((b) => b.pembayaranKe)) : 0;
+
+	const totalExpectedDitagih = allBills.reduce((acc, curr) => {
+		if (curr.pembayaranKe === minPembayaranKe) {
+			return acc + curr.jumlahBayar;
+		}
+		return acc + hargaBlok;
+	}, 0);
+
+	const kelebihanBayar = Math.max(0, totalUangMasuk - totalExpectedDitagih);
 	const nextBillAmount =
 		kelebihanBayar > 0 ? Math.max(0, hargaBlok - kelebihanBayar) : hargaBlok;
 

@@ -213,8 +213,19 @@ export const calculateSisaPertemuan = async (
 
 	const totalExpectedDitagih = allBills.reduce((acc, curr) => {
 		if (curr.pembayaranKe === minPembayaranKe) {
-			return acc + curr.jumlahBayar;
+			if (minPembayaranKe === 1) {
+				// Jika tagihan pertama murid adalah pembayaranKe=1 (masuk di awal/tengah blok 1),
+				// MAKSIMAL beban rasionalnya adalah 1 blok (opsi prorata < 1 blok).
+				// Jika bayar > 1 blok (misal 480k), PASTI OVERPAYMENT murni.
+				return acc + Math.min(curr.jumlahBayar, hargaBlok);
+			} else {
+				// Jika murid baru masuk di blok > 1 (Late Join Middle/Very Late),
+				// tagihan awalnya bisa akumulasi beban dari sesi lalu (bisa > hargaBlok).
+				// Kita percayakan jumlahBayar aktual dari DB.
+				return acc + curr.jumlahBayar;
+			}
 		}
+		// Tagihan ke-2 dst: Selalu expected 1 blok penuh.
 		return acc + hargaBlok;
 	}, 0);
 

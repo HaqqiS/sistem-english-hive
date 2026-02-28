@@ -434,6 +434,24 @@ describe("calculateSisaPertemuan — nextBillAmount (8 Case Billing)", () => {
 		expect(result.nextBillAmount).toBe(HARGA_BLOK); // 300k
 	});
 
+	it("Case 1b: On-point join overpayment — ke-1=480k LUNAS → nextBillAmount harus 120k", async () => {
+		// Murid bayar 480k penuh (sangat lebih dari 300k) di tagihan PERTAMA
+		// Karena ini tagihan 1, maksimum rasional = 300k. Lebih dari 300k pasti overpayment!
+		// Expected = 300k. Uang Masuk = 480k. Kelebihan = 180k.
+		// Tagihan ke-2 = 300k - 180k = 120k.
+		setupAdvanced(
+			[{ pembayaranKe: 1, jumlahBayar: 480_000, lunas: true }],
+			6, // hadir 6 sesi
+			6, // kelas sudah sesi-6 (trigger point blok 1)
+		);
+
+		const result = await calculateSisaPertemuan(mockDb, "p-1");
+
+		expect(result.needNewBill).toBe(true);
+		expect(result.nextBillPembayaranKe).toBe(2);
+		expect(result.nextBillAmount).toBe(120_000); // 120k ✅
+	});
+
 	// ── CASE 2: Late Join Early (sesi 1-5) ────────────────────────────────────
 	it("Case 2: Late join early — ke-1=187.5k prorata (5 sesi) → nextBillAmount harus 300k (bukan 112.5k)", async () => {
 		// Masuk di sesi-4: prorata = (8-3) × 37.500 = 187.500

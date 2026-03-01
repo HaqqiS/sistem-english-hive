@@ -419,6 +419,7 @@ async function getPaginatedTagihan(
 
 	// Dynamic Sorting
 	let orderBy: Prisma.TagihanLainOrderByWithRelationInput[] = [
+		{ createdAt: "desc" },
 		{ status: "asc" },
 	];
 

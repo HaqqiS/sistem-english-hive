@@ -546,6 +546,8 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						});
 
 						const hargaBuku = kelasInfo?.jenisKelasRel?.hargaBuku ?? 0;
+						const namaJenisKelas = kelasInfo?.jenisKelasRel?.nama ?? "";
+						const level = kelasInfo?.level ?? 0;
 
 						if (hargaBuku > 0) {
 							// Check duplicate
@@ -563,7 +565,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 										muridId: existingRecord.muridId,
 										kelasId: existingRecord.kelasId,
 										kategori: "BUKU",
-										judul: `Tagihan Buku ${kelasInfo?.level}`,
+										judul: `Buku ${namaJenisKelas} Level ${level}`,
 										deskripsi: `Auto-Generate via Activation`,
 										jumlah: hargaBuku,
 										status: StatusPembayaran.BELUM_LUNAS,

@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusAbsenMurid } from "@prisma/client";
+import type { RowInput } from "jspdf-autotable";
 import {
 	AlertCircle,
 	Check,
@@ -12,6 +13,7 @@ import {
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
 	AlertDialog,
@@ -186,6 +188,110 @@ export default function DetailSesiClient() {
 		});
 	};
 
+	const handleExportAbsensi = async () => {
+		if (!dataSummary) return;
+
+		try {
+			const { default: jsPDF } = await import("jspdf");
+			const { default: autoTable } = await import("jspdf-autotable");
+
+			const { kelasInfo, columnData, rowData } = dataSummary;
+
+			const doc = new jsPDF({
+				orientation: "landscape",
+			});
+
+			doc.setFontSize(16);
+			doc.text(`Presensi Kelas: ${kelasInfo.kodeKelas}`, 14, 15);
+			doc.setFontSize(11);
+			doc.text(`Guru Aktif: ${kelasInfo.guruAktif}`, 14, 22);
+
+			// Row 1: Hari & Tanggal (RABU 04/02)
+			const headerRow1 = [
+				{
+					content: "Nama Siswa",
+					rowSpan: 3,
+					styles: { halign: "left" as const, valign: "middle" as const },
+				},
+				...columnData.map((col) => {
+					const hari = formatToWITA(col.tanggal, "dddd").toUpperCase();
+					const tgl = formatToWITA(col.tanggal, "DD/MM");
+					return `${hari}\n${tgl}`;
+				}),
+			];
+
+			// Row 2: Pertemuan Ke (Pertemuan 1)
+			const headerRow2 = columnData.map((col) => `${col.pertemuanKe}`);
+
+			// Row 3: Pengajar (Galih)
+			const headerRow3 = columnData.map(
+				(col) => col.pengajar.split(" ")[0] || "",
+			);
+
+			const head: RowInput[] = [headerRow1, headerRow2, headerRow3];
+
+			const body = rowData.map((row) => {
+				const cellData = [row.namaSiswa];
+				columnData.forEach((col) => {
+					const status = row.attendance[col.sesiId];
+					const { text } = getBadgeContent(status ?? null);
+					cellData.push(text);
+				});
+				return cellData;
+			});
+
+			autoTable(doc, {
+				head: head,
+				body: body,
+				startY: 28,
+				theme: "grid",
+				styles: {
+					fontSize: 8,
+					cellPadding: 2,
+					overflow: "linebreak",
+					halign: "center",
+					valign: "middle",
+				},
+				headStyles: {
+					fillColor: [15, 23, 42],
+					textColor: 255,
+					halign: "center",
+					valign: "middle",
+				},
+				columnStyles: {
+					0: { halign: "left", cellWidth: 40, fontStyle: "bold" },
+				},
+				didParseCell: (data) => {
+					// Apply styling headers manually if needed
+					if (data.section === "head") {
+						if (data.row.index === 0 && data.column.index > 0) {
+							// Top row styling (Hari/Tgl)
+							data.cell.styles.fontStyle = "bold";
+						}
+					}
+
+					if (data.section === "body" && data.column.index > 0) {
+						const text = data.cell.raw as string;
+						if (text === "H") {
+							data.cell.styles.textColor = [22, 163, 74];
+							data.cell.styles.fontStyle = "bold";
+						} else if (text === "A") {
+							data.cell.styles.textColor = [220, 38, 38];
+							data.cell.styles.fontStyle = "bold";
+						} else if (text === "Off") {
+							data.cell.styles.textColor = [107, 114, 128];
+						}
+					}
+				},
+			});
+
+			doc.save(`Presensi_${kelasInfo.kodeKelas}.pdf`);
+		} catch (error) {
+			toast.error("Gagal mengekspor PDF");
+			console.error("PDF Export Error:", error);
+		}
+	};
+
 	// 2. Loading State
 	if (isLoadingSummary) {
 		return (
@@ -230,6 +336,12 @@ export default function DetailSesiClient() {
 	// 5. Success State (Render Tabel)
 	return (
 		<TooltipProvider delayDuration={150}>
+			<HeaderActionPortal>
+				<Button variant="ghost" size="sm" onClick={handleExportAbsensi}>
+					<FileText className="mr-2 h-4 w-4" />
+					Export PDF Presensi
+				</Button>
+			</HeaderActionPortal>
 			<Card>
 				<CardHeader>
 					<CardTitle>Detail Sesi: {kelasInfo.kodeKelas}</CardTitle>

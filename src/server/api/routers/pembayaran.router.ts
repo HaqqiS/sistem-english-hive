@@ -1,4 +1,4 @@
-import { Prisma, StatusPembayaran } from "@prisma/client";
+import { Prisma, StatusPembayaran, StatusPendaftaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { UserRole } from "@/server/auth/type";
@@ -286,6 +286,7 @@ export const pembayaranRouter = createTRPCRouter({
 			const pendaftaranAktif = await db.pendaftaranKelas.findFirst({
 				where: {
 					muridId: input.muridId,
+					status: StatusPendaftaran.AKTIF,
 				},
 				include: {
 					Kelas: { select: { cabangId: true } },

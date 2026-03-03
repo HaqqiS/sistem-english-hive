@@ -81,37 +81,57 @@ export const calculateSisaPertemuan = async (
 		};
 	}
 
-	// 2. HITUNG KREDIT (Total Sesi yang SUDAH DIBAYAR LUNAS)
-	const pembayaranLunas = await db.pembayaran.findMany({
+	// 2. HITUNG KREDIT (Total Sesi yang SUDAH DIBAYAR LUNAS) SECARA GLOBAL
+	const pembayaranLunasGlobal = await db.pembayaran.findMany({
 		where: {
-			pendaftaranKelasId: pendaftaranKelasId,
+			pendaftaranKelas: { muridId: pendaftaran.muridId },
 			statusBayar: StatusPembayaran.LUNAS,
 		},
 		select: { jumlahBayar: true },
 	});
 
-	const totalUangMasuk = pembayaranLunas.reduce(
+	const totalUangMasukGlobal = pembayaranLunasGlobal.reduce(
 		(acc, curr) => acc + curr.jumlahBayar,
 		0,
 	);
 
-	const totalKuotaSesi = Math.floor(totalUangMasuk / hargaPerSesi);
-
-	// 3. HITUNG DEBIT (Total Sesi yang SUDAH DIGUNAKAN)
-	const totalTerpakai = await db.absensiMurid.count({
+	// 3. HITUNG DEBIT (Total Sesi yang SUDAH DIGUNAKAN) SECARA GLOBAL
+	const absensiGlobal = await db.absensiMurid.findMany({
 		where: {
 			muridId: pendaftaran.muridId,
-			sesiPertemuanKelas: {
-				kelasId: pendaftaran.kelasId,
-			},
 			status: {
 				in: [StatusAbsenMurid.HADIR, StatusAbsenMurid.ALPA],
 			},
 		},
+		select: {
+			sesiPertemuanKelas: {
+				select: {
+					kelasId: true,
+					kelas: { select: { hargaKelas: true } },
+				},
+			},
+		},
 	});
 
+	let totalUangTerpakaiGlobal = 0;
+	let totalTerpakai = 0;
+
+	for (const absen of absensiGlobal) {
+		const harga = absen.sesiPertemuanKelas?.kelas?.hargaKelas ?? 0;
+		totalUangTerpakaiGlobal += harga;
+
+		if (absen.sesiPertemuanKelas?.kelasId === pendaftaran.kelasId) {
+			totalTerpakai++;
+		}
+	}
+
+	const saldoUangGlobal = totalUangMasukGlobal - totalUangTerpakaiGlobal;
+
 	// 4. Kalkulasi Sisa
-	const sisaPertemuan = totalKuotaSesi - totalTerpakai;
+	const sisaPertemuan = Math.floor(saldoUangGlobal / hargaPerSesi);
+	const totalKuotaSesi = sisaPertemuan + totalTerpakai;
+	const virtualUangMasukKelasIni =
+		saldoUangGlobal + totalTerpakai * hargaPerSesi;
 
 	// 5. Cek Trigger Tagihan
 	let needNewBill = false;
@@ -119,16 +139,20 @@ export const calculateSisaPertemuan = async (
 
 	const allBills = await db.pembayaran.findMany({
 		where: { pendaftaranKelasId: pendaftaranKelasId },
-		select: { jumlahBayar: true, pembayaranKe: true },
+		select: { jumlahBayar: true, pembayaranKe: true, statusBayar: true },
 	});
 
 	// --- A. LOGIKA UTAMA: BERDASARKAN SALDO (Prepaid System) ---
-	const totalUangDitagih = allBills.reduce(
-		(acc, curr) => acc + curr.jumlahBayar,
-		0,
-	);
+	const totalUangBelumLunas = allBills
+		.filter((b) => b.statusBayar !== StatusPembayaran.LUNAS)
+		.reduce((acc, curr) => acc + curr.jumlahBayar, 0);
 
-	const totalKapasitasDitagih = Math.floor(totalUangDitagih / hargaPerSesi);
+	const totalUangDitagihBerlaku =
+		virtualUangMasukKelasIni + totalUangBelumLunas;
+
+	const totalKapasitasDitagih = Math.floor(
+		totalUangDitagihBerlaku / hargaPerSesi,
+	);
 	const potensiSisa = totalKapasitasDitagih - totalTerpakai;
 
 	// Trigger 1: Sisa Saldo Menipis
@@ -229,7 +253,10 @@ export const calculateSisaPertemuan = async (
 		return acc + hargaBlok;
 	}, 0);
 
-	const kelebihanBayar = Math.max(0, totalUangMasuk - totalExpectedDitagih);
+	const kelebihanBayar = Math.max(
+		0,
+		virtualUangMasukKelasIni - totalExpectedDitagih,
+	);
 	const nextBillAmount =
 		kelebihanBayar > 0 ? Math.max(0, hargaBlok - kelebihanBayar) : hargaBlok;
 

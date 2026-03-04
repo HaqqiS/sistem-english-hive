@@ -141,6 +141,9 @@ export const columnsTagihanLainBelumLunas = ({
 			const namaMurid = row.original.murid.namaLengkap;
 			const tipe = `Tagihan ${row.original.kategori}: ${row.original.judul}`;
 			const jumlah = row.original.jumlah;
+			const noRekening = row.original.murid.cabang?.noRekening;
+			const bank = row.original.murid.cabang?.bank;
+			const atasNama = row.original.murid.cabang?.atasNama;
 
 			return (
 				<div className="flex items-center gap-2">
@@ -152,7 +155,16 @@ export const columnsTagihanLainBelumLunas = ({
 						title="Kirim Pengingat WA"
 					>
 						<Link
-							href={formatWhatsAppReminder(noWA, namaMurid, tipe, jumlah)}
+							href={formatWhatsAppReminder(
+								noWA,
+								namaMurid,
+								tipe,
+								jumlah,
+								null,
+								noRekening,
+								bank,
+								atasNama,
+							)}
 							target="_blank"
 						>
 							<MessageCircle className="h-4 w-4" />

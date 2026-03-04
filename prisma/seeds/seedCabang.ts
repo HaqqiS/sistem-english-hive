@@ -46,6 +46,9 @@ async function main() {
 				namaCabang: row.namaCabang,
 				alamat: row.alamat,
 				noTelp: row.noTelp,
+				noRekening: row.noRekening || null,
+				bank: row.bank || null,
+				atasNama: row.atasNama || null,
 
 				// -- DateTime Fields (WAJIB di-convert pakai new Date) --
 				createdAt: row.createdAt ? new Date(row.createdAt) : new Date(),

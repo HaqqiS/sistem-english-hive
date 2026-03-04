@@ -11,6 +11,12 @@ const baseCabangSchema = z.object({
 		.min(1, "No Telepon harus diisi")
 		.max(15, "No Telepon maksimal 15 karakter")
 		.regex(/^\+?[0-9]*$/, { message: "No Telepon tidak valid" }),
+	noRekening: z
+		.string()
+		.regex(/^\+?[0-9]*$/, { message: "No Rekening tidak valid" })
+		.optional(),
+	bank: z.string().optional(),
+	atasNama: z.string().optional(),
 });
 
 export const clientCabangSchema = baseCabangSchema.extend({});

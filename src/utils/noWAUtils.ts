@@ -18,7 +18,10 @@ export const formatWhatsAppReminder = (
 	namaMurid: string,
 	tipe: string,
 	jumlah: number,
-	jatuhTempo?: Date,
+	jatuhTempo?: Date | null,
+	noRekening?: string | null,
+	bank?: string | null,
+	atasNama?: string | null,
 ) => {
 	if (!noWA) return "#";
 
@@ -33,7 +36,7 @@ export const formatWhatsAppReminder = (
 	// Template Pesan
 	const text = `Halo Kak/Bapak/Ibu, kami dari *English Hive*.\n\nKami ingin mengingatkan tagihan ${tipe} untuk:\nNama: *${namaMurid}*\nNominal: *${toRupiah(
 		jumlah,
-	)}*\nJatuh Tempo: *${jatuhTempo ? formatDateWITA(jatuhTempo) : "-"}*\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: Mandiri\nNo. Rekening: 1750080088080\nAtas nama: DESAK PUTU EKA PRATI\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
+	)}*\nJatuh Tempo: *${jatuhTempo ? formatDateWITA(jatuhTempo) : "-"}*\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
 
 	const encodedText = encodeURIComponent(text);
 

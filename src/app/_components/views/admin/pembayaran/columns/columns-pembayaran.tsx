@@ -263,6 +263,8 @@ export const columns = ({
 			const tipe = `SPP Bulan Ke-${row.original.pembayaranKe}`;
 			const jumlah = row.original.jumlahBayar;
 			const jatuhTempo = row.original.tanggalJatuhTempo;
+			const { noRekening, bank, atasNama } =
+				row.original.pendaftaranKelas.Kelas.cabang;
 
 			return (
 				<div className="flex items-center gap-2">
@@ -281,6 +283,9 @@ export const columns = ({
 								tipe,
 								jumlah,
 								jatuhTempo,
+								noRekening,
+								bank,
+								atasNama,
 							)}
 							target="_blank"
 						>

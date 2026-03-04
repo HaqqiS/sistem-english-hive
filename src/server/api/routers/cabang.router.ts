@@ -44,6 +44,9 @@ export const cabangRouter = createTRPCRouter({
 						namaCabang: input.namaCabang,
 						alamat: input.alamat,
 						noTelp: input.noTelp,
+						noRekening: input.noRekening,
+						bank: input.bank,
+						atasNama: input.atasNama,
 					},
 				});
 				return cabang;
@@ -76,6 +79,9 @@ export const cabangRouter = createTRPCRouter({
 						namaCabang: input.namaCabang,
 						alamat: input.alamat,
 						noTelp: input.noTelp,
+						noRekening: input.noRekening,
+						bank: input.bank,
+						atasNama: input.atasNama,
 					},
 				});
 				return cabang;

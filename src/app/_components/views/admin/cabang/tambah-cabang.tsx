@@ -23,6 +23,9 @@ export default function TambahCabang() {
 			namaCabang: "",
 			alamat: "",
 			noTelp: "",
+			noRekening: "",
+			bank: "",
+			atasNama: "",
 		},
 	});
 

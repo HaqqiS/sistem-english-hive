@@ -85,6 +85,9 @@ model Cabang {
     namaCabang String @unique
     alamat     String
     noTelp     String
+    bank       String?
+    atasNama   String?
+    noRekening String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

@@ -114,7 +114,20 @@ export const pembayaranRouter = createTRPCRouter({
 						pendaftaranKelas: {
 							include: {
 								murid: { select: { namaLengkap: true, noWA: true } },
-								Kelas: { select: { kodeKelas: true, hargaKelas: true } },
+								Kelas: {
+									select: {
+										kodeKelas: true,
+										hargaKelas: true,
+										cabang: {
+											select: {
+												namaCabang: true,
+												noRekening: true,
+												bank: true,
+												atasNama: true,
+											},
+										},
+									},
+								},
 							},
 						},
 						verifiedBy: { select: { name: true } },
@@ -163,7 +176,19 @@ export const pembayaranRouter = createTRPCRouter({
 					pendaftaranKelas: {
 						include: {
 							murid: { select: { namaLengkap: true, noWA: true } },
-							Kelas: { select: { kodeKelas: true } },
+							Kelas: {
+								select: {
+									kodeKelas: true,
+									cabang: {
+										select: {
+											namaCabang: true,
+											noRekening: true,
+											bank: true,
+											atasNama: true,
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -267,7 +292,14 @@ export const pembayaranRouter = createTRPCRouter({
 							Kelas: {
 								select: {
 									kodeKelas: true,
-									cabang: { select: { namaCabang: true } },
+									cabang: {
+										select: {
+											namaCabang: true,
+											noRekening: true,
+											bank: true,
+											atasNama: true,
+										},
+									},
 								},
 							},
 						},

@@ -22,12 +22,18 @@ export default function EditCabang() {
 					namaCabang: selectedCabang.namaCabang,
 					alamat: selectedCabang.alamat,
 					noTelp: selectedCabang.noTelp,
+					noRekening: selectedCabang.noRekening ?? "",
+					bank: selectedCabang.bank ?? "",
+					atasNama: selectedCabang.atasNama ?? "",
 				}
 			: undefined,
 		defaultValues: {
 			namaCabang: selectedCabang?.namaCabang,
 			alamat: selectedCabang?.alamat,
 			noTelp: selectedCabang?.noTelp,
+			noRekening: selectedCabang?.noRekening ?? "",
+			bank: selectedCabang?.bank ?? "",
+			atasNama: selectedCabang?.atasNama ?? "",
 		},
 	});
 

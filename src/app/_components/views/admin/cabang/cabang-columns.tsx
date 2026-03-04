@@ -90,6 +90,63 @@ export const columns = ({
 		},
 	},
 
+	{
+		accessorKey: "noRekening",
+		header: ({ column }) => {
+			return (
+				<Button
+					variant="ghost"
+					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+				>
+					No Rekening
+					<ArrowUpDown className="ml-2 h-4 w-4" />
+				</Button>
+			);
+		},
+		cell: ({ row }) => {
+			const value = row.original.noRekening;
+			return <div>{value ? value : "-"}</div>;
+		},
+	},
+
+	{
+		accessorKey: "bank",
+		header: ({ column }) => {
+			return (
+				<Button
+					variant="ghost"
+					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+				>
+					Bank
+					<ArrowUpDown className="ml-2 h-4 w-4" />
+				</Button>
+			);
+		},
+		cell: ({ row }) => {
+			const value = row.original.bank;
+			return <div>{value ? value : "-"}</div>;
+		},
+	},
+
+	{
+		accessorKey: "atasNama",
+		header: ({ column }) => {
+			return (
+				<Button
+					variant="ghost"
+					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+				>
+					Atas Nama
+					<ArrowUpDown className="ml-2 h-4 w-4" />
+				</Button>
+			);
+		},
+		cell: ({ row }) => {
+			const value = row.original.atasNama;
+			return <div>{value ? value : "-"}</div>;
+		},
+	},
+
 	// Actions dropdown
 	{
 		id: "actions",

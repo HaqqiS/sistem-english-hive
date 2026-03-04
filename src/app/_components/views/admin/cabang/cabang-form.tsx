@@ -74,6 +74,51 @@ export default function CabangForm({ onSubmit }: CabangFormProps) {
 					</FormItem>
 				)}
 			/>
+			{/* No Rekening */}
+			<FormField
+				control={form.control}
+				name="noRekening"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>No Rekening</FormLabel>
+						<FormControl>
+							<Input placeholder="Masukkan no Rekening cabang" {...field} />
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
+			{/* Bank */}
+			<FormField
+				control={form.control}
+				name="bank"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Bank</FormLabel>
+						<FormControl>
+							<Input
+								placeholder="Masukkan nama bank (mis: BCA, Mandiri)"
+								{...field}
+							/>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
+			{/* Atas Nama */}
+			<FormField
+				control={form.control}
+				name="atasNama"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Atas Nama Rekening</FormLabel>
+						<FormControl>
+							<Input placeholder="Masukkan nama pemilik rekening" {...field} />
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
 		</form>
 	);
 }

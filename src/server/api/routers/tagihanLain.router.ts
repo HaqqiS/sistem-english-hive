@@ -40,7 +40,14 @@ export const tagihanLainRouter = createTRPCRouter({
 						select: {
 							namaLengkap: true,
 							noWA: true,
-							cabang: { select: { namaCabang: true } },
+							cabang: {
+								select: {
+									namaCabang: true,
+									noRekening: true,
+									bank: true,
+									atasNama: true,
+								},
+							},
 						},
 					},
 					kelas: { select: { kodeKelas: true, hargaKelas: true } },
@@ -161,7 +168,14 @@ export const tagihanLainRouter = createTRPCRouter({
 						select: {
 							namaLengkap: true,
 							noWA: true,
-							cabang: { select: { namaCabang: true } },
+							cabang: {
+								select: {
+									namaCabang: true,
+									noRekening: true,
+									bank: true,
+									atasNama: true,
+								},
+							},
 						},
 					},
 					kelas: { select: { kodeKelas: true, hargaKelas: true } },
@@ -379,7 +393,14 @@ export const tagihanLainRouter = createTRPCRouter({
 						select: {
 							namaLengkap: true,
 							noWA: true,
-							cabang: { select: { namaCabang: true } },
+							cabang: {
+								select: {
+									namaCabang: true,
+									noRekening: true,
+									bank: true,
+									atasNama: true,
+								},
+							},
 						},
 					},
 					kelas: { select: { kodeKelas: true, hargaKelas: true } },
@@ -451,7 +472,14 @@ async function getPaginatedTagihan(
 					select: {
 						namaLengkap: true,
 						noWA: true,
-						cabang: { select: { namaCabang: true } },
+						cabang: {
+							select: {
+								namaCabang: true,
+								noRekening: true,
+								bank: true,
+								atasNama: true,
+							},
+						},
 					},
 				},
 				kelas: { select: { kodeKelas: true, hargaKelas: true } },

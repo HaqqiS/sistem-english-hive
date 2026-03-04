@@ -226,6 +226,9 @@ export const columnsTagihanLain = ({
 			const namaMurid = row.original.murid.namaLengkap;
 			const jumlah = row.original.jumlah;
 			const tipe = `pembayaran ${row.original.kategori}`;
+			const noRekening = row.original.murid.cabang?.noRekening;
+			const bank = row.original.murid.cabang?.bank;
+			const atasNama = row.original.murid.cabang?.atasNama;
 
 			return (
 				<div className="flex items-end gap-2">
@@ -239,7 +242,16 @@ export const columnsTagihanLain = ({
 							title="Hubungi via WhatsApp"
 						>
 							<Link
-								href={formatWhatsAppReminder(noWA, namaMurid, tipe, jumlah)}
+								href={formatWhatsAppReminder(
+									noWA,
+									namaMurid,
+									tipe,
+									jumlah,
+									null,
+									noRekening,
+									bank,
+									atasNama,
+								)}
 								target="_blank"
 							>
 								<MessageCircle className="h-4 w-4" />
@@ -624,6 +636,9 @@ export const columnsTagihanLainGlobal = ({
 			const namaMurid = row.original.murid.namaLengkap;
 			const jumlah = row.original.jumlah;
 			const tipe = `pembayaran ${row.original.kategori}`;
+			const noRekening = row.original.murid.cabang?.noRekening;
+			const bank = row.original.murid.cabang?.bank;
+			const atasNama = row.original.murid.cabang?.atasNama;
 
 			return (
 				<div className="flex items-end gap-2">
@@ -637,7 +652,16 @@ export const columnsTagihanLainGlobal = ({
 							title="Hubungi via WhatsApp"
 						>
 							<Link
-								href={formatWhatsAppReminder(noWA, namaMurid, tipe, jumlah)}
+								href={formatWhatsAppReminder(
+									noWA,
+									namaMurid,
+									tipe,
+									jumlah,
+									null,
+									noRekening,
+									bank,
+									atasNama,
+								)}
 								target="_blank"
 							>
 								<MessageCircle className="h-4 w-4" />

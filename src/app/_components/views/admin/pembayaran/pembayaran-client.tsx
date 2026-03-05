@@ -331,12 +331,34 @@ export default function PembayaranClient({
 				</TabsContent>
 
 				<TabsContent value="tagihan-buku" className="space-y-4">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
+						{/* Filter Kelas untuk Buku */}
+						<div className="flex items-center gap-2">
+							<Select
+								value={kelasIdFilter}
+								onValueChange={(val) => setKelasIdFilter(val as string | "ALL")}
+							>
+								<SelectTrigger className="w-full sm:w-[200px]">
+									<SelectValue placeholder="Filter Kelas" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Kelas</SelectItem>
+									{kelasList?.map((kelas) => (
+										<SelectItem key={kelas.id} value={kelas.id}>
+											{kelas.kodeKelas}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
 					<TagihanLainTab
 						kategori={KategoriTagihan.BUKU}
 						labelTambah="Tambah Tagihan Buku"
 						filterCabang={activeCabangId}
 						filterStatus={statusFilter}
 						searchQuery={debouncedSearch}
+						filterKelas={kelasIdFilter}
 					/>
 				</TabsContent>
 

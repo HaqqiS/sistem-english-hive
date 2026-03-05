@@ -65,6 +65,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				search: z.string().optional(),
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
+				kelasId: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -90,6 +91,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				search: z.string().optional(),
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
+				kelasId: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -115,6 +117,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				search: z.string().optional(),
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
+				kelasId: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -342,6 +345,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				search: z.string().optional(),
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
+				kelasId: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -363,6 +367,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				deskripsi: input.deskripsi,
 				kategori: input.kategori,
 				search: input.search,
+				kelasId: input.kelasId,
 			});
 
 			// Dynamic Sorting
@@ -421,6 +426,7 @@ async function getPaginatedTagihan(
 		muridId?: string;
 		search?: string;
 		cabangId?: string;
+		kelasId?: string;
 		kategori?: KategoriTagihan;
 		sorting?: { id: string; desc: boolean }[];
 	},
@@ -436,6 +442,7 @@ async function getPaginatedTagihan(
 		deskripsi: input.deskripsi,
 		kategori: input.kategori,
 		search: input.search,
+		kelasId: input.kelasId,
 	});
 
 	// Dynamic Sorting
@@ -504,6 +511,7 @@ function createTagihanWhereClause(input: {
 	deskripsi?: string;
 	kategori?: KategoriTagihan;
 	search?: string;
+	kelasId?: string;
 }) {
 	const whereClause: Prisma.TagihanLainWhereInput = {};
 
@@ -512,6 +520,11 @@ function createTagihanWhereClause(input: {
 		whereClause.murid = {
 			cabangId: input.cabangId,
 		};
+	}
+
+	// Filter by Kelas
+	if (input.kelasId) {
+		whereClause.kelasId = input.kelasId;
 	}
 
 	// Filter by Murid

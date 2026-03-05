@@ -43,7 +43,7 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 	const pageIndex = options?.pagination?.pageIndex ?? 0;
 	const pageSize = options?.pagination?.pageSize ?? 10;
 	const sorting = options?.sorting; // Get sorting from options
-	const shouldUseInitialData = pageIndex === 0 && pageSize === 10;
+	const shouldUseInitialData = pageIndex === 0 && pageSize === 50;
 
 	const invalidatePayments = async () => {
 		await Promise.all([

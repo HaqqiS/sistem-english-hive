@@ -15,7 +15,7 @@ export default async function PembayaranPage() {
 	await Promise.all([
 		api.pembayaran.getAllPaginated.prefetch({
 			pageIndex: 0,
-			pageSize: 10,
+			pageSize: 50,
 		}),
 		api.pembayaran.getTagihanJatuhTempo.prefetch({}),
 	]);

@@ -216,13 +216,39 @@ export const sesiPertemuanRouter = createTRPCRouter({
 			}
 
 			try {
-				return await db.sesiPertemuanKelas.create({
+				const newSesi = await db.sesiPertemuanKelas.create({
 					data: {
 						kelasId: input.kelasId,
 						ruangId: input.ruangId,
 						tanggalWaktu: input.tanggalWaktu,
 					},
 				});
+
+				// Trigger: Cek apakah ini sesi ke-24
+				const totalSesi = await db.sesiPertemuanKelas.count({
+					where: { kelasId: input.kelasId },
+				});
+
+				if (totalSesi >= 24) {
+					// 1. Kelas lama (ini) → COMPLETED
+					const kelasLama = await db.kelas.update({
+						where: { id: input.kelasId },
+						data: { statusKelas: "COMPLETED" },
+						select: { cohortId: true, level: true },
+					});
+
+					// 2. Kelas baru (cohortId sama, level lebih tinggi, masih LEVEL_UP) → RUNNING
+					await db.kelas.updateMany({
+						where: {
+							cohortId: kelasLama.cohortId,
+							level: { gt: kelasLama.level },
+							statusKelas: "LEVEL_UP",
+						},
+						data: { statusKelas: "RUNNING" },
+					});
+				}
+
+				return newSesi;
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
 					// P2003: Foreign Key (Kelas atau Ruang tidak valid)
@@ -303,9 +329,43 @@ export const sesiPertemuanRouter = createTRPCRouter({
 				});
 			}
 
-			// 2. Hapus (absensi murid & guru akan cascade delete via Prisma relation)
-			return await db.sesiPertemuanKelas.delete({
+			// 2. Hitung total sesi sebelum dihapus
+			const totalSesiSebelumHapus = await db.sesiPertemuanKelas.count({
+				where: { kelasId: existingSession.kelasId },
+			});
+
+			// 3. Hapus (absensi murid & guru akan cascade delete via Prisma relation)
+			const deleted = await db.sesiPertemuanKelas.delete({
 				where: { id: input.id },
 			});
+
+			// Reverse Trigger: Jika sebelum hapus sudah >= 24, berarti kelas sudah COMPLETED
+			// Setelah hapus, total turun < 24 → revert status
+			if (totalSesiSebelumHapus >= 24) {
+				const kelasLama = await db.kelas.findUnique({
+					where: { id: existingSession.kelasId },
+					select: { statusKelas: true, cohortId: true, level: true },
+				});
+
+				if (kelasLama?.statusKelas === "COMPLETED") {
+					// Revert kelas lama → RUNNING
+					await db.kelas.update({
+						where: { id: existingSession.kelasId },
+						data: { statusKelas: "RUNNING" },
+					});
+
+					// Revert kelas baru (cohortId sama, level lebih tinggi, sudah RUNNING) → LEVEL_UP
+					await db.kelas.updateMany({
+						where: {
+							cohortId: kelasLama.cohortId,
+							level: { gt: kelasLama.level },
+							statusKelas: "RUNNING",
+						},
+						data: { statusKelas: "LEVEL_UP" },
+					});
+				}
+			}
+
+			return deleted;
 		}),
 });

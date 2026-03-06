@@ -76,6 +76,16 @@ export default function KelasTab() {
 		isLoadingKelasTrial,
 		refetchKelasTrial,
 
+		// Level Up
+		dataKelasLevelUp,
+		isLoadingKelasLevelUp,
+		refetchKelasLevelUp,
+
+		// Completed
+		dataKelasCompleted,
+		isLoadingKelasCompleted,
+		refetchKelasCompleted,
+
 		fetchExportData,
 		mutations: kelasMutations,
 	} = useKelas({
@@ -87,6 +97,8 @@ export default function KelasTab() {
 		enableQueryGetKelasCount: true,
 		enableQueryGetKelasWaitingCount: true,
 		enableQueryGetKelasTrialCount: true,
+		enableQueryGetKelasLevelUp: true,
+		enableQueryGetKelasCompleted: true,
 
 		onSuccessDelete: () => {
 			setDeleteKelasDialogOpen(false);
@@ -179,14 +191,20 @@ export default function KelasTab() {
 		}
 	};
 
+	const isAnyLoading =
+		isLoadingKelasCount ||
+		isLoadingKelasWaiting ||
+		isLoadingKelasTrial ||
+		isLoadingKelasLevelUp ||
+		isLoadingKelasCompleted;
+
 	const handleRefetchAll = () => {
 		refetchKelasCount();
 		refetchKelasWaiting();
 		refetchKelasTrial();
+		refetchKelasLevelUp();
+		refetchKelasCompleted();
 	};
-
-	const isAnyLoading =
-		isLoadingKelasCount || isLoadingKelasWaiting || isLoadingKelasTrial;
 
 	if (isErrorKelasCount) {
 		return (
@@ -236,6 +254,14 @@ export default function KelasTab() {
 							<p className="text-muted-foreground text-sm">
 								{isLoadingKelasCount ? "..." : (dataKelasCount?.length ?? 0)}{" "}
 								Running {" • "}
+								{isLoadingKelasLevelUp
+									? "..."
+									: (dataKelasLevelUp?.length ?? 0)}{" "}
+								Level Up {" • "}
+								{isLoadingKelasCompleted
+									? "..."
+									: (dataKelasCompleted?.length ?? 0)}{" "}
+								Completed {" • "}
 								{isLoadingKelasTrial ? "..." : (dataKelasTrial?.length ?? 0)}{" "}
 								Trial {" • "}
 								{isLoadingKelasWaiting
@@ -345,15 +371,21 @@ export default function KelasTab() {
 			</header>
 
 			<Tabs defaultValue="running" className="w-full">
-				<TabsList>
-					<TabsTrigger value="running">
+				<TabsList className="mb-2 flex w-full flex-wrap h-auto">
+					<TabsTrigger value="running" className="flex-1 min-w-[100px]">
 						Running ({dataKelasCount?.length ?? 0})
 					</TabsTrigger>
-					<TabsTrigger value="trial">
+					<TabsTrigger value="level-up" className="flex-1 min-w-[100px]">
+						Level Up ({dataKelasLevelUp?.length ?? 0})
+					</TabsTrigger>
+					<TabsTrigger value="trial" className="flex-1 min-w-[100px]">
 						Trial ({dataKelasTrial?.length ?? 0})
 					</TabsTrigger>
-					<TabsTrigger value="waiting">
+					<TabsTrigger value="waiting" className="flex-1 min-w-[100px]">
 						Waiting ({dataKelasWaiting?.length ?? 0})
+					</TabsTrigger>
+					<TabsTrigger value="completed" className="flex-1 min-w-[100px]">
+						Completed ({dataKelasCompleted?.length ?? 0})
 					</TabsTrigger>
 				</TabsList>
 				<TabsContent value="running" className="mt-4">
@@ -365,6 +397,28 @@ export default function KelasTab() {
 						onUpLevel={handleUpLevelClick}
 						onDelete={handleDeleteClick}
 						emptyMessage="Belum ada kelas berstatus Running."
+					/>
+				</TabsContent>
+				<TabsContent value="level-up" className="mt-4">
+					<KelasListView
+						data={dataKelasLevelUp}
+						isLoading={isLoadingKelasLevelUp}
+						onEditKelas={handleEditClickKelas}
+						onEditGuruKelas={handleEditClickGuruKelas}
+						onUpLevel={handleUpLevelClick}
+						onDelete={handleDeleteClick}
+						emptyMessage="Tidak ada kelas yang sedang menunggu level up."
+					/>
+				</TabsContent>
+				<TabsContent value="completed" className="mt-4">
+					<KelasListView
+						data={dataKelasCompleted}
+						isLoading={isLoadingKelasCompleted}
+						onEditKelas={handleEditClickKelas}
+						onEditGuruKelas={handleEditClickGuruKelas}
+						onUpLevel={handleUpLevelClick}
+						onDelete={handleDeleteClick}
+						emptyMessage="Belum ada kelas berstatus Completed."
 					/>
 				</TabsContent>
 				<TabsContent value="trial" className="mt-4">

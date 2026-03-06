@@ -119,6 +119,38 @@ export const kelasRouter = createTRPCRouter({
 			return getKelasByStatus(ctx, input, "TRIAL");
 		}),
 
+	getKelasLevelUp: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+					tipeKelas: z.string().optional(),
+					jenisKelas: z.string().optional(),
+					levelKelas: z.number().optional(),
+					guruId: z.string().optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			return getKelasByStatus(ctx, input, "LEVEL_UP");
+		}),
+
+	getKelasCompleted: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+					tipeKelas: z.string().optional(),
+					jenisKelas: z.string().optional(),
+					levelKelas: z.number().optional(),
+					guruId: z.string().optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			return getKelasByStatus(ctx, input, "COMPLETED");
+		}),
+
 	getKelasById: cabangProtectedProcedure
 		.input(z.object({ id: z.string() }))
 		.query(async ({ ctx, input }) => {
@@ -262,6 +294,7 @@ export const kelasRouter = createTRPCRouter({
 					kodeKelas: true,
 					jenisKelasId: true,
 					jenisKelasRel: { select: { nama: true, tipe: true } },
+					statusKelas: true,
 					// level: true, // Keep level? Yes.
 					level: true,
 					grup: true,
@@ -306,17 +339,13 @@ export const kelasRouter = createTRPCRouter({
 							sesiPertemuanKelases: true,
 						},
 					},
-
-					// Untuk filter manual (sesi < 24)
-					sesiPertemuanKelases: {
-						select: { id: true },
-					},
 				},
 			});
 
-			// 2. Filter Konsistensi (Sama seperti tampilan tabel: Sesi < 24)
+			// 2. Filter: hanya export kelas yang masih aktif (RUNNING & LEVEL_UP), exclude COMPLETED
 			const filteredKelas = allKelasData.filter(
-				(kelas) => kelas._count.sesiPertemuanKelases < 24,
+				(kelas) =>
+					kelas.statusKelas === "RUNNING" || kelas.statusKelas === "LEVEL_UP",
 			);
 
 			const rankMap = await getJenisKelasRankMap(db);
@@ -569,6 +598,7 @@ export const kelasRouter = createTRPCRouter({
 				// 3. Jalankan Transaksi
 				return await db.$transaction(async (tx) => {
 					// A. Buat Kelas Baru (Salin data lama, override level & bulan)
+					// Status LEVEL_UP: kelas baru menunggu kelas lama selesai 24 sesi
 					const newKelas = await tx.kelas.create({
 						data: {
 							jenisKelasId: oldKelas.jenisKelasId,
@@ -582,6 +612,7 @@ export const kelasRouter = createTRPCRouter({
 							level: newLevel,
 							bulanTahunAjar: newBulanTahunAjar,
 							kodeKelas: newKodeKelas,
+							statusKelas: "LEVEL_UP",
 						},
 					});
 
@@ -673,7 +704,7 @@ async function getKelasByStatus(
 				guruId?: string;
 		  }
 		| undefined,
-	statusKelas: "RUNNING" | "WAITING" | "TRIAL",
+	statusKelas: "RUNNING" | "WAITING" | "TRIAL" | "LEVEL_UP" | "COMPLETED",
 ) {
 	const { db, allowedCabangId } = ctx;
 	const filterCabangId = allowedCabangId ?? input?.cabangId;
@@ -790,12 +821,10 @@ async function getKelasByStatus(
 		},
 	});
 
-	const filteredKelas = allKelasData.filter(
-		(kelas) => kelas._count.sesiPertemuanKelases < 24,
-	);
-
+	// Filter sesiPertemuan < 24 dihapus — status (RUNNING/LEVEL_UP/COMPLETED) sudah
+	// menjadi sumber kebenaran. COMPLETED otomatis tidak muncul karena query filter by status.
 	const rankMap = await getJenisKelasRankMap(db);
-	return sortKelasWithRank(filteredKelas, rankMap);
+	return sortKelasWithRank(allKelasData, rankMap);
 }
 
 // --- Helpers for Custom Sorting ---

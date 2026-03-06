@@ -17,6 +17,8 @@ interface UseKelasOptions {
 	enableQueryGetKelasCount?: boolean;
 	enableQueryGetKelasWaitingCount?: boolean;
 	enableQueryGetKelasTrialCount?: boolean;
+	enableQueryGetKelasLevelUp?: boolean;
+	enableQueryGetKelasCompleted?: boolean;
 	enableQueryGetKelasId?: boolean;
 	enableQueryGetKelasWithSesi?: boolean;
 
@@ -130,6 +132,34 @@ export function useKelas(options?: UseKelasOptions) {
 		},
 	);
 
+	const kelasLevelUpQuery = api.kelas.getKelasLevelUp.useQuery(
+		{
+			cabangId: cabangIdPayload,
+			tipeKelas: tipeKelasPayload,
+			jenisKelas: jenisKelasPayload,
+			levelKelas: levelKelasPayload,
+			guruId: guruIdPayload,
+		},
+		{
+			enabled: options?.enableQueryGetKelasLevelUp ?? false,
+			refetchOnWindowFocus: false,
+		},
+	);
+
+	const kelasCompletedQuery = api.kelas.getKelasCompleted.useQuery(
+		{
+			cabangId: cabangIdPayload,
+			tipeKelas: tipeKelasPayload,
+			jenisKelas: jenisKelasPayload,
+			levelKelas: levelKelasPayload,
+			guruId: guruIdPayload,
+		},
+		{
+			enabled: options?.enableQueryGetKelasCompleted ?? false,
+			refetchOnWindowFocus: false,
+		},
+	);
+
 	const fetchExportData = async () => {
 		return await apiUtils.kelas.getForExport.fetch({
 			cabangId: cabangIdPayload,
@@ -142,6 +172,8 @@ export function useKelas(options?: UseKelasOptions) {
 			apiUtils.kelas.getKelasAndCount.invalidate(),
 			apiUtils.kelas.getKelasWaitingAndCount.invalidate(),
 			apiUtils.kelas.getKelasTrialAndCount.invalidate(),
+			apiUtils.kelas.getKelasLevelUp.invalidate(),
+			apiUtils.kelas.getKelasCompleted.invalidate(),
 			apiUtils.kelas.getKelasById.invalidate(),
 		]);
 	};
@@ -262,6 +294,18 @@ export function useKelas(options?: UseKelasOptions) {
 		isLoadingKelasTrial: kelasTrialCountQuery.isLoading,
 		isErrorKelasTrial: kelasTrialCountQuery.isError,
 		errorKelasTrial: kelasTrialCountQuery.error,
+
+		dataKelasLevelUp: kelasLevelUpQuery.data,
+		isLoadingKelasLevelUp: kelasLevelUpQuery.isLoading,
+		isErrorKelasLevelUp: kelasLevelUpQuery.isError,
+		errorKelasLevelUp: kelasLevelUpQuery.error,
+		refetchKelasLevelUp: kelasLevelUpQuery.refetch,
+
+		dataKelasCompleted: kelasCompletedQuery.data,
+		isLoadingKelasCompleted: kelasCompletedQuery.isLoading,
+		isErrorKelasCompleted: kelasCompletedQuery.isError,
+		errorKelasCompleted: kelasCompletedQuery.error,
+		refetchKelasCompleted: kelasCompletedQuery.refetch,
 
 		refetchKelasWaiting: kelasWaitingCountQuery.refetch,
 		refetchKelasTrial: kelasTrialCountQuery.refetch,

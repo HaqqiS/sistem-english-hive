@@ -259,6 +259,8 @@ enum StatusKelas {
     RUNNING
     WAITING
     TRIAL
+    LEVEL_UP
+    COMPLETED
 }
 
 model Kelas {

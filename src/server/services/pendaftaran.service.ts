@@ -122,7 +122,7 @@ export const createPendaftaran = async ({
 						kelasId: input.kelasId,
 						kategori: KategoriTagihan.BUKU,
 						judul: `Buku ${kelas.jenisKelasNama} Level ${kelas.level}`,
-						deskripsi: `Auto-Generate Pendaftaran`,
+						deskripsi: `Belum Order`,
 						jumlah: hargaBuku,
 						status: StatusPembayaran.BELUM_LUNAS,
 					},

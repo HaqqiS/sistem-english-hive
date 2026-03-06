@@ -10,6 +10,7 @@ import {
 	Edit2,
 	EllipsisVertical,
 	MessageCircle,
+	PackageCheck,
 	Trash,
 	XCircle,
 } from "lucide-react";
@@ -57,6 +58,12 @@ export const DESKRIPSI_BUKU_OPTIONS = [
 		label: "Sudah Diberikan",
 		Icon: CheckCircle2,
 		colorClass: "text-green-600",
+	},
+	{
+		value: "Ready",
+		label: "Ready",
+		Icon: PackageCheck,
+		colorClass: "text-blue-600",
 	},
 	{
 		value: "Di-order",

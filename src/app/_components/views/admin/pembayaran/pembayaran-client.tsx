@@ -51,6 +51,24 @@ export default function PembayaranClient({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [sorting, setSorting] = useState<SortingState>([]);
+	const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+
+	const ROW_SELECTION_KEY = "pembayaran-row-selection";
+
+	useEffect(() => {
+		const saved = sessionStorage.getItem(ROW_SELECTION_KEY);
+		if (saved) {
+			try {
+				setRowSelection(JSON.parse(saved));
+			} catch (e) {
+				console.error("Gagal parsing row selection:", e);
+			}
+		}
+	}, []);
+
+	useEffect(() => {
+		sessionStorage.setItem(ROW_SELECTION_KEY, JSON.stringify(rowSelection));
+	}, [rowSelection]);
 
 	const { openDrawer } = usePembayaranStore();
 
@@ -327,6 +345,9 @@ export default function PembayaranClient({
 						isLoading={isLoading || isFetching || isRefetching}
 						sorting={sorting}
 						onSortingChange={setSorting}
+						rowSelection={rowSelection}
+						onRowSelectionChange={setRowSelection}
+						getRowId={(row) => row.id}
 					/>
 				</TabsContent>
 

@@ -65,6 +65,9 @@ interface DataTableProps<TData, TValue> {
 	onSortingChange?: OnChangeFn<SortingState>;
 	columnFilters?: ColumnFiltersState;
 	onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+	rowSelection?: Record<string, boolean>;
+	onRowSelectionChange?: OnChangeFn<Record<string, boolean>>;
+	getRowId?: (row: TData) => string;
 }
 
 export function DataTable<TData, TValue>({
@@ -81,19 +84,27 @@ export function DataTable<TData, TValue>({
 	onSortingChange: externalOnSortingChange,
 	columnFilters: externalColumnFilters,
 	onColumnFiltersChange: externalOnColumnFiltersChange,
+	rowSelection: externalRowSelection,
+	onRowSelectionChange: externalOnRowSelectionChange,
+	getRowId,
 }: DataTableProps<TData, TValue>) {
 	// const [sorting, setSorting] = useState<SortingState>([]);
 	const [internalSorting, setInternalSorting] = useState<SortingState>([]);
 	const [internalColumnFilters, setInternalColumnFilters] =
 		useState<ColumnFiltersState>([]);
 	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-	const [rowSelection, setRowSelection] = useState({});
+	const [internalRowSelection, setInternalRowSelection] = useState<
+		Record<string, boolean>
+	>({});
 
 	const sorting = externalSorting ?? internalSorting;
 	const onSortingChange = externalOnSortingChange ?? setInternalSorting;
 	const columnFilters = externalColumnFilters ?? internalColumnFilters;
 	const onColumnFiltersChange =
 		externalOnColumnFiltersChange ?? setInternalColumnFilters;
+	const rowSelection = externalRowSelection ?? internalRowSelection;
+	const onRowSelectionChange =
+		externalOnRowSelectionChange ?? setInternalRowSelection;
 
 	const table = useReactTable({
 		data,
@@ -107,8 +118,9 @@ export function DataTable<TData, TValue>({
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		onColumnVisibilityChange: setColumnVisibility,
-		onRowSelectionChange: setRowSelection,
+		onRowSelectionChange: onRowSelectionChange,
 		onPaginationChange: onPaginationChange,
+		getRowId,
 		manualPagination: true,
 		state: {
 			sorting,

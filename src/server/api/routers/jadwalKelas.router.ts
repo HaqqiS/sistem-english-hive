@@ -344,6 +344,10 @@ export const jadwalKelasRouter = createTRPCRouter({
 					// Filter berdasarkan hari
 					hari: hariIni,
 					kelas: {
+						// JANGAN tampilkan kelas yang sudah COMPLETED atau masih LEVEL_UP (masa depan)
+						statusKelas: {
+							notIn: ["COMPLETED", "LEVEL_UP"],
+						},
 						...(filterCabangId ? { cabangId: filterCabangId } : {}),
 						historyGuruKelases: {
 							some: {

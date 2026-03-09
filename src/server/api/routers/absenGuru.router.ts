@@ -390,8 +390,35 @@ export const absenGuruRouter = createTRPCRouter({
 				// 3. Tentukan tanggalWaktu (REALITA)
 				// Gunakan Waktu WITA saat ini
 				const tanggalWaktuSesi = dayjs().tz(TIMEZONE_BISNIS).toDate();
+				const hariIniStart = dayjs()
+					.tz(TIMEZONE_BISNIS)
+					.startOf("day")
+					.toDate();
+				const hariIniEnd = dayjs().tz(TIMEZONE_BISNIS).endOf("day").toDate();
 
-				// 4. Transaction: Buat Sesi -> Cek Level Up -> Cek Finish
+				// 4. Mencegah pembuatan sesi ganda di hari yang sama untuk jadwal yang sama (Race condition / Double Click)
+				const sesiExistingHariIni = await db.sesiPertemuanKelas.findFirst({
+					where: {
+						jadwalKelasId: jadwalKelasId,
+						tanggalWaktu: {
+							gte: hariIniStart,
+							lte: hariIniEnd,
+						},
+					},
+					select: { id: true },
+				});
+
+				if (sesiExistingHariIni) {
+					// Jika sesi untuk jadwal ini sudah dibuat hari ini, langsung return isFinished false
+					// Mencegah double click membuat sesi berulang-ulang
+					return {
+						newSesiId: sesiExistingHariIni.id,
+						absensiId: null,
+						isFinished: false,
+					};
+				}
+
+				// 5. Transaction: Buat Sesi -> Cek Level Up -> Cek Finish
 				const result = await db.$transaction(
 					async (tx) => {
 						// 4a. Buat SesiPertemuanKelas (Realisasi)

@@ -1,6 +1,7 @@
 import { Prisma, type StatusAbsenMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
+import { handleClassCompletion } from "@/server/services/kelas.service";
 import {
 	deleteSesiPertemuanSchema,
 	serverSesiPertemuanSchema,
@@ -230,22 +231,8 @@ export const sesiPertemuanRouter = createTRPCRouter({
 				});
 
 				if (totalSesi >= 24) {
-					// 1. Kelas lama (ini) → COMPLETED
-					const kelasLama = await db.kelas.update({
-						where: { id: input.kelasId },
-						data: { statusKelas: "COMPLETED" },
-						select: { cohortId: true, level: true },
-					});
-
-					// 2. Kelas baru (cohortId sama, level lebih tinggi, masih LEVEL_UP) → RUNNING
-					await db.kelas.updateMany({
-						where: {
-							cohortId: kelasLama.cohortId,
-							level: { gt: kelasLama.level },
-							statusKelas: "LEVEL_UP",
-						},
-						data: { statusKelas: "RUNNING" },
-					});
+					// Panggil logic completion dari service (ubah status, matikan jadwal, dsb)
+					await handleClassCompletion(db, input.kelasId, totalSesi);
 				}
 
 				return newSesi;

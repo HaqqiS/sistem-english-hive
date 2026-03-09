@@ -116,32 +116,44 @@ const PRIVATE_DEWASA = [
 async function main() {
 	console.log("Start seeding JenisKelas...");
 
+	const cabangs = await prisma.cabang.findMany();
+	if (cabangs.length === 0) {
+		console.log("No Cabang found. Please seed Cabang first.");
+		return;
+	}
+
 	// 1. Upsert All Classes
 	const allGroups = [...REGULAR_TRACK, ...PRIVATE_TRACK, ...PRIVATE_DEWASA];
 
-	for (const item of allGroups) {
-		await prisma.jenisKelasModel.upsert({
-			where: {
-				tipe_nama: {
-					nama: item.name,
-					tipe: item.type,
+	for (const cabang of cabangs) {
+		console.log(`Seeding for cabang: ${cabang.namaCabang}`);
+		for (const item of allGroups) {
+			await prisma.jenisKelasModel.upsert({
+				where: {
+					cabangId_tipe_nama: {
+						cabangId: cabang.id,
+						nama: item.name,
+						tipe: item.type,
+					},
 				},
-			},
-			update: {
-				harga: item.price,
-			},
-			create: {
-				nama: item.name,
-				harga: item.price,
-				tipe: item.type,
-			},
-		});
+				update: {
+					harga: item.price,
+				},
+				create: {
+					nama: item.name,
+					harga: item.price,
+					tipe: item.type,
+					cabangId: cabang.id,
+				},
+			});
+		}
 	}
 
 	// 2. Link Progression (Next Level)
 	// Helper to link a list in order
 	const linkTrack = async (
 		track: { name: string; price: number; type: TipeKelas }[],
+		cabangId: string
 	) => {
 		for (let i = 0; i < track.length - 1; i++) {
 			const currentItem = track[i];
@@ -155,7 +167,8 @@ async function main() {
 
 			const current = await prisma.jenisKelasModel.findUnique({
 				where: {
-					tipe_nama: {
+					cabangId_tipe_nama: {
+						cabangId: cabangId,
 						nama: currentName,
 						tipe: currentType,
 					},
@@ -163,7 +176,8 @@ async function main() {
 			});
 			const next = await prisma.jenisKelasModel.findUnique({
 				where: {
-					tipe_nama: {
+					cabangId_tipe_nama: {
+						cabangId: cabangId,
 						nama: nextName,
 						tipe: nextType,
 					},
@@ -176,14 +190,16 @@ async function main() {
 					data: { nextLevelId: next.id },
 				});
 				console.log(
-					`Linked ${currentName} (${currentType}) -> ${nextName} (${nextType})`,
+					`Linked ${currentName} (${currentType}) -> ${nextName} (${nextType}) for cabang ${cabangId}`,
 				);
 			}
 		}
 	};
 
-	await linkTrack(REGULAR_TRACK);
-	await linkTrack(PRIVATE_TRACK);
+	for (const cabang of cabangs) {
+		await linkTrack(REGULAR_TRACK, cabang.id);
+		await linkTrack(PRIVATE_TRACK, cabang.id);
+	}
 
 	// Private Dewasa usually has no next level in this basic set
 

@@ -242,6 +242,22 @@ export const handleClassCompletion = async (
 			},
 		});
 
+		// Update Status Kelas Jadi COMPLETED, dan kelas baru jadi RUNNING
+		const kelasLama = await tx.kelas.update({
+			where: { id: kelasId },
+			data: { statusKelas: "COMPLETED" },
+			select: { cohortId: true, level: true },
+		});
+
+		await tx.kelas.updateMany({
+			where: {
+				cohortId: kelasLama.cohortId,
+				level: { gt: kelasLama.level },
+				statusKelas: "LEVEL_UP",
+			},
+			data: { statusKelas: "RUNNING" },
+		});
+
 		return true; // Selesai
 	}
 	return false; // Belum selesai

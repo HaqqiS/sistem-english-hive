@@ -1,6 +1,7 @@
 "use client";
 
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
+import { pdf } from "@react-pdf/renderer";
 import type {
 	ColumnFiltersState,
 	PaginationState,
@@ -23,6 +24,7 @@ import {
 } from "../columns/columns-tagihan-lain";
 import EditTagihanLain from "../drawer/edit-tagihan-lain";
 import TambahTagihanLain from "../drawer/tambah-tagihan-lain";
+import { type ReceiptItem, ReceiptPDF } from "../receipt-pdf";
 
 interface TagihanLainTabProps {
 	kategori: KategoriTagihan;
@@ -184,11 +186,56 @@ export default function TagihanLainTab({
 		}
 	};
 
+	const handleDownloadTagihanLain = async (item: TypeTagihanLain) => {
+		try {
+			const idToast = toast.loading("Membuat Kuitansi...");
+			const kodeKls = item.kelas?.kodeKelas ?? "-";
+
+			const receiptItem: ReceiptItem = {
+				id: item.id,
+				judul: item.judul,
+				kodeKelas: kodeKls,
+				kategori: item.kategori,
+				jumlah: item.jumlah,
+				tanggalBayar: item.tanggalBayar,
+			};
+
+			const adminName = item.verifiedBy?.name ?? "Admin";
+			const muridN = item.murid.namaLengkap;
+			const cabangName = item.murid.cabang?.namaCabang ?? "Pusat";
+
+			const doc = (
+				<ReceiptPDF
+					items={[receiptItem]}
+					namaMurid={muridN}
+					cabangName={cabangName}
+					adminName={adminName}
+				/>
+			);
+
+			const asPdf = pdf(doc);
+			const blob = await asPdf.toBlob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `Kuitansi_${item.kategori}_${muridN}.pdf`;
+			link.click();
+			URL.revokeObjectURL(url);
+
+			toast.dismiss(idToast);
+			toast.success("Kuitansi berhasil diunduh");
+		} catch (error) {
+			console.error(error);
+			toast.error("Gagal membuat kuitansi");
+		}
+	};
+
 	const tableColumns = columnsTagihanLainGlobal({
 		onDeleteClick: handleDeleteClick,
 		onEditClick: handleEditClick,
 		onVerifyClick: handleVerifyClick,
 		onUpdateDeskripsi: handleUpdateDeskripsi,
+		onDownloadClick: handleDownloadTagihanLain,
 		isBuku: kategori === KategoriTagihan.BUKU,
 	});
 

@@ -83,6 +83,7 @@ interface ColumnsConfig {
 	onEditClick: (item: TypeTagihanLain) => void;
 	onDeleteClick: (item: TypeTagihanLain) => void;
 	onVerifyClick: (item: TypeTagihanLain) => void;
+	onDownloadClick: (item: TypeTagihanLain) => void;
 	onUpdateDeskripsi?: (id: string, deskripsi: string | null) => void;
 	isBuku?: boolean;
 }
@@ -104,6 +105,7 @@ export const columnsTagihanLain = ({
 	onEditClick,
 	onDeleteClick,
 	onVerifyClick,
+	onDownloadClick,
 }: ColumnsConfig): ColumnDef<TypeTagihanLain>[] => [
 	// Checkbox selection
 	{
@@ -334,6 +336,29 @@ export const columnsTagihanLain = ({
 								<Edit2 className="mr-2 h-4 w-4" />
 								Edit
 							</DropdownMenuItem>
+
+							{/* Aksi Download jika lunas */}
+							{isLunas && (
+								<DropdownMenuItem onClick={() => onDownloadClick(row.original)}>
+									<svg
+										className="mr-2 h-4 w-4"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<title>Download</title>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+										/>
+									</svg>
+									Download Kuitansi
+								</DropdownMenuItem>
+							)}
+
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								variant="destructive"
@@ -354,6 +379,7 @@ export const columnsTagihanLainGlobal = ({
 	onEditClick,
 	onDeleteClick,
 	onVerifyClick,
+	onDownloadClick,
 	onUpdateDeskripsi,
 	isBuku,
 }: ColumnsConfig): ColumnDef<TypeTagihanLain>[] => [
@@ -767,6 +793,29 @@ export const columnsTagihanLainGlobal = ({
 								<Edit2 className="mr-2 h-4 w-4" />
 								Edit
 							</DropdownMenuItem>
+
+							{/* Aksi Download jika lunas */}
+							{isLunas && (
+								<DropdownMenuItem onClick={() => onDownloadClick(row.original)}>
+									<svg
+										className="mr-2 h-4 w-4"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<title>Download</title>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+										/>
+									</svg>
+									Download Kuitansi
+								</DropdownMenuItem>
+							)}
+
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								variant="destructive"

@@ -1,10 +1,12 @@
 "use client";
 
 import { StatusPembayaran } from "@prisma/client";
+import { pdf } from "@react-pdf/renderer";
 import {
 	Banknote,
 	CalendarClock,
 	CreditCard,
+	Download,
 	Terminal,
 	User,
 } from "lucide-react";
@@ -15,6 +17,7 @@ import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +33,7 @@ import {
 	type TypeTagihanLain,
 } from "../columns/columns-tagihan-lain";
 import EditPembayaran from "../drawer/edit-pembayaran";
+import { type ReceiptItem, ReceiptPDF } from "../receipt-pdf";
 // import EditTagihanLain from "../edit-tagihan-lain";
 
 export default function HistoryPembayaranMuridClient() {
@@ -125,10 +129,56 @@ export default function HistoryPembayaranMuridClient() {
 		openDrawer("edit", item);
 	};
 
+	const handleDownloadSPP = async (item: TypePembayaran) => {
+		try {
+			const idToast = toast.loading("Membuat Kuitansi...");
+			const kodeKls = item.pendaftaranKelas.Kelas.kodeKelas;
+
+			const receiptItem: ReceiptItem = {
+				id: item.id,
+				judul: `SPP Bulan Ke-${item.pembayaranKe}`,
+				kodeKelas: kodeKls,
+				kategori: "SPP",
+				jumlah: item.jumlahBayar,
+				tanggalBayar: item.tanggalBayar,
+			};
+
+			const adminName = item.verifiedBy?.name ?? "Admin";
+			const muridN = item.pendaftaranKelas.murid.namaLengkap;
+			const cabangName =
+				item.pendaftaranKelas.Kelas.cabang?.namaCabang ?? "Pusat";
+
+			const doc = (
+				<ReceiptPDF
+					items={[receiptItem]}
+					namaMurid={muridN}
+					cabangName={cabangName}
+					adminName={adminName}
+				/>
+			);
+
+			const asPdf = pdf(doc);
+			const blob = await asPdf.toBlob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `Kuitansi_SPP_${muridN}_Ke-${item.pembayaranKe}.pdf`;
+			link.click();
+			URL.revokeObjectURL(url);
+
+			toast.dismiss(idToast);
+			toast.success("Kuitansi berhasil diunduh");
+		} catch (error) {
+			console.error(error);
+			toast.error("Gagal membuat kuitansi");
+		}
+	};
+
 	const columns = createColumns({
 		onDeleteClick: handleDeleteClick,
 		onEditClick: handleEditClick,
 		onVerifyClick: handleVerifyClick,
+		onDownloadClick: handleDownloadSPP,
 	});
 
 	// --- HANDLERS TAGIHAN LAIN ---
@@ -162,10 +212,55 @@ export default function HistoryPembayaranMuridClient() {
 		});
 	};
 
+	const handleDownloadTagihanLain = async (item: TypeTagihanLain) => {
+		try {
+			const idToast = toast.loading("Membuat Kuitansi...");
+			const kodeKls = item.kelas?.kodeKelas ?? "-";
+
+			const receiptItem: ReceiptItem = {
+				id: item.id,
+				judul: item.judul,
+				kodeKelas: kodeKls,
+				kategori: item.kategori,
+				jumlah: item.jumlah,
+				tanggalBayar: item.tanggalBayar,
+			};
+
+			const adminName = item.verifiedBy?.name ?? "Admin";
+			const muridN = item.murid.namaLengkap;
+			const cabangName = item.murid.cabang?.namaCabang ?? "Pusat";
+
+			const doc = (
+				<ReceiptPDF
+					items={[receiptItem]}
+					namaMurid={muridN}
+					cabangName={cabangName}
+					adminName={adminName}
+				/>
+			);
+
+			const asPdf = pdf(doc);
+			const blob = await asPdf.toBlob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `Kuitansi_${item.kategori}_${muridN}.pdf`;
+			link.click();
+			URL.revokeObjectURL(url);
+
+			toast.dismiss(idToast);
+			toast.success("Kuitansi berhasil diunduh");
+		} catch (error) {
+			console.error(error);
+			toast.error("Gagal membuat kuitansi");
+		}
+	};
+
 	const columnsLain = columnsTagihanLain({
 		onDeleteClick: handleDeleteTagihanLain,
 		onEditClick: handleEditTagihanLain,
 		onVerifyClick: handleVerifyTagihanLain,
+		onDownloadClick: handleDownloadTagihanLain,
 	});
 
 	const isLoading =
@@ -323,7 +418,87 @@ export default function HistoryPembayaranMuridClient() {
 					</div>
 
 					{dataGetAllPaginated && dataGetAllPaginated.length > 0 ? (
-						<DataTable columns={columns} data={dataGetAllPaginated} />
+						<DataTable
+							columns={columns}
+							data={dataGetAllPaginated}
+							toolbar={(table) => {
+								const selectedRows = table.getFilteredSelectedRowModel().rows;
+								const hasSelected = selectedRows.length > 0;
+
+								return hasSelected ? (
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={async () => {
+											try {
+												const idToast = toast.loading(
+													"Membuat Kuitansi Massal...",
+												);
+												// Hanya ambil yang sudah lunas
+												const validRows = selectedRows
+													.filter(
+														(r) =>
+															r.original.statusBayar === StatusPembayaran.LUNAS,
+													)
+													.map((r) => r.original);
+
+												if (validRows.length === 0) {
+													toast.dismiss(idToast);
+													toast.error("Tidak ada tagihan LUNAS yang dipilih");
+													return;
+												}
+
+												const receiptItems = validRows.map((item) => ({
+													id: item.id,
+													judul: `SPP Bulan Ke-${item.pembayaranKe}`,
+													kodeKelas: item.pendaftaranKelas.Kelas.kodeKelas,
+													kategori: "SPP",
+													jumlah: item.jumlahBayar,
+													tanggalBayar: item.tanggalBayar,
+												}));
+
+												const adminName =
+													validRows[0]?.verifiedBy?.name ?? "Admin";
+												const muridN =
+													validRows[0]?.pendaftaranKelas.murid.namaLengkap ??
+													"Murid";
+												const cabangName =
+													validRows[0]?.pendaftaranKelas.Kelas.cabang
+														?.namaCabang ?? "Pusat";
+
+												const doc = (
+													<ReceiptPDF
+														items={receiptItems}
+														namaMurid={muridN}
+														cabangName={cabangName}
+														adminName={adminName}
+													/>
+												);
+
+												const asPdf = pdf(doc);
+												const blob = await asPdf.toBlob();
+												const url = URL.createObjectURL(blob);
+												const link = document.createElement("a");
+												link.href = url;
+												link.download = `Kuitansi_Gabungan_SPP_${muridN}.pdf`;
+												link.click();
+												URL.revokeObjectURL(url);
+
+												toast.dismiss(idToast);
+												toast.success("Kuitansi massal berhasil diunduh");
+												table.toggleAllRowsSelected(false);
+											} catch (err) {
+												console.error(err);
+												toast.error("Gagal membuat kuitansi");
+											}
+										}}
+									>
+										<Download className="mr-2 h-4 w-4" />
+										Unduh {selectedRows.length} Terpilih
+									</Button>
+								) : null;
+							}}
+						/>
 					) : (
 						<div className="flex h-40 flex-col items-center justify-center gap-2 rounded-md border border-dashed text-muted-foreground">
 							<CreditCard className="h-8 w-8 opacity-50" />
@@ -345,7 +520,84 @@ export default function HistoryPembayaranMuridClient() {
 					</div>
 
 					{dataTagihanLain && dataTagihanLain.length > 0 ? (
-						<DataTable columns={columnsLain} data={dataTagihanLain} />
+						<DataTable
+							columns={columnsLain}
+							data={dataTagihanLain}
+							toolbar={(table) => {
+								const selectedRows = table.getFilteredSelectedRowModel().rows;
+								const hasSelected = selectedRows.length > 0;
+
+								return hasSelected ? (
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={async () => {
+											try {
+												const idToast = toast.loading(
+													"Membuat Kuitansi Massal...",
+												);
+												// Hanya ambil yang sudah lunas
+												const validRows = selectedRows
+													.filter(
+														(r) => r.original.status === StatusPembayaran.LUNAS,
+													)
+													.map((r) => r.original);
+
+												if (validRows.length === 0) {
+													toast.dismiss(idToast);
+													toast.error("Tidak ada tagihan LUNAS yang dipilih");
+													return;
+												}
+
+												const receiptItems = validRows.map((item) => ({
+													id: item.id,
+													judul: item.judul,
+													kodeKelas: item.kelas?.kodeKelas ?? "-",
+													kategori: item.kategori,
+													jumlah: item.jumlah,
+													tanggalBayar: item.tanggalBayar,
+												}));
+
+												const adminName =
+													validRows[0]?.verifiedBy?.name ?? "Admin";
+												const muridN =
+													validRows[0]?.murid.namaLengkap ?? "Murid";
+												const cabangName =
+													validRows[0]?.murid.cabang?.namaCabang ?? "Pusat";
+
+												const doc = (
+													<ReceiptPDF
+														items={receiptItems}
+														namaMurid={muridN}
+														cabangName={cabangName}
+														adminName={adminName}
+													/>
+												);
+
+												const asPdf = pdf(doc);
+												const blob = await asPdf.toBlob();
+												const url = URL.createObjectURL(blob);
+												const link = document.createElement("a");
+												link.href = url;
+												link.download = `Kuitansi_Gabungan_Lainnya_${muridN}.pdf`;
+												link.click();
+												URL.revokeObjectURL(url);
+
+												toast.dismiss(idToast);
+												toast.success("Kuitansi massal berhasil diunduh");
+												table.toggleAllRowsSelected(false);
+											} catch (err) {
+												console.error(err);
+												toast.error("Gagal membuat kuitansi");
+											}
+										}}
+									>
+										<Download className="mr-2 h-4 w-4" />
+										Unduh {selectedRows.length} Terpilih
+									</Button>
+								) : null;
+							}}
+						/>
 					) : (
 						<div className="flex h-40 flex-col items-center justify-center gap-2 rounded-md border border-dashed text-muted-foreground">
 							<Banknote className="h-8 w-8 opacity-50" />

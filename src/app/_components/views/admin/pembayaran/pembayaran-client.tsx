@@ -1,6 +1,7 @@
 "use client";
 
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
+import { pdf } from "@react-pdf/renderer";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { FileSpreadsheet, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,6 +35,7 @@ import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "./columns/columns-pembayaran";
 import EditPembayaran from "./drawer/edit-pembayaran";
 import TambahPembayaran from "./drawer/tambah-pembayaran";
+import { type ReceiptItem, ReceiptPDF } from "./receipt-pdf";
 import TagihanLainTab from "./tabs/tagihan-lain-tab";
 
 interface PembayaranClientProps {
@@ -188,11 +190,57 @@ export default function PembayaranClient({
 			console.error(error);
 		}
 	};
+
+	const handleDownloadSPP = async (item: TypePembayaran) => {
+		try {
+			const idToast = toast.loading("Membuat Kuitansi...");
+			const kodeKls = item.pendaftaranKelas.Kelas.kodeKelas;
+
+			const receiptItem: ReceiptItem = {
+				id: item.id,
+				judul: `SPP Bulan Ke-${item.pembayaranKe}`,
+				kodeKelas: kodeKls,
+				kategori: "SPP",
+				jumlah: item.jumlahBayar,
+				tanggalBayar: item.tanggalBayar,
+			};
+
+			const adminName = item.verifiedBy?.name ?? "Admin";
+			const muridN = item.pendaftaranKelas.murid.namaLengkap;
+			const cabangName =
+				item.pendaftaranKelas.Kelas.cabang?.namaCabang ?? "Pusat";
+
+			const doc = (
+				<ReceiptPDF
+					items={[receiptItem]}
+					namaMurid={muridN}
+					cabangName={cabangName}
+					adminName={adminName}
+				/>
+			);
+
+			const asPdf = pdf(doc);
+			const blob = await asPdf.toBlob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `Kuitansi_SPP_${muridN}_Ke-${item.pembayaranKe}.pdf`;
+			link.click();
+			URL.revokeObjectURL(url);
+
+			toast.dismiss(idToast);
+			toast.success("Kuitansi berhasil diunduh");
+		} catch (error) {
+			console.error(error);
+			toast.error("Gagal membuat kuitansi");
+		}
+	};
 	// --- TABLE CONFIG ---
 	const tableColumns = columns({
 		onEditClick: handleEditClick,
 		onDeleteClick: handleDeleteClick,
 		onVerifyClick: handleVerifyClick,
+		onDownloadClick: handleDownloadSPP,
 	});
 
 	// --- REFRESH UTILS ---

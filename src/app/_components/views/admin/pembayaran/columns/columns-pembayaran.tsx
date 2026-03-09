@@ -44,6 +44,7 @@ interface ColumnsConfig {
 	onEditClick: (item: TypePembayaran) => void;
 	onDeleteClick: (item: TypePembayaran) => void;
 	onVerifyClick: (item: TypePembayaran) => void;
+	onDownloadClick: (item: TypePembayaran) => void;
 }
 
 const getStatusBadgeVariant = (
@@ -65,6 +66,7 @@ export const columns = ({
 	onEditClick,
 	onDeleteClick,
 	onVerifyClick,
+	onDownloadClick,
 }: ColumnsConfig): ColumnDef<TypePembayaran>[] => [
 	// Checkbox selection
 	{
@@ -362,6 +364,29 @@ export const columns = ({
 								<Edit2 className="mr-2 h-4 w-4" />
 								Edit Detail
 							</DropdownMenuItem>
+
+							{/* Aksi Download jika lunas */}
+							{isLunas && (
+								<DropdownMenuItem onClick={() => onDownloadClick(row.original)}>
+									<svg
+										className="mr-2 h-4 w-4"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<title>Download</title>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+										/>
+									</svg>
+									Download Kuitansi
+								</DropdownMenuItem>
+							)}
+
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								variant="destructive"

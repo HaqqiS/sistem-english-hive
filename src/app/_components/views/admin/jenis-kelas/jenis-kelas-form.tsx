@@ -148,7 +148,7 @@ export function JenisKelasForm({ form, onSubmit }: JenisKelasFormProps) {
 								<FormControl>
 									<Select
 										onValueChange={field.onChange}
-										value={field.value}
+										value={field.value ?? undefined}
 										disabled={isLoadingCabang}
 									>
 										<SelectTrigger className="w-full">

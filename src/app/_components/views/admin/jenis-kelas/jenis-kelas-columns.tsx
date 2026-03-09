@@ -52,6 +52,11 @@ export const jenisKelasColumns = ({
 		cell: ({ row }) => <span>{toRupiah(row.original.hargaBuku)}</span>,
 	},
 	{
+		accessorKey: "cabang.namaCabang",
+		header: "Cabang",
+		cell: ({ row }) => <span>{row.original.cabang?.namaCabang ?? "-"}</span>,
+	},
+	{
 		accessorKey: "nextLevel",
 		header: "Next Level",
 		cell: ({ row }) => (

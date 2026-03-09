@@ -6,9 +6,15 @@ import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
 export const jenisKelasRouter = createTRPCRouter({
 	getJenisKelasList: cabangProtectedProcedure.query(async ({ ctx }) => {
-		return await ctx.db.jenisKelasModel.findMany({
+		const { db, allowedCabangId } = ctx;
+		const whereClause: Prisma.JenisKelasModelWhereInput = {};
+		if (allowedCabangId) whereClause.cabangId = allowedCabangId;
+
+		return await db.jenisKelasModel.findMany({
+			where: whereClause,
 			include: {
 				nextLevel: { select: { nama: true } },
+				cabang: { select: { namaCabang: true } },
 			},
 			orderBy: [{ tipe: "asc" }, { createdAt: "asc" }],
 		});
@@ -17,8 +23,18 @@ export const jenisKelasRouter = createTRPCRouter({
 	createJenisKelas: cabangProtectedProcedure
 		.input(jenisKelasSchema)
 		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const finalCabangId = allowedCabangId ?? input.cabangId;
+
+			if (!finalCabangId) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Cabang ID harus ditentukan.",
+				});
+			}
+
 			try {
-				return await ctx.db.jenisKelasModel.create({
+				return await db.jenisKelasModel.create({
 					data: {
 						nama: input.nama,
 						tipe: input.tipe,
@@ -26,6 +42,7 @@ export const jenisKelasRouter = createTRPCRouter({
 						hargaBuku: input.hargaBuku,
 						deskripsi: input.deskripsi,
 						nextLevelId: input.nextLevelId,
+						cabangId: finalCabangId,
 					},
 				});
 			} catch (error) {
@@ -45,8 +62,40 @@ export const jenisKelasRouter = createTRPCRouter({
 		.input(jenisKelasSchema.extend({ id: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
+			const { db, allowedCabangId } = ctx;
+
+			const existing = await db.jenisKelasModel.findUnique({
+				where: { id },
+				select: { cabangId: true },
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Jenis kelas tidak ditemukan.",
+				});
+			}
+
+			if (allowedCabangId && existing.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak mengedit jenis kelas dari cabang lain.",
+				});
+			}
+
+			if (
+				allowedCabangId &&
+				data.cabangId &&
+				data.cabangId !== allowedCabangId
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak boleh memindahkan jenis kelas ke cabang lain.",
+				});
+			}
+
 			try {
-				return await ctx.db.jenisKelasModel.update({
+				return await db.jenisKelasModel.update({
 					where: { id },
 					data: {
 						nama: data.nama,
@@ -55,6 +104,7 @@ export const jenisKelasRouter = createTRPCRouter({
 						hargaBuku: data.hargaBuku,
 						deskripsi: data.deskripsi,
 						nextLevelId: data.nextLevelId,
+						cabangId: data.cabangId,
 					},
 				});
 			} catch (error) {
@@ -73,8 +123,29 @@ export const jenisKelasRouter = createTRPCRouter({
 	deleteJenisKelas: cabangProtectedProcedure
 		.input(z.object({ id: z.string() }))
 		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const existing = await db.jenisKelasModel.findUnique({
+				where: { id: input.id },
+				select: { cabangId: true },
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Jenis kelas tidak ditemukan.",
+				});
+			}
+
+			if (allowedCabangId && existing.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak menghapus jenis kelas dari cabang lain.",
+				});
+			}
+
 			try {
-				return await ctx.db.jenisKelasModel.delete({
+				return await db.jenisKelasModel.delete({
 					where: { id: input.id },
 				});
 			} catch (error) {

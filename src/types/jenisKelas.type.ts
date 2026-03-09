@@ -9,8 +9,10 @@ export const jenisKelasSchema = z.object({
 	hargaBuku: z.number().min(0, "Harga buku tidak boleh negatif"),
 	deskripsi: z.string().nullable().optional(),
 	nextLevelId: z.string().nullable().optional(),
+	cabangId: z.string().min(1, "Cabang wajib dipilih").optional(),
 });
 
 export type TypeJenisKelas = z.infer<typeof jenisKelasSchema> & {
 	nextLevel?: { nama: string } | null;
+	cabang?: { namaCabang: string } | null;
 };

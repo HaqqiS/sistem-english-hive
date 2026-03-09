@@ -1,6 +1,7 @@
 "use client";
 
 import { TipeKelas } from "@prisma/client";
+import { useSession } from "next-auth/react";
 import type { UseFormReturn } from "react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,7 +20,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useCabang } from "@/hooks/useCabang";
 import { cn } from "@/lib/utils";
+import { UserRole } from "@/server/auth/type";
 import { api } from "@/trpc/react";
 import type { TypeJenisKelas } from "@/types/jenisKelas.type";
 import { toRupiah } from "@/utils/toRupiah";
@@ -33,6 +36,12 @@ export function JenisKelasForm({ form, onSubmit }: JenisKelasFormProps) {
 	// Fetch existing Jenis Kelas for "Next Level" options
 	const { data: jenisKelasList, isLoading: isLoadingList } =
 		api.jenisKelas.getJenisKelasList.useQuery();
+
+	const session = useSession();
+	const isAdmin = session.data?.user.role === UserRole.ADMIN;
+	const { dataList: dataCabang, isLoadingList: isLoadingCabang } = useCabang({
+		enableQueryList: true,
+	});
 
 	// Exclude current selecting (if editing) to avoid self-reference loop
 	// (Though simple filter might not catch indirect loops, it's a start)
@@ -105,28 +114,65 @@ export function JenisKelasForm({ form, onSubmit }: JenisKelasFormProps) {
 				/>
 			</div>
 
-			<FormField
-				control={form.control}
-				name="hargaBuku"
-				render={({ field }) => (
-					<FormItem>
-						<FormLabel>Harga Buku</FormLabel>
-						<FormControl>
-							<Input
-								placeholder="120000"
-								{...field}
-								type="text"
-								value={field.value ? toRupiah(field.value) : ""}
-								onChange={(e) => {
-									const val = e.target.value.replace(/[^0-9]/g, "");
-									field.onChange(Number(val));
-								}}
-							/>
-						</FormControl>
-						<FormMessage />
-					</FormItem>
+			<div className="grid grid-cols-2 gap-4">
+				<FormField
+					control={form.control}
+					name="hargaBuku"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Harga Buku</FormLabel>
+							<FormControl>
+								<Input
+									placeholder="120000"
+									{...field}
+									type="text"
+									value={field.value ? toRupiah(field.value) : ""}
+									onChange={(e) => {
+										const val = e.target.value.replace(/[^0-9]/g, "");
+										field.onChange(Number(val));
+									}}
+								/>
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				{!isAdmin && (
+					<FormField
+						control={form.control}
+						name="cabangId"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Pilih Cabang</FormLabel>
+								<FormControl>
+									<Select
+										onValueChange={field.onChange}
+										value={field.value}
+										disabled={isLoadingCabang}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue
+												placeholder={
+													isLoadingCabang ? "Loading..." : "Pilih Cabang"
+												}
+											/>
+										</SelectTrigger>
+										<SelectContent>
+											{dataCabang?.map((items) => (
+												<SelectItem key={items.id} value={items.id}>
+													{items.namaCabang}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 				)}
-			/>
+			</div>
 
 			<FormField
 				control={form.control}

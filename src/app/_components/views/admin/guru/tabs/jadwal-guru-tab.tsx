@@ -26,6 +26,21 @@ interface JadwalGuruTabProps {
 	cabangId?: string;
 }
 
+const getJadwalGuruStatusTheme = (status?: string | null) => {
+	switch (status) {
+		case "TRIAL":
+			return "border-l-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-900/20 dark:text-purple-100";
+		case "WAITING":
+			return "border-l-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-100";
+		case "LEVEL_UP":
+			return "border-l-teal-500 bg-teal-50 text-teal-900 dark:bg-teal-900/20 dark:text-teal-100";
+		case "COMPLETED":
+			return "border-l-slate-500 bg-slate-50 text-slate-900 dark:bg-slate-900/20 dark:text-slate-100";
+		case "RUNNING":
+			return "border-l-primary bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary";
+	}
+};
+
 export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 	const {
 		dataJadwalMatrix: data,
@@ -205,13 +220,7 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 									>
 										{cellContent ? (
 											<div
-												className={`flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md ${
-													cellContent.status === "TRIAL"
-														? "border-l-blue-600 bg-blue-50 text-blue-900 dark:bg-blue-900/20 dark:text-blue-100"
-														: cellContent.status === "WAITING"
-															? "border-l-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-100"
-															: "border-l-primary bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
-												}`}
+												className={`flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md ${getJadwalGuruStatusTheme(cellContent.status)}`}
 											>
 												<span className="font-bold tracking-tight">
 													{cellContent.kodeKelas}

@@ -25,13 +25,23 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 	switch (status) {
 		case "TRIAL":
 			cardStyles =
-				"border-l-4 border-l-blue-600 bg-blue-50/50 hover:bg-blue-100/50 dark:bg-blue-900/10 dark:hover:bg-blue-900/20";
-			headerColorClass = "bg-blue-600";
+				"border-l-4 border-l-purple-500 bg-purple-50/50 hover:bg-purple-100/50 dark:bg-purple-900/10 dark:hover:bg-purple-900/20";
+			headerColorClass = "bg-purple-500";
 			break;
 		case "WAITING":
 			cardStyles =
 				"border-l-4 border-l-yellow-500 bg-yellow-50/50 hover:bg-yellow-100/50 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20";
-			headerColorClass = "bg-yellow-500"; // Kuning
+			headerColorClass = "bg-yellow-500";
+			break;
+		case "LEVEL_UP":
+			cardStyles =
+				"border-l-4 border-l-teal-500 bg-teal-50/50 hover:bg-teal-100/50 dark:bg-teal-900/10 dark:hover:bg-teal-900/20";
+			headerColorClass = "bg-teal-500";
+			break;
+		case "COMPLETED":
+			cardStyles =
+				"border-l-4 border-l-slate-500 bg-slate-50/50 hover:bg-slate-100/50 dark:bg-slate-900/10 dark:hover:bg-slate-900/20";
+			headerColorClass = "bg-slate-500";
 			break;
 		case "RUNNING":
 			// Menggunakan warna Accent (biasanya Primary/Brand)

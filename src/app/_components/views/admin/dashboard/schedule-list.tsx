@@ -15,6 +15,23 @@ import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
 import dayjs from "@/utils/dateUtils";
 
+const getBadgeKelasStatusTheme = (status?: StatusKelas | null) => {
+	switch (status) {
+		case StatusKelas.RUNNING:
+			return "bg-primary text-primary-foreground";
+		case StatusKelas.WAITING:
+			return "bg-yellow-500 text-yellow-50 dark:bg-yellow-500 dark:text-yellow-50";
+		case StatusKelas.TRIAL:
+			return "bg-purple-500 text-white dark:bg-purple-500 dark:text-white";
+		case StatusKelas.LEVEL_UP:
+			return "bg-teal-500 text-white dark:bg-teal-500 dark:text-white";
+		case StatusKelas.COMPLETED:
+			return "bg-slate-500 text-white dark:bg-slate-500 dark:text-white";
+		default:
+			return "bg-blue-500 text-white dark:bg-blue-500 dark:text-white";
+	}
+};
+
 export default function ScheduleList() {
 	const { todaySchedule } = useDashboard();
 	const { data, isLoading } = todaySchedule;
@@ -102,11 +119,7 @@ export default function ScheduleList() {
 												<Badge
 													className={cn(
 														"h-5 border-0 px-1.5 text-[10px] font-normal",
-														jadwal.kelas.statusKelas === StatusKelas.RUNNING
-															? "bg-primary text-primary-foreground"
-															: jadwal.kelas.statusKelas === StatusKelas.WAITING
-																? "bg-yellow-500 text-yellow-50 dark:bg-yellow-500 dark:text-yellow-50"
-																: "bg-blue-500 text-blue-50 dark:bg-blue-500 dark:text-blue-50",
+														getBadgeKelasStatusTheme(jadwal.kelas.statusKelas),
 													)}
 												>
 													{jadwal.kelas.statusKelas}

@@ -17,14 +17,14 @@ export const jenisKelasRouter = createTRPCRouter({
 			}
 
 			return await db.jenisKelasModel.findMany({
-			where: whereClause,
-			include: {
-				nextLevel: { select: { nama: true } },
-				cabang: { select: { namaCabang: true } },
-			},
-			orderBy: [{ tipe: "asc" }, { createdAt: "asc" }],
-		});
-	}),
+				where: whereClause,
+				include: {
+					nextLevel: { select: { nama: true } },
+					cabang: { select: { namaCabang: true } },
+				},
+				orderBy: [{ tipe: "asc" }, { createdAt: "asc" }],
+			});
+		}),
 
 	createJenisKelas: cabangProtectedProcedure
 		.input(jenisKelasSchema)

@@ -263,9 +263,11 @@ export const exportJadwalMatrixPDF = (
 					// COLORS
 					const DEFAULT_COLOR: [number, number, number] = [156, 163, 175]; // Grey
 					const STATUS_COLORS: Record<string, [number, number, number]> = {
-						RUNNING: [34, 197, 94], // Green
-						TRIAL: [59, 130, 246], // Blue
-						WAITING: [249, 115, 22], // Orange
+						RUNNING: [37, 99, 235], // Blue
+						TRIAL: [168, 85, 247], // Purple
+						WAITING: [234, 179, 8], // Yellow
+						LEVEL_UP: [20, 184, 166], // Teal
+						COMPLETED: [100, 116, 139], // Slate
 						DEFAULT: DEFAULT_COLOR,
 					};
 

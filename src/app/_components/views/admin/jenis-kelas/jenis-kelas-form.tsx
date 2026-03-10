@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCabang } from "@/hooks/useCabang";
+import { useJenisKelas } from "@/hooks/useJenisKelas";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/server/auth/type";
-import { useJenisKelas } from "@/hooks/useJenisKelas";
 import type { TypeJenisKelas } from "@/types/jenisKelas.type";
 import { toRupiah } from "@/utils/toRupiah";
 
@@ -37,8 +37,9 @@ export function JenisKelasForm({ form, onSubmit }: JenisKelasFormProps) {
 	const watchedCabangId = form.watch("cabangId");
 
 	// Fetch existing Jenis Kelas for "Next Level" options via hook
-	const { data: jenisKelasList, isLoading: isLoadingList } =
-		useJenisKelas({ cabangId: watchedCabangId ?? undefined });
+	const { data: jenisKelasList, isLoading: isLoadingList } = useJenisKelas({
+		cabangId: watchedCabangId ?? undefined,
+	});
 
 	const session = useSession();
 	const isAdmin = session.data?.user.role === UserRole.ADMIN;

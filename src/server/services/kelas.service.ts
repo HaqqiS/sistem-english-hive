@@ -1,5 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
-import { StatusPembayaran, StatusPendaftaran } from "@prisma/client";
+import {
+	StatusKelas,
+	StatusPembayaran,
+	StatusPendaftaran,
+} from "@prisma/client";
 import { BATAS_SESI, JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import dayjs from "@/utils/dateUtils";
 
@@ -113,6 +117,7 @@ export const handleAutoLevelUp = async ({
 			kodeKelas: newKodeKelas,
 			cohortId: currentClass.cohortId,
 			cabangId: currentClass.cabangId,
+			statusKelas: StatusKelas.LEVEL_UP,
 		},
 	});
 

@@ -33,8 +33,8 @@ import {
 	type TypeTagihanLain,
 } from "../columns/columns-tagihan-lain";
 import EditPembayaran from "../drawer/edit-pembayaran";
+import EditTagihanLain from "../drawer/edit-tagihan-lain";
 import { type ReceiptItem, ReceiptPDF } from "../receipt-pdf";
-// import EditTagihanLain from "../edit-tagihan-lain";
 
 export default function HistoryPembayaranMuridClient() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -49,9 +49,9 @@ export default function HistoryPembayaranMuridClient() {
 	const [tagihanLainToDelete, setTagihanLainToDelete] =
 		useState<TypeTagihanLain | null>(null);
 
-	// const [editTagihanLainOpen, setEditTagihanLainOpen] = useState(false);
-	// const [tagihanLainToEdit, setTagihanLainToEdit] =
-	// 	useState<TypeTagihanLain | null>(null);
+	const [editTagihanLainOpen, setEditTagihanLainOpen] = useState(false);
+	const [tagihanLainToEdit, setTagihanLainToEdit] =
+		useState<TypeTagihanLain | null>(null);
 
 	// 1. Hook Utama SPP
 	const {
@@ -204,12 +204,9 @@ export default function HistoryPembayaranMuridClient() {
 		}
 	};
 
-	const handleEditTagihanLain = (_item: TypeTagihanLain) => {
-		// setTagihanLainToEdit(item);
-		// setEditTagihanLainOpen(true);
-		toast("Fitur Edit Tagihan Lain belum tersedia", {
-			description: "Mohon hubungi admin jika butuh perubahan urgent.",
-		});
+	const handleEditTagihanLain = (item: TypeTagihanLain) => {
+		setTagihanLainToEdit(item);
+		setEditTagihanLainOpen(true);
 	};
 
 	const handleDownloadTagihanLain = async (item: TypeTagihanLain) => {
@@ -609,11 +606,11 @@ export default function HistoryPembayaranMuridClient() {
 
 			{/* Drawers & Dialogs */}
 			<EditPembayaran />
-			{/* <EditTagihanLain
+			<EditTagihanLain
 				isOpen={editTagihanLainOpen}
 				onOpenChange={setEditTagihanLainOpen}
 				data={tagihanLainToEdit}
-			/> */}
+			/>
 
 			{/* Delete Dialog SPP */}
 			<DeleteConfirmationDialog

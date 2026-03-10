@@ -5,12 +5,18 @@ import { jenisKelasSchema } from "@/types/jenisKelas.type";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
 export const jenisKelasRouter = createTRPCRouter({
-	getJenisKelasList: cabangProtectedProcedure.query(async ({ ctx }) => {
-		const { db, allowedCabangId } = ctx;
-		const whereClause: Prisma.JenisKelasModelWhereInput = {};
-		if (allowedCabangId) whereClause.cabangId = allowedCabangId;
+	getJenisKelasList: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const whereClause: Prisma.JenisKelasModelWhereInput = {};
+			if (allowedCabangId) {
+				whereClause.cabangId = allowedCabangId;
+			} else if (input?.cabangId) {
+				whereClause.cabangId = input.cabangId;
+			}
 
-		return await db.jenisKelasModel.findMany({
+			return await db.jenisKelasModel.findMany({
 			where: whereClause,
 			include: {
 				nextLevel: { select: { nama: true } },

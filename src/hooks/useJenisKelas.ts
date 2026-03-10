@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 
-export function useJenisKelas() {
+export function useJenisKelas(params?: { cabangId?: string }) {
 	const utils = api.useUtils();
 
 	const {
@@ -11,7 +11,7 @@ export function useJenisKelas() {
 		isLoading: isLoadingJenisKelas,
 		isError: isErrorJenisKelas,
 		error: errorJenisKelas,
-	} = api.jenisKelas.getJenisKelasList.useQuery();
+	} = api.jenisKelas.getJenisKelasList.useQuery(params);
 
 	const createMutation = api.jenisKelas.createJenisKelas.useMutation({
 		onSuccess: async () => {

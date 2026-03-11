@@ -335,7 +335,7 @@ export const createBulkPendaftaran = async ({
 						kelasId,
 						kategori: KategoriTagihan.BUKU,
 						judul: `Buku ${kelas.jenisKelasNama} Level ${kelas.level}`,
-						deskripsi: "Auto-Generate Bulk Pendaftaran",
+						deskripsi: "Belum Order",
 						jumlah: hargaBuku,
 						status: StatusPembayaran.BELUM_LUNAS,
 					},

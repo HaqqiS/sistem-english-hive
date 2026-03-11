@@ -667,6 +667,7 @@ export const kelasRouter = createTRPCRouter({
 									jumlah: hargaBuku,
 									status: StatusPembayaran.BELUM_LUNAS,
 									kelasId: newKelas.id,
+									deskripsi: "Belum Order",
 								},
 							});
 						}

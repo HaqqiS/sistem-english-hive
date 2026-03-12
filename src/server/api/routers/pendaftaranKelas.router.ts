@@ -858,21 +858,35 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
 				const existingMuridKelas = await db.pendaftaranKelas.findFirst({
 					where: { id: input.id },
-					select: { muridId: true },
+					select: { muridId: true, kelasId: true },
 				});
+
 				if (existingMuridKelas) {
 					await db.$transaction(async (tx) => {
-						// update status murid yang terkait menjadi 'NON-AKTIF'
+						// 1. Bersihkan seluruh data absensi murid yang terkait dengan KELAS INI
+						await tx.absensiMurid.deleteMany({
+							where: {
+								muridId: existingMuridKelas.muridId,
+								sesiPertemuanKelas: {
+									kelasId: existingMuridKelas.kelasId,
+								},
+							},
+						});
+
+						// 2. Update status murid yang terkait menjadi 'NON-AKTIF'
 						await tx.murid.update({
 							where: { id: existingMuridKelas.muridId },
 							data: { statusMurid: StatusMurid.NON_AKTIF },
 						});
+
+						// 3. Hapus pendaftaran kelas itu sendiri
+						await tx.pendaftaranKelas.delete({
+							where: { id: input.id },
+						});
 					});
 				}
 
-				return db.pendaftaranKelas.delete({
-					where: { id: input.id },
-				});
+				return { success: true };
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
 					if (error.code === "P2025") {

@@ -128,10 +128,20 @@ export const calculateSisaPertemuan = async (
 	const saldoUangGlobal = totalUangMasukGlobal - totalUangTerpakaiGlobal;
 
 	// 4. Kalkulasi Sisa
-	const sisaPertemuan = Math.floor(saldoUangGlobal / hargaPerSesi);
-	const totalKuotaSesi = sisaPertemuan + totalTerpakai;
+	// const sisaPertemuan = Math.floor(saldoUangGlobal / hargaPerSesi);
+	// const totalKuotaSesi = sisaPertemuan + totalTerpakai;
+	// const virtualUangMasukKelasIni =
+	// 	saldoUangGlobal + totalTerpakai * hargaPerSesi;
+	// BUG FIX: Floor loss & Trial Class loss
+	// virtualUangMasukKelasIni merpresentasikan "Porsi uang global yang masih tersisa + Uang yang SUDAH dibakar di kelas ini"
 	const virtualUangMasukKelasIni =
 		saldoUangGlobal + totalTerpakai * hargaPerSesi;
+
+	// Kapasitas riil yang bisa dibeli oleh uang yang dialokasikan ke kelas ini:
+	const totalKuotaSesi = Math.floor(virtualUangMasukKelasIni / hargaPerSesi);
+
+	// Sisa pertemuan = Kapasitas - Yang sudah dipakai
+	const sisaPertemuan = Math.max(0, totalKuotaSesi - totalTerpakai);
 
 	// 5. Cek Trigger Tagihan
 	let needNewBill = false;
@@ -259,35 +269,6 @@ export const calculateSisaPertemuan = async (
 	);
 	const nextBillAmount =
 		kelebihanBayar > 0 ? Math.max(0, hargaBlok - kelebihanBayar) : hargaBlok;
-
-	// // Jika sisa pertemuan sudah sedikit (<= BATAS)
-	// if (sisaPertemuan <= BATAS_SISA_UNTUK_TAGIHAN) {
-	//   // --- LOGIKA BARU: CEK BERDASARKAN JUMLAH TAGIHAN YANG ADA ---
-
-	//   // Hitung total tagihan yang SUDAH dibuat (baik Lunas maupun Belum)
-	//   const totalTagihanDibuat = await db.pembayaran.count({
-	//     where: { pendaftaranKelasId: pendaftaranKelasId },
-	//   });
-
-	//   // Hitung berapa paket yang SEHARUSNYA sudah ditagih agar bisa mengcover pemakaian saat ini + buffer 1 paket ke depan
-	//   // Rumus: Jika pemakaian 6, butuh 1 paket (cover 1-8). Jika pemakaian 8, butuh 2 paket (biar ada sisa 8 lagi).
-	//   // Tapi kita ingin mentrigger tagihan BARU (paket ke-N+1) saat sisa menipis.
-
-	//   // Logika: "Apakah jumlah paket yang sudah ditagih CUKUP untuk menutupi pemakaian + 1 paket ke depan?"
-	//   // Total kapasitas yang seharusnya dimiliki = totalTagihanDibuat * 8
-	//   // Kita ingin men-trigger tagihan baru JIKA:
-	//   // (Kapasitas yg dimiliki - Pemakaian) <= Batas
-	//   // Tapi kapasitas yg dimiliki disini adalah berdasarkan TAGIHAN YANG ADA (bukan cuma yg lunas)
-
-	//   const totalKapasitasTagihan = totalTagihanDibuat * paketPertemuan;
-	//   const potensiSisa = totalKapasitasTagihan - totalTerpakai;
-
-	//   // Jika potensi sisa (berdasarkan semua tagihan yg ada) sudah <= Batas, buat tagihan baru
-	//   if (potensiSisa <= BATAS_SISA_UNTUK_TAGIHAN) {
-	//     needNewBill = true;
-	//     nextBillPembayaranKe = totalTagihanDibuat + 1;
-	//   }
-	// }
 
 	return {
 		muridName,

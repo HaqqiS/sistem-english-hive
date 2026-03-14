@@ -54,7 +54,16 @@ export const createDetailAbsenMuridColumns = ({
 		accessorKey: "namaLengkap",
 		header: "Nama Murid",
 		cell: ({ row }) => {
-			return <div className="font-medium">{row.original.namaLengkap}</div>;
+			return (
+				<div className="flex items-center gap-2">
+					<div className="font-medium">{row.original.namaLengkap}</div>
+					{row.original.statusPendaftaran === "TRIAL" && (
+						<Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+							Trial
+						</Badge>
+					)}
+				</div>
+			);
 		},
 	},
 	{
@@ -119,19 +128,6 @@ export const createDetailAbsenMuridColumns = ({
 								</Badge>{" "}
 								Alpa
 								{status === StatusAbsenMurid.ALPA && (
-									<Check className="h-3 w-3 ml-auto" />
-								)}
-							</div>
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onClick={() => handleChange(StatusAbsenMurid.OFF_SEMENTARA)}
-						>
-							<div className="flex items-center gap-2">
-								<Badge variant="secondary" className="w-5 justify-center">
-									O
-								</Badge>{" "}
-								Off
-								{status === StatusAbsenMurid.OFF_SEMENTARA && (
 									<Check className="h-3 w-3 ml-auto" />
 								)}
 							</div>

@@ -86,6 +86,7 @@ export const absenMuridRouter = createTRPCRouter({
 				},
 				select: {
 					id: true,
+					status: true,
 					murid: {
 						select: {
 							id: true,
@@ -105,6 +106,7 @@ export const absenMuridRouter = createTRPCRouter({
 					muridId: p.murid.id,
 					pendaftaranId: p.id, // Kirim ID pendaftaran ke FE jika perlu, atau pakai di backend
 					namaLengkap: p.murid.namaLengkap,
+					statusPendaftaran: p.status,
 					absensiId: absensi?.id ?? null,
 					status: absensi?.status ?? null,
 				};

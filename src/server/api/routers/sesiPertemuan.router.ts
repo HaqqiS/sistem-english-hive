@@ -90,6 +90,7 @@ export const sesiPertemuanRouter = createTRPCRouter({
 					kelasId: kelasId,
 				},
 				select: {
+					status: true,
 					murid: {
 						select: { id: true, namaLengkap: true },
 					},
@@ -164,6 +165,7 @@ export const sesiPertemuanRouter = createTRPCRouter({
 				return {
 					studentId: studentId,
 					namaSiswa: p.murid.namaLengkap,
+					statusPendaftaran: p.status,
 					attendance, // { sesi1Id: "HADIR", sesi2Id: "ALPA", ... }
 				};
 			});

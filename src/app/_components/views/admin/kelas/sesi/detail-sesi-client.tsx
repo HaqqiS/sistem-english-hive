@@ -443,7 +443,17 @@ export default function DetailSesiClient() {
 									<TableRow key={row.studentId}>
 										{/* Kolom Nama Siswa (Sticky) */}
 										<TableCell className="bg-background sticky left-0 border-r font-medium text-sm z-20">
-											{row.namaSiswa}
+											<div className="flex items-center gap-2">
+												<span>{row.namaSiswa}</span>
+												{row.statusPendaftaran === "TRIAL" && (
+													<Badge
+														variant="secondary"
+														className="text-[10px] px-1.5 py-0"
+													>
+														Trial
+													</Badge>
+												)}
+											</div>
 										</TableCell>
 
 										{/* Kolom Absensi (Dinamis) */}

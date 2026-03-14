@@ -1,4 +1,9 @@
-import { Prisma, StatusAbsenGuru } from "@prisma/client";
+import {
+	Prisma,
+	StatusAbsenGuru,
+	StatusAbsenMurid,
+	StatusPendaftaran,
+} from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import dayjs from "dayjs";
 import z from "zod";
@@ -441,6 +446,27 @@ export const absenGuruRouter = createTRPCRouter({
 								isVerified: false,
 							},
 						});
+
+						// 4c. Buat AbsensiMurid (Default: ALPA) untuk murid yang AKTIF di kelas ini
+						const muridAktif = await tx.pendaftaranKelas.findMany({
+							where: {
+								kelasId: jadwal.kelasId,
+								status: {
+									in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL],
+								},
+							},
+							select: { muridId: true },
+						});
+
+						if (muridAktif.length > 0) {
+							await tx.absensiMurid.createMany({
+								data: muridAktif.map((m) => ({
+									muridId: m.muridId,
+									sesiPertemuanKelasId: newSesi.id,
+									status: StatusAbsenMurid.ALPA,
+								})),
+							});
+						}
 
 						// Hitung Total Sesi (Termasuk yang baru dibuat)
 						const totalSesi = await tx.sesiPertemuanKelas.count({

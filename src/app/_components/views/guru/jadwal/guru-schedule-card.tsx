@@ -106,6 +106,7 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 						</h4>
 						<div className="flex flex-wrap gap-2">
 							<Badge
+								key="tipe-kelas"
 								variant="secondary"
 								className={cn(
 									"h-5 border-0 px-1.5 text-[10px] font-normal",
@@ -117,12 +118,14 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 								{data.tipeKelas}
 							</Badge>
 							<Badge
+								key="jumlah-murid"
 								variant="outline"
 								className="text-muted-foreground h-5 px-1.5 text-[10px] font-normal"
 							>
 								{data.jumlahMurid} Siswa Terdaftar
 							</Badge>
 							<Badge
+								key="status-kelas"
 								className={cn(
 									"h-5 px-1.5 text-[10px] font-normal",
 									headerColorClass,
@@ -179,7 +182,10 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 										),
 									)
 								) : (
-									<li className="text-muted-foreground italic list-none">
+									<li
+										key="no-murid"
+										className="text-muted-foreground italic list-none"
+									>
 										Belum ada murid
 									</li>
 								)}

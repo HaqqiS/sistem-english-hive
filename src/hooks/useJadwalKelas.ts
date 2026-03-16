@@ -21,7 +21,7 @@ interface useJadwalKelasOptions {
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
-	onSuccessUpdate?: () => void;
+	onSuccessUpdate?: (data?: any) => void;
 	onSuccessDelete?: () => void;
 
 	filterCabang?: string;
@@ -112,10 +112,18 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 	// UPDATE
 
 	const updateMutation = api.jadwalKelas.update.useMutation({
-		onSuccess: async () => {
+		onSuccess: async (data) => {
 			await invalidateJadwal();
 			await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
-			options?.onSuccessUpdate?.();
+
+			// Jika terjadi conflict swap, jangan tutup drawer/toast success, biarkan UI Handle
+			if (data && "isConflict" in data && data.isConflict) {
+				options?.onSuccessUpdate?.(data);
+				return;
+			}
+
+			toast.success("Jadwal kelas berhasil diperbarui");
+			options?.onSuccessUpdate?.(data);
 		},
 		onError: (error) => {
 			toast.error(`Gagal mengupdate Jadwal: ${error.message}`);

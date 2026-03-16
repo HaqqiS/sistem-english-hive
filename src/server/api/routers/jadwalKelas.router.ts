@@ -148,13 +148,16 @@ export const jadwalKelasRouter = createTRPCRouter({
 
 			try {
 				// Gunakan Function Service yang baru
-				const result = await db.$transaction(async (tx) => {
-					return createBulkJadwal({
-						tx,
-						input: input,
-						allowedCabangId: allowedCabangId ?? null,
-					});
-				});
+				const result = await db.$transaction(
+					async (tx) => {
+						return createBulkJadwal({
+							tx,
+							input: input,
+							allowedCabangId: allowedCabangId ?? null,
+						});
+					},
+					{ timeout: 20000 },
+				);
 
 				return result;
 			} catch (error) {
@@ -520,14 +523,17 @@ export const jadwalKelasRouter = createTRPCRouter({
 			const { id } = input;
 
 			try {
-				return await db.$transaction(async (tx) => {
-					return updateJadwal({
-						tx,
-						id,
-						input,
-						allowedCabangId: allowedCabangId ?? null,
-					});
-				});
+				return await db.$transaction(
+					async (tx) => {
+						return updateJadwal({
+							tx,
+							id,
+							input,
+							allowedCabangId: allowedCabangId ?? null,
+						});
+					},
+					{ timeout: 20000 },
+				);
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
 					if (error.code === "P2003") {

@@ -32,6 +32,7 @@ interface UpdateJadwalParams {
 		jamMulai?: string;
 		jamSelesai?: string;
 		jamSlotTetapId?: string;
+		forceSwap?: boolean;
 	};
 	allowedCabangId: string | null;
 }
@@ -158,30 +159,34 @@ export const createBulkJadwal = async ({
 			checkJamSelesai = slot.jamSelesai;
 		}
 
-		// Collision Check
-		const conflictingSchedule = await tx.jadwalKelas.findFirst({
-			where: {
-				hari: hari,
-				ruangId: ruangId,
-				OR: [
-					{
-						jamSlotTetap: {
-							jamMulai: { lt: checkJamSelesai },
-							jamSelesai: { gt: checkJamMulai },
-						},
+		// Collision Check - Split into 2 queries for better performance (Avoiding heavy cross-relation OR)
+		const conflictingSchedule =
+			(await tx.jadwalKelas.findFirst({
+				where: {
+					hari: hari,
+					ruangId: ruangId,
+					jamSlotTetap: {
+						jamMulai: { lt: checkJamSelesai },
+						jamSelesai: { gt: checkJamMulai },
 					},
-					{
-						jamSlotCustom: {
-							jamMulai: { lt: checkJamSelesai },
-							jamSelesai: { gt: checkJamMulai },
-						},
+				},
+				include: {
+					kelas: { select: { kodeKelas: true } },
+				},
+			})) ||
+			(await tx.jadwalKelas.findFirst({
+				where: {
+					hari: hari,
+					ruangId: ruangId,
+					jamSlotCustom: {
+						jamMulai: { lt: checkJamSelesai },
+						jamSelesai: { gt: checkJamMulai },
 					},
-				],
-			},
-			include: {
-				kelas: { select: { kodeKelas: true } },
-			},
-		});
+				},
+				include: {
+					kelas: { select: { kodeKelas: true } },
+				},
+			}));
 
 		if (conflictingSchedule) {
 			throw new TRPCError({
@@ -326,39 +331,72 @@ export const updateJadwal = async ({
 		checkJamSelesai = slot.jamSelesai;
 	}
 
-	const conflictingSchedule = await tx.jadwalKelas.findFirst({
-		where: {
-			hari: hari,
-			ruangId: ruangId,
-			id: { not: id },
-			OR: [
-				{
-					jamSlotTetap: {
-						jamMulai: { lt: checkJamSelesai },
-						jamSelesai: { gt: checkJamMulai },
-					},
+	// Collision Check - Split into 2 queries for better performance
+	const conflictingSchedule =
+		(await tx.jadwalKelas.findFirst({
+			where: {
+				hari: hari,
+				ruangId: ruangId,
+				id: { not: id },
+				jamSlotTetap: {
+					jamMulai: { lt: checkJamSelesai },
+					jamSelesai: { gt: checkJamMulai },
 				},
-				{
-					jamSlotCustom: {
-						jamMulai: { lt: checkJamSelesai },
-						jamSelesai: { gt: checkJamMulai },
-					},
+			},
+			include: {
+				kelas: { select: { kodeKelas: true } },
+			},
+		})) ||
+		(await tx.jadwalKelas.findFirst({
+			where: {
+				hari: hari,
+				ruangId: ruangId,
+				id: { not: id },
+				jamSlotCustom: {
+					jamMulai: { lt: checkJamSelesai },
+					jamSelesai: { gt: checkJamMulai },
 				},
-			],
-		},
-		include: {
-			kelas: { select: { kodeKelas: true } },
-		},
-	});
+			},
+			include: {
+				kelas: { select: { kodeKelas: true } },
+			},
+		}));
 
 	if (conflictingSchedule) {
-		throw new TRPCError({
-			code: "CONFLICT",
-			message: `Bentrok! Ruang ini sudah dipakai kelas ${conflictingSchedule.kelas.kodeKelas} pada jam tersebut.`,
-		});
+		if (input.forceSwap) {
+			// SWAP LOGIC
+			// 1. Simpan data jadwal lama (dari existingJadwal) yang akan dipindahkan ke kelas bentrok
+			const oldRuangId = existingJadwal.ruangId;
+			const oldHari = existingJadwal.hari;
+			const oldJamSlotTetapId = existingJadwal.jamSlotTetapId;
+			const oldJamSlotCustomId = existingJadwal.jamSlotCustomId;
+
+			// 2. Ubah jadwal yang bentrok menjadi mengisi data peninggalan jadwal lama
+			await tx.jadwalKelas.update({
+				where: { id: conflictingSchedule.id },
+				data: {
+					ruangId: oldRuangId,
+					hari: oldHari,
+					jamSlotTetapId: oldJamSlotTetapId,
+					jamSlotCustomId: oldJamSlotCustomId,
+				},
+			});
+
+			// 3. Lanjut ke proses update jadwal default ke data baru (below)
+		} else {
+			// Return a discriminated conflict object instead of throwing
+			return {
+				success: false,
+				isConflict: true as const,
+				conflictingJadwal: {
+					id: conflictingSchedule.id,
+					kodeKelas: conflictingSchedule.kelas.kodeKelas,
+				},
+			};
+		}
 	}
 
-	return await tx.jadwalKelas.update({
+	const updatedData = await tx.jadwalKelas.update({
 		where: { id },
 		data: {
 			kelasId,
@@ -368,4 +406,6 @@ export const updateJadwal = async ({
 			jamSlotCustomId: jamSlotCustomId,
 		},
 	});
+
+	return { success: true, data: updatedData };
 };

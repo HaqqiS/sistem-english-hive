@@ -137,7 +137,10 @@ export type TypeServerCreateBulkJadwalSchema = z.infer<
 >;
 
 export const serverUpdateJadwalSchema = z.intersection(
-	z.object({ id: z.string().cuid("ID Jadwal tidak valid") }),
+	z.object({
+		id: z.string().cuid("ID Jadwal tidak valid"),
+		forceSwap: z.boolean().optional(),
+	}),
 	serverCreateJadwalSchema,
 );
 export type TypeServerUpdateJadwalSchema = z.infer<

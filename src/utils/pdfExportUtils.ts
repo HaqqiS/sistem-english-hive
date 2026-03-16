@@ -145,7 +145,7 @@ export const exportAbsensiPDF = (
 export const exportJadwalMatrixPDF = (
 	dataPages: {
 		hari: string;
-		scheduleMap: Record<string, Record<string, TypeScheduleMatrixItem>>;
+		scheduleMap: Record<string, Record<string, TypeScheduleMatrixItem[]>>;
 	}[],
 	rooms: { id: string; namaRuang: string }[],
 	timeSlots: string[],
@@ -180,34 +180,38 @@ export const exportJadwalMatrixPDF = (
 		const pageTimeSlots = Object.keys(scheduleMap).sort();
 
 		const body = pageTimeSlots.map((time) => {
-			const row: (string | { content: string; raw: TypeScheduleMatrixItem })[] =
-				[time]; // First col is Time
+			const row: (
+				| string
+				| { content: string; raw: TypeScheduleMatrixItem[] }
+			)[] = [time]; // First col is Time
 			rooms.forEach((room) => {
-				const schedule = scheduleMap[time]?.[room.id];
-				if (schedule) {
+				const schedules = scheduleMap[time]?.[room.id] || [];
+				if (schedules.length > 0) {
 					// Phantom text for auto-height calculation
 					// We use font size 10 in styles, so this should reserve enough space.
-					const teacher = schedule.guru || "-";
-					const status = `(${schedule.statusKelas || "-"})`;
-					const murid = schedule.jumlahMurid
-						? ` • ${schedule.jumlahMurid} Murid`
-						: "";
+					const phantomTexts = schedules.map((schedule) => {
+						const teacher = schedule.guru || "-";
+						const status = `(${schedule.statusKelas || "-"})`;
+						const murid = schedule.jumlahMurid
+							? ` • ${schedule.jumlahMurid} Murid`
+							: "";
 
-					// Combine Status and Murid on same line for height calculation matches visual
-					const statusLine = status + murid;
+						// Combine Status and Murid on same line for height calculation matches visual
+						const statusLine = status + murid;
 
-					const phantomText = [
-						schedule.kodeKelas,
-						teacher,
-						"", // Spacer
-						`${schedule.jamMulai} - ${schedule.jamSelesai}`,
-						statusLine,
-						schedule.deskripsi || "",
-					].join("\n");
+						return [
+							schedule.kodeKelas,
+							teacher,
+							"", // Spacer
+							`${schedule.jamMulai} - ${schedule.jamSelesai}`,
+							statusLine,
+							schedule.deskripsi || "",
+						].join("\n");
+					});
 
 					row.push({
-						content: phantomText,
-						raw: schedule,
+						content: phantomTexts.join("\n\n---\n\n"),
+						raw: schedules,
 					});
 				} else {
 					row.push("");
@@ -258,109 +262,129 @@ export const exportJadwalMatrixPDF = (
 					(cell.raw as any).raw
 				) {
 					// biome-ignore lint/suspicious/noExplicitAny: library
-					const schedule = (cell.raw as any).raw as TypeScheduleMatrixItem;
+					const schedules = (cell.raw as any).raw as TypeScheduleMatrixItem[];
 
-					// COLORS
-					const DEFAULT_COLOR: [number, number, number] = [156, 163, 175]; // Grey
-					const STATUS_COLORS: Record<string, [number, number, number]> = {
-						RUNNING: [37, 99, 235], // Blue
-						TRIAL: [168, 85, 247], // Purple
-						WAITING: [234, 179, 8], // Yellow
-						LEVEL_UP: [20, 184, 166], // Teal
-						COMPLETED: [100, 116, 139], // Slate
-						DEFAULT: DEFAULT_COLOR,
-					};
+					// Current Y in cell
+					let cellCurrentY = cell.y;
 
-					const statusColor =
-						STATUS_COLORS[schedule.statusKelas || "DEFAULT"] ?? DEFAULT_COLOR;
+					schedules.forEach((schedule, index) => {
+						// Add separator lines if multiple schedules
+						if (index > 0) {
+							doc.setDrawColor(200, 200, 200);
+							doc.setLineWidth(0.1);
+							doc.line(
+								cell.x + 2,
+								cellCurrentY,
+								cell.x + cell.width - 2,
+								cellCurrentY,
+							);
+							cellCurrentY += 4;
+						}
 
-					// LAYOUT VARS
-					const padding = 2;
-					const xBase = cell.x + padding;
-					const yBase = cell.y + padding;
-					const contentWidth = cell.width - padding * 2;
-					let currentY = yBase + 3; // Initial offset for first line of text
+						// COLORS
+						const DEFAULT_COLOR: [number, number, number] = [156, 163, 175]; // Grey
+						const STATUS_COLORS: Record<string, [number, number, number]> = {
+							RUNNING: [37, 99, 235], // Blue
+							TRIAL: [168, 85, 247], // Purple
+							WAITING: [234, 179, 8], // Yellow
+							LEVEL_UP: [20, 184, 166], // Teal
+							COMPLETED: [100, 116, 139], // Slate
+							DEFAULT: DEFAULT_COLOR,
+						};
 
-					// 1. STATUS STRIP (Left Border)
-					doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-					// Draw a narrow strip on the left
-					doc.rect(cell.x, cell.y, 1.5, cell.height, "F");
+						const statusColor =
+							STATUS_COLORS[schedule.statusKelas || "DEFAULT"] ?? DEFAULT_COLOR;
 
-					// Adjust xBase to not overlap with strip
-					const xText = xBase + 2;
-					const maxTextWidth = contentWidth - 2;
+						// LAYOUT VARS
+						const padding = 2;
+						const xBase = cell.x + padding;
+						let currentTextY = cellCurrentY + padding + 3; // Initial offset for first line
+						const contentWidth = cell.width - padding * 2;
 
-					// 2. KODE KELAS (Bold, Primary Color)
-					doc.setFont("helvetica", "bold");
-					doc.setFontSize(10);
-					doc.setTextColor(30, 30, 30);
+						// 1. STATUS STRIP (Left Border) - Per schedule
+						doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
 
-					const kodeLines = doc.splitTextToSize(
-						schedule.kodeKelas,
-						maxTextWidth,
-					);
-					doc.text(kodeLines, xText, currentY);
-					currentY += kodeLines.length * 4;
+						// Determine height for this schedule block roughly
+						// This is a bit estimated, but good enough for PDF
+						const blockHeight = 25; // Approximate height per block
 
-					// 3. GURU (Normal, Slightly smaller, COLORED)
-					const teacherName = schedule.guru || "-";
+						doc.rect(cell.x, cellCurrentY, 1.5, blockHeight, "F");
 
-					// Generate consistent color from name
-					const teacherColor = stringToColor(teacherName);
+						// Adjust xBase to not overlap with strip
+						const xText = xBase + 2;
+						const maxTextWidth = contentWidth - 2;
 
-					doc.setFont("helvetica", "normal");
-					doc.setFontSize(9);
-					doc.setTextColor(teacherColor[0], teacherColor[1], teacherColor[2]);
+						// 2. KODE KELAS
+						doc.setFont("helvetica", "bold");
+						doc.setFontSize(10);
+						doc.setTextColor(30, 30, 30);
 
-					const teacherLines = doc.splitTextToSize(teacherName, maxTextWidth);
-					doc.text(teacherLines, xText, currentY);
-					currentY += teacherLines.length * 3.5;
-
-					// Spacer
-					currentY += 1;
-
-					// 4. JAM (Small, Muted)
-					doc.setFontSize(8);
-					doc.setTextColor(100, 100, 100);
-					doc.text(
-						`${schedule.jamMulai} - ${schedule.jamSelesai}`,
-						xText,
-						currentY,
-					);
-					currentY += 3.5;
-
-					// 5. STATUS PILL (Optional: Text or Badge)
-					// Let's just use text for now but colored to match the strip
-					doc.setFont("helvetica", "bold");
-					doc.setFontSize(7.5);
-					doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-					doc.text(schedule.statusKelas || "-", xText, currentY);
-
-					// 6. MURID COUNT (Right aligned or next to status)
-					if (schedule.jumlahMurid) {
-						// Or just put it next to status with a dash
-						doc.setTextColor(80, 80, 80);
-						doc.setFont("helvetica", "normal");
-						doc.text(
-							` • ${schedule.jumlahMurid} Murid`,
-							xText + doc.getTextWidth(schedule.statusKelas || "-"),
-							currentY,
-						);
-					}
-
-					// 7. DESKRIPSI (Optional)
-					if (schedule.deskripsi) {
-						currentY += 3.5; // Spacing
-						doc.setFont("helvetica", "normal"); // Reset to normal instead of italic if preferred, or italic
-						doc.setFontSize(7);
-						doc.setTextColor(100, 100, 100);
-
-						const descLines = doc.splitTextToSize(
-							schedule.deskripsi,
+						const kodeLines = doc.splitTextToSize(
+							schedule.kodeKelas,
 							maxTextWidth,
 						);
-						doc.text(descLines, xText, currentY);
-					}
+						doc.text(kodeLines, xText, currentTextY);
+						currentTextY += kodeLines.length * 4;
+
+						// 3. GURU
+						const teacherName = schedule.guru || "-";
+						const teacherColor = stringToColor(teacherName);
+
+						doc.setFont("helvetica", "normal");
+						doc.setFontSize(9);
+						doc.setTextColor(teacherColor[0], teacherColor[1], teacherColor[2]);
+
+						const teacherLines = doc.splitTextToSize(teacherName, maxTextWidth);
+						doc.text(teacherLines, xText, currentTextY);
+						currentTextY += teacherLines.length * 3.5;
+
+						currentTextY += 1;
+
+						// 4. JAM
+						doc.setFontSize(8);
+						doc.setTextColor(100, 100, 100);
+						doc.text(
+							`${schedule.jamMulai} - ${schedule.jamSelesai}`,
+							xText,
+							currentTextY,
+						);
+						currentTextY += 3.5;
+
+						// 5. STATUS PILL
+						doc.setFont("helvetica", "bold");
+						doc.setFontSize(7.5);
+						doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+						doc.text(schedule.statusKelas || "-", xText, currentTextY);
+
+						// 6. MURID COUNT
+						if (schedule.jumlahMurid) {
+							doc.setTextColor(80, 80, 80);
+							doc.setFont("helvetica", "normal");
+							doc.text(
+								` • ${schedule.jumlahMurid} Murid`,
+								xText + doc.getTextWidth(schedule.statusKelas || "-"),
+								currentTextY,
+							);
+						}
+
+						// 7. DESKRIPSI
+						if (schedule.deskripsi) {
+							currentTextY += 3.5;
+							doc.setFont("helvetica", "normal");
+							doc.setFontSize(7);
+							doc.setTextColor(100, 100, 100);
+
+							const descLines = doc.splitTextToSize(
+								schedule.deskripsi,
+								maxTextWidth,
+							);
+							doc.text(descLines, xText, currentTextY);
+							currentTextY += descLines.length * 3.5;
+						}
+
+						// Update cellCurrentY for next schedule
+						cellCurrentY = currentTextY + 2;
+					});
 				}
 			},
 			margin: { left: 10, right: 10 },

@@ -70,7 +70,7 @@ export default function EditJadwalKelas() {
 
 	const { mutations } = useJadwalKelas({
 		onSuccessUpdate: (data) => {
-			if (data?.isConflict) {
+			if (data && !data.success && data.isConflict) {
 				setConflictData(data.conflictingJadwal);
 				setIsSwapDialogOpen(true);
 			} else {

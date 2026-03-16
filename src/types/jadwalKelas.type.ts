@@ -146,3 +146,11 @@ export const serverUpdateJadwalSchema = z.intersection(
 export type TypeServerUpdateJadwalSchema = z.infer<
 	typeof serverUpdateJadwalSchema
 >;
+
+export type TypeUpdateJadwalResponse =
+	| { success: true; data: TypeJadwalKelas }
+	| {
+			success: false;
+			isConflict: true;
+			conflictingJadwal: { id: string; kodeKelas: string };
+	  };

@@ -6,6 +6,7 @@ import { api } from "@/trpc/react";
 import type {
 	TypeJadwalHariIni,
 	TypeJadwalKelas,
+	TypeUpdateJadwalResponse,
 } from "@/types/jadwalKelas.type";
 
 interface useJadwalKelasOptions {
@@ -21,7 +22,7 @@ interface useJadwalKelasOptions {
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
-	onSuccessUpdate?: (data?: any) => void;
+	onSuccessUpdate?: (data?: TypeUpdateJadwalResponse) => void;
 	onSuccessDelete?: () => void;
 
 	filterCabang?: string;
@@ -118,12 +119,12 @@ export function useJadwalKelas(options?: useJadwalKelasOptions) {
 
 			// Jika terjadi conflict swap, jangan tutup drawer/toast success, biarkan UI Handle
 			if (data && "isConflict" in data && data.isConflict) {
-				options?.onSuccessUpdate?.(data);
+				options?.onSuccessUpdate?.(data as TypeUpdateJadwalResponse);
 				return;
 			}
 
 			toast.success("Jadwal kelas berhasil diperbarui");
-			options?.onSuccessUpdate?.(data);
+			options?.onSuccessUpdate?.(data as TypeUpdateJadwalResponse);
 		},
 		onError: (error) => {
 			toast.error(`Gagal mengupdate Jadwal: ${error.message}`);

@@ -73,31 +73,35 @@ export default function GuruScheduleGrid() {
 	}, [dataMatrix]);
 
 	const scheduleMap = useMemo(() => {
-		if (!dataMatrix?.schedules) return {};
-		const map: Record<
-			string,
-			Record<string, (typeof dataMatrix.schedules)[0]>
-		> = {};
-		dataMatrix.schedules.forEach((s) => {
-			let timeSlot = map[s.jamMulai];
-			if (!timeSlot) {
-				timeSlot = {};
+		const schedules = dataMatrix?.schedules;
+		if (!schedules) return {};
+		const map: Record<string, Record<string, (typeof schedules)[0][]>> = {};
+		schedules.forEach((s) => {
+			const timeSlot = map[s.jamMulai] || {};
+			if (!map[s.jamMulai]) {
 				map[s.jamMulai] = timeSlot;
 			}
-			timeSlot[s.ruangId] = s;
+			const roomSlot = timeSlot[s.ruangId] || [];
+			if (!timeSlot[s.ruangId]) {
+				timeSlot[s.ruangId] = roomSlot;
+			}
+			roomSlot.push(s);
 		});
 		return map;
 	}, [dataMatrix]);
 
 	const buildScheduleMap = (schedules: TypeScheduleMatrixItem[]) => {
-		const map: Record<string, Record<string, TypeScheduleMatrixItem>> = {};
+		const map: Record<string, Record<string, TypeScheduleMatrixItem[]>> = {};
 		schedules.forEach((s) => {
-			let timeSlot = map[s.jamMulai];
-			if (!timeSlot) {
-				timeSlot = {};
+			const timeSlot = map[s.jamMulai] || {};
+			if (!map[s.jamMulai]) {
 				map[s.jamMulai] = timeSlot;
 			}
-			timeSlot[s.ruangId] = s;
+			const roomSlot = timeSlot[s.ruangId] || [];
+			if (!timeSlot[s.ruangId]) {
+				timeSlot[s.ruangId] = roomSlot;
+			}
+			roomSlot.push(s);
 		});
 		return map;
 	};
@@ -141,7 +145,7 @@ export default function GuruScheduleGrid() {
 			// Group by Hari
 			const pages: {
 				hari: string;
-				scheduleMap: Record<string, Record<string, TypeScheduleMatrixItem>>;
+				scheduleMap: Record<string, Record<string, TypeScheduleMatrixItem[]>>;
 			}[] = [];
 			const daysOrder = Object.values(Hari); // [SENIN, SELASA, ...]
 
@@ -363,17 +367,24 @@ export default function GuruScheduleGrid() {
 
 												{/* Cells */}
 												{dataMatrix.rooms.map((room) => {
-													const schedule = scheduleMap[time]?.[room.id];
+													const schedules = scheduleMap[time]?.[room.id] || [];
 													return (
 														<td
 															key={`${time}-${room.id}`}
 															className="h-auto min-h-40 w-[200px] max-w-[200px] min-w-[200px] border-r border-b p-2 align-top"
 														>
-															{schedule ? (
-																<GuruScheduleCard data={schedule} />
+															{schedules.length > 0 ? (
+																<div className="flex flex-col gap-2">
+																	{schedules.map((schedule) => (
+																		<GuruScheduleCard
+																			key={schedule.id}
+																			data={schedule}
+																		/>
+																	))}
+																</div>
 															) : (
 																// Empty Cell
-																<div className="hover:border-muted-foreground/20 h-full w-full rounded-md border border-dashed border-transparent transition-colors" />
+																<div className="hover:border-muted-foreground/20 h-full w-full min-h-[140px] rounded-md border border-dashed border-transparent transition-colors" />
 															)}
 														</td>
 													);

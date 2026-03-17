@@ -76,7 +76,7 @@ export const handleAutoLevelUp = async ({
 		return existingClass;
 	}
 
-	const newBulanTahun = dayjs().format("MM/YYYY");
+	const newBulanTahun = currentClass.bulanTahunAjar;
 	const oldKode = currentClass.kodeKelas;
 
 	// Logic replace string kode kelas

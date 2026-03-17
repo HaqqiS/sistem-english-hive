@@ -241,7 +241,7 @@ export const updateJadwal = async ({
 	const [kelasBaru, ruangBaru] = await Promise.all([
 		tx.kelas.findUnique({
 			where: { id: kelasId },
-			select: { cabangId: true, kodeKelas: true },
+			select: { cabangId: true, kodeKelas: true, cohortId: true },
 		}),
 		tx.ruang.findUnique({
 			where: { id: ruangId },
@@ -342,6 +342,10 @@ export const updateJadwal = async ({
 					jamMulai: { lt: checkJamSelesai },
 					jamSelesai: { gt: checkJamMulai },
 				},
+				// If cohortId is the same, allow overlapping (stacking)
+				kelas: {
+					cohortId: { not: kelasBaru.cohortId },
+				},
 			},
 			include: {
 				kelas: { select: { kodeKelas: true } },
@@ -355,6 +359,10 @@ export const updateJadwal = async ({
 				jamSlotCustom: {
 					jamMulai: { lt: checkJamSelesai },
 					jamSelesai: { gt: checkJamMulai },
+				},
+				// If cohortId is the same, allow overlapping (stacking)
+				kelas: {
+					cohortId: { not: kelasBaru.cohortId },
 				},
 			},
 			include: {

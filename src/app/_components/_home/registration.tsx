@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { ScrollAnimation } from "@/app/_components/shared/scroll-animation";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
 import { useMurid } from "@/hooks/useMurid";
@@ -71,29 +70,16 @@ export default function Registration() {
 					</p>
 				</ScrollAnimation>
 
-				<ScrollAnimation variant="zoomIn" delay={0.2} once={true}>
-					<Card>
-						<CardContent className="pt-6">
-							<Form {...form}>
-								<MuridForm onSubmit={onSubmit} />
-
-								<div className="mt-4">
-									<Button
-										type="submit"
-										size="sm"
-										className="w-full"
-										disabled={mutations.create.isPending}
-										onClick={form.handleSubmit(onSubmit)}
-									>
-										{mutations.create.isPending
-											? "Mengirim..."
-											: "Kirim Pendaftaran"}
-									</Button>
-								</div>
-							</Form>
-						</CardContent>
-					</Card>
-				</ScrollAnimation>
+				<Card>
+					<CardContent className="pt-6">
+						<Form {...form}>
+							<MuridForm
+								onSubmit={onSubmit}
+								isPending={mutations.create.isPending}
+							/>
+						</Form>
+					</CardContent>
+				</Card>
 			</div>
 		</section>
 	);

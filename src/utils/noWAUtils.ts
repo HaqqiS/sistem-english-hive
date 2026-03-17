@@ -34,7 +34,7 @@ export const formatWhatsAppReminder = (
 	}
 
 	// Template Pesan
-	const text = `Halo Kak/Bapak/Ibu, kami dari *English Hive*.\n\nKami ingin mengingatkan tagihan ${tipe} untuk:\nNama: *${namaMurid}*\nNominal: *${toRupiah(
+	const text = `Kepada Yth. Bapak/Ibu orang tua/wali murid *English Hive*.\n\nKami ingin mengingatkan tagihan ${tipe} untuk:\nNama: *${namaMurid}*\nNominal: *${toRupiah(
 		jumlah,
 	)}*\nJatuh Tempo: *${jatuhTempo ? formatDateWITA(jatuhTempo) : "-"}*\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
 

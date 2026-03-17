@@ -26,12 +26,13 @@ export const RegisterMuridSchema = z.object({
 		.min(10, "No. WA minimal 10 digit")
 		.max(15, "No. WA maksimal 15 karakter")
 		// Regex ini memvalidasi:
-		// - Dimulai dengan '08' (cth: 0812...)
-		// - ATAU dimulai dengan '+628' (cth: +62812...)
-		.regex(/^(\+?62|0)8[0-9]{8,12}$/, {
-			message: "No. WA tidak valid (cth: 0812... atau +62812...)",
+		// - Opsional dimulai dengan '+'
+		// - Diikuti oleh 10-15 digit angka (mendukung kode negara internasional)
+		.regex(/^\+?[0-9]{10,15}$/, {
+			message:
+				"No. WA tidak valid (gunakan kode negara, cth: 62... atau +62...)",
 		})
-		// Transformasi: Ubah '08...' atau '+628...' menjadi '628...'
+		// Transformasi: Ubah '08...' menjadi '628...' dan hapus '+' jika ada
 		// agar format di database seragam (tanpa '+').
 		.transform((val) => {
 			if (val.startsWith("0")) {

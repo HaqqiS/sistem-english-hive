@@ -6,8 +6,6 @@ export const formatWhatsAppLink = (noWA: string) => {
 	let formatted = noWA.trim();
 	if (formatted.startsWith("0")) {
 		formatted = `62${formatted.substring(1)}`;
-	} else if (!formatted.startsWith("62")) {
-		formatted = `62${formatted}`;
 	}
 	return `https://wa.me/${formatted.replace(/[^0-9]/g, "")}`;
 };
@@ -29,8 +27,6 @@ export const formatWhatsAppReminder = (
 	let formatted = noWA.trim();
 	if (formatted.startsWith("0")) {
 		formatted = `62${formatted.substring(1)}`;
-	} else if (!formatted.startsWith("62")) {
-		formatted = `62${formatted}`;
 	}
 
 	// Template Pesan

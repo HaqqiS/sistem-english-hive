@@ -31,6 +31,9 @@ export default function EditPembayaran() {
 					tanggalBayar: selectedPembayaran.tanggalBayar
 						? formatDateToYYYYMMDD(selectedPembayaran.tanggalBayar)
 						: undefined,
+					tanggalJatuhTempo: selectedPembayaran.tanggalJatuhTempo
+						? formatDateToYYYYMMDD(selectedPembayaran.tanggalJatuhTempo)
+						: undefined,
 					note: selectedPembayaran.note ?? "",
 				}
 			: undefined,
@@ -39,6 +42,7 @@ export default function EditPembayaran() {
 			statusBayar: "BELUM_LUNAS",
 			jumlahBayar: 0,
 			tanggalBayar: undefined,
+			tanggalJatuhTempo: undefined,
 			note: "",
 		},
 	});

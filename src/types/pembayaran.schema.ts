@@ -10,6 +10,12 @@ const basePembayaranSchema = z.object({
 		.refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
 			message: "Format tanggal tidak valid (YYYY-MM-DD)",
 		}),
+	tanggalJatuhTempo: z
+		.string()
+		.optional()
+		.refine((val) => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), {
+			message: "Format tanggal tidak valid (YYYY-MM-DD)",
+		}),
 	pembayaranKe: z.number().optional(),
 	note: z.string().optional(),
 });
@@ -36,10 +42,18 @@ export const createPembayaranSchema = clientCreatePembayaranSchema.extend({
 		.string()
 		.optional()
 		.transform((val) => (val ? new Date(val) : new Date())),
+	tanggalJatuhTempo: z
+		.string()
+		.optional()
+		.transform((val) => (val ? new Date(val) : undefined)),
 });
 
 export const updatePembayaranSchema = clientUpdatePembayaranSchema.extend({
 	tanggalBayar: z
+		.string()
+		.optional()
+		.transform((val) => (val ? new Date(val) : undefined)),
+	tanggalJatuhTempo: z
 		.string()
 		.optional()
 		.transform((val) => (val ? new Date(val) : undefined)),

@@ -393,6 +393,7 @@ export const pembayaranRouter = createTRPCRouter({
 					jumlahBayar: input.jumlahBayar,
 					note: input.note,
 					statusBayar: input.statusBayar,
+					tanggalJatuhTempo: input.tanggalJatuhTempo,
 				};
 
 				// Logic: Handling Status Changes

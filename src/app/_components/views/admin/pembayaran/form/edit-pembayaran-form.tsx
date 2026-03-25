@@ -97,6 +97,13 @@ export default function EditPembayaranForm({
 				)}
 			/>
 
+			{/* Tanggal Jatuh Tempo */}
+			<FormStringDatePicker
+				control={form.control}
+				name="tanggalJatuhTempo"
+				label="Tanggal Jatuh Tempo"
+			/>
+
 			{/* Tanggal Bayar (Conditional) */}
 			{statusBayar === StatusPembayaran.LUNAS && (
 				<FormStringDatePicker

@@ -253,7 +253,7 @@ export const absenGuruRouter = createTRPCRouter({
 									kodeKelas: true,
 									// jenisKelas: true, // Legacy
 									// jenisKelas: true, // Legacy
-									jenisKelasRel: { select: { nama: true } },
+									jenisKelasRel: { select: { nama: true, tipe: true } },
 									// tipe: true, // Removed
 								},
 							},

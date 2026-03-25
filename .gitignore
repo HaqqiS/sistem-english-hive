@@ -53,3 +53,9 @@ biome_error_log.txt
 # os
 Thumbs.db
 
+# check-kelas
+check-kelas.ts
+
+# check-murid
+check-murid.ts
+

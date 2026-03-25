@@ -250,6 +250,7 @@ export default function DetailGuruClient() {
 						</p>
 					</div>
 				</CardContent>
+
 				<CardFooter>
 					<Button
 						variant="ghost"
@@ -262,6 +263,72 @@ export default function DetailGuruClient() {
 					</Button>
 				</CardFooter>
 			</Card>
+
+			{/* Rekap Per Kelas (TINYTODS 1-L | 01/2026 7x) */}
+			{dataHistory && dataHistory.length > 0 && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-sm font-medium">
+							Rekap Absensi Per Kelas
+						</CardTitle>
+						<CardDescription className="text-xs">
+							Ringkasan jumlah pertemuan hadir berdasarkan kode kelas.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+							{(() => {
+								const groups: Record<
+									string,
+									{
+										kodeKelas: string;
+										bulanTahun: string;
+										count: number;
+									}
+								> = {};
+
+								dataHistory.forEach((item) => {
+									if (item.status !== "HADIR") return;
+
+									const kelas = item.sesiPertemuanKelas.kelas;
+									const kode = kelas.kodeKelas;
+									const bulanTahun = dayjs(
+										item.sesiPertemuanKelas.tanggalWaktu,
+									).format("MM/YYYY");
+
+									const key = `${kode}-${bulanTahun}`;
+									if (!groups[key]) {
+										groups[key] = {
+											kodeKelas: kode,
+											bulanTahun,
+											count: 0,
+										};
+									}
+									groups[key].count++;
+								});
+
+								return Object.values(groups).map((group) => (
+									<div
+										key={`${group.kodeKelas}-${group.bulanTahun}`}
+										className="bg-muted/50 flex items-center justify-between rounded-md border px-3 py-2 text-xs font-medium"
+									>
+										<div className="flex items-center gap-2">
+											<span className="font-semibold">{group.kodeKelas}</span>
+											<span className="text-muted-foreground">|</span>
+											<span className="text-muted-foreground">
+												{group.bulanTahun}
+											</span>
+										</div>
+										<span className="font-bold text-blue-600">
+											{group.count}x
+										</span>
+									</div>
+								));
+							})()}
+						</div>
+					</CardContent>
+				</Card>
+			)}
 
 			{/* Tabel History Absensi */}
 			<Card>

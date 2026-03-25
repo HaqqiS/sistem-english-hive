@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function run() {
 	try {
 		const absensi = await prisma.absensiMurid.findMany({
-			where: { muridId: "cmkrrtd0r000dlw0l7g9c8xlb" },
+			where: { muridId: "cmlrs9n9l00f5k20ldw96lla5" },
 			include: {
 				sesiPertemuanKelas: { include: { kelas: true } },
 			},

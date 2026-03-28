@@ -214,6 +214,77 @@ export const muridRouter = createTRPCRouter({
 			return unregisteredMurid;
 		}),
 
+	/**
+	 * Mengambil semua murid dalam cabang beserta info kelas aktif mereka.
+	 * Digunakan untuk form tambah murid ke kelas (mendukung kasus split class).
+	 * excludeKelasId: mengecualikan murid yang SUDAH terdaftar aktif di kelas ini.
+	 */
+	getMuridForKelasEnrollment: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+					excludeKelasId: z.string().optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.MuridWhereInput = {};
+			if (filterCabangId) whereClause.cabangId = filterCabangId;
+
+			// Exclude murid yang SUDAH terdaftar aktif di kelas yang dituju
+			if (input?.excludeKelasId) {
+				whereClause.pendaftaranKelases = {
+					none: {
+						kelasId: input.excludeKelasId,
+						status: { not: "NON_AKTIF" },
+					},
+				};
+			}
+
+			const murids = await db.murid.findMany({
+				where: whereClause,
+				orderBy: [{ namaLengkap: "asc" }],
+				select: {
+					id: true,
+					namaLengkap: true,
+					umur: true,
+					kelasSekolah: true,
+					statusMurid: true,
+					pendaftaranKelases: {
+						where: { status: { not: "NON_AKTIF" } },
+						select: {
+							id: true,
+							status: true,
+							Kelas: {
+								select: {
+									id: true,
+									kodeKelas: true,
+									statusKelas: true,
+								},
+							},
+						},
+					},
+				},
+			});
+
+			// Tandai setiap murid: apakah sudah terdaftar di kelas aktif lain atau belum sama sekali
+			return murids.map((m) => {
+				const activeEnrollments = m.pendaftaranKelases.filter(
+					(p) => p.Kelas.statusKelas !== "COMPLETED",
+				);
+				return {
+					...m,
+					isAlreadyEnrolled: activeEnrollments.length > 0,
+					activeKelas: activeEnrollments.map((p) => p.Kelas),
+				};
+			});
+		}),
+
 	getMuridNotRegisteredPaginated: cabangProtectedProcedure
 		.input(
 			paginationSchema.extend({

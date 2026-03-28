@@ -22,14 +22,15 @@ export const kelasRouter = createTRPCRouter({
 
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
 
-			const whereClause: Prisma.KelasWhereInput = {};
+			const whereClause: Prisma.KelasWhereInput = {
+				statusKelas: { not: "COMPLETED" },
+			};
 			if (filterCabangId) {
 				whereClause.cabangId = filterCabangId;
 			}
 
 			const kelas = await db.kelas.findMany({
 				where: whereClause,
-				distinct: ["cohortId"],
 				orderBy: { createdAt: "desc" },
 
 				select: {
@@ -39,7 +40,6 @@ export const kelasRouter = createTRPCRouter({
 					jenisKelasRel: { select: { nama: true, tipe: true } },
 					level: true,
 					grup: true,
-					// tipe: true, // Removed from schema
 					kodeKelas: true,
 					bulanTahunAjar: true,
 					deskripsi: true,

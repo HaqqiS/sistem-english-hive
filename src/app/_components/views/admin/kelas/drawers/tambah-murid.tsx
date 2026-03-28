@@ -69,7 +69,7 @@ export default function TambahMuridDetailKelas({
 			onOpenChange={setIsOpen}
 		>
 			<Form {...form}>
-				<PendaftaranMuridForm onSubmit={onSubmit} />
+				<PendaftaranMuridForm onSubmit={onSubmit} kelasId={kelasId} />
 			</Form>
 		</AddDrawer>
 	);

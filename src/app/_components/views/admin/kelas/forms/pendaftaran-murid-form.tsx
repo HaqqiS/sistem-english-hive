@@ -2,9 +2,10 @@
 
 import { StatusPendaftaran } from "@prisma/client";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -13,6 +14,7 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
+	CommandSeparator,
 } from "@/components/ui/command";
 import {
 	FormControl,
@@ -41,10 +43,12 @@ import type { TypeClientTambahMuridSchema } from "@/types/pendaftaranKelas.type"
 
 interface PendaftaranMuridFormProps {
 	onSubmit: (data: TypeClientTambahMuridSchema) => void;
+	kelasId?: string;
 }
 
 export default function PendaftaranMuridForm({
 	onSubmit,
+	kelasId,
 }: PendaftaranMuridFormProps) {
 	const { activeCabangId } = useGlobalCabangStore();
 	const [open, setOpen] = useState(false);
@@ -56,31 +60,42 @@ export default function PendaftaranMuridForm({
 
 	const form = useFormContext<TypeClientTambahMuridSchema>();
 
-	const { dataMuridNotRegistered } = useMurid({
+	const { dataMuridForEnrollment, isLoadingMuridForEnrollment } = useMurid({
 		filterCabang: activeCabangId,
-		enableNotRegisteredQuery: true,
+		enableKelasEnrollmentQuery: true,
+		excludeKelasId: kelasId,
 	});
 
-	const filteredMurid = dataMuridNotRegistered
-		?.filter((murid) => {
+	// Filter berdasarkan search dan usia, lalu pisahkan dua grup
+	const filteredMurid = useMemo(() => {
+		if (!dataMuridForEnrollment) return { free: [], enrolled: [] };
+
+		const filtered = dataMuridForEnrollment.filter((murid) => {
 			const age = murid.umur ?? 0;
 			const min = ageFilter.min ? Number(ageFilter.min) : 0;
 			const max = ageFilter.max ? Number(ageFilter.max) : Infinity;
-
-			// Filter Age
 			if (age < min || age > max) return false;
-
-			// Filter Search
 			if (
 				searchQuery &&
 				!murid.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase())
 			) {
 				return false;
 			}
-
 			return true;
-		})
-		.slice(0, 50);
+		});
+
+		return {
+			free: filtered.filter((m) => !m.isAlreadyEnrolled).slice(0, 50),
+			enrolled: filtered.filter((m) => m.isAlreadyEnrolled).slice(0, 50),
+		};
+	}, [dataMuridForEnrollment, searchQuery, ageFilter]);
+
+	// Nama murid yang saat ini dipilih
+	const selectedMuridName = useMemo(() => {
+		const id = form.watch("muridId");
+		if (!id || !dataMuridForEnrollment) return null;
+		return dataMuridForEnrollment.find((m) => m.id === id)?.namaLengkap ?? null;
+	}, [form, dataMuridForEnrollment]);
 
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -101,12 +116,9 @@ export default function PendaftaranMuridForm({
 											"w-full justify-between",
 											!field.value && "text-muted-foreground",
 										)}
+										disabled={isLoadingMuridForEnrollment}
 									>
-										{field.value
-											? dataMuridNotRegistered?.find(
-													(murid) => murid.id === field.value,
-												)?.namaLengkap
-											: "Pilih murid..."}
+										{selectedMuridName ?? "Pilih murid..."}
 										<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 									</Button>
 								</FormControl>
@@ -153,35 +165,82 @@ export default function PendaftaranMuridForm({
 											</div>
 										</div>
 									</div>
-									<CommandList>
+									<CommandList className="max-h-64 overflow-y-auto">
 										<CommandEmpty>Tidak ada murid ditemukan.</CommandEmpty>
-										<CommandGroup>
-											{filteredMurid?.map((murid) => (
-												<CommandItem
-													key={murid.id}
-													value={murid.namaLengkap}
-													onSelect={() => {
-														form.setValue("muridId", murid.id);
-														setOpen(false);
-													}}
-												>
-													<Check
-														className={cn(
-															"mr-2 h-4 w-4",
-															field.value === murid.id
-																? "opacity-100"
-																: "opacity-0",
-														)}
-													/>
-													<div className="flex flex-col">
-														<span>{murid.namaLengkap}</span>
-														<span className="text-xs opacity-80">
-															{murid.umur} tahun
-														</span>
-													</div>
-												</CommandItem>
-											))}
-										</CommandGroup>
+
+										{/* GRUP 1: Murid belum terdaftar di kelas aktif manapun */}
+										{filteredMurid.free.length > 0 && (
+											<CommandGroup heading="Belum Terdaftar di Kelas Aktif">
+												{filteredMurid.free.map((murid) => (
+													<CommandItem
+														key={murid.id}
+														value={murid.namaLengkap}
+														onSelect={() => {
+															form.setValue("muridId", murid.id);
+															setOpen(false);
+														}}
+													>
+														<Check
+															className={cn(
+																"mr-2 h-4 w-4 shrink-0",
+																field.value === murid.id
+																	? "opacity-100"
+																	: "opacity-0",
+															)}
+														/>
+														<div className="flex flex-col">
+															<span>{murid.namaLengkap}</span>
+															<span className="text-xs opacity-70">
+																{murid.umur} tahun · {murid.kelasSekolah}
+															</span>
+														</div>
+													</CommandItem>
+												))}
+											</CommandGroup>
+										)}
+
+										{/* Separator jika kedua grup terisi */}
+										{filteredMurid.free.length > 0 &&
+											filteredMurid.enrolled.length > 0 && <CommandSeparator />}
+
+										{/* GRUP 2: Murid yang sudah terdaftar di kelas lain (split class) */}
+										{filteredMurid.enrolled.length > 0 && (
+											<CommandGroup heading="Sudah Terdaftar di Kelas Lain">
+												{filteredMurid.enrolled.map((murid) => (
+													<CommandItem
+														key={murid.id}
+														value={`enrolled-${murid.namaLengkap}`}
+														onSelect={() => {
+															form.setValue("muridId", murid.id);
+															setOpen(false);
+														}}
+													>
+														<Check
+															className={cn(
+																"mr-2 h-4 w-4 shrink-0",
+																field.value === murid.id
+																	? "opacity-100"
+																	: "opacity-0",
+															)}
+														/>
+														<div className="flex flex-col gap-1">
+															<span>{murid.namaLengkap}</span>
+															<div className="flex flex-wrap gap-1">
+																{murid.activeKelas.map((k) => (
+																	<Badge
+																		key={k.id}
+																		variant="secondary"
+																		className="text-[10px] px-1 py-0 h-4"
+																	>
+																		{k.kodeKelas}
+																	</Badge>
+																))}
+															</div>
+														</div>
+													</CommandItem>
+												))}
+											</CommandGroup>
+										)}
 									</CommandList>
 								</Command>
 							</PopoverContent>

@@ -177,47 +177,21 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 			}
 
 			try {
-				// 1. Kita butuh harga kelas untuk tagihan
-				// const kelas = await db.kelas.findUnique({
-				// 	where: { id: input.kelasId },
-				// 	select: {
-				// 		hargaKelas: true,
-				// 		kodeKelas: true,
-				// 		cohortId: true,
-				// 		level: true,
-				// 		jenisKelasRel: {
-				// 			select: { hargaBuku: true },
-				// 		},
+				// Validasi Duplikat Pendaftaran Aktif
+				// const existingActive = await db.pendaftaranKelas.findFirst({
+				// 	where: {
+				// 		muridId: input.muridId,
+				// 		status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL] },
 				// 	},
 				// });
-
-				// if (!kelas) {
+				// if (existingActive) {
+				// 	// Gunakan TRPCError dan pesan yang benar
 				// 	throw new TRPCError({
-				// 		code: "NOT_FOUND",
-				// 		message: "Kelas yang dipilih tidak ditemukan.",
+				// 		code: "CONFLICT",
+				// 		message:
+				// 			"Murid ini sudah terdaftar di kelas lain yang masih aktif/trial. Nonaktifkan pendaftaran lama terlebih dahulu.",
 				// 	});
 				// }
-
-				// const preparedKelas = {
-				// 	...kelas,
-				// 	hargaBuku: kelas.jenisKelasRel?.hargaBuku ?? 0,
-				// };
-
-				// Validasi Duplikat Pendaftaran Aktif
-				const existingActive = await db.pendaftaranKelas.findFirst({
-					where: {
-						muridId: input.muridId,
-						status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL] },
-					},
-				});
-				if (existingActive) {
-					// Gunakan TRPCError dan pesan yang benar
-					throw new TRPCError({
-						code: "CONFLICT",
-						message:
-							"Murid ini sudah terdaftar di kelas lain yang masih aktif/trial. Nonaktifkan pendaftaran lama terlebih dahulu.",
-					});
-				}
 
 				const jumlahSesiBerlalu = await db.sesiPertemuanKelas.count({
 					where: { kelasId: input.kelasId },

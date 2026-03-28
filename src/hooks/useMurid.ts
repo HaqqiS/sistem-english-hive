@@ -15,6 +15,8 @@ interface useMuridOptions {
 	enableQuery?: boolean;
 	enableNotRegisteredQuery?: boolean;
 	enableDuplicateNoWAQuery?: boolean;
+	enableKelasEnrollmentQuery?: boolean;
+	excludeKelasId?: string; // For getMuridForKelasEnrollment
 
 	initialDataNotRegisteredPaginated?: TypeMuridNotRegisteredPaginated;
 	initialDataAllPaginated?: TypeAllMuridPaginated;
@@ -99,6 +101,16 @@ export function useMurid(options?: useMuridOptions) {
 		{ cabangId: cabangIdPayload },
 		{
 			enabled: options?.enableDuplicateNoWAQuery ?? false,
+		},
+	);
+
+	const muridForEnrollmentQuery = api.murid.getMuridForKelasEnrollment.useQuery(
+		{
+			cabangId: cabangIdPayload,
+			excludeKelasId: options?.excludeKelasId,
+		},
+		{
+			enabled: options?.enableKelasEnrollmentQuery ?? false,
 		},
 	);
 
@@ -210,6 +222,9 @@ export function useMurid(options?: useMuridOptions) {
 		isLoadingMuridNotRegistered: MuridNotRegisteredQuery.isLoading,
 		isErrorMuridNotRegistered: MuridNotRegisteredQuery.isError,
 		errorMuridNotRegistered: MuridNotRegisteredQuery.error,
+
+		dataMuridForEnrollment: muridForEnrollmentQuery.data,
+		isLoadingMuridForEnrollment: muridForEnrollmentQuery.isLoading,
 
 		dataKelasWithActiveStudents: kelasWithActiveStudentsQuery.data, // Added
 		isLoadingKelasWithActiveStudents: kelasWithActiveStudentsQuery.isLoading, // Added

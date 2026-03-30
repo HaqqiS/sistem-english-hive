@@ -171,7 +171,7 @@ export const pembayaranRouter = createTRPCRouter({
 
 			return db.pembayaran.findMany({
 				where: whereClause,
-				orderBy: { tanggalJatuhTempo: "asc" },
+				orderBy: { createdAt: "desc" },
 				include: {
 					pendaftaranKelas: {
 						include: {

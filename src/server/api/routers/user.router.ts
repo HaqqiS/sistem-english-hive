@@ -378,6 +378,7 @@ export const userRouter = createTRPCRouter({
 				select: {
 					id: true,
 					name: true,
+					cabang: { select: { namaCabang: true } },
 					historyGuruKelases: {
 						where: { statusGuru: "ACTIVE" },
 						select: {

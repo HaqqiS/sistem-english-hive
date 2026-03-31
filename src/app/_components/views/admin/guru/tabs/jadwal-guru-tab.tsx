@@ -1,7 +1,11 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
+import dayjs from "dayjs";
+import { AlertCircle, Download } from "lucide-react";
 import { useMemo } from "react";
+import { utils, writeFile } from "xlsx";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	TableBody,
@@ -145,6 +149,42 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 		});
 	}, [data]);
 
+	const handleExportExcel = () => {
+		if (processedData.length === 0) return;
+
+		const headers = ["Nama Guru", "Jam", ...DAYS];
+		const excelData = [headers];
+
+		processedData.forEach((item) => {
+			item.rows.forEach((row, index) => {
+				const excelRow = [
+					index === 0 ? (item.guru.name ?? "Guru") : "", // Guru name in first row
+					`${row.slot.jamMulai} - ${row.slot.jamSelesai}`,
+					...row.cells.map((cell) =>
+						cell ? `${cell.kodeKelas} (${cell.status ?? "-"})` : "-",
+					),
+				];
+				excelData.push(excelRow);
+			});
+		});
+
+		const worksheet = utils.aoa_to_sheet(excelData);
+		const workbook = utils.book_new();
+		utils.book_append_sheet(workbook, worksheet, "Jadwal Guru");
+
+		// Auto-size columns (rough implementation)
+		const colWidths = excelData[0]?.map((_, i) => ({
+			wch: Math.max(...excelData.map((row) => row[i]?.toString().length ?? 10)),
+		}));
+		worksheet["!cols"] = colWidths;
+
+		const branchName = data?.gurus?.[0]?.cabang?.namaCabang ?? "English_Hive";
+		const dateStr = dayjs().format("YYYY-MM-DD");
+		const filename = `Jadwal_Guru_${branchName.replace(/\s+/g, "_")}_${dateStr}.xlsx`;
+
+		writeFile(workbook, filename);
+	};
+
 	if (isLoading) {
 		return (
 			<div className="space-y-4">
@@ -172,80 +212,101 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 	}
 
 	return (
-		<div className="rounded-md border bg-background overflow-auto h-[calc(100vh-200px)] relative">
-			<table className="w-full caption-bottom text-sm">
-				<TableHeader className="sticky top-0 z-40 bg-muted shadow-sm">
-					<TableRow className="hover:bg-muted">
-						<TableHead className="w-[150px] border-r bg-muted sticky top-0 left-0 z-50">
-							Nama Guru
-						</TableHead>
-						<TableHead className="w-[120px] border-r border-dotted bg-muted sticky top-0 left-[150px] z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
-							Jam
-						</TableHead>
-						{DAYS.map((day) => (
-							<TableHead
-								key={day}
-								className="text-center border-r last:border-r-0 bg-muted sticky top-0 z-40"
-							>
-								{day}
+		<div className="space-y-4">
+			<HeaderActionPortal>
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={handleExportExcel}
+					disabled={processedData.length === 0}
+					className="flex items-center gap-2"
+				>
+					<Download className="h-4 w-4" />
+					Export Excel
+				</Button>
+			</HeaderActionPortal>
+
+			<div className="flex items-center justify-between">
+				<h2 className="text-lg font-semibold tracking-tight">
+					Grid Jadwal Guru
+				</h2>
+			</div>
+
+			<div className="rounded-md border bg-background overflow-auto h-[calc(100vh-250px)] relative">
+				<table className="w-full caption-bottom text-sm">
+					<TableHeader className="sticky top-0 z-40 bg-muted shadow-sm">
+						<TableRow className="hover:bg-muted">
+							<TableHead className="w-[150px] border-r bg-muted sticky top-0 left-0 z-50">
+								Nama Guru
 							</TableHead>
-						))}
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{processedData.map((item) =>
-						item.rows.map((row, index) => (
-							<TableRow key={`${item.guru.id}-${index}`}>
-								{/* Guru Name Column - Merged */}
-								{index === 0 && (
-									<TableCell
-										rowSpan={item.rows.length}
-										className="font-medium border-r sticky top-[41px] left-0 z-30 bg-background/95 align-top p-0 min-w-[150px]"
-									>
-										<div className="p-4 sticky top-[41px] left-0">
-											{item.guru.name}
-										</div>
-									</TableCell>
-								)}
-
-								{/* Time Slot */}
-								<TableCell className="text-sm text-muted-foreground border-r border-dotted font-mono whitespace-nowrap sticky left-[150px] z-20 bg-background shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
-									{row.slot.jamMulai} - {row.slot.jamSelesai}
-								</TableCell>
-
-								{row.cells.map((cellContent, dayIdx) => (
-									<TableCell
-										key={DAYS[dayIdx]}
-										className="p-2 border-r last:border-r-0 text-center"
-									>
-										{cellContent ? (
-											<div
-												className={`flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md ${getJadwalGuruStatusTheme(cellContent.status)}`}
-											>
-												<span className="font-bold tracking-tight">
-													{cellContent.kodeKelas}
-												</span>
-												<span className="text-[10px] font-medium opacity-80">
-													{cellContent.status}
-												</span>
-											</div>
-										) : (
-											<span className="text-muted-foreground/20">-</span>
-										)}
-									</TableCell>
-								))}
-							</TableRow>
-						)),
-					)}
-					{processedData.length === 0 && (
-						<TableRow>
-							<TableCell colSpan={9} className="h-24 text-center">
-								Tidak ada data jadwal.
-							</TableCell>
+							<TableHead className="w-[120px] border-r border-dotted bg-muted sticky top-0 left-[150px] z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
+								Jam
+							</TableHead>
+							{DAYS.map((day) => (
+								<TableHead
+									key={day}
+									className="text-center border-r last:border-r-0 bg-muted sticky top-0 z-40"
+								>
+									{day}
+								</TableHead>
+							))}
 						</TableRow>
-					)}
-				</TableBody>
-			</table>
+					</TableHeader>
+					<TableBody>
+						{processedData.map((item) =>
+							item.rows.map((row, index) => (
+								<TableRow key={`${item.guru.id}-${index}`}>
+									{/* Guru Name Column - Merged */}
+									{index === 0 && (
+										<TableCell
+											rowSpan={item.rows.length}
+											className="font-medium border-r sticky top-[41px] left-0 z-30 bg-background/95 align-top p-0 min-w-[150px]"
+										>
+											<div className="p-4 sticky top-[41px] left-0">
+												{item.guru.name}
+											</div>
+										</TableCell>
+									)}
+
+									{/* Time Slot */}
+									<TableCell className="text-sm text-muted-foreground border-r border-dotted font-mono whitespace-nowrap sticky left-[150px] z-20 bg-background shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
+										{row.slot.jamMulai} - {row.slot.jamSelesai}
+									</TableCell>
+
+									{row.cells.map((cellContent, dayIdx) => (
+										<TableCell
+											key={DAYS[dayIdx]}
+											className="p-2 border-r last:border-r-0 text-center"
+										>
+											{cellContent ? (
+												<div
+													className={`flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md ${getJadwalGuruStatusTheme(cellContent.status)}`}
+												>
+													<span className="font-bold tracking-tight">
+														{cellContent.kodeKelas}
+													</span>
+													<span className="text-[10px] font-medium opacity-80">
+														{cellContent.status}
+													</span>
+												</div>
+											) : (
+												<span className="text-muted-foreground/20">-</span>
+											)}
+										</TableCell>
+									))}
+								</TableRow>
+							)),
+						)}
+						{processedData.length === 0 && (
+							<TableRow>
+								<TableCell colSpan={9} className="h-24 text-center">
+									Tidak ada data jadwal.
+								</TableCell>
+							</TableRow>
+						)}
+					</TableBody>
+				</table>
+			</div>
 		</div>
 	);
 }

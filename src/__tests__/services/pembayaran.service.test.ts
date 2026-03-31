@@ -26,7 +26,7 @@ describe("calculateSisaPertemuan (Hybrid Billing Logic)", () => {
 			findMany: vi.fn(),
 		},
 		absensiMurid: {
-			count: vi.fn(),
+			count: vi.fn(), // Per-kelas count (refactored from findMany)
 		},
 		sesiPertemuanKelas: {
 			count: vi.fn(),

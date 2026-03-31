@@ -81,66 +81,34 @@ export const calculateSisaPertemuan = async (
 		};
 	}
 
-	// 2. HITUNG KREDIT (Total Sesi yang SUDAH DIBAYAR LUNAS) SECARA GLOBAL
-	const pembayaranLunasGlobal = await db.pembayaran.findMany({
+	// 2. HITUNG KREDIT (Per-PendaftaranKelas) — hanya invoice kelas ini
+	const pembayaranLunas = await db.pembayaran.findMany({
 		where: {
-			pendaftaranKelas: { muridId: pendaftaran.muridId },
+			pendaftaranKelasId: pendaftaranKelasId,
 			statusBayar: StatusPembayaran.LUNAS,
 		},
 		select: { jumlahBayar: true },
 	});
 
-	const totalUangMasukGlobal = pembayaranLunasGlobal.reduce(
+	const totalUangMasuk = pembayaranLunas.reduce(
 		(acc, curr) => acc + curr.jumlahBayar,
 		0,
 	);
 
-	// 3. HITUNG DEBIT (Total Sesi yang SUDAH DIGUNAKAN) SECARA GLOBAL
-	const absensiGlobal = await db.absensiMurid.findMany({
+	// 3. HITUNG DEBIT (Per-Kelas) — hanya sesi di kelas ini
+	const totalTerpakai = await db.absensiMurid.count({
 		where: {
 			muridId: pendaftaran.muridId,
+			sesiPertemuanKelas: { kelasId: pendaftaran.kelasId },
 			status: {
 				in: [StatusAbsenMurid.HADIR, StatusAbsenMurid.ALPA],
 			},
 		},
-		select: {
-			sesiPertemuanKelas: {
-				select: {
-					kelasId: true,
-					kelas: { select: { hargaKelas: true } },
-				},
-			},
-		},
 	});
 
-	let totalUangTerpakaiGlobal = 0;
-	let totalTerpakai = 0;
-
-	for (const absen of absensiGlobal) {
-		const harga = absen.sesiPertemuanKelas?.kelas?.hargaKelas ?? 0;
-		totalUangTerpakaiGlobal += harga;
-
-		if (absen.sesiPertemuanKelas?.kelasId === pendaftaran.kelasId) {
-			totalTerpakai++;
-		}
-	}
-
-	const saldoUangGlobal = totalUangMasukGlobal - totalUangTerpakaiGlobal;
-
-	// 4. Kalkulasi Sisa
-	// const sisaPertemuan = Math.floor(saldoUangGlobal / hargaPerSesi);
-	// const totalKuotaSesi = sisaPertemuan + totalTerpakai;
-	// const virtualUangMasukKelasIni =
-	// 	saldoUangGlobal + totalTerpakai * hargaPerSesi;
-	// BUG FIX: Floor loss & Trial Class loss
-	// virtualUangMasukKelasIni merpresentasikan "Porsi uang global yang masih tersisa + Uang yang SUDAH dibakar di kelas ini"
-	const virtualUangMasukKelasIni =
-		saldoUangGlobal + totalTerpakai * hargaPerSesi;
-
-	// Kapasitas riil yang bisa dibeli oleh uang yang dialokasikan ke kelas ini:
-	const totalKuotaSesi = Math.floor(virtualUangMasukKelasIni / hargaPerSesi);
-
-	// Sisa pertemuan = Kapasitas - Yang sudah dipakai
+	// 4. Kalkulasi Sisa (Per-Kelas — tidak ada perlu "virtual" calculation)
+	// totalUangMasuk sudah terisolasi ke kelas ini, jadi langsung floor
+	const totalKuotaSesi = Math.floor(totalUangMasuk / hargaPerSesi);
 	const sisaPertemuan = Math.max(0, totalKuotaSesi - totalTerpakai);
 
 	// 5. Cek Trigger Tagihan
@@ -157,8 +125,8 @@ export const calculateSisaPertemuan = async (
 		.filter((b) => b.statusBayar !== StatusPembayaran.LUNAS)
 		.reduce((acc, curr) => acc + curr.jumlahBayar, 0);
 
-	const totalUangDitagihBerlaku =
-		virtualUangMasukKelasIni + totalUangBelumLunas;
+	// Potensi sisa jika semua tagihan yang belum lunas juga dibayar
+	const totalUangDitagihBerlaku = totalUangMasuk + totalUangBelumLunas;
 
 	const totalKapasitasDitagih = Math.floor(
 		totalUangDitagihBerlaku / hargaPerSesi,
@@ -263,10 +231,7 @@ export const calculateSisaPertemuan = async (
 		return acc + hargaBlok;
 	}, 0);
 
-	const kelebihanBayar = Math.max(
-		0,
-		virtualUangMasukKelasIni - totalExpectedDitagih,
-	);
+	const kelebihanBayar = Math.max(0, totalUangMasuk - totalExpectedDitagih);
 	const nextBillAmount =
 		kelebihanBayar > 0 ? Math.max(0, hargaBlok - kelebihanBayar) : hargaBlok;
 

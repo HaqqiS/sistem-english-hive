@@ -3,7 +3,9 @@
 import { StatusPembayaran } from "@prisma/client";
 import { pdf } from "@react-pdf/renderer";
 import {
+	AlertCircle,
 	Banknote,
+	BookOpen,
 	CalendarClock,
 	CreditCard,
 	Download,
@@ -11,7 +13,7 @@ import {
 	User,
 } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
@@ -89,11 +91,28 @@ export default function HistoryPembayaranMuridClient() {
 		},
 	});
 
-	// 3. Panggil Query Saldo (untuk Header & Cards)
-	const { data: saldoInfo, isLoading: isLoadingSaldo } = getSaldoByMuridIdQuery(
+	// 3. Panggil Query Saldo (per-kelas, return { saldoList, isMultiKelas })
+	const { data: saldoData, isLoading: isLoadingSaldo } = getSaldoByMuridIdQuery(
 		{ muridId: muridId },
 		{ enabled: !!muridId },
 	);
+
+	const saldoList = saldoData?.saldoList ?? [];
+	const isMultiKelas = saldoData?.isMultiKelas ?? false;
+	const activeKelasLabels = saldoList.map((s) => s.kodeKelas);
+
+	// 4. Kelompokkan SPP per kodeKelas (client-side, hanya dipakai jika multi-kelas)
+	const groupedSPP = useMemo(() => {
+		if (!dataGetAllPaginated || !isMultiKelas) return [];
+		const groups = new Map<string, TypePembayaran[]>();
+		for (const row of dataGetAllPaginated) {
+			const kode = row.pendaftaranKelas.Kelas.kodeKelas;
+			if (!groups.has(kode)) groups.set(kode, []);
+			const group = groups.get(kode);
+			if (group) group.push(row);
+		}
+		return Array.from(groups.entries());
+	}, [dataGetAllPaginated, isMultiKelas]);
 
 	// --- HANDLERS SPP ---
 	const handleDeleteClick = (item: TypePembayaran) => {
@@ -299,17 +318,19 @@ export default function HistoryPembayaranMuridClient() {
 
 	// --- DATA HELPERS ---
 	const namaMurid =
-		saldoInfo?.muridName ??
+		saldoList[0]?.muridName ??
 		dataGetAllPaginated?.[0]?.pendaftaranKelas?.murid?.namaLengkap ??
 		"Detail Murid";
 
+	// Fallback kodeKelas untuk header (saat saldoList masih kosong)
 	const kodeKelas =
-		saldoInfo?.kodeKelas ??
+		saldoList[0]?.kodeKelas ??
 		dataGetAllPaginated?.[0]?.pendaftaranKelas?.Kelas?.kodeKelas ??
 		"-";
 
-	const sisaKuota = saldoInfo?.sisaPertemuan ?? 0;
-	const isLowBalance = sisaKuota <= 2;
+	// Low balance check: dari kelas pertama (paling kritis)
+	const sisaKuotaPertama = saldoList[0]?.sisaPertemuan ?? 0;
+	const isLowBalance = sisaKuotaPertama <= 2 && saldoList.length > 0;
 
 	return (
 		<div className="space-y-6 pb-10">
@@ -320,10 +341,19 @@ export default function HistoryPembayaranMuridClient() {
 						<h1 className="flex items-center gap-2 text-xl font-bold tracking-tight">
 							{namaMurid}
 						</h1>
-						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Badge variant="outline" className="font-normal">
-								{kodeKelas}
-							</Badge>
+						<div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+							{/* Tampilkan badge per kelas aktif jika data sudah ada */}
+							{activeKelasLabels.length > 0 ? (
+								activeKelasLabels.map((kode) => (
+									<Badge key={kode} variant="outline" className="font-normal">
+										{kode}
+									</Badge>
+								))
+							) : (
+								<Badge variant="outline" className="font-normal">
+									{kodeKelas}
+								</Badge>
+							)}
 							<span>•</span>
 							<span>Riwayat Pembayaran</span>
 						</div>
@@ -331,71 +361,162 @@ export default function HistoryPembayaranMuridClient() {
 				</div>
 			</div>
 
-			{/* --- 2. SUMMARY CARDS (SALDO INFO) --- */}
-			<div className="grid gap-4 md:grid-cols-3">
-				<Card className={isLowBalance ? "border-red-200 bg-red-50/50" : ""}>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Sisa Kuota Pertemuan
-						</CardTitle>
-						<CalendarClock
-							className={`h-4 w-4 ${
-								isLowBalance ? "text-red-500" : "text-muted-foreground"
-							}`}
-						/>
-					</CardHeader>
-					<CardContent>
-						<div
-							className={`text-2xl font-bold ${
-								isLowBalance ? "text-red-600" : ""
-							}`}
-						>
-							{saldoInfo?.sisaPertemuan ?? 0} Sesi
-						</div>
-						<p className="text-xs text-muted-foreground">
-							{isLowBalance
-								? "Kuota menipis, segera buat tagihan."
-								: "Kuota pertemuan masih aman."}
-						</p>
-					</CardContent>
-				</Card>
+			{/* --- 2. ALERT MULTI-KELAS (kondisional) --- */}
+			{isMultiKelas && (
+				<Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+					<AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+					<AlertTitle className="text-amber-800 dark:text-amber-300">
+						Murid Terdaftar di {activeKelasLabels.length} Kelas Aktif
+					</AlertTitle>
+					<AlertDescription className="text-amber-700 dark:text-amber-400">
+						Saldo pertemuan dihitung <strong>terpisah per kelas</strong> (
+						{activeKelasLabels.join(", ")}). Pilih tab kelas di bawah untuk
+						melihat detail saldo dan tagihan masing-masing.
+					</AlertDescription>
+				</Alert>
+			)}
 
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Tagihan Berikutnya
-						</CardTitle>
-						<Banknote className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							Ke-{saldoInfo?.nextBillPembayaranKe ?? 1}
-						</div>
-						<p className="text-xs text-muted-foreground">
-							Estimasi tagihan selanjutnya
-						</p>
-					</CardContent>
-				</Card>
+			{/* --- 3. SUMMARY CARDS (SALDO INFO) per kelas --- */}
+			{saldoList.length > 0 &&
+				(isMultiKelas ? (
+					/* Tab switcher — satu tab per kelas */
+					<Tabs defaultValue={saldoList[0]?.kodeKelas} className="w-full">
+						<TabsList>
+							{saldoList.map((s) => (
+								<TabsTrigger key={s.kodeKelas} value={s.kodeKelas}>
+									{s.kodeKelas}
+								</TabsTrigger>
+							))}
+						</TabsList>
+						{saldoList.map((s) => {
+							const low = (s.sisaPertemuan ?? 0) <= 2;
+							return (
+								<TabsContent
+									key={s.kodeKelas}
+									value={s.kodeKelas}
+									className="mt-3"
+								>
+									<div className="grid gap-4 md:grid-cols-3">
+										<Card className={low ? "border-red-200 bg-red-50/50" : ""}>
+											<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+												<CardTitle className="text-sm font-medium">
+													Sisa Kuota Pertemuan
+												</CardTitle>
+												<CalendarClock
+													className={`h-4 w-4 ${low ? "text-red-500" : "text-muted-foreground"}`}
+												/>
+											</CardHeader>
+											<CardContent>
+												<div
+													className={`text-2xl font-bold ${low ? "text-red-600" : ""}`}
+												>
+													{s.sisaPertemuan ?? 0} Sesi
+												</div>
+												<p className="text-xs text-muted-foreground">
+													{low
+														? "Kuota menipis, segera tagih."
+														: "Kuota masih aman."}
+												</p>
+											</CardContent>
+										</Card>
+										<Card>
+											<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+												<CardTitle className="text-sm font-medium">
+													Tagihan Berikutnya
+												</CardTitle>
+												<Banknote className="h-4 w-4 text-muted-foreground" />
+											</CardHeader>
+											<CardContent>
+												<div className="text-2xl font-bold">
+													Ke-{s.nextBillPembayaranKe ?? 1}
+												</div>
+												<p className="text-xs text-muted-foreground">
+													Estimasi tagihan selanjutnya
+												</p>
+											</CardContent>
+										</Card>
+										<Card>
+											<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+												<CardTitle className="text-sm font-medium">
+													Total Sesi Terpakai
+												</CardTitle>
+												<User className="h-4 w-4 text-muted-foreground" />
+											</CardHeader>
+											<CardContent>
+												<div className="text-2xl font-bold">
+													{s.totalTerpakai ?? 0}
+												</div>
+												<p className="text-xs text-muted-foreground">
+													Total kehadiran & alpa siswa
+												</p>
+											</CardContent>
+										</Card>
+									</div>
+								</TabsContent>
+							);
+						})}
+					</Tabs>
+				) : (
+					/* Single kelas — kartu biasa */
+					<div className="grid gap-4 md:grid-cols-3">
+						<Card className={isLowBalance ? "border-red-200 bg-red-50/50" : ""}>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="text-sm font-medium">
+									Sisa Kuota Pertemuan
+								</CardTitle>
+								<CalendarClock
+									className={`h-4 w-4 ${isLowBalance ? "text-red-500" : "text-muted-foreground"}`}
+								/>
+							</CardHeader>
+							<CardContent>
+								<div
+									className={`text-2xl font-bold ${isLowBalance ? "text-red-600" : ""}`}
+								>
+									{saldoList[0]?.sisaPertemuan ?? 0} Sesi
+								</div>
+								<p className="text-xs text-muted-foreground">
+									{isLowBalance
+										? "Kuota menipis, segera buat tagihan."
+										: "Kuota pertemuan masih aman."}
+								</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="text-sm font-medium">
+									Tagihan Berikutnya
+								</CardTitle>
+								<Banknote className="h-4 w-4 text-muted-foreground" />
+							</CardHeader>
+							<CardContent>
+								<div className="text-2xl font-bold">
+									Ke-{saldoList[0]?.nextBillPembayaranKe ?? 1}
+								</div>
+								<p className="text-xs text-muted-foreground">
+									Estimasi tagihan selanjutnya
+								</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="text-sm font-medium">
+									Total Sesi Terpakai
+								</CardTitle>
+								<User className="h-4 w-4 text-muted-foreground" />
+							</CardHeader>
+							<CardContent>
+								<div className="text-2xl font-bold">
+									{saldoList[0]?.totalTerpakai ?? 0}
+								</div>
+								<p className="text-xs text-muted-foreground">
+									Total kehadiran & alpa siswa
+								</p>
+							</CardContent>
+						</Card>
+					</div>
+				))}
 
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Total Sesi Terpakai
-						</CardTitle>
-						<User className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							{saldoInfo?.totalTerpakai ?? 0}
-						</div>
-						<p className="text-xs text-muted-foreground">
-							Total kehadiran & alpa siswa
-						</p>
-					</CardContent>
-				</Card>
-			</div>
-
-			{/* --- 3. TABS SECTION --- */}
+			{/* --- 4. TABS SECTION --- */}
 			<Tabs defaultValue="spp" className="w-full">
 				<TabsList>
 					<TabsTrigger value="spp">SPP (Tuition)</TabsTrigger>
@@ -414,7 +535,23 @@ export default function HistoryPembayaranMuridClient() {
 						</div>
 					</div>
 
-					{dataGetAllPaginated && dataGetAllPaginated.length > 0 ? (
+					{/* Multi-kelas: tampilkan tabel per grup kelas */}
+					{isMultiKelas && groupedSPP.length > 0 ? (
+						<div className="space-y-6">
+							{groupedSPP.map(([kode, rows]) => (
+								<div key={kode}>
+									<div className="mb-2 flex items-center gap-2">
+										<BookOpen className="h-4 w-4 text-muted-foreground" />
+										<span className="text-sm font-semibold">{kode}</span>
+										<span className="text-xs text-muted-foreground">
+											({rows.length} tagihan)
+										</span>
+									</div>
+									<DataTable columns={columns} data={rows} />
+								</div>
+							))}
+						</div>
+					) : dataGetAllPaginated && dataGetAllPaginated.length > 0 ? (
 						<DataTable
 							columns={columns}
 							data={dataGetAllPaginated}
@@ -502,6 +639,7 @@ export default function HistoryPembayaranMuridClient() {
 							<p>Belum ada riwayat pembayaran SPP.</p>
 						</div>
 					)}
+					{/* Tutup kondisi multi-kelas */}
 				</TabsContent>
 
 				<TabsContent value="lainnya" className="space-y-4 pt-4">

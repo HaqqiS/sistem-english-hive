@@ -315,23 +315,25 @@ export const pembayaranRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 
-			const pendaftaranAktif = await db.pendaftaranKelas.findFirst({
+			// Ambil SEMUA pendaftaran aktif/trial murid ini
+			const pendaftaranList = await db.pendaftaranKelas.findMany({
 				where: {
 					muridId: input.muridId,
-					status: StatusPendaftaran.AKTIF,
+					status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL] },
 				},
 				include: {
 					Kelas: { select: { cabangId: true } },
 				},
 			});
 
-			if (!pendaftaranAktif) {
+			if (pendaftaranList.length === 0) {
 				return null;
 			}
 
+			// Security check cabang (cukup cek dari kelas pertama)
 			if (
 				allowedCabangId &&
-				pendaftaranAktif.Kelas.cabangId !== allowedCabangId
+				pendaftaranList[0]?.Kelas.cabangId !== allowedCabangId
 			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -340,7 +342,15 @@ export const pembayaranRouter = createTRPCRouter({
 				});
 			}
 
-			return await calculateSisaPertemuan(db, pendaftaranAktif.id);
+			// Hitung saldo per-kelas secara paralel (aman: calculateSisaPertemuan sudah per-kelas)
+			const saldoList = await Promise.all(
+				pendaftaranList.map((p) => calculateSisaPertemuan(db, p.id)),
+			);
+
+			return {
+				saldoList,
+				isMultiKelas: saldoList.length > 1,
+			};
 		}),
 
 	updatePembayaran: cabangProtectedProcedure

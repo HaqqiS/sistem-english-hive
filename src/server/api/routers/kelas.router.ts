@@ -10,6 +10,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
+import { UserRole } from "@/server/auth/type";
 import { serverKelasSchema, upLevelKelasSchema } from "@/types/kelas.type";
 import dayjs from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
@@ -227,7 +228,7 @@ export const kelasRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			const { db, session, allowedCabangId } = ctx;
 			const guruId = session.user.id;
-			const isGuru = session.user.role === "GURU";
+			const isGuru = session.user.role === UserRole.GURU;
 
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
 
@@ -255,6 +256,19 @@ export const kelasRouter = createTRPCRouter({
 				select: {
 					id: true,
 					kodeKelas: true,
+					// Ambil info guru yang aktif di kelas ini
+					historyGuruKelases: {
+						where: {
+							statusGuru: "ACTIVE",
+						},
+						select: {
+							guru: {
+								select: {
+									name: true,
+								},
+							},
+						},
+					},
 					// Ambil semua sesi pertemuan yang terkait dengan kelas ini
 					sesiPertemuanKelases: {
 						orderBy: {

@@ -39,6 +39,7 @@ export default function AbsenMuridClient() {
 										<Skeleton className="h-10 w-10 rounded-lg" />
 										<div className="flex flex-col gap-2">
 											<Skeleton className="h-5 w-32" /> {/* Kode Kelas */}
+											<Skeleton className="h-4 w-24" /> {/* Nama Guru */}
 										</div>
 									</div>
 									<Skeleton className="h-6 w-16 rounded-full" /> {/* Badge */}
@@ -94,9 +95,11 @@ export default function AbsenMuridClient() {
 													<p className="text-base font-semibold">
 														{kelas.kodeKelas}
 													</p>
-													{/* <p className="text-muted-foreground hidden text-xs sm:block">
-                            ID: {kelas.id.slice(-6)}
-                          </p> */}
+													<p className="text-muted-foreground text-xs">
+														Guru:{" "}
+														{kelas.historyGuruKelases[0]?.guru.name ??
+															"Belum Ditugaskan"}
+													</p>
 												</div>
 											</div>
 											<Badge variant="secondary" className="ml-auto sm:ml-0">

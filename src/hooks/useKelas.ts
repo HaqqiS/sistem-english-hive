@@ -1,6 +1,7 @@
 "use client";
 import type { TipeKelas } from "@prisma/client";
 import { skipToken } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import type {
@@ -315,5 +316,53 @@ export function useKelas(options?: UseKelasOptions) {
 		refetchById: kelasByIdQuery.refetch,
 		refetchHistory: kelasHistoryQuery.refetch,
 		invalidate: invalidateAll,
+	};
+}
+
+export function useOrderBuku(cabangId?: string) {
+	// 1. Fetch data dari backend
+	const {
+		data: kelasList,
+		isLoading,
+		error,
+	} = api.kelas.getKelasSiapOrderBuku.useQuery(
+		{ cabangId },
+		{
+			enabled: true, // Auto fetch
+			refetchOnWindowFocus: false,
+		},
+	);
+
+	// 2. State untuk melacak ID kelas mana saja yang sudah diceklis
+	const [checkedKelasIds, setCheckedKelasIds] = useState<string[]>([]);
+
+	// 3. Fungsi toggle
+	const toggleCheck = (kelasId: string) => {
+		setCheckedKelasIds((prev) => {
+			if (prev.includes(kelasId)) {
+				return prev.filter((id) => id !== kelasId);
+			}
+			return [...prev, kelasId];
+		});
+	};
+
+	const checkAll = () => {
+		if (kelasList) {
+			setCheckedKelasIds(kelasList.map((k) => k.id));
+		}
+	};
+
+	const uncheckAll = () => {
+		setCheckedKelasIds([]);
+	};
+
+	return {
+		kelasList,
+		isLoading,
+		error,
+		checkedKelasIds,
+		toggleCheck,
+		checkAll,
+		uncheckAll,
 	};
 }

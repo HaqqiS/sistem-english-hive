@@ -288,6 +288,48 @@ export const kelasRouter = createTRPCRouter({
 			);
 		}),
 
+	getKelasSiapOrderBuku: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const whereClause: Prisma.KelasWhereInput = {
+				statusKelas: "RUNNING",
+			};
+
+			if (filterCabangId) {
+				whereClause.cabangId = filterCabangId;
+			}
+
+			// Ambil semua kelas RUNNING
+			const kelasRunning = await db.kelas.findMany({
+				where: whereClause,
+				select: {
+					id: true,
+					kodeKelas: true,
+					historyGuruKelases: {
+						where: { statusGuru: "ACTIVE" },
+						select: {
+							guru: { select: { name: true } },
+						},
+						take: 1,
+					},
+					// Hitung jumlah sesi pertemuan yang terhubung
+					_count: {
+						select: { sesiPertemuanKelases: true },
+					},
+				},
+				orderBy: { createdAt: "desc" },
+			});
+
+			// Filter secara programatik untuk sesi yang berada di antara 16 dan 24
+			return kelasRunning.filter((k) => {
+				const jumlahSesi = k._count.sesiPertemuanKelases;
+				return jumlahSesi >= 16 && jumlahSesi <= 24;
+			});
+		}),
+
 	getForExport: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional() }).optional())
 		.query(async ({ ctx, input }) => {

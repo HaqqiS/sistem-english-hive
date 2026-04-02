@@ -72,7 +72,7 @@ export default function DetailAbsenMuridClient() {
 	const handleSelesai = async () => {
 		try {
 			await mutations.selesaikanAbsen.mutateAsync({ sesiId });
-			router.push("/guru/dashboard");
+			router.push("/guru");
 			toast.success("Sesi absensi selesai dan diverifikasi.");
 		} catch (e) {
 			console.error(e);

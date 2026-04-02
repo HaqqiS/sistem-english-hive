@@ -432,9 +432,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 				},
 			});
 
-			const sesiMap = new Map(
-				sesiSudahDibuat.map((s) => [s.jadwalKelasId, s]),
-			);
+			const sesiMap = new Map(sesiSudahDibuat.map((s) => [s.jadwalKelasId, s]));
 
 			// 4. Proses data agar rapi untuk UI
 			const hasil = jadwalHariIni.map((jadwal) => {

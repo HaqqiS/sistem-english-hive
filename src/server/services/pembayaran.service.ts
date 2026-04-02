@@ -39,7 +39,7 @@ type BillingStatus = {
 };
 
 export const calculateSisaPertemuan = async (
-	db: PrismaClient,
+	db: PrismaClient | Prisma.TransactionClient,
 	pendaftaranKelasId: string,
 ): Promise<BillingStatus> => {
 	// 1. Ambil Data Pendaftaran
@@ -331,4 +331,73 @@ export const calculateInitialBill = (
 		note,
 		sesiMasuk,
 	};
+};
+
+export const processAutoBilling = async (
+	db: PrismaClient | Prisma.TransactionClient,
+	pendaftaranId: string,
+	kelasId: string,
+) => {
+	// Hitung sisa pertemuan
+	const billingStatus = await calculateSisaPertemuan(db, pendaftaranId);
+
+	// === LOGIC AUTO-BILLING ===
+	if (billingStatus.needNewBill) {
+		// [BARU] CIRCUIT BREAKER: Cek apakah kelas sudah di fase akhir (Sesi 20++)?
+		const jumlahSesiBerlalu = await db.sesiPertemuanKelas.count({
+			where: { kelasId: kelasId },
+		});
+
+		// Jika kelas sudah mencapai sesi 20 (Trigger Level Up) atau lebih,
+		// JANGAN buat tagihan lagi untuk Level ini.
+		// Tagihan selanjutnya akan dihandle oleh pendaftaran di Level Baru.
+		if (jumlahSesiBerlalu >= 20) {
+			console.log(
+				`[AUTO-BILL] Skipped. Kelas sudah di Sesi ${jumlahSesiBerlalu} (Fase Level Up).`,
+			);
+			return;
+		}
+
+		// Guard lama: Max 3 tagihan per level (untuk kasus normal)
+		if (billingStatus.nextBillPembayaranKe > 3) {
+			console.log(
+				`[AUTO-BILL] Skipped. Tagihan ke-${billingStatus.nextBillPembayaranKe} melebihi batas per level.`,
+			);
+			return;
+		}
+
+		// Buat Tagihan Baru
+		// nextBillAmount sudah memperhitungkan kelebihan bayar sebelumnya
+		// Contoh: jika ke-2 bayar 420k (lebih 120k dari 300k), maka ke-3 = 300k - 120k = 180k
+		const totalTagihan = billingStatus.nextBillAmount;
+		const jatuhTempo = dayjs().add(7, "day").toDate();
+
+		await generateTagihan(db, {
+			pendaftaranId: pendaftaranId,
+			pembayaranKe: billingStatus.nextBillPembayaranKe,
+			jumlahBayar: totalTagihan,
+			jatuhTempo: jatuhTempo,
+			note: `Auto-Generate: Kuota sisa ${billingStatus.sisaPertemuan}. Tagihan berikutnya Rp ${billingStatus.nextBillAmount.toLocaleString("id-ID")}.`,
+		});
+	} else {
+		// [CLEANUP] Jika revisi absen membuat kuota kembali aman
+		if (billingStatus.sisaPertemuan > BATAS_SISA_UNTUK_TAGIHAN) {
+			const autoBillToDelete = await db.pembayaran.findFirst({
+				where: {
+					pendaftaranKelasId: pendaftaranId,
+					statusBayar: {
+						in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+					},
+					note: { contains: "Auto-Generate" }, // Hanya hapus yg auto
+				},
+				orderBy: { createdAt: "desc" },
+			});
+
+			if (autoBillToDelete) {
+				await db.pembayaran.delete({
+					where: { id: autoBillToDelete.id },
+				});
+			}
+		}
+	}
 };

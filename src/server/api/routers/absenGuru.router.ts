@@ -13,6 +13,7 @@ import {
 	handleAutoLevelUp,
 	handleClassCompletion,
 } from "@/server/services/kelas.service";
+import { processAutoBilling } from "@/server/services/pembayaran.service";
 import {
 	serverStartSesiSchema,
 	updateAbsensiGuruSchema,
@@ -455,7 +456,7 @@ export const absenGuruRouter = createTRPCRouter({
 									in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL],
 								},
 							},
-							select: { muridId: true },
+							select: { id: true, muridId: true },
 						});
 
 						if (muridAktif.length > 0) {
@@ -466,6 +467,13 @@ export const absenGuruRouter = createTRPCRouter({
 									status: StatusAbsenMurid.ALPA,
 								})),
 							});
+
+							// [NEW] Kalkulasi Tagihan (On-the-Fly) untuk absensi auto ALPA
+							await Promise.all(
+								muridAktif.map((m) =>
+									processAutoBilling(tx, m.id, jadwal.kelasId),
+								),
+							);
 						}
 
 						// Hitung Total Sesi (Termasuk yang baru dibuat)

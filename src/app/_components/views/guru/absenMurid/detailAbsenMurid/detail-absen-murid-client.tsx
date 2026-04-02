@@ -69,9 +69,14 @@ export default function DetailAbsenMuridClient() {
 		[sesiId, mutations.createOrUpdate],
 	);
 
-	const handleSelesai = () => {
-		router.push("/guru/absen");
-		toast.success("Sesi absensi selesai.");
+	const handleSelesai = async () => {
+		try {
+			await mutations.selesaikanAbsen.mutateAsync({ sesiId });
+			router.push("/guru/dashboard");
+			toast.success("Sesi absensi selesai dan diverifikasi.");
+		} catch (e) {
+			console.error(e);
+		}
 	};
 
 	const handleMarkRemainingAsAlpha = async () => {
@@ -148,7 +153,9 @@ export default function DetailAbsenMuridClient() {
 				<AlertDialog>
 					<AlertDialogTrigger asChild>
 						<Button variant={isAllMarked ? "default" : "destructive"}>
-							{isAllMarked ? "Selesai" : "Selesai (Belum Lengkap)"}
+							{isAllMarked
+								? "Simpan & Selesaikan Absen"
+								: "Selesai (Belum Lengkap)"}
 						</Button>
 					</AlertDialogTrigger>
 					<AlertDialogContent>
@@ -160,8 +167,8 @@ export default function DetailAbsenMuridClient() {
 								<div>
 									{isAllMarked ? (
 										<p>
-											Semua murid telah diabsen. Anda yakin ingin kembali ke
-											menu utama?
+											Pastikan semua kehadiran murid sudah benar. Anda yakin
+											ingin menyelesaikan absensi dan kembali ke menu utama?
 										</p>
 									) : (
 										<div className="space-y-2">
@@ -199,11 +206,21 @@ export default function DetailAbsenMuridClient() {
 							)}
 
 							<AlertDialogAction
-								onClick={handleSelesai}
-								disabled={!isAllMarked || isBulkUpdating}
+								onClick={(e) => {
+									e.preventDefault();
+									void handleSelesai();
+								}}
+								disabled={
+									!isAllMarked ||
+									isBulkUpdating ||
+									mutations.selesaikanAbsen.isPending
+								}
 								className={!isAllMarked ? "hidden" : ""}
 							>
-								Ya, Selesai
+								{mutations.selesaikanAbsen.isPending && (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								)}
+								Ya, Selesaikan
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>

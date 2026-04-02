@@ -316,17 +316,31 @@ export default function GuruDashboardClient() {
 							</CardContent>
 							<CardFooter className="flex items-center gap-2 pt-0">
 								{sudahDimulai ? (
-									<Button
-										variant="outline"
-										className="w-full"
-										onClick={() =>
-											router.push(`/guru/absen/${jadwal.sesiIdSudahDibuat}`)
-										}
-										disabled={isStartingSesi}
-									>
-										<Play className="mr-2 h-4 w-4 text-green-500" />
-										Lanjutkan Sesi
-									</Button>
+									jadwal.isAbsenSelesai ? (
+										<Button
+											variant="default"
+											className="w-full bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+											onClick={() =>
+												router.push(`/guru/absen/${jadwal.sesiIdSudahDibuat}`)
+											}
+											disabled={isStartingSesi}
+										>
+											<CheckCircle2 className="mr-2 h-4 w-4" />
+											Absen Sudah Selesai
+										</Button>
+									) : (
+										<Button
+											variant="outline"
+											className="w-full border-yellow-500 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 dark:border-yellow-700 dark:text-yellow-500 dark:hover:bg-yellow-950"
+											onClick={() =>
+												router.push(`/guru/absen/${jadwal.sesiIdSudahDibuat}`)
+											}
+											disabled={isStartingSesi}
+										>
+											<Play className="mr-2 h-4 w-4" />
+											Lanjutkan Absensi
+										</Button>
+									)
 								) : (
 									<div className="flex w-full items-center gap-2">
 										<Button

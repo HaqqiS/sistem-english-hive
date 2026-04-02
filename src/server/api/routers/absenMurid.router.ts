@@ -237,4 +237,36 @@ export const absenMuridRouter = createTRPCRouter({
 				throw error;
 			}
 		}),
+
+	selesaikanAbsen: cabangProtectedProcedure
+		.input(z.object({ sesiId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const sesi = await db.sesiPertemuanKelas.findUnique({
+				where: { id: input.sesiId },
+				include: { kelas: true },
+			});
+
+			if (!sesi) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Sesi tidak ditemukan",
+				});
+			}
+
+			if (allowedCabangId && sesi.kelas.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak menyelesaikan sesi di cabang lain.",
+				});
+			}
+
+			await db.sesiPertemuanKelas.update({
+				where: { id: input.sesiId },
+				data: { isSelesaiAbsen: true },
+			});
+
+			return { success: true };
+		}),
 });

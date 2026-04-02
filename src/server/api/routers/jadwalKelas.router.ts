@@ -428,17 +428,18 @@ export const jadwalKelasRouter = createTRPCRouter({
 				select: {
 					id: true, // ID SesiPertemuanKelas
 					jadwalKelasId: true,
+					isSelesaiAbsen: true,
 				},
 			});
 
 			const sesiMap = new Map(
-				sesiSudahDibuat.map((s) => [s.jadwalKelasId, s.id]),
+				sesiSudahDibuat.map((s) => [s.jadwalKelasId, s]),
 			);
 
 			// 4. Proses data agar rapi untuk UI
 			const hasil = jadwalHariIni.map((jadwal) => {
 				const jam = jadwal.jamSlotTetap ?? jadwal.jamSlotCustom;
-				const sesiId = sesiMap.get(jadwal.id) ?? null;
+				const sesiRecord = sesiMap.get(jadwal.id);
 				const guruList = jadwal.kelas.historyGuruKelases.map((h) => h.guru);
 
 				return {
@@ -454,7 +455,8 @@ export const jadwalKelasRouter = createTRPCRouter({
 					guru: guruList[0]
 						? { id: guruList[0].id, name: guruList[0].name }
 						: null,
-					sesiIdSudahDibuat: sesiId,
+					sesiIdSudahDibuat: sesiRecord?.id ?? null,
+					isAbsenSelesai: sesiRecord?.isSelesaiAbsen ?? false,
 					isJadwalPengganti: targetGuruId !== session.user.id,
 				};
 			});

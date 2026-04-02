@@ -333,6 +333,7 @@ model SesiPertemuanKelas {
   ruangId       String
   tanggalWaktu  DateTime
   jadwalKelasId String?
+  isSelesaiAbsen Boolean? @default(false)
   // tanggalWaktu String @db.VarChar(19) // format: "YYYY-MM-DD HH:mm:ss"
 
   createdAt DateTime @default(now())

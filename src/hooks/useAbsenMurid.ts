@@ -91,6 +91,15 @@ export function useAbsenMurid(options?: UseAbsenMuridOptions) {
 			},
 		});
 
+	const selesaiAbsenMutation = api.absenMurid.selesaikanAbsen.useMutation({
+		onSuccess: () => {
+			void invalidateAbsensi();
+		},
+		onError: (error) => {
+			toast.error(`Gagal menyelesaikan sesi absensi: ${error.message}`);
+		},
+	});
+
 	return {
 		// Query results
 		data: getMuridForAbsensiQuery.data,
@@ -101,6 +110,7 @@ export function useAbsenMurid(options?: UseAbsenMuridOptions) {
 		// Mutations
 		mutations: {
 			createOrUpdate: createOrUpdateAbsensiMutation,
+			selesaikanAbsen: selesaiAbsenMutation,
 		},
 
 		// Utils untuk manual invalidation jika perlu

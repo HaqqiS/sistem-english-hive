@@ -166,7 +166,7 @@ export function useKelas(options?: UseKelasOptions) {
 		{
 			enabled: options?.enableQueryGetKelasSiapOrderBuku ?? false,
 			refetchOnWindowFocus: false,
-		}
+		},
 	);
 
 	const fetchExportData = async () => {
@@ -249,7 +249,7 @@ export function useKelas(options?: UseKelasOptions) {
 		},
 		onError: (error) => {
 			toast.error(`Gagal mengupdate status: ${error.message}`);
-		}
+		},
 	});
 
 	return {
@@ -307,7 +307,7 @@ export function useKelas(options?: UseKelasOptions) {
 				mutate: toggleOrderBukuMutation.mutate,
 				mutateAsync: toggleOrderBukuMutation.mutateAsync,
 				isPending: toggleOrderBukuMutation.isPending,
-			}
+			},
 		},
 
 		// Utils untuk manual invalidation jika perlu
@@ -341,7 +341,7 @@ export function useKelas(options?: UseKelasOptions) {
 		refetchById: kelasByIdQuery.refetch,
 		refetchHistory: kelasHistoryQuery.refetch,
 		invalidate: invalidateAll,
-		
+
 		dataKelasOrderBuku: kelasSiapOrderBukuQuery.data,
 		isLoadingKelasOrderBuku: kelasSiapOrderBukuQuery.isLoading,
 		isErrorKelasOrderBuku: kelasSiapOrderBukuQuery.isError,

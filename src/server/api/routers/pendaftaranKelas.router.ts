@@ -75,6 +75,33 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 			return pendaftaranKelas;
 		}),
 
+	getMuridNamesByKelasId: cabangProtectedProcedure
+		.input(z.object({ kelasId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const pendaftaran = await db.pendaftaranKelas.findMany({
+				where: {
+					kelasId: input.kelasId,
+					status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL] },
+					Kelas: allowedCabangId ? { cabangId: allowedCabangId } : undefined,
+				},
+				select: {
+					murid: {
+						select: {
+							id: true,
+							namaLengkap: true,
+						},
+					},
+				},
+				orderBy: {
+					murid: { namaLengkap: "asc" },
+				},
+			});
+
+			return pendaftaran.map((p) => p.murid);
+		}),
+
 	getActivePendaftaranByMuridId: cabangProtectedProcedure
 		.input(z.object({ muridId: z.string() }))
 		.query(async ({ ctx, input }) => {

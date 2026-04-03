@@ -56,6 +56,7 @@ import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
+import { MuridPopover } from "./murid-popover";
 
 export default function GuruDashboardClient() {
 	const router = useRouter();
@@ -308,11 +309,18 @@ export default function GuruDashboardClient() {
 									</p>
 								)}
 							</CardHeader>
-							<CardContent>
+							<CardContent className="space-y-3">
 								<p className="flex items-center gap-2 text-sm">
 									<span className="text-muted-foreground">Ruang:</span>
 									<span className="font-medium">{jadwal.namaRuang}</span>
 								</p>
+
+								<div className="flex items-center gap-2">
+									<MuridPopover
+										kelasId={jadwal.kelasId}
+										jumlahMurid={jadwal.jumlahMurid ?? 0}
+									/>
+								</div>
 							</CardContent>
 							<CardFooter className="flex items-center gap-2 pt-0">
 								{sudahDimulai ? (

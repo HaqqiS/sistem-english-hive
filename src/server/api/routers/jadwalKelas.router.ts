@@ -370,6 +370,15 @@ export const jadwalKelasRouter = createTRPCRouter({
 					kelas: {
 						select: {
 							kodeKelas: true,
+							_count: {
+								select: {
+									pendaftaranKelases: {
+										where: {
+											status: { in: ["AKTIF", "TRIAL"] },
+										},
+									},
+								},
+							},
 							historyGuruKelases: {
 								where: {
 									statusGuru: "ACTIVE",
@@ -448,6 +457,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 					namaRuang: jadwal.ruang.namaRuang,
 					jamMulai: jam?.jamMulai ?? "N/A",
 					jamSelesai: jam?.jamSelesai ?? "N/A",
+					jumlahMurid: jadwal.kelas._count.pendaftaranKelases,
 					gurus: guruList.map((g) => ({ id: g.id, name: g.name })),
 					// Backwards compatibility for UI (optional, or remove if updated everywhere)
 					guru: guruList[0]

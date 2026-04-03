@@ -29,10 +29,10 @@ export default function CardKelasOrderBuku({
 		dataKelasOrderBuku,
 		isLoadingKelasOrderBuku,
 		mutations,
-		refetchKelasOrderBuku
+		refetchKelasOrderBuku,
 	} = useKelas({
 		enableQueryGetKelasSiapOrderBuku: true,
-		filterCabang: activeCabangId
+		filterCabang: activeCabangId,
 	});
 
 	const handleRefresh = async () => {
@@ -65,7 +65,12 @@ export default function CardKelasOrderBuku({
 						disabled={isLoadingKelasOrderBuku}
 						title="Refresh Daftar Kelas"
 					>
-						<RefreshCw className={cn("h-4 w-4", isLoadingKelasOrderBuku && "animate-spin")} />
+						<RefreshCw
+							className={cn(
+								"h-4 w-4",
+								isLoadingKelasOrderBuku && "animate-spin",
+							)}
+						/>
 					</Button>
 				</div>
 			</CardHeader>

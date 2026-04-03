@@ -1,7 +1,6 @@
 "use client";
 import type { TipeKelas } from "@prisma/client";
 import { skipToken } from "@tanstack/react-query";
-import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import type {
@@ -21,6 +20,7 @@ interface UseKelasOptions {
 	enableQueryGetKelasLevelUp?: boolean;
 	enableQueryGetKelasCompleted?: boolean;
 	enableQueryGetKelasId?: boolean;
+	enableQueryGetKelasSiapOrderBuku?: boolean;
 	enableQueryGetKelasWithSesi?: boolean;
 
 	initialDataKelasAktif?: TypeKelas[];
@@ -161,6 +161,14 @@ export function useKelas(options?: UseKelasOptions) {
 		},
 	);
 
+	const kelasSiapOrderBukuQuery = api.kelas.getKelasSiapOrderBuku.useQuery(
+		{ cabangId: cabangIdPayload },
+		{
+			enabled: options?.enableQueryGetKelasSiapOrderBuku ?? false,
+			refetchOnWindowFocus: false,
+		}
+	);
+
 	const fetchExportData = async () => {
 		return await apiUtils.kelas.getForExport.fetch({
 			cabangId: cabangIdPayload,
@@ -176,6 +184,7 @@ export function useKelas(options?: UseKelasOptions) {
 			apiUtils.kelas.getKelasLevelUp.invalidate(),
 			apiUtils.kelas.getKelasCompleted.invalidate(),
 			apiUtils.kelas.getKelasById.invalidate(),
+			apiUtils.kelas.getKelasSiapOrderBuku.invalidate(),
 		]);
 	};
 	// ========== MUTATIONS ==========
@@ -232,6 +241,17 @@ export function useKelas(options?: UseKelasOptions) {
 		},
 	});
 
+	// TOGGLE ORDER BUKU
+	const toggleOrderBukuMutation = api.kelas.toggleOrderBuku.useMutation({
+		onSuccess: async () => {
+			await apiUtils.kelas.getKelasSiapOrderBuku.invalidate();
+			toast.success("Status order buku berhasil diperbarui");
+		},
+		onError: (error) => {
+			toast.error(`Gagal mengupdate status: ${error.message}`);
+		}
+	});
+
 	return {
 		dataKelasAktif: kelasAktifQuery.data,
 		isLoadingKelasAktif: kelasAktifQuery.isLoading,
@@ -283,6 +303,11 @@ export function useKelas(options?: UseKelasOptions) {
 				mutateAsync: upLevelMutation.mutateAsync,
 				isPending: upLevelMutation.isPending,
 			},
+			toggleOrderBuku: {
+				mutate: toggleOrderBukuMutation.mutate,
+				mutateAsync: toggleOrderBukuMutation.mutateAsync,
+				isPending: toggleOrderBukuMutation.isPending,
+			}
 		},
 
 		// Utils untuk manual invalidation jika perlu
@@ -316,53 +341,11 @@ export function useKelas(options?: UseKelasOptions) {
 		refetchById: kelasByIdQuery.refetch,
 		refetchHistory: kelasHistoryQuery.refetch,
 		invalidate: invalidateAll,
-	};
-}
-
-export function useOrderBuku(cabangId?: string) {
-	// 1. Fetch data dari backend
-	const {
-		data: kelasList,
-		isLoading,
-		error,
-	} = api.kelas.getKelasSiapOrderBuku.useQuery(
-		{ cabangId },
-		{
-			enabled: true, // Auto fetch
-			refetchOnWindowFocus: false,
-		},
-	);
-
-	// 2. State untuk melacak ID kelas mana saja yang sudah diceklis
-	const [checkedKelasIds, setCheckedKelasIds] = useState<string[]>([]);
-
-	// 3. Fungsi toggle
-	const toggleCheck = (kelasId: string) => {
-		setCheckedKelasIds((prev) => {
-			if (prev.includes(kelasId)) {
-				return prev.filter((id) => id !== kelasId);
-			}
-			return [...prev, kelasId];
-		});
-	};
-
-	const checkAll = () => {
-		if (kelasList) {
-			setCheckedKelasIds(kelasList.map((k) => k.id));
-		}
-	};
-
-	const uncheckAll = () => {
-		setCheckedKelasIds([]);
-	};
-
-	return {
-		kelasList,
-		isLoading,
-		error,
-		checkedKelasIds,
-		toggleCheck,
-		checkAll,
-		uncheckAll,
+		
+		dataKelasOrderBuku: kelasSiapOrderBukuQuery.data,
+		isLoadingKelasOrderBuku: kelasSiapOrderBukuQuery.isLoading,
+		isErrorKelasOrderBuku: kelasSiapOrderBukuQuery.isError,
+		errorKelasOrderBuku: kelasSiapOrderBukuQuery.error,
+		refetchKelasOrderBuku: kelasSiapOrderBukuQuery.refetch,
 	};
 }

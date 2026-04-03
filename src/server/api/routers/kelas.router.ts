@@ -308,6 +308,9 @@ export const kelasRouter = createTRPCRouter({
 				select: {
 					id: true,
 					kodeKelas: true,
+					level: true,
+					isOrderBuku: true,
+					jenisKelasRel: { select: { nama: true } },
 					historyGuruKelases: {
 						where: { statusGuru: "ACTIVE" },
 						select: {
@@ -320,13 +323,46 @@ export const kelasRouter = createTRPCRouter({
 						select: { sesiPertemuanKelases: true },
 					},
 				},
-				orderBy: { createdAt: "desc" },
+				orderBy: {
+					sesiPertemuanKelases: {
+						_count: "asc",
+					},
+				},
 			});
 
 			// Filter secara programatik untuk sesi yang berada di antara 16 dan 24
 			return kelasRunning.filter((k) => {
 				const jumlahSesi = k._count.sesiPertemuanKelases;
 				return jumlahSesi >= 16 && jumlahSesi <= 24;
+			});
+		}),
+
+	toggleOrderBuku: cabangProtectedProcedure
+		.input(z.object({ kelasId: z.string(), status: z.boolean() }))
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const kelasLama = await db.kelas.findUnique({
+				where: { id: input.kelasId },
+			});
+
+			if (!kelasLama) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Kelas tidak ditemukan",
+				});
+			}
+
+			if (allowedCabangId && kelasLama.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Akses cabang ditolak",
+				});
+			}
+
+			return await db.kelas.update({
+				where: { id: input.kelasId },
+				data: { isOrderBuku: input.status },
 			});
 		}),
 
@@ -800,6 +836,7 @@ async function getKelasByStatus(
 		select: {
 			id: true,
 			jenisKelasId: true,
+			isOrderBuku: true,
 			// jenisKelasId: true,
 			jenisKelasRel: { select: { nama: true, tipe: true } },
 			level: true,

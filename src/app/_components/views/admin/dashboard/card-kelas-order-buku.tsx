@@ -10,10 +10,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { useOrderBuku } from "@/hooks/useKelas";
+import { useKelas } from "@/hooks/useKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
-import { api } from "@/trpc/react";
+
 import { columnsOrderBuku } from "./columns/columns-order-buku";
 
 interface CardKelasOrderBukuProps {
@@ -25,20 +25,26 @@ export default function CardKelasOrderBuku({
 }: CardKelasOrderBukuProps) {
 	const { activeCabangId } = useGlobalCabangStore();
 
-	const { kelasList, isLoading, checkedKelasIds, toggleCheck } =
-		useOrderBuku(activeCabangId);
+	const {
+		dataKelasOrderBuku,
+		isLoadingKelasOrderBuku,
+		mutations,
+		refetchKelasOrderBuku
+	} = useKelas({
+		enableQueryGetKelasSiapOrderBuku: true,
+		filterCabang: activeCabangId
+	});
 
-	// Kita bisa menggunakan trpc context untuk refetch manual
-	const utils = api.useUtils();
 	const handleRefresh = async () => {
-		await utils.kelas.getKelasSiapOrderBuku.invalidate({
-			cabangId: activeCabangId,
-		});
+		await refetchKelasOrderBuku();
+	};
+
+	const handleToggle = (kelasId: string, status: boolean) => {
+		mutations.toggleOrderBuku.mutate({ kelasId, status });
 	};
 
 	const tableColumns = columnsOrderBuku({
-		checkedKelasIds,
-		onToggleCheck: toggleCheck,
+		onToggleCheck: handleToggle,
 	});
 
 	return (
@@ -56,20 +62,20 @@ export default function CardKelasOrderBuku({
 						size="icon"
 						className="h-9 w-9 shrink-0"
 						onClick={handleRefresh}
-						disabled={isLoading}
+						disabled={isLoadingKelasOrderBuku}
 						title="Refresh Daftar Kelas"
 					>
-						<RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+						<RefreshCw className={cn("h-4 w-4", isLoadingKelasOrderBuku && "animate-spin")} />
 					</Button>
 				</div>
 			</CardHeader>
 			<CardContent>
-				{isLoading ? (
+				{isLoadingKelasOrderBuku ? (
 					<div className="text-muted-foreground flex h-64 items-center justify-center">
 						Loading data kelas...
 					</div>
 				) : (
-					<DataTable data={kelasList ?? []} columns={tableColumns} />
+					<DataTable data={dataKelasOrderBuku ?? []} columns={tableColumns} />
 				)}
 			</CardContent>
 		</Card>

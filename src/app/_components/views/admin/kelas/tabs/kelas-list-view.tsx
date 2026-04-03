@@ -4,6 +4,8 @@ import { StatusPendaftaran } from "@prisma/client";
 import {
 	Album,
 	ArrowRight,
+	BookOpenCheck,
+	BookX,
 	CalendarClock,
 	CalendarDays,
 	Edit2,
@@ -153,6 +155,24 @@ export function KelasListView({
 														<CalendarClock className="h-3.5 w-3.5" />
 														<span>{kelas._count.sesiPertemuanKelases}</span>
 													</Badge>
+
+													{"isOrderBuku" in kelas && kelas.isOrderBuku ? (
+														<Badge
+															variant="default"
+															className="flex items-center justify-center gap-0 p-1.5"
+															title="Sudah Order Buku"
+														>
+															<BookOpenCheck className="h-4 w-4" />
+														</Badge>
+													) : (
+														<Badge
+															variant="outline"
+															className="flex items-center justify-center gap-0 p-1.5"
+															title="Belum Order Buku"
+														>
+															<BookX className="h-4 w-4" />
+														</Badge>
+													)}
 												</div>
 											</div>
 

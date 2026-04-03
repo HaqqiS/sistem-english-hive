@@ -274,9 +274,9 @@ model Kelas {
   jenisKelasRel JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
 
   statusKelas StatusKelas? @default(RUNNING)
+  isOrderBuku Boolean @default(false)
 
-  level Int // e.g., 1, 2, 3
-
+  level Int
   grup           String?
   bulanTahunAjar String  @db.VarChar(7)
   deskripsi      String?

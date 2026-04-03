@@ -8,12 +8,10 @@ export type TypeKelasSiapOrderBuku =
 	RouterOutputs["kelas"]["getKelasSiapOrderBuku"][number];
 
 interface ColumnsOrderBukuProps {
-	checkedKelasIds: string[];
-	onToggleCheck: (kelasId: string) => void;
+	onToggleCheck: (kelasId: string, status: boolean) => void;
 }
 
 export const columnsOrderBuku = ({
-	checkedKelasIds,
 	onToggleCheck,
 }: ColumnsOrderBukuProps): ColumnDef<TypeKelasSiapOrderBuku>[] => [
 	{
@@ -21,8 +19,8 @@ export const columnsOrderBuku = ({
 		header: "Sudah Order?",
 		cell: ({ row }) => (
 			<Checkbox
-				checked={checkedKelasIds.includes(row.original.id)}
-				onCheckedChange={() => onToggleCheck(row.original.id)}
+				checked={row.original.isOrderBuku}
+				onCheckedChange={(checked) => onToggleCheck(row.original.id, !!checked)}
 				aria-label="Select row"
 				className="translate-y-[2px]"
 			/>

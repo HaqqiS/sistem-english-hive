@@ -131,7 +131,7 @@ export const handleAutoLevelUp = async ({
 				kelasId: newKelas.id,
 				guruId: prevGuru.guruId,
 				statusGuru: "ACTIVE",
-				mulaiPada: dayjs().add(2, "week").format("YYYY-MM-DD"),
+				// mulaiPada will be set on handleClassCompletion
 			},
 		});
 	}
@@ -263,6 +263,29 @@ export const handleClassCompletion = async (
 			},
 			data: { statusKelas: "RUNNING" },
 		});
+
+		// Set mulaiPada Guru untuk kelas yang baru RUNNING
+		const newRunningClasses = await tx.kelas.findMany({
+			where: {
+				cohortId: kelasLama.cohortId,
+				level: { gt: kelasLama.level },
+				statusKelas: "RUNNING",
+			},
+			select: { id: true },
+		});
+
+		if (newRunningClasses.length > 0) {
+			await tx.historyGuruKelas.updateMany({
+				where: {
+					kelasId: { in: newRunningClasses.map((k) => k.id) },
+					statusGuru: "ACTIVE",
+					mulaiPada: null, // Hanya update yang belum diset
+				},
+				data: {
+					mulaiPada: dayjs().add(1, "day").format("YYYY-MM-DD"),
+				},
+			});
+		}
 
 		return true; // Selesai
 	}

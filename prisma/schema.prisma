@@ -313,7 +313,7 @@ model HistoryGuruKelas {
   id          String         @id @default(cuid())
   kelasId     String
   guruId      String
-  mulaiPada   String         @db.VarChar(10) // format: "YYYY-MM-DD"
+  mulaiPada   String?        @db.VarChar(10) // format: "YYYY-MM-DD"
   selesaiPada String?        @db.VarChar(10) // format: "YYYY-MM-DD"
   statusGuru  EnumStatusGuru // "ACTIVE" atau "INACTIVE"
 

@@ -1,8 +1,10 @@
 "use client";
 
 import { StatusPembayaran } from "@prisma/client";
+import type { PaginationState } from "@tanstack/react-table";
 import { RefreshCw } from "lucide-react";
-import { DataTable } from "@/app/_components/shared/data-table-generic";
+import { useEffect, useState } from "react";
+import { DataTable } from "@/app/_components/shared/data-table";
 import { columnsJatuhTempo } from "@/app/_components/views/admin/pembayaran/columns/columns-jatuh-tempo";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +25,28 @@ interface CardJatuhTempoProps {
 
 export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 	const { activeCabangId } = useGlobalCabangStore();
+	const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+	const [pagination, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 50,
+	});
+
+	const ROW_SELECTION_KEY = "jatuh-tempo-row-selection";
+
+	useEffect(() => {
+		const saved = sessionStorage.getItem(ROW_SELECTION_KEY);
+		if (saved) {
+			try {
+				setRowSelection(JSON.parse(saved));
+			} catch (e) {
+				console.error("Gagal parsing row selection:", e);
+			}
+		}
+	}, []);
+
+	useEffect(() => {
+		sessionStorage.setItem(ROW_SELECTION_KEY, JSON.stringify(rowSelection));
+	}, [rowSelection]);
 
 	const {
 		dataJatuhTempo,
@@ -86,7 +110,17 @@ export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 						Loading data tagihan...
 					</div>
 				) : (
-					<DataTable data={dataJatuhTempo ?? []} columns={tableColumns} />
+					<DataTable
+						data={dataJatuhTempo ?? []}
+						columns={tableColumns}
+						pageCount={1}
+						pagination={pagination}
+						onPaginationChange={setPagination}
+						isLoading={isLoadingJatuhTempo || isRefetchingJatuhTempo}
+						rowSelection={rowSelection}
+						onRowSelectionChange={setRowSelection}
+						getRowId={(row) => row.id}
+					/>
 				)}
 			</CardContent>
 		</Card>

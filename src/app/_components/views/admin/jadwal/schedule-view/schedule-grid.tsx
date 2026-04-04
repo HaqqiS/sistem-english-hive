@@ -321,7 +321,7 @@ export default function ScheduleGrid() {
 							<Skeleton className="h-10 flex-1" />
 						</div>
 						{Array.from({ length: 5 }, (_, i) => i).map((id) => (
-							<div key={id} className="grid grid-cols-4 gap-4">
+							<div key={`skeleton-row-${id}`} className="grid grid-cols-4 gap-4">
 								<Skeleton className="h-32 w-full" />
 								<Skeleton className="h-32 w-full" />
 								<Skeleton className="h-32 w-full" />
@@ -436,10 +436,10 @@ export default function ScheduleGrid() {
 										);
 									})}
 									{/* Filler Row untuk mengisi ruang kosong di bawah jika ada */}
-									<tr className="h-full">
+									<tr key="filler-row" className="h-full">
 										<td className="bg-background sticky left-0 z-30 border-r"></td>
 										{dataMatrix.rooms.map((r) => (
-											<td key={r.id} className="border-r"></td>
+											<td key={`filler-${r.id}`} className="border-r"></td>
 										))}
 									</tr>
 								</tbody>

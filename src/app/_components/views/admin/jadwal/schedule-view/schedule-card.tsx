@@ -172,7 +172,6 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 						</h4>
 						<div className="flex flex-wrap gap-2">
 							<Badge
-								key="tipe-kelas"
 								variant="secondary"
 								className={cn(
 									"h-5 border-0 px-1.5 text-[10px] font-normal",
@@ -184,14 +183,12 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 								{data.tipeKelas}
 							</Badge>
 							<Badge
-								key="jumlah-murid"
 								variant="outline"
 								className="text-muted-foreground h-5 px-1.5 text-[10px] font-normal"
 							>
 								{data.jumlahMurid} Siswa Terdaftar
 							</Badge>
 							<Badge
-								key="status-kelas"
 								className={cn(
 									"h-5 px-1.5 text-[10px] font-normal",
 									headerColorClass,
@@ -241,8 +238,8 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 							<ul className="text-foreground ml-6 list-disc space-y-1 text-xs font-medium">
 								{data.originalData.kelas.pendaftaranKelases.length > 0 ? (
 									data.originalData.kelas.pendaftaranKelases.map(
-										(pendaftaran) => (
-											<li key={pendaftaran.id}>
+										(pendaftaran, idx) => (
+											<li key={`${pendaftaran.id}-${idx}`}>
 												{pendaftaran.murid.namaLengkap}
 											</li>
 										),

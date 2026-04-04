@@ -323,11 +323,11 @@ export const kelasRouter = createTRPCRouter({
 						select: { sesiPertemuanKelases: true },
 					},
 				},
-				orderBy: {
+				orderBy: [{
 					sesiPertemuanKelases: {
-						_count: "asc",
+						_count: "asc" as const,
 					},
-				},
+				}, { id: "asc" as const }],
 			});
 
 			// Filter secara programatik untuk sesi yang berada di antara 16 dan 24

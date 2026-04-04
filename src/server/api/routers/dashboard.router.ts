@@ -393,6 +393,7 @@ export const dashboardRouter = createTRPCRouter({
 						},
 						select: {
 							id: true,
+							isSelesaiAbsen: true,
 						},
 					},
 				},

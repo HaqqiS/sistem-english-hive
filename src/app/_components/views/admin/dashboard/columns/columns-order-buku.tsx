@@ -9,22 +9,28 @@ export type TypeKelasSiapOrderBuku =
 
 interface ColumnsOrderBukuProps {
 	onToggleCheck: (kelasId: string, status: boolean) => void;
+	isMutatingId?: string | null;
 }
 
 export const columnsOrderBuku = ({
 	onToggleCheck,
+	isMutatingId,
 }: ColumnsOrderBukuProps): ColumnDef<TypeKelasSiapOrderBuku>[] => [
 	{
 		id: "select",
 		header: "Sudah Order?",
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.original.isOrderBuku}
-				onCheckedChange={(checked) => onToggleCheck(row.original.id, !!checked)}
-				aria-label="Select row"
-				className="translate-y-[2px]"
-			/>
-		),
+		cell: ({ row }) => {
+			const isMutating = row.original.id === isMutatingId;
+			return (
+				<Checkbox
+					checked={row.original.isOrderBuku}
+					onCheckedChange={(checked) => onToggleCheck(row.original.id, !!checked)}
+					aria-label="Select row"
+					className="translate-y-[2px]"
+					disabled={isMutating}
+				/>
+			);
+		},
 		enableSorting: false,
 		enableHiding: false,
 	},

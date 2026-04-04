@@ -28,12 +28,15 @@ export default function CardKelasOrderBuku({
 	const {
 		dataKelasOrderBuku,
 		isLoadingKelasOrderBuku,
+		isFetchingKelasOrderBuku,
 		mutations,
 		refetchKelasOrderBuku,
 	} = useKelas({
 		enableQueryGetKelasSiapOrderBuku: true,
 		filterCabang: activeCabangId,
 	});
+
+	const isProcessing = isLoadingKelasOrderBuku || isFetchingKelasOrderBuku;
 
 	const handleRefresh = async () => {
 		await refetchKelasOrderBuku();
@@ -45,6 +48,9 @@ export default function CardKelasOrderBuku({
 
 	const tableColumns = columnsOrderBuku({
 		onToggleCheck: handleToggle,
+		isMutatingId: mutations.toggleOrderBuku.isPending
+			? mutations.toggleOrderBuku.variables?.kelasId
+			: null,
 	});
 
 	return (
@@ -62,14 +68,11 @@ export default function CardKelasOrderBuku({
 						size="icon"
 						className="h-9 w-9 shrink-0"
 						onClick={handleRefresh}
-						disabled={isLoadingKelasOrderBuku}
+						disabled={isProcessing}
 						title="Refresh Daftar Kelas"
 					>
 						<RefreshCw
-							className={cn(
-								"h-4 w-4",
-								isLoadingKelasOrderBuku && "animate-spin",
-							)}
+							className={cn("h-4 w-4", isProcessing && "animate-spin")}
 						/>
 					</Button>
 				</div>

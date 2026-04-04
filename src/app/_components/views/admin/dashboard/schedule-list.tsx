@@ -89,7 +89,9 @@ export default function ScheduleList() {
 													.join(" & ")
 											: "-";
 
-									const isAttended = jadwal.sesiPertemuanKelases.length > 0;
+									const isAttended = jadwal.sesiPertemuanKelases.some(
+										(sesi) => sesi.isSelesaiAbsen,
+									);
 
 									return (
 										<div

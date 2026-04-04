@@ -307,6 +307,7 @@ export function useKelas(options?: UseKelasOptions) {
 				mutate: toggleOrderBukuMutation.mutate,
 				mutateAsync: toggleOrderBukuMutation.mutateAsync,
 				isPending: toggleOrderBukuMutation.isPending,
+				variables: toggleOrderBukuMutation.variables,
 			},
 		},
 
@@ -344,6 +345,7 @@ export function useKelas(options?: UseKelasOptions) {
 
 		dataKelasOrderBuku: kelasSiapOrderBukuQuery.data,
 		isLoadingKelasOrderBuku: kelasSiapOrderBukuQuery.isLoading,
+		isFetchingKelasOrderBuku: kelasSiapOrderBukuQuery.isFetching,
 		isErrorKelasOrderBuku: kelasSiapOrderBukuQuery.isError,
 		errorKelasOrderBuku: kelasSiapOrderBukuQuery.error,
 		refetchKelasOrderBuku: kelasSiapOrderBukuQuery.refetch,

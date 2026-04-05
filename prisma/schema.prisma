@@ -267,9 +267,10 @@ enum StatusKelas {
 }
 
 enum StatusOrderBuku {
-  TIDAK_LANJUT
-  SUDAH_DI_ORDER
-  PENDING_APPROVAL
+  BELUM_DIPROSES
+  DIBATALKAN
+  MENUNGGU_PERSETUJUAN
+  SUDAH_DIPESAN
 }
 
 model Kelas {
@@ -280,7 +281,7 @@ model Kelas {
   jenisKelasRel JenisKelasModel? @relation(fields: [jenisKelasId], references: [id])
 
   statusKelas StatusKelas? @default(RUNNING)
-  statusOrderBuku StatusOrderBuku @default(TIDAK_LANJUT)
+  statusOrderBuku StatusOrderBuku @default(BELUM_DIPROSES)
 
   level Int
   grup           String?

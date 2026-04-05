@@ -121,18 +121,18 @@ export const handleAutoLevelUp = async ({
 		},
 	});
 
-	const prevGuru = await tx.historyGuruKelas.findFirst({
+	const prevGurus = await tx.historyGuruKelas.findMany({
 		where: { kelasId: currentClass.id, statusGuru: "ACTIVE" },
 	});
 
-	if (prevGuru) {
-		await tx.historyGuruKelas.create({
-			data: {
+	if (prevGurus.length > 0) {
+		await tx.historyGuruKelas.createMany({
+			data: prevGurus.map((pg) => ({
 				kelasId: newKelas.id,
-				guruId: prevGuru.guruId,
+				guruId: pg.guruId,
 				statusGuru: "ACTIVE",
 				// mulaiPada will be set on handleClassCompletion
-			},
+			})),
 		});
 	}
 

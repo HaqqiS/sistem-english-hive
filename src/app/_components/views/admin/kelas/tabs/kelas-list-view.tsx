@@ -161,25 +161,38 @@ export function KelasListView({
 														const status = (
 															kelas as { statusOrderBuku?: StatusOrderBuku }
 														).statusOrderBuku;
-														if (status === StatusOrderBuku.SUDAH_DI_ORDER) {
+														if (status === StatusOrderBuku.SUDAH_DIPESAN) {
 															return (
 																<Badge
 																	variant="default"
 																	className="bg-green-500 hover:bg-green-600 flex items-center justify-center gap-0 p-1.5"
-																	title="Sudah Order Buku"
+																	title="Sudah Dipesan"
 																>
 																	<BookOpenCheck className="h-4 w-4" />
 																</Badge>
 															);
 														}
-														if (status === StatusOrderBuku.PENDING_APPROVAL) {
+														if (
+															status === StatusOrderBuku.MENUNGGU_PERSETUJUAN
+														) {
 															return (
 																<Badge
 																	variant="secondary"
 																	className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center gap-0 p-1.5"
-																	title="Pending Approval Order Buku"
+																	title="Menunggu Persetujuan Order Buku"
 																>
 																	<Clock className="h-4 w-4" />
+																</Badge>
+															);
+														}
+														if (status === StatusOrderBuku.DIBATALKAN) {
+															return (
+																<Badge
+																	variant="destructive"
+																	className="flex items-center justify-center gap-0 p-1.5"
+																	title="Order Buku Dibatalkan"
+																>
+																	<BookX className="h-4 w-4" />
 																</Badge>
 															);
 														}
@@ -187,7 +200,7 @@ export function KelasListView({
 															<Badge
 																variant="outline"
 																className="flex items-center justify-center gap-0 p-1.5 text-muted-foreground"
-																title="Tidak Lanjut / Belum Order Buku"
+																title="Belum Diproses"
 															>
 																<BookX className="h-4 w-4" />
 															</Badge>

@@ -33,26 +33,33 @@ export const columnsOrderBuku = ({
 
 			const getStatusConfig = (s: StatusOrderBuku) => {
 				switch (s) {
-					case StatusOrderBuku.SUDAH_DI_ORDER:
+					case StatusOrderBuku.SUDAH_DIPESAN:
 						return {
-							label: "Sudah Order",
+							label: "Sudah Dipesan",
 							variant: "default" as const,
 							className: "bg-green-500 hover:bg-green-600 text-white",
 							icon: <Check className="h-3 w-3" />,
 						};
-					case StatusOrderBuku.PENDING_APPROVAL:
+					case StatusOrderBuku.MENUNGGU_PERSETUJUAN:
 						return {
-							label: "Pending Approval",
+							label: "Menunggu Persetujuan",
 							variant: "secondary" as const,
 							className: "bg-yellow-500 hover:bg-yellow-600 text-white",
 							icon: <Clock className="h-3 w-3" />,
 						};
-					case StatusOrderBuku.TIDAK_LANJUT:
+					case StatusOrderBuku.DIBATALKAN:
 						return {
-							label: "Tidak Lanjut",
+							label: "Dibatalkan",
+							variant: "destructive" as const,
+							className: "",
+							icon: <XCircle className="h-3 w-3" />,
+						};
+					case StatusOrderBuku.BELUM_DIPROSES:
+						return {
+							label: "Belum Diproses",
 							variant: "outline" as const,
 							className: "text-muted-foreground",
-							icon: <XCircle className="h-3 w-3" />,
+							icon: <Clock className="h-3 w-3" />,
 						};
 				}
 			};
@@ -78,33 +85,42 @@ export const columnsOrderBuku = ({
 					<DropdownMenuContent align="start">
 						<DropdownMenuItem
 							onClick={() =>
-								onStatusChange(row.original.id, StatusOrderBuku.TIDAK_LANJUT)
+								onStatusChange(row.original.id, StatusOrderBuku.BELUM_DIPROSES)
 							}
 							className="gap-2"
 						>
-							<XCircle className="h-4 w-4 text-muted-foreground" />
-							<span>Tidak Lanjut</span>
+							<Clock className="h-4 w-4 text-muted-foreground" />
+							<span>Belum Diproses</span>
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() =>
+								onStatusChange(row.original.id, StatusOrderBuku.DIBATALKAN)
+							}
+							className="gap-2"
+						>
+							<XCircle className="h-4 w-4 text-destructive" />
+							<span>Dibatalkan</span>
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() =>
 								onStatusChange(
 									row.original.id,
-									StatusOrderBuku.PENDING_APPROVAL,
+									StatusOrderBuku.MENUNGGU_PERSETUJUAN,
 								)
 							}
 							className="gap-2"
 						>
 							<Clock className="h-4 w-4 text-yellow-500" />
-							<span>Pending Approval</span>
+							<span>Menunggu Persetujuan</span>
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() =>
-								onStatusChange(row.original.id, StatusOrderBuku.SUDAH_DI_ORDER)
+								onStatusChange(row.original.id, StatusOrderBuku.SUDAH_DIPESAN)
 							}
 							className="gap-2"
 						>
 							<Check className="h-4 w-4 text-green-500" />
-							<span>Sudah Order</span>
+							<span>Sudah Dipesan</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

@@ -1,6 +1,6 @@
 "use client";
 
-import { StatusPendaftaran } from "@prisma/client";
+import { StatusOrderBuku, StatusPendaftaran } from "@prisma/client";
 import {
 	Album,
 	ArrowRight,
@@ -8,6 +8,7 @@ import {
 	BookX,
 	CalendarClock,
 	CalendarDays,
+	Clock,
 	Edit2,
 	EllipsisVertical,
 	GraduationCap,
@@ -156,23 +157,42 @@ export function KelasListView({
 														<span>{kelas._count.sesiPertemuanKelases}</span>
 													</Badge>
 
-													{"isOrderBuku" in kelas && kelas.isOrderBuku ? (
-														<Badge
-															variant="default"
-															className="flex items-center justify-center gap-0 p-1.5"
-															title="Sudah Order Buku"
-														>
-															<BookOpenCheck className="h-4 w-4" />
-														</Badge>
-													) : (
-														<Badge
-															variant="outline"
-															className="flex items-center justify-center gap-0 p-1.5"
-															title="Belum Order Buku"
-														>
-															<BookX className="h-4 w-4" />
-														</Badge>
-													)}
+													{(() => {
+														const status = (
+															kelas as { statusOrderBuku?: StatusOrderBuku }
+														).statusOrderBuku;
+														if (status === StatusOrderBuku.SUDAH_DI_ORDER) {
+															return (
+																<Badge
+																	variant="default"
+																	className="bg-green-500 hover:bg-green-600 flex items-center justify-center gap-0 p-1.5"
+																	title="Sudah Order Buku"
+																>
+																	<BookOpenCheck className="h-4 w-4" />
+																</Badge>
+															);
+														}
+														if (status === StatusOrderBuku.PENDING_APPROVAL) {
+															return (
+																<Badge
+																	variant="secondary"
+																	className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center gap-0 p-1.5"
+																	title="Pending Approval Order Buku"
+																>
+																	<Clock className="h-4 w-4" />
+																</Badge>
+															);
+														}
+														return (
+															<Badge
+																variant="outline"
+																className="flex items-center justify-center gap-0 p-1.5 text-muted-foreground"
+																title="Tidak Lanjut / Belum Order Buku"
+															>
+																<BookX className="h-4 w-4" />
+															</Badge>
+														);
+													})()}
 												</div>
 											</div>
 

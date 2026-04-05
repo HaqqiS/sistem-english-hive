@@ -321,7 +321,10 @@ export default function ScheduleGrid() {
 							<Skeleton className="h-10 flex-1" />
 						</div>
 						{Array.from({ length: 5 }, (_, i) => i).map((id) => (
-							<div key={`skeleton-row-${id}`} className="grid grid-cols-4 gap-4">
+							<div
+								key={`skeleton-row-${id}`}
+								className="grid grid-cols-4 gap-4"
+							>
 								<Skeleton className="h-32 w-full" />
 								<Skeleton className="h-32 w-full" />
 								<Skeleton className="h-32 w-full" />

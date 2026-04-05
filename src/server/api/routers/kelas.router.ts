@@ -2,6 +2,7 @@ import {
 	Prisma,
 	type PrismaClient,
 	StatusMurid,
+	StatusOrderBuku,
 	StatusPembayaran,
 	StatusPendaftaran,
 	type TipeKelas,
@@ -309,7 +310,7 @@ export const kelasRouter = createTRPCRouter({
 					id: true,
 					kodeKelas: true,
 					level: true,
-					isOrderBuku: true,
+					statusOrderBuku: true,
 					jenisKelasRel: { select: { nama: true } },
 					historyGuruKelases: {
 						where: { statusGuru: "ACTIVE" },
@@ -323,11 +324,14 @@ export const kelasRouter = createTRPCRouter({
 						select: { sesiPertemuanKelases: true },
 					},
 				},
-				orderBy: [{
-					sesiPertemuanKelases: {
-						_count: "asc" as const,
+				orderBy: [
+					{
+						sesiPertemuanKelases: {
+							_count: "asc" as const,
+						},
 					},
-				}, { id: "asc" as const }],
+					{ id: "asc" as const },
+				],
 			});
 
 			// Filter secara programatik untuk sesi yang berada di antara 16 dan 24
@@ -337,8 +341,10 @@ export const kelasRouter = createTRPCRouter({
 			});
 		}),
 
-	toggleOrderBuku: cabangProtectedProcedure
-		.input(z.object({ kelasId: z.string(), status: z.boolean() }))
+	updateStatusOrderBuku: cabangProtectedProcedure
+		.input(
+			z.object({ kelasId: z.string(), status: z.nativeEnum(StatusOrderBuku) }),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 
@@ -362,7 +368,7 @@ export const kelasRouter = createTRPCRouter({
 
 			return await db.kelas.update({
 				where: { id: input.kelasId },
-				data: { isOrderBuku: input.status },
+				data: { statusOrderBuku: input.status },
 			});
 		}),
 
@@ -836,7 +842,7 @@ async function getKelasByStatus(
 		select: {
 			id: true,
 			jenisKelasId: true,
-			isOrderBuku: true,
+			statusOrderBuku: true,
 			// jenisKelasId: true,
 			jenisKelasRel: { select: { nama: true, tipe: true } },
 			level: true,

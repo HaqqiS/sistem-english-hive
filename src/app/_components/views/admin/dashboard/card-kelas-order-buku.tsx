@@ -1,5 +1,6 @@
 "use client";
 
+import type { StatusOrderBuku } from "@prisma/client";
 import { RefreshCw } from "lucide-react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { Button } from "@/components/ui/button";
@@ -42,14 +43,14 @@ export default function CardKelasOrderBuku({
 		await refetchKelasOrderBuku();
 	};
 
-	const handleToggle = (kelasId: string, status: boolean) => {
-		mutations.toggleOrderBuku.mutate({ kelasId, status });
+	const handleStatusChange = (kelasId: string, status: StatusOrderBuku) => {
+		mutations.updateStatusOrderBuku.mutate({ kelasId, status });
 	};
 
 	const tableColumns = columnsOrderBuku({
-		onToggleCheck: handleToggle,
-		isMutatingId: mutations.toggleOrderBuku.isPending
-			? mutations.toggleOrderBuku.variables?.kelasId
+		onStatusChange: handleStatusChange,
+		isMutatingId: mutations.updateStatusOrderBuku.isPending
+			? mutations.updateStatusOrderBuku.variables?.kelasId
 			: null,
 	});
 

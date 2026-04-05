@@ -25,9 +25,9 @@ export default function EditGuruKelas() {
 				}
 			: undefined,
 		defaultValues: {
-			guruId: selectedHistoryGuruKelas?.guruId,
-			mulaiPada: selectedHistoryGuruKelas?.mulaiPada,
-			kelasId: selectedHistoryGuruKelas?.kelasId,
+			guruId: selectedHistoryGuruKelas?.guruId ?? "",
+			mulaiPada: selectedHistoryGuruKelas?.mulaiPada ?? "",
+			kelasId: selectedHistoryGuruKelas?.kelasId ?? "",
 		},
 	});
 

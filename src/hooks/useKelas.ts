@@ -241,16 +241,17 @@ export function useKelas(options?: UseKelasOptions) {
 		},
 	});
 
-	// TOGGLE ORDER BUKU
-	const toggleOrderBukuMutation = api.kelas.toggleOrderBuku.useMutation({
-		onSuccess: async () => {
-			await apiUtils.kelas.getKelasSiapOrderBuku.invalidate();
-			toast.success("Status order buku berhasil diperbarui");
-		},
-		onError: (error) => {
-			toast.error(`Gagal mengupdate status: ${error.message}`);
-		},
-	});
+	// UPDATE STATUS ORDER BUKU
+	const updateStatusOrderBukuMutation =
+		api.kelas.updateStatusOrderBuku.useMutation({
+			onSuccess: async () => {
+				await apiUtils.kelas.getKelasSiapOrderBuku.invalidate();
+				toast.success("Status order buku berhasil diperbarui");
+			},
+			onError: (error) => {
+				toast.error(`Gagal mengupdate status: ${error.message}`);
+			},
+		});
 
 	return {
 		dataKelasAktif: kelasAktifQuery.data,
@@ -303,11 +304,11 @@ export function useKelas(options?: UseKelasOptions) {
 				mutateAsync: upLevelMutation.mutateAsync,
 				isPending: upLevelMutation.isPending,
 			},
-			toggleOrderBuku: {
-				mutate: toggleOrderBukuMutation.mutate,
-				mutateAsync: toggleOrderBukuMutation.mutateAsync,
-				isPending: toggleOrderBukuMutation.isPending,
-				variables: toggleOrderBukuMutation.variables,
+			updateStatusOrderBuku: {
+				mutate: updateStatusOrderBukuMutation.mutate,
+				mutateAsync: updateStatusOrderBukuMutation.mutateAsync,
+				isPending: updateStatusOrderBukuMutation.isPending,
+				variables: updateStatusOrderBukuMutation.variables,
 			},
 		},
 

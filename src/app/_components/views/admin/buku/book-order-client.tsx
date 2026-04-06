@@ -1,8 +1,9 @@
 "use client";
 
 import type { StatusOrderBuku } from "@prisma/client";
-import { RefreshCw } from "lucide-react";
+import { BookOpen, RefreshCw } from "lucide-react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
+import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -14,16 +15,9 @@ import {
 import { useKelas } from "@/hooks/useKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
-
 import { columnsOrderBuku } from "./columns/columns-order-buku";
 
-interface CardKelasOrderBukuProps {
-	className?: string;
-}
-
-export default function CardKelasOrderBuku({
-	className,
-}: CardKelasOrderBukuProps) {
+export default function BookOrderClient() {
 	const { activeCabangId } = useGlobalCabangStore();
 
 	const {
@@ -55,38 +49,55 @@ export default function CardKelasOrderBuku({
 	});
 
 	return (
-		<Card className={cn("border-l-4 shadow-sm border-l-green-500", className)}>
-			<CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-				<div className="flex flex-1 items-center justify-between">
-					<div className="space-y-1">
-						<CardTitle>Kelas Siap Order Buku</CardTitle>
-						<CardDescription>
-							Daftar kelas yang sudah mencapai 16 - 24 sesi pertemuan.
-						</CardDescription>
-					</div>
+		<div className="space-y-4">
+			<HeaderActionPortal>
+				<div className="flex items-center gap-2">
 					<Button
-						variant="ghost"
+						variant="outline"
 						size="icon"
 						className="h-9 w-9 shrink-0"
 						onClick={handleRefresh}
 						disabled={isProcessing}
-						title="Refresh Daftar Kelas"
+						title="Refresh Daftar"
 					>
 						<RefreshCw
 							className={cn("h-4 w-4", isProcessing && "animate-spin")}
 						/>
 					</Button>
 				</div>
-			</CardHeader>
-			<CardContent>
-				{isLoadingKelasOrderBuku ? (
-					<div className="text-muted-foreground flex h-64 items-center justify-center">
-						Loading data kelas...
+			</HeaderActionPortal>
+
+			<Card className="border-l-4 shadow-sm border-l-green-500">
+				<CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600">
+						<BookOpen className="h-6 w-6" />
 					</div>
-				) : (
-					<DataTable data={dataKelasOrderBuku ?? []} columns={tableColumns} />
-				)}
-			</CardContent>
-		</Card>
+					<div className="space-y-1">
+						<CardTitle className="text-xl">Daftar Order Buku Kelas</CardTitle>
+						<CardDescription>
+							Mengelola pemesanan buku untuk semua kelas yang sedang berjalan
+							(RUNNING).
+						</CardDescription>
+					</div>
+				</CardHeader>
+				<CardContent className="pt-4">
+					{isLoadingKelasOrderBuku ? (
+						<div className="text-muted-foreground flex h-96 items-center justify-center border rounded-md border-dashed">
+							<div className="flex flex-col items-center gap-2">
+								<RefreshCw className="h-8 w-8 animate-spin opacity-20" />
+								<span>Memuat data kelas...</span>
+							</div>
+						</div>
+					) : (
+						<DataTable
+							data={dataKelasOrderBuku ?? []}
+							columns={tableColumns}
+							filterColumnPlaceholder="Cari kode kelas..."
+							filterColumnId="kodeKelas"
+						/>
+					)}
+				</CardContent>
+			</Card>
+		</div>
 	);
 }

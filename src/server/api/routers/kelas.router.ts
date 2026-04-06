@@ -334,11 +334,8 @@ export const kelasRouter = createTRPCRouter({
 				],
 			});
 
-			// Filter secara programatik untuk sesi yang berada di antara 16 dan 24
-			return kelasRunning.filter((k) => {
-				const jumlahSesi = k._count.sesiPertemuanKelases;
-				return jumlahSesi >= 16 && jumlahSesi <= 24;
-			});
+			// Return all RUNNING classes
+			return kelasRunning;
 		}),
 
 	updateStatusOrderBuku: cabangProtectedProcedure

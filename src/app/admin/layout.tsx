@@ -9,6 +9,7 @@ const adminNavItems: NavItem[] = [
 	{ title: "Guru", url: "/admin/guru", icon: "Users" },
 	{ title: "Murid", url: "/admin/murid", icon: "GraduationCap" },
 	{ title: "Pembayaran", url: "/admin/pembayaran", icon: "Banknote" },
+	{ title: "Order Buku", url: "/admin/buku", icon: "BookOpen" },
 	{ title: "Kelas", url: "/admin/kelas", icon: "School" },
 ];
 

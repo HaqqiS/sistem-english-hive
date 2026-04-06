@@ -1,7 +1,6 @@
 "use client";
 
 import { KategoriTagihan } from "@prisma/client";
-import CardKelasOrderBuku from "@/app/_components/views/admin/dashboard/card-kelas-order-buku";
 import KpiCards from "@/app/_components/views/admin/dashboard/kpi-cards";
 import RegistrationChart from "@/app/_components/views/admin/dashboard/registration-chart";
 import RevenueChart from "@/app/_components/views/admin/dashboard/revenue-chart";
@@ -28,7 +27,6 @@ export default function DashboardClientPage() {
 			<div className="grid grid-cols-1 gap-4">
 				{/* Tagihan Jatuh Tempo & Tagihan Lain (full width on large screens) */}
 				<div className="col-span-1 space-y-4">
-					<CardKelasOrderBuku />
 					<CardJatuhTempo />
 					<CardTagihanLainBelumLunas
 						title="Tagihan Buku Belum Lunas"

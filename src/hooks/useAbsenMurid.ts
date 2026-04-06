@@ -56,6 +56,10 @@ export function useAbsenMurid(options?: UseAbsenMuridOptions) {
 		await apiUtils.sesiPertemuan.getSesiSummaryByKelasId.invalidate();
 		// Refresh pembayaran karena absen bisa trigger auto-bill
 		await apiUtils.pembayaran.getAllPaginated.invalidate();
+		// PENTING: Refresh jadwal hari ini untuk Dashboard Guru agar status berubah (Mulai -> Selesai)
+		await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
+		// Refresh juga list absensi guru global
+		await apiUtils.absenGuru.getAllAbsensi.invalidate();
 	};
 
 	// ========== MUTATIONS ==========
@@ -92,8 +96,8 @@ export function useAbsenMurid(options?: UseAbsenMuridOptions) {
 		});
 
 	const selesaiAbsenMutation = api.absenMurid.selesaikanAbsen.useMutation({
-		onSuccess: () => {
-			void invalidateAbsensi();
+		onSuccess: async () => {
+			await invalidateAbsensi();
 		},
 		onError: (error) => {
 			toast.error(`Gagal menyelesaikan sesi absensi: ${error.message}`);

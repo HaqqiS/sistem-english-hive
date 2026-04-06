@@ -24,7 +24,7 @@ import { toRupiah } from "@/utils/toRupiah";
 
 // Derive type from the specific query to be safe
 type TypeTagihanLainBelumLunas =
-	RouterOutputs["tagihanLain"]["getAllBelumLunas"][number];
+	RouterOutputs["tagihanLain"]["getAllBelumLunas"]["data"][number];
 
 interface ColumnsTagihanLainBelumLunasConfig {
 	onVerifyClick: (item: TypeTagihanLainBelumLunas) => void;

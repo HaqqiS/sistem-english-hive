@@ -3,7 +3,7 @@
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
 import { pdf } from "@react-pdf/renderer";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
-import { FileSpreadsheet, RefreshCw, Search } from "lucide-react";
+import { FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table";
@@ -20,6 +20,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useJenisKelas } from "@/hooks/useJenisKelas";
 import { useKelas } from "@/hooks/useKelas";
 import { usePembayaran } from "@/hooks/usePembayaran";
 import { useTagihanLain } from "@/hooks/useTagihanLain";
@@ -50,6 +51,9 @@ export default function PembayaranClient({
 		"ALL",
 	);
 	const [kelasIdFilter, setKelasIdFilter] = useState<string | "ALL">("ALL");
+	const [jenisKelasFilter, setJenisKelasFilter] = useState<string | "ALL">(
+		"ALL",
+	);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [sorting, setSorting] = useState<SortingState>([]);
@@ -119,6 +123,9 @@ export default function PembayaranClient({
 	const { dataKelasAktif: kelasList } = useKelas({
 		filterCabang: activeCabangId,
 		enableQueryGetKelasAktif: true,
+	});
+	const { data: jenisKelasList } = useJenisKelas({
+		cabangId: activeCabangId,
 	});
 
 	// --- HANDLERS ---
@@ -400,9 +407,9 @@ export default function PembayaranClient({
 				</TabsContent>
 
 				<TabsContent value="tagihan-buku" className="space-y-4">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
-						{/* Filter Kelas untuk Buku */}
-						<div className="flex items-center gap-2">
+					<div className="flex flex-col gap-3 justify-between sm:flex-row sm:items-center">
+						<div className="flex flex-wrap items-center gap-2">
+							{/* Filter Kelas untuk Buku */}
 							<Select
 								value={kelasIdFilter}
 								onValueChange={(val) => setKelasIdFilter(val as string | "ALL")}
@@ -419,6 +426,36 @@ export default function PembayaranClient({
 									))}
 								</SelectContent>
 							</Select>
+
+							{/* Filter Jenis Kelas untuk Buku */}
+							<Select
+								value={jenisKelasFilter}
+								onValueChange={(v) => setJenisKelasFilter(v)}
+							>
+								<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[170px]">
+									<div className="flex items-center gap-2">
+										<Filter className="text-muted-foreground h-4 w-4" />
+										<span className="font-medium">
+											<SelectValue placeholder="Semua Jenis Kelas" />
+										</span>
+									</div>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Jenis Kelas</SelectItem>
+									{jenisKelasList
+										?.filter(
+											(jenis, index, self) =>
+												index === self.findIndex((t) => t.nama === jenis.nama),
+										)
+										.map((jenis) => (
+											<SelectItem key={jenis.nama} value={jenis.nama}>
+												<div className="flex items-center gap-2">
+													{jenis.nama}
+												</div>
+											</SelectItem>
+										))}
+								</SelectContent>
+							</Select>
 						</div>
 					</div>
 					<TagihanLainTab
@@ -428,6 +465,7 @@ export default function PembayaranClient({
 						filterStatus={statusFilter}
 						searchQuery={debouncedSearch}
 						filterKelas={kelasIdFilter}
+						filterJenisKelas={jenisKelasFilter}
 					/>
 				</TabsContent>
 

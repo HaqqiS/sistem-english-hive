@@ -17,6 +17,7 @@ interface UseTagihanLainOptions {
 	filterDeskripsi?: string;
 	searchQuery?: string;
 	filterKelas?: string;
+	filterJenisKelas?: string;
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
@@ -67,6 +68,10 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 			deskripsi: options.filterDeskripsi,
 			search: options.searchQuery,
 			kelasId: options.filterKelas,
+			jenisKelasNama:
+				options.filterJenisKelas !== "ALL"
+					? options.filterJenisKelas
+					: undefined,
 		},
 		{
 			enabled:
@@ -87,6 +92,10 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 				deskripsi: options.filterDeskripsi,
 				search: options.searchQuery,
 				kelasId: options.filterKelas,
+				jenisKelasNama:
+					options.filterJenisKelas !== "ALL"
+						? options.filterJenisKelas
+						: undefined,
 			},
 			{
 				enabled:
@@ -108,6 +117,10 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 				deskripsi: options.filterDeskripsi,
 				search: options.searchQuery,
 				kelasId: options.filterKelas,
+				jenisKelasNama:
+					options.filterJenisKelas !== "ALL"
+						? options.filterJenisKelas
+						: undefined,
 			},
 			{
 				enabled:
@@ -242,6 +255,10 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 				search: options.searchQuery,
 				cabangId: cabangIdPayload,
 				kelasId: options.filterKelas,
+				jenisKelasNama:
+					options.filterJenisKelas !== "ALL"
+						? options.filterJenisKelas
+						: undefined,
 			});
 		},
 	};

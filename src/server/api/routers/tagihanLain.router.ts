@@ -66,6 +66,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
+				jenisKelasNama: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -92,6 +93,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
+				jenisKelasNama: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -118,6 +120,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
+				jenisKelasNama: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -309,6 +312,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				deskripsi: z.string().optional(),
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
+				jenisKelasNama: z.string().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -331,6 +335,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				kategori: input.kategori,
 				search: input.search,
 				kelasId: input.kelasId,
+				jenisKelasNama: input.jenisKelasNama,
 			});
 
 			// Dynamic Sorting
@@ -390,6 +395,7 @@ async function getPaginatedTagihan(
 		search?: string;
 		cabangId?: string;
 		kelasId?: string;
+		jenisKelasNama?: string;
 		kategori?: KategoriTagihan;
 		sorting?: { id: string; desc: boolean }[];
 	},
@@ -406,6 +412,7 @@ async function getPaginatedTagihan(
 		kategori: input.kategori,
 		search: input.search,
 		kelasId: input.kelasId,
+		jenisKelasNama: input.jenisKelasNama,
 	});
 
 	// Dynamic Sorting
@@ -475,6 +482,7 @@ function createTagihanWhereClause(input: {
 	kategori?: KategoriTagihan;
 	search?: string;
 	kelasId?: string;
+	jenisKelasNama?: string;
 }) {
 	const whereClause: Prisma.TagihanLainWhereInput = {};
 
@@ -488,6 +496,15 @@ function createTagihanWhereClause(input: {
 	// Filter by Kelas
 	if (input.kelasId) {
 		whereClause.kelasId = input.kelasId;
+	}
+
+	// Filter by Jenis Kelas
+	if (input.jenisKelasNama) {
+		whereClause.kelas = {
+			jenisKelasRel: {
+				nama: input.jenisKelasNama,
+			},
+		};
 	}
 
 	// Filter by Murid

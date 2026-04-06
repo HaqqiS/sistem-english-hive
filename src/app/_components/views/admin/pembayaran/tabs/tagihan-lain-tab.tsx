@@ -33,6 +33,7 @@ interface TagihanLainTabProps {
 	filterStatus: StatusPembayaran | "ALL";
 	searchQuery: string;
 	filterKelas?: string | "ALL";
+	filterJenisKelas?: string | "ALL";
 }
 
 export default function TagihanLainTab({
@@ -42,6 +43,7 @@ export default function TagihanLainTab({
 	filterStatus,
 	searchQuery,
 	filterKelas,
+	filterJenisKelas,
 }: TagihanLainTabProps) {
 	// --- STATE ---
 	const [pagination, setPagination] = useState<PaginationState>({
@@ -91,6 +93,7 @@ export default function TagihanLainTab({
 		filterDeskripsi: filterDeskripsi,
 		searchQuery: searchQuery,
 		filterKelas: filterKelas === "ALL" ? undefined : filterKelas,
+		filterJenisKelas: filterJenisKelas === "ALL" ? undefined : filterJenisKelas,
 		enableGetAll: true,
 		onSuccessDelete: () => {
 			setDeleteDialogOpen(false);

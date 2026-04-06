@@ -83,7 +83,11 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 
 	// 2. Get Tagihan Jatuh Tempo (Dashboard)
 	const getJatuhTempoQuery = api.pembayaran.getTagihanJatuhTempo.useQuery(
-		{ cabangId: cabangIdPayload },
+		{
+			cabangId: cabangIdPayload,
+			pageIndex,
+			pageSize,
+		},
 		{
 			enabled: options?.enableGetJatuhTempo ?? false, // Default false unless requested
 			refetchOnWindowFocus: true,
@@ -154,7 +158,9 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 		errorGetAllPaginated: getAllPaginatedQuery.error,
 		refetchGetAllPaginated: getAllPaginatedQuery.refetch,
 
-		dataJatuhTempo: getJatuhTempoQuery.data ?? [],
+		dataJatuhTempo: getJatuhTempoQuery.data?.data ?? [],
+		pageCountJatuhTempo: getJatuhTempoQuery.data?.pageCount ?? -1,
+		totalJatuhTempo: getJatuhTempoQuery.data?.total ?? 0,
 		isLoadingJatuhTempo: getJatuhTempoQuery.isLoading,
 		isErrorJatuhTempo: getJatuhTempoQuery.isError,
 		isRefetchingJatuhTempo: getJatuhTempoQuery.isFetching,

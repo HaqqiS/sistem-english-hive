@@ -119,6 +119,8 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 	const getAllBelumLunasQuery = api.tagihanLain.getAllBelumLunas.useQuery({
 		cabangId: cabangIdPayload,
 		kategori: options.filterKategori,
+		pageIndex,
+		pageSize,
 	});
 
 	// ========== MUTATIONS ==========
@@ -198,7 +200,9 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 		isLoadingByMurid: getAllByMuridQuery.isLoading,
 		isErrorByMurid: getAllByMuridQuery.isError,
 
-		dataGetAllBelumLunas: getAllBelumLunasQuery.data,
+		dataGetAllBelumLunas: getAllBelumLunasQuery.data?.data ?? [],
+		pageCountBelumLunas: getAllBelumLunasQuery.data?.pageCount ?? -1,
+		totalRowsBelumLunas: getAllBelumLunasQuery.data?.total ?? 0,
 		isLoadingGetAllBelumLunas: getAllBelumLunasQuery.isLoading,
 		isFetchingGetAllBelumLunas: getAllBelumLunasQuery.isFetching,
 		refetchGetAllBelumLunas: getAllBelumLunasQuery.refetch,

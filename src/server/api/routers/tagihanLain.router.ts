@@ -138,52 +138,15 @@ export const tagihanLainRouter = createTRPCRouter({
 	// Get All Belum Lunas (Similar to Tagihan Jatuh Tempo)
 	getAllBelumLunas: cabangProtectedProcedure
 		.input(
-			z
-				.object({
-					cabangId: z.string().optional(),
-					kategori: z.nativeEnum(KategoriTagihan).optional(),
-				})
-				.optional(),
+			paginationSchema.extend({
+				cabangId: z.string().optional(),
+				kategori: z.nativeEnum(KategoriTagihan).optional(),
+			}),
 		)
 		.query(async ({ ctx, input }) => {
-			const { db, allowedCabangId } = ctx;
-			const filterCabangId = allowedCabangId ?? input?.cabangId;
-
-			const whereClause: Prisma.TagihanLainWhereInput = {
+			return getPaginatedTagihan(ctx.db, ctx.allowedCabangId, {
+				...input,
 				status: StatusPembayaran.BELUM_LUNAS,
-			};
-
-			if (input?.kategori) {
-				whereClause.kategori = input.kategori;
-			}
-
-			if (filterCabangId) {
-				whereClause.murid = {
-					cabangId: filterCabangId,
-				};
-			}
-
-			return db.tagihanLain.findMany({
-				where: whereClause,
-				orderBy: { createdAt: "desc" },
-				include: {
-					murid: {
-						select: {
-							namaLengkap: true,
-							noWA: true,
-							cabang: {
-								select: {
-									namaCabang: true,
-									noRekening: true,
-									bank: true,
-									atasNama: true,
-								},
-							},
-						},
-					},
-					kelas: { select: { kodeKelas: true, hargaKelas: true } },
-					verifiedBy: { select: { name: true } },
-				},
 			});
 		}),
 

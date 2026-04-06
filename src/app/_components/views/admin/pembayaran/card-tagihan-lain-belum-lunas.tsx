@@ -20,7 +20,7 @@ import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { RouterOutputs } from "@/trpc/react";
 
 type TypeTagihanLainBelumLunas =
-	RouterOutputs["tagihanLain"]["getAllBelumLunas"][number];
+	RouterOutputs["tagihanLain"]["getAllBelumLunas"]["data"][number];
 
 interface CardTagihanLainBelumLunasProps {
 	className?: string;
@@ -59,6 +59,7 @@ export default function CardTagihanLainBelumLunas({
 
 	const {
 		dataGetAllBelumLunas,
+		pageCountBelumLunas,
 		isLoadingGetAllBelumLunas,
 		isFetchingGetAllBelumLunas,
 		refetchGetAllBelumLunas,
@@ -67,6 +68,7 @@ export default function CardTagihanLainBelumLunas({
 		enableGetAll: false,
 		filterCabang: activeCabangId,
 		filterKategori: kategori, // Filter by specific category
+		pagination: pagination,
 	});
 
 	const handleVerifyClick = (item: TypeTagihanLainBelumLunas) => {
@@ -116,7 +118,7 @@ export default function CardTagihanLainBelumLunas({
 					<DataTable
 						data={dataGetAllBelumLunas ?? []}
 						columns={tableColumns}
-						pageCount={1}
+						pageCount={pageCountBelumLunas}
 						pagination={pagination}
 						onPaginationChange={setPagination}
 						isLoading={isLoadingGetAllBelumLunas || isFetchingGetAllBelumLunas}

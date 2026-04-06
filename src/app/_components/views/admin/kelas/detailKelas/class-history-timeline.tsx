@@ -120,7 +120,7 @@ export function ClassHistoryTimeline({
 											className="text-accent mt-2 h-7 px-2 text-xs"
 											asChild
 										>
-											<Link href={`/admin/kelas/sesi/${item.id}`}>
+											<Link href={`/admin/kelas/detail/${item.id}`}>
 												Detail Kelas
 											</Link>
 										</Button>

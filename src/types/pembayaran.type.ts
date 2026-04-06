@@ -14,7 +14,7 @@ export type TypePembayaran =
 export type TypePembayaranPaginated =
 	RouterOutputs["pembayaran"]["getAllPaginated"];
 export type TypePembayaranJatuhTempo =
-	RouterOutputs["pembayaran"]["getTagihanJatuhTempo"][number];
+	RouterOutputs["pembayaran"]["getTagihanJatuhTempo"]["data"][number];
 export type SaldoSiswaData = RouterOutputs["pembayaran"]["getSaldoByMuridId"];
 
 export {

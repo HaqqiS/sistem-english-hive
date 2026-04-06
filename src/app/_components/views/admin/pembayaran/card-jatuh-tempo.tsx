@@ -50,6 +50,7 @@ export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 
 	const {
 		dataJatuhTempo,
+		pageCountJatuhTempo,
 		isLoadingJatuhTempo,
 		isRefetchingJatuhTempo,
 		refetchJatuhTempo: refetch,
@@ -59,6 +60,7 @@ export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 		enableGetJatuhTempo: true,
 		enableGetAll: false,
 		filterCabang: activeCabangId,
+		pagination: pagination,
 	});
 
 	// Handler Verifikasi Cepat
@@ -113,7 +115,7 @@ export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 					<DataTable
 						data={dataJatuhTempo ?? []}
 						columns={tableColumns}
-						pageCount={1}
+						pageCount={pageCountJatuhTempo}
 						pagination={pagination}
 						onPaginationChange={setPagination}
 						isLoading={isLoadingJatuhTempo || isRefetchingJatuhTempo}

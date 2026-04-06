@@ -146,12 +146,16 @@ export const pembayaranRouter = createTRPCRouter({
 
 	// 2. GET TAGIHAN JATUH TEMPO (Untuk Dashboard)
 	getTagihanJatuhTempo: cabangProtectedProcedure
-		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.input(
+			paginationSchema.extend({
+				cabangId: z.string().optional(),
+			}),
+		)
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
+			const { pageIndex, pageSize } = input;
 
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
-			// const HARI_INI = dayjs().startOf("day");
 			const DUA_MINGGU_LAGI = dayjs().add(14, "day").endOf("day");
 
 			const whereClause: Prisma.PembayaranWhereInput = {
@@ -169,30 +173,43 @@ export const pembayaranRouter = createTRPCRouter({
 				};
 			}
 
-			return db.pembayaran.findMany({
-				where: whereClause,
-				orderBy: { createdAt: "desc" },
-				include: {
-					pendaftaranKelas: {
-						include: {
-							murid: { select: { namaLengkap: true, noWA: true } },
-							Kelas: {
-								select: {
-									kodeKelas: true,
-									cabang: {
-										select: {
-											namaCabang: true,
-											noRekening: true,
-											bank: true,
-											atasNama: true,
+			const [total, data] = await db.$transaction([
+				db.pembayaran.count({ where: whereClause }),
+				db.pembayaran.findMany({
+					skip: pageIndex * pageSize,
+					take: pageSize,
+					where: whereClause,
+					orderBy: { createdAt: "desc" },
+					include: {
+						pendaftaranKelas: {
+							include: {
+								murid: { select: { namaLengkap: true, noWA: true } },
+								Kelas: {
+									select: {
+										kodeKelas: true,
+										cabang: {
+											select: {
+												namaCabang: true,
+												noRekening: true,
+												bank: true,
+												atasNama: true,
+											},
 										},
 									},
 								},
 							},
 						},
 					},
-				},
-			});
+				}),
+			]);
+
+			const pageCount = Math.ceil(total / pageSize);
+
+			return {
+				data,
+				pageCount,
+				total,
+			};
 		}),
 
 	getForExport: cabangProtectedProcedure

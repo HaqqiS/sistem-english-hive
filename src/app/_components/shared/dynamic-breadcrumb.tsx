@@ -12,7 +12,13 @@ import {
 	BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-const IGNORED_SEGMENTS = ["detail", "sesi"];
+// Peta untuk mengganti nama segmen teknis ke nama tampilan yang ramah user
+const RENAME_MAP: Record<string, string> = {
+	guru: "Gaji Guru",
+	pembayaran: "Pembayaran",
+	kelas: "Kelas",
+	verifikasi: "Verifikasi",
+};
 
 // Fungsi helper untuk membuat huruf pertama kapital
 function capitalize(str: string) {
@@ -36,51 +42,59 @@ export function DynamicBreadcrumb() {
 		);
 	}
 
-	let currentPath = "";
+	// Buat daftar breadcrumb secara dinamis
+	let lastLabel = "";
+	let labelPrefix = "Detail "; // Default prefix untuk ID
+	const breadcrumbItems: { segment: string; path: string; label: string }[] =
+		[];
+
+	for (let i = 0; i < segments.length; i++) {
+		const segment = segments[i] as string;
+		const path = `/${segments.slice(0, i + 1).join("/")}`;
+
+		if (segment === "detail") {
+			labelPrefix = "Detail ";
+			continue;
+		}
+
+		if (segment === "sesi") {
+			labelPrefix = "Detail Sesi ";
+			continue;
+		}
+
+		let label = "";
+		if (segment.length > 10) {
+			// Jika segmen adalah ID, gabungkan prefix dengan label parent terakhir
+			label = `${labelPrefix}${lastLabel}`;
+			// Reset prefix ke default setelah digunakan
+			labelPrefix = "Detail ";
+		} else {
+			// Gunakan RENAME_MAP atau capitalize
+			label = RENAME_MAP[segment] || capitalize(segment);
+			lastLabel = label;
+		}
+
+		breadcrumbItems.push({ segment, path, label });
+	}
 
 	return (
 		<Breadcrumb>
 			<BreadcrumbList>
-				{segments.map((segment, index) => {
-					const isIgnored = IGNORED_SEGMENTS.includes(segment);
-					currentPath += `/${segment}`;
-					const isLastVisible = !isIgnored && index === segments.length - 1;
-					if (isIgnored) {
-						// Jangan tampilkan segmen penanda (detail, sesi)
-						return null;
-					}
-
-					let displayLabel = capitalize(segment);
-
-					if (segment.length > 10) {
-						if (currentPath === `/admin/kelas/detail/${segment}`) {
-							displayLabel = "Detail Kelas";
-						} else if (currentPath === `/admin/kelas/sesi/${segment}`) {
-							displayLabel = "Detail Sesi";
-						}
-						if (currentPath === `/admin/pembayaran/${segment}`) {
-							displayLabel = "Detail Pembayaran";
-						}
-						if (currentPath === `/admin/guru/${segment}`) {
-							displayLabel = "Detail Gaji Guru";
-						}
-					}
+				{breadcrumbItems.map((item, index) => {
+					const isLast = index === breadcrumbItems.length - 1;
 
 					return (
-						<React.Fragment key={currentPath}>
-							<BreadcrumbItem>
-								{isLastVisible ? (
-									// Item terakhir, tidak bisa diklik
-									<BreadcrumbPage>{displayLabel}</BreadcrumbPage>
+						<React.Fragment key={item.path}>
+							<BreadcrumbItem className={!isLast ? "hidden sm:flex" : ""}>
+								{isLast ? (
+									<BreadcrumbPage>{item.label}</BreadcrumbPage>
 								) : (
-									// Item di tengah, bisa diklik
 									<BreadcrumbLink asChild>
-										<Link href={currentPath}>{displayLabel}</Link>
+										<Link href={item.path}>{item.label}</Link>
 									</BreadcrumbLink>
 								)}
 							</BreadcrumbItem>
-							{/* Tambahkan separator jika bukan item terakhir */}
-							{!isLastVisible && <BreadcrumbSeparator />}
+							{!isLast && <BreadcrumbSeparator className="hidden sm:flex" />}
 						</React.Fragment>
 					);
 				})}

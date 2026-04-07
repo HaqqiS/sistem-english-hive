@@ -114,15 +114,11 @@ export const muridRouter = createTRPCRouter({
 								createdAt: true,
 								cabangId: true,
 								pendaftaranKelases: {
-									where: {
-										NOT: {
-											status: "NON_AKTIF",
-										},
-									},
 									include: {
 										Kelas: {
 											select: {
 												kodeKelas: true,
+												level: true,
 												historyGuruKelases: {
 													where: {
 														statusGuru: "ACTIVE",

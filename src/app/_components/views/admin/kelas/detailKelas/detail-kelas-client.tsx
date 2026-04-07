@@ -1,12 +1,14 @@
 "use client";
 
 import {
+	ArrowLeft,
 	CalendarClock,
 	CalendarDays,
 	Edit,
 	FileText,
 	History,
 } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
@@ -237,10 +239,20 @@ export default function DetailKelasClient() {
 	return (
 		<div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
 			<HeaderActionPortal>
-				<Button variant="ghost" size="sm" onClick={handleExportAbsensi}>
-					<FileText className="mr-2 h-4 w-4" />
-					Export PDF Absen
-				</Button>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" asChild>
+						<Link href={`/admin/kelas/sesi/${kelasId}`}>
+							<ArrowLeft className="mr-2 h-4 w-4" />
+							<span className="hidden sm:inline">Detail Sesi</span>
+							<span className="sm:hidden">Sesi</span>
+						</Link>
+					</Button>
+					<Button variant="outline" size="sm" onClick={handleExportAbsensi}>
+						<FileText className="mr-2 h-4 w-4" />
+						<span className="hidden sm:inline">Export PDF Absen</span>
+						<span className="sm:hidden">Export</span>
+					</Button>
+				</div>
 			</HeaderActionPortal>
 
 			<AlertDialog

@@ -4,12 +4,14 @@ import { StatusAbsenMurid } from "@prisma/client";
 import type { RowInput } from "jspdf-autotable";
 import {
 	AlertCircle,
+	ArrowLeft,
 	Check,
 	Edit,
 	FileText,
 	Loader2,
 	Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -337,10 +339,20 @@ export default function DetailSesiClient() {
 	return (
 		<TooltipProvider delayDuration={150}>
 			<HeaderActionPortal>
-				<Button variant="ghost" size="sm" onClick={handleExportAbsensi}>
-					<FileText className="mr-2 h-4 w-4" />
-					Export PDF Presensi
-				</Button>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" size="sm" asChild>
+						<Link href={`/admin/kelas/detail/${kelasId}`}>
+							<ArrowLeft className="mr-2 h-4 w-4" />
+							<span className="hidden sm:inline">Kembali ke Detail Kelas</span>
+							<span className="sm:hidden">Detail</span>
+						</Link>
+					</Button>
+					<Button variant="outline" size="sm" onClick={handleExportAbsensi}>
+						<FileText className="mr-2 h-4 w-4" />
+						<span className="hidden sm:inline">Export PDF Presensi</span>
+						<span className="sm:hidden">Export</span>
+					</Button>
+				</div>
 			</HeaderActionPortal>
 			<Card>
 				<CardHeader>

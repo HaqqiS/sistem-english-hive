@@ -127,83 +127,103 @@ export const columns = ({
 				<ArrowUpDown className="ml-2 h-4 w-4" />
 			</Button>
 		),
-		cell: ({ row }) => (
-			<div className="flex flex-col">
-				<Link href={`/admin/pembayaran/${row.original.id}`}>
-					<Button
-						variant="link"
-						className="text-foreground h-auto w-fit justify-start px-0 py-0 text-left font-medium"
-						onClick={() => onEditClick(row.original)}
-					>
-						{row.original.namaLengkap}
-					</Button>
-				</Link>
-				<div className="flex items-center gap-1.5 text-xs">
-					<span className="text-muted-foreground">
-						{row.original.pendaftaranKelases.length > 0
-							? row.original.pendaftaranKelases[0]?.Kelas.kodeKelas
-							: "-"}{" "}
-						|{" "}
-						{row.original.pendaftaranKelases.length > 0
-							? (row.original.pendaftaranKelases[0]?.Kelas.historyGuruKelases[0]
-									?.guru.name ?? "Tanpa Guru")
-							: "-"}
-					</span>
+		cell: ({ row }) => {
+			const sortedRegistrations = [...row.original.pendaftaranKelases].sort(
+				(a, b) => {
+					// 1. Prioritas Level (Desc)
+					if (b.Kelas.level !== a.Kelas.level) {
+						return b.Kelas.level - a.Kelas.level;
+					}
 
-					{row.original.pendaftaranKelases.length > 1 && (
-						<Popover>
-							<PopoverTrigger asChild>
-								<Button
-									variant="secondary"
-									className="hover:bg-accent h-5 rounded-full px-2 py-0 text-[10px] font-semibold"
-								>
-									+{row.original.pendaftaranKelases.length - 1} lainnya
-								</Button>
-							</PopoverTrigger>
-							<PopoverContent className="w-64 p-3" align="start">
-								<div className="mb-2 border-b pb-2 text-xs font-semibold">
-									Daftar Pendaftaran Kelas
-								</div>
-								<div className="space-y-3">
-									{row.original.pendaftaranKelases.map((reg, idx) => (
-										<div
-											key={reg.id}
-											className="flex flex-col gap-1 border-border border-b pb-2 last:border-0"
-										>
-											<div className="flex items-center justify-between">
-												<span className="font-bold text-foreground">
-													{idx + 1}. {reg.Kelas.kodeKelas}
-												</span>
-												<Badge
-													variant={
-														reg.status === "AKTIF"
-															? "default"
-															: reg.status === "TRIAL"
-																? "secondary"
-																: "outline"
-													}
-													className="h-4 px-1.5 text-[9px] font-bold"
-												>
-													{reg.status}
-												</Badge>
+					// 2. Prioritas Status (Aktif diutamakan)
+					const priority: Record<string, number> = {
+						AKTIF: 0,
+						TRIAL: 1,
+						WAITING_LIST: 2,
+						NON_AKTIF: 3,
+					};
+					return (priority[a.status] ?? 99) - (priority[b.status] ?? 99);
+				},
+			);
+
+			return (
+				<div className="flex flex-col">
+					<Link href={`/admin/pembayaran/${row.original.id}`}>
+						<Button
+							variant="link"
+							className="text-foreground h-auto w-fit justify-start px-0 py-0 text-left font-medium"
+							onClick={() => onEditClick(row.original)}
+						>
+							{row.original.namaLengkap}
+						</Button>
+					</Link>
+					<div className="flex items-center gap-1.5 text-xs">
+						<span className="text-muted-foreground">
+							{sortedRegistrations.length > 0
+								? sortedRegistrations[0]?.Kelas.kodeKelas
+								: "-"}{" "}
+							|{" "}
+							{sortedRegistrations.length > 0
+								? (sortedRegistrations[0]?.Kelas.historyGuruKelases[0]?.guru
+										.name ?? "Tanpa Guru")
+								: "-"}
+						</span>
+
+						{sortedRegistrations.length > 1 && (
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button
+										variant="secondary"
+										className="hover:bg-accent h-5 rounded-full px-2 py-0 text-[10px] font-semibold"
+									>
+										+{sortedRegistrations.length - 1} lainnya
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent className="w-64 p-3" align="start">
+									<div className="mb-2 border-b pb-2 text-xs font-semibold">
+										Daftar Pendaftaran Kelas
+									</div>
+									<div className="space-y-3">
+										{sortedRegistrations.map((reg, idx) => (
+											<div
+												key={reg.id}
+												className="flex flex-col gap-1 border-border border-b pb-2 last:border-0"
+											>
+												<div className="flex items-center justify-between">
+													<span className="font-bold text-foreground">
+														{idx + 1}. {reg.Kelas.kodeKelas}
+													</span>
+													<Badge
+														variant={
+															reg.status === "AKTIF"
+																? "default"
+																: reg.status === "TRIAL"
+																	? "secondary"
+																	: "outline"
+														}
+														className="h-4 px-1.5 text-[9px] font-bold"
+													>
+														{reg.status}
+													</Badge>
+												</div>
+												<div className="text-muted-foreground flex items-center gap-1 pl-3 text-[10px]">
+													<Album className="h-2.5 w-2.5" />
+													<span>
+														Guru:{" "}
+														{reg.Kelas.historyGuruKelases[0]?.guru.name ??
+															"Belum Set"}
+													</span>
+												</div>
 											</div>
-											<div className="text-muted-foreground flex items-center gap-1 pl-3 text-[10px]">
-												<Album className="h-2.5 w-2.5" />
-												<span>
-													Guru:{" "}
-													{reg.Kelas.historyGuruKelases[0]?.guru.name ??
-														"Belum Set"}
-												</span>
-											</div>
-										</div>
-									))}
-								</div>
-							</PopoverContent>
-						</Popover>
-					)}
+										))}
+									</div>
+								</PopoverContent>
+							</Popover>
+						)}
+					</div>
 				</div>
-			</div>
-		),
+			);
+		},
 	},
 
 	// 2. Info Pribadi (Gender & Umur)

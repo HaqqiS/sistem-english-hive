@@ -7,7 +7,6 @@ import type { PendaftaranKelasType } from "@/types/pendaftaranKelas.type";
 interface UseProgramKelasOptions {
 	// Query options
 	enableQuery?: boolean;
-	enableMuridNamesQuery?: boolean;
 	initialData?: PendaftaranKelasType[];
 	kelasId?: string;
 	muridId?: string;
@@ -40,14 +39,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
 				enabled: !!options?.muridId,
 			},
 		);
-
-	const muridNamesQuery = api.pendaftaranKelas.getMuridNamesByKelasId.useQuery(
-		kelasId ? { kelasId } : skipToken,
-		{
-			enabled: options?.enableMuridNamesQuery && !!kelasId,
-			staleTime: 5 * 60 * 1000,
-		},
-	);
 
 	const invalidatePendaftaran = async () => {
 		await Promise.all([
@@ -134,10 +125,6 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
 		dataActivePendaftaranByMurid: activePendaftaranByMuridIdQuery.data,
 		isLoadingActivePendaftaranByMurid:
 			activePendaftaranByMuridIdQuery.isLoading,
-
-		dataMuridNames: muridNamesQuery.data,
-		isLoadingMuridNames: muridNamesQuery.isLoading,
-		isErrorMuridNames: muridNamesQuery.isError,
 
 		// Mutations
 		mutations: {

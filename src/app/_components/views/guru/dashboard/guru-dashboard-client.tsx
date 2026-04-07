@@ -292,8 +292,12 @@ export default function GuruDashboardClient() {
 							className={isThisItemLoading ? "border-primary/50 shadow-md" : ""}
 						>
 							<CardHeader>
-								<CardTitle className="flex items-start justify-between">
+								<CardTitle className="flex items-start justify-between gap-2">
 									<span>{`${jadwal.jamMulai} - ${jadwal.jamSelesai}`}</span>
+									<MuridPopover
+										kelasId={jadwal.kelasId}
+										jumlahMurid={jadwal.jumlahMurid ?? 0}
+									/>
 								</CardTitle>
 								<CardDescription className="text-primary font-medium">
 									{jadwal.kodeKelas}
@@ -314,13 +318,6 @@ export default function GuruDashboardClient() {
 									<span className="text-muted-foreground">Ruang:</span>
 									<span className="font-medium">{jadwal.namaRuang}</span>
 								</p>
-
-								<div className="flex items-center gap-2">
-									<MuridPopover
-										kelasId={jadwal.kelasId}
-										jumlahMurid={jadwal.jumlahMurid ?? 0}
-									/>
-								</div>
 							</CardContent>
 							<CardFooter className="flex items-center gap-2 pt-0">
 								{sudahDimulai ? (

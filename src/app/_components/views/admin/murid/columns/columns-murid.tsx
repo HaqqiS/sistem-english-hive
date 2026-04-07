@@ -23,6 +23,11 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
@@ -109,7 +114,7 @@ export const columns = ({
 		cell: ({ row }) => row.index + 1,
 	},
 
-	// 1. Nama & Email
+	// 1. Nama & Kelas
 	{
 		accessorKey: "namaLengkap",
 		header: ({ column }) => (
@@ -133,16 +138,70 @@ export const columns = ({
 						{row.original.namaLengkap}
 					</Button>
 				</Link>
-				<span className="text-muted-foreground text-xs">
-					{row.original.pendaftaranKelases.length > 0
-						? row.original.pendaftaranKelases[0]?.Kelas.kodeKelas
-						: "-"}{" "}
-					|{" "}
-					{row.original.pendaftaranKelases.length > 0
-						? row.original.pendaftaranKelases[0]?.Kelas.historyGuruKelases[0]
-								?.guru.name
-						: "-"}
-				</span>
+				<div className="flex items-center gap-1.5 text-xs">
+					<span className="text-muted-foreground">
+						{row.original.pendaftaranKelases.length > 0
+							? row.original.pendaftaranKelases[0]?.Kelas.kodeKelas
+							: "-"}{" "}
+						|{" "}
+						{row.original.pendaftaranKelases.length > 0
+							? (row.original.pendaftaranKelases[0]?.Kelas.historyGuruKelases[0]
+									?.guru.name ?? "Tanpa Guru")
+							: "-"}
+					</span>
+
+					{row.original.pendaftaranKelases.length > 1 && (
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									variant="secondary"
+									className="hover:bg-accent h-5 rounded-full px-2 py-0 text-[10px] font-semibold"
+								>
+									+{row.original.pendaftaranKelases.length - 1} lainnya
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="w-64 p-3" align="start">
+								<div className="mb-2 border-b pb-2 text-xs font-semibold">
+									Daftar Pendaftaran Kelas
+								</div>
+								<div className="space-y-3">
+									{row.original.pendaftaranKelases.map((reg, idx) => (
+										<div
+											key={reg.id}
+											className="flex flex-col gap-1 border-border border-b pb-2 last:border-0"
+										>
+											<div className="flex items-center justify-between">
+												<span className="font-bold text-foreground">
+													{idx + 1}. {reg.Kelas.kodeKelas}
+												</span>
+												<Badge
+													variant={
+														reg.status === "AKTIF"
+															? "default"
+															: reg.status === "TRIAL"
+																? "secondary"
+																: "outline"
+													}
+													className="h-4 px-1.5 text-[9px] font-bold"
+												>
+													{reg.status}
+												</Badge>
+											</div>
+											<div className="text-muted-foreground flex items-center gap-1 pl-3 text-[10px]">
+												<Album className="h-2.5 w-2.5" />
+												<span>
+													Guru:{" "}
+													{reg.Kelas.historyGuruKelases[0]?.guru.name ??
+														"Belum Set"}
+												</span>
+											</div>
+										</div>
+									))}
+								</div>
+							</PopoverContent>
+						</Popover>
+					)}
+				</div>
 			</div>
 		),
 	},

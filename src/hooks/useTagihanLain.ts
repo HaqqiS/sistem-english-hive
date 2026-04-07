@@ -18,6 +18,7 @@ interface UseTagihanLainOptions {
 	searchQuery?: string;
 	filterKelas?: string;
 	filterJenisKelas?: string;
+	filterLevel?: number | "ALL";
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
@@ -72,6 +73,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 				options.filterJenisKelas !== "ALL"
 					? options.filterJenisKelas
 					: undefined,
+			level: options.filterLevel !== "ALL" ? options.filterLevel : undefined,
 		},
 		{
 			enabled:
@@ -96,6 +98,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 					options.filterJenisKelas !== "ALL"
 						? options.filterJenisKelas
 						: undefined,
+				level: options.filterLevel !== "ALL" ? options.filterLevel : undefined,
 			},
 			{
 				enabled:
@@ -121,6 +124,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 					options.filterJenisKelas !== "ALL"
 						? options.filterJenisKelas
 						: undefined,
+				level: options.filterLevel !== "ALL" ? options.filterLevel : undefined,
 			},
 			{
 				enabled:
@@ -259,6 +263,7 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 					options.filterJenisKelas !== "ALL"
 						? options.filterJenisKelas
 						: undefined,
+				level: options.filterLevel !== "ALL" ? options.filterLevel : undefined,
 			});
 		},
 	};

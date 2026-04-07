@@ -34,6 +34,7 @@ interface TagihanLainTabProps {
 	searchQuery: string;
 	filterKelas?: string | "ALL";
 	filterJenisKelas?: string | "ALL";
+	filterLevel?: number | "ALL";
 }
 
 export default function TagihanLainTab({
@@ -44,6 +45,7 @@ export default function TagihanLainTab({
 	searchQuery,
 	filterKelas,
 	filterJenisKelas,
+	filterLevel,
 }: TagihanLainTabProps) {
 	// --- STATE ---
 	const [pagination, setPagination] = useState<PaginationState>({
@@ -94,6 +96,7 @@ export default function TagihanLainTab({
 		searchQuery: searchQuery,
 		filterKelas: filterKelas === "ALL" ? undefined : filterKelas,
 		filterJenisKelas: filterJenisKelas === "ALL" ? undefined : filterJenisKelas,
+		filterLevel: filterLevel,
 		enableGetAll: true,
 		onSuccessDelete: () => {
 			setDeleteDialogOpen(false);

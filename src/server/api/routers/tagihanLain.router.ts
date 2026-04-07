@@ -67,6 +67,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
 				jenisKelasNama: z.string().optional(),
+				level: z.number().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -94,6 +95,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
 				jenisKelasNama: z.string().optional(),
+				level: z.number().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -121,6 +123,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
 				jenisKelasNama: z.string().optional(),
+				level: z.number().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -313,6 +316,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
 				jenisKelasNama: z.string().optional(),
+				level: z.number().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -336,6 +340,7 @@ export const tagihanLainRouter = createTRPCRouter({
 				search: input.search,
 				kelasId: input.kelasId,
 				jenisKelasNama: input.jenisKelasNama,
+				level: input.level,
 			});
 
 			// Dynamic Sorting
@@ -396,6 +401,7 @@ async function getPaginatedTagihan(
 		cabangId?: string;
 		kelasId?: string;
 		jenisKelasNama?: string;
+		level?: number;
 		kategori?: KategoriTagihan;
 		sorting?: { id: string; desc: boolean }[];
 	},
@@ -413,6 +419,7 @@ async function getPaginatedTagihan(
 		search: input.search,
 		kelasId: input.kelasId,
 		jenisKelasNama: input.jenisKelasNama,
+		level: input.level,
 	});
 
 	// Dynamic Sorting
@@ -483,6 +490,7 @@ function createTagihanWhereClause(input: {
 	search?: string;
 	kelasId?: string;
 	jenisKelasNama?: string;
+	level?: number;
 }) {
 	const whereClause: Prisma.TagihanLainWhereInput = {};
 
@@ -498,12 +506,17 @@ function createTagihanWhereClause(input: {
 		whereClause.kelasId = input.kelasId;
 	}
 
-	// Filter by Jenis Kelas
-	if (input.jenisKelasNama) {
+	// Filter by Jenis Kelas or Level
+	if (input.jenisKelasNama || input.level) {
 		whereClause.kelas = {
-			jenisKelasRel: {
-				nama: input.jenisKelasNama,
-			},
+			...(input.jenisKelasNama
+				? {
+						jenisKelasRel: {
+							nama: input.jenisKelasNama,
+						},
+					}
+				: {}),
+			...(input.level ? { level: input.level } : {}),
 		};
 	}
 

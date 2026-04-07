@@ -20,6 +20,8 @@ export const pembayaranRouter = createTRPCRouter({
 				search: z.string().optional(),
 				cabangId: z.string().optional(),
 				kelasId: z.string().optional(),
+				jenisKelasNama: z.string().optional(),
+				level: z.number().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -38,9 +40,23 @@ export const pembayaranRouter = createTRPCRouter({
 
 			const whereClause: Prisma.PembayaranWhereInput = {};
 			const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
+			const kelasFilter: Prisma.KelasWhereInput = {};
 
-			if (filterCabangId)
-				pendaftaranFilter.Kelas = { cabangId: filterCabangId };
+			if (filterCabangId) kelasFilter.cabangId = filterCabangId;
+
+			if (input.kelasId) kelasFilter.id = input.kelasId;
+
+			if (input.level) kelasFilter.level = input.level;
+
+			if (input.jenisKelasNama) {
+				kelasFilter.jenisKelasRel = {
+					nama: input.jenisKelasNama,
+				};
+			}
+
+			if (Object.keys(kelasFilter).length > 0) {
+				pendaftaranFilter.Kelas = kelasFilter;
+			}
 
 			if (input.muridId) pendaftaranFilter.muridId = input.muridId;
 
@@ -53,11 +69,9 @@ export const pembayaranRouter = createTRPCRouter({
 				};
 			}
 
-			if (Object.keys(pendaftaranFilter).length > 0)
+			if (Object.keys(pendaftaranFilter).length > 0) {
 				whereClause.pendaftaranKelas = pendaftaranFilter;
-
-			if (input.kelasId)
-				whereClause.pendaftaranKelas = { Kelas: { id: input.kelasId } };
+			}
 
 			if (input.status && input.status !== ("ALL" as StatusPembayaran)) {
 				whereClause.statusBayar = input.status;
@@ -219,6 +233,8 @@ export const pembayaranRouter = createTRPCRouter({
 				muridId: z.string().optional(),
 				search: z.string().optional(),
 				cabangId: z.string().optional(),
+				jenisKelasNama: z.string().optional(),
+				level: z.number().optional(),
 				sorting: z
 					.array(
 						z.object({
@@ -236,9 +252,21 @@ export const pembayaranRouter = createTRPCRouter({
 
 			const whereClause: Prisma.PembayaranWhereInput = {};
 			const pendaftaranFilter: Prisma.PendaftaranKelasWhereInput = {};
+			const kelasFilter: Prisma.KelasWhereInput = {};
 
-			if (filterCabangId)
-				pendaftaranFilter.Kelas = { cabangId: filterCabangId };
+			if (filterCabangId) kelasFilter.cabangId = filterCabangId;
+
+			if (input.level) kelasFilter.level = input.level;
+
+			if (input.jenisKelasNama) {
+				kelasFilter.jenisKelasRel = {
+					nama: input.jenisKelasNama,
+				};
+			}
+
+			if (Object.keys(kelasFilter).length > 0) {
+				pendaftaranFilter.Kelas = kelasFilter;
+			}
 
 			if (input.muridId) pendaftaranFilter.muridId = input.muridId;
 

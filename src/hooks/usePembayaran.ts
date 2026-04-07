@@ -23,6 +23,8 @@ interface UsePembayaranOptions {
 	kelasIdFilter?: string;
 	searchFilter?: string;
 	filterCabang?: string;
+	levelFilter?: number | "ALL";
+	jenisKelasFilter?: string | "ALL";
 
 	// Mutation callbacks
 	onSuccessUpdate?: () => void;
@@ -70,6 +72,11 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 			kelasId: kelasIdPayload,
 			search: options?.searchFilter,
 			cabangId: cabangIdPayload,
+			jenisKelasNama:
+				options?.jenisKelasFilter !== "ALL"
+					? options?.jenisKelasFilter
+					: undefined,
+			level: options?.levelFilter !== "ALL" ? options?.levelFilter : undefined,
 			sorting, // Pass sorting to query
 		},
 		{
@@ -104,6 +111,11 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 			muridId: options?.muridIdFilter,
 			search: options?.searchFilter,
 			sorting,
+			jenisKelasNama:
+				options?.jenisKelasFilter !== "ALL"
+					? options?.jenisKelasFilter
+					: undefined,
+			level: options?.levelFilter !== "ALL" ? options?.levelFilter : undefined,
 		});
 	};
 

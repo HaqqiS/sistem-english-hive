@@ -55,6 +55,7 @@ export default function PembayaranClient({
 		"ALL",
 	);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [levelFilter, setLevelFilter] = useState<number | "ALL">("ALL");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
@@ -114,6 +115,8 @@ export default function PembayaranClient({
 		pagination: pagination,
 		sorting: sorting,
 		filterCabang: activeCabangId,
+		levelFilter: levelFilter,
+		jenisKelasFilter: jenisKelasFilter,
 		onSuccessDelete: () => {
 			setDeleteDialogOpen(false);
 			setItemToDelete(null);
@@ -345,13 +348,16 @@ export default function PembayaranClient({
 					</HeaderActionPortal>
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						{/* Filter Kelas khusus SPP */}
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Select
 								value={kelasIdFilter}
 								onValueChange={(val) => setKelasIdFilter(val as string | "ALL")}
 							>
-								<SelectTrigger className="w-full sm:w-[200px]">
-									<SelectValue placeholder="Filter Kelas" />
+								<SelectTrigger className="w-full sm:w-[170px]">
+									<div className="flex items-center gap-2">
+										<Filter className="text-muted-foreground h-4 w-4" />
+										<SelectValue placeholder="Filter Kelas" />
+									</div>
 								</SelectTrigger>
 								<SelectContent>
 									<SelectItem value="ALL">Semua Kelas</SelectItem>
@@ -360,6 +366,53 @@ export default function PembayaranClient({
 											{kelas.kodeKelas}
 										</SelectItem>
 									))}
+								</SelectContent>
+							</Select>
+
+							{/* Filter Jenis Kelas untuk SPP */}
+							<Select
+								value={jenisKelasFilter}
+								onValueChange={(v) => setJenisKelasFilter(v)}
+							>
+								<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[170px]">
+									<div className="flex items-center gap-2">
+										<Filter className="text-muted-foreground h-4 w-4" />
+										<span className="font-medium">
+											<SelectValue placeholder="Semua Jenis Kelas" />
+										</span>
+									</div>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Jenis Kelas</SelectItem>
+									{jenisKelasList?.map((jk) => (
+										<SelectItem key={jk.nama} value={jk.nama}>
+											{jk.nama}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+
+							{/* Filter Level untuk SPP */}
+							<Select
+								value={levelFilter.toString()}
+								onValueChange={(v) =>
+									setLevelFilter(v === "ALL" ? "ALL" : Number(v))
+								}
+							>
+								<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[170px]">
+									<div className="flex items-center gap-2">
+										<Filter className="text-muted-foreground h-4 w-4" />
+										<span className="font-medium">
+											<SelectValue placeholder="Semua Level" />
+										</span>
+									</div>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Level</SelectItem>
+									<SelectItem value="1">Level 1</SelectItem>
+									<SelectItem value="2">Level 2</SelectItem>
+									<SelectItem value="3">Level 3</SelectItem>
+									<SelectItem value="4">Level 4</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -456,6 +509,30 @@ export default function PembayaranClient({
 										))}
 								</SelectContent>
 							</Select>
+
+							{/* Filter Level untuk Buku */}
+							<Select
+								value={levelFilter.toString()}
+								onValueChange={(v) =>
+									setLevelFilter(v === "ALL" ? "ALL" : Number(v))
+								}
+							>
+								<SelectTrigger className="bg-background w-full sm:w-fit sm:min-w-[170px]">
+									<div className="flex items-center gap-2">
+										<Filter className="text-muted-foreground h-4 w-4" />
+										<span className="font-medium">
+											<SelectValue placeholder="Semua Level" />
+										</span>
+									</div>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Level Kelas</SelectItem>
+									<SelectItem value="1">Level 1</SelectItem>
+									<SelectItem value="2">Level 2</SelectItem>
+									<SelectItem value="3">Level 3</SelectItem>
+									<SelectItem value="4">Level 4</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
 					</div>
 					<TagihanLainTab
@@ -466,6 +543,7 @@ export default function PembayaranClient({
 						searchQuery={debouncedSearch}
 						filterKelas={kelasIdFilter}
 						filterJenisKelas={jenisKelasFilter}
+						filterLevel={levelFilter}
 					/>
 				</TabsContent>
 

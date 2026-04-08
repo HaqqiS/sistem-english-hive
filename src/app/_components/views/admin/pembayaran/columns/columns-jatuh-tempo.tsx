@@ -235,6 +235,7 @@ export const columnsJatuhTempo = ({
 			const noWA = row.original.pendaftaranKelas.murid.noWA;
 			const namaMurid = row.original.pendaftaranKelas.murid.namaLengkap;
 			const tipe = `SPP Bulan Ke-${row.original.pembayaranKe}`;
+			const kelas = row.original.pendaftaranKelas.Kelas.kodeKelas;
 			const jumlah = row.original.jumlahBayar;
 			const jatuhTempo = row.original.tanggalJatuhTempo;
 			const { noRekening, bank, atasNama } =
@@ -254,6 +255,7 @@ export const columnsJatuhTempo = ({
 								noWA,
 								namaMurid,
 								tipe,
+								kelas,
 								jumlah,
 								jatuhTempo,
 								noRekening,

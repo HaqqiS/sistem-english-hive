@@ -235,6 +235,7 @@ export const columnsTagihanLain = ({
 			const namaMurid = row.original.murid.namaLengkap;
 			const jumlah = row.original.jumlah;
 			const tipe = `pembayaran ${row.original.kategori}`;
+			const kelas = row.original.kelas?.kodeKelas || "-";
 			const noRekening = row.original.murid.cabang?.noRekening;
 			const bank = row.original.murid.cabang?.bank;
 			const atasNama = row.original.murid.cabang?.atasNama;
@@ -255,6 +256,7 @@ export const columnsTagihanLain = ({
 									noWA,
 									namaMurid,
 									tipe,
+									kelas,
 									jumlah,
 									null,
 									noRekening,
@@ -669,6 +671,7 @@ export const columnsTagihanLainGlobal = ({
 			const namaMurid = row.original.murid.namaLengkap;
 			const jumlah = row.original.jumlah;
 			const tipe = `pembayaran ${row.original.kategori}`;
+			const kelas = row.original.kelas?.kodeKelas || "-";
 			const noRekening = row.original.murid.cabang?.noRekening;
 			const bank = row.original.murid.cabang?.bank;
 			const atasNama = row.original.murid.cabang?.atasNama;
@@ -689,6 +692,7 @@ export const columnsTagihanLainGlobal = ({
 									noWA,
 									namaMurid,
 									tipe,
+									kelas,
 									jumlah,
 									null,
 									noRekening,

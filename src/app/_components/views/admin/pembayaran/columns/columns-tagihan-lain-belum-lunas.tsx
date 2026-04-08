@@ -140,6 +140,7 @@ export const columnsTagihanLainBelumLunas = ({
 			const noWA = row.original.murid.noWA;
 			const namaMurid = row.original.murid.namaLengkap;
 			const tipe = `Tagihan ${row.original.kategori}: ${row.original.judul}`;
+			const kelas = row.original.kelas?.kodeKelas || "-";
 			const jumlah = row.original.jumlah;
 			const noRekening = row.original.murid.cabang?.noRekening;
 			const bank = row.original.murid.cabang?.bank;
@@ -159,6 +160,7 @@ export const columnsTagihanLainBelumLunas = ({
 								noWA,
 								namaMurid,
 								tipe,
+								kelas,
 								jumlah,
 								null,
 								noRekening,

@@ -290,6 +290,8 @@ export const columns = ({
 								noRekening,
 								bank,
 								atasNama,
+								row.original.pembayaranKe,
+								row.original.pendaftaranKelas.Kelas.level,
 							)}
 							target="_blank"
 						>

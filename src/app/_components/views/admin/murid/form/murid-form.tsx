@@ -39,6 +39,85 @@ interface MuridFormProps {
 	isPending?: boolean; // [NEW] Loading state for submit button
 }
 
+const formTranslations = {
+	id: {
+		langsungDaftar: "Langsung Daftar?",
+		pilihOpsi: "Pilih opsi",
+		daftarLangsung: "Daftar Langsung",
+		trial: "Trial",
+		namaLengkap: "Nama Lengkap",
+		masukkanNama: "Masukkan nama lengkap",
+		jenisKelamin: "Jenis Kelamin",
+		pilihGender: "Pilih jenis kelamin",
+		lakiLaki: "Laki-laki",
+		perempuan: "Perempuan",
+		umur: "Umur",
+		noWA: "No. WA",
+		instagram: "Instagram",
+		pilihanProgram: "Pilihan Program",
+		pilihProgram: "Pilih program",
+		reguler: "Reguler",
+		regulerSekolah: "Reguler Sekolah (5-12 Siswa)",
+		privat: "Privat",
+		privatSekolah: "Privat Sekolah (1 Siswa 1 Tutor)",
+		privatDewasa: "Privat Dewasa/Kerja (1 Siswa 1 Tutor)",
+		pilihCabang: "Pilih Cabang",
+		loading: "Loading...",
+		asalSekolah: "Asal Sekolah",
+		masukkanAsal: "Masukkan asal sekolah",
+		kelasSekolah: "Kelas Sekolah",
+		kelasSaatIni: "Kelas saat ini",
+		sumberInfo: "Sumber Informasi",
+		teman: "Teman",
+		lainnya: "Lainnya",
+		masukkanSumber: "Masukkan sumber informasi lain...",
+		catatanAdmin: "Catatan Admin (Internal)",
+		masukkanCatatan: "Catatan khusus mengenai murid ini...",
+		biayaPendaftaran: "Kenakan Biaya Pendaftaran (Rp 50.000)",
+		deskripsiBiaya: "Jika dicentang, tagihan pendaftaran akan otomatis dibuat.",
+		kirim: "Kirim Pendaftaran",
+		mengirim: "Mengirim...",
+	},
+	en: {
+		langsungDaftar: "Direct Registration?",
+		pilihOpsi: "Choose option",
+		daftarLangsung: "Direct Register",
+		trial: "Trial",
+		namaLengkap: "Full Name",
+		masukkanNama: "Enter full name",
+		jenisKelamin: "Gender",
+		pilihGender: "Choose gender",
+		lakiLaki: "Male",
+		perempuan: "Female",
+		umur: "Age",
+		noWA: "WA Number",
+		instagram: "Instagram",
+		pilihanProgram: "Program Selection",
+		pilihProgram: "Choose program",
+		reguler: "Regular",
+		regulerSekolah: "Regular School (5-12 Students)",
+		privat: "Private",
+		privatSekolah: "Private School (1 Student 1 Tutor)",
+		privatDewasa: "Private Adult/Work (1 Student 1 Tutor)",
+		pilihCabang: "Choose Branch",
+		loading: "Loading...",
+		asalSekolah: "School Name",
+		masukkanAsal: "Enter school name",
+		kelasSekolah: "School Grade",
+		kelasSaatIni: "Current grade",
+		sumberInfo: "Information Source",
+		teman: "Friend",
+		lainnya: "Other",
+		masukkanSumber: "Enter other information source...",
+		catatanAdmin: "Admin Notes (Internal)",
+		masukkanCatatan: "Specific notes for this student...",
+		biayaPendaftaran: "Apply Registration Fee (Rp 50,000)",
+		deskripsiBiaya: "If checked, a registration bill will be created.",
+		kirim: "Submit Registration",
+		mengirim: "Submitting...",
+	},
+};
+
 export default function MuridForm({
 	onSubmit,
 	idPrefix = "murid",
@@ -56,6 +135,9 @@ export default function MuridForm({
 		enableQuery: false,
 		enableQueryList: true,
 	});
+
+	const [lang, setLang] = useState<"id" | "en">("id");
+	const t = formTranslations[lang];
 
 	const [isOther, setIsOther] = useState(
 		form.getValues("sumberInfo") === "Other" ||
@@ -75,6 +157,28 @@ export default function MuridForm({
 
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+			{/* Language Switcher */}
+			<div className="flex justify-end gap-2">
+				<Button
+					type="button"
+					variant={lang === "id" ? "default" : "outline"}
+					size="xs"
+					onClick={() => setLang("id")}
+					className="h-7 px-3 text-[10px]"
+				>
+					ID
+				</Button>
+				<Button
+					type="button"
+					variant={lang === "en" ? "default" : "outline"}
+					size="xs"
+					onClick={() => setLang("en")}
+					className="h-7 px-3 text-[10px]"
+				>
+					EN
+				</Button>
+			</div>
+
 			{/* Container utama: 2 kolom di desktop untuk layout form besar, 1 kolom jika forceStacked */}
 			<div className={cn("grid gap-4", gridColsClass)}>
 				<div className="col-span-1 space-y-4">
@@ -84,20 +188,20 @@ export default function MuridForm({
 							name="statusMurid"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm" translate="no">
-										Langsung Daftar?
-									</FormLabel>
+									<FormLabel className="text-sm">{t.langsungDaftar}</FormLabel>
 									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
 											<SelectTrigger className="w-full">
-												<SelectValue placeholder="Pilih opsi" translate="no" />
+												<SelectValue placeholder={t.pilihOpsi} />
 											</SelectTrigger>
 										</FormControl>
 										<SelectContent>
 											<SelectItem value={StatusMurid.PENDAFTAR_BARU}>
-												Daftar Langsung
+												{t.daftarLangsung}
 											</SelectItem>
-											<SelectItem value={StatusMurid.TRIAL}>Trial</SelectItem>
+											<SelectItem value={StatusMurid.TRIAL}>
+												{t.trial}
+											</SelectItem>
 										</SelectContent>
 									</Select>
 									<FormMessage />
@@ -111,11 +215,9 @@ export default function MuridForm({
 						name="namaLengkap"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm" translate="no">
-									Nama Lengkap
-								</FormLabel>
+								<FormLabel className="text-sm">{t.namaLengkap}</FormLabel>
 								<FormControl>
-									<Input placeholder="Masukkan nama lengkap" {...field} />
+									<Input placeholder={t.masukkanNama} {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -131,28 +233,19 @@ export default function MuridForm({
 						name="gender"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm" translate="no">
-									Jenis Kelamin
-								</FormLabel>
+								<FormLabel className="text-sm">{t.jenisKelamin}</FormLabel>
 								<Select onValueChange={field.onChange} value={field.value}>
 									<FormControl>
 										<SelectTrigger className="w-full">
-											<SelectValue
-												placeholder="Pilih jenis kelamin"
-												translate="no"
-											/>
+											<SelectValue placeholder={t.pilihGender} />
 										</SelectTrigger>
 									</FormControl>
 									<SelectContent>
 										<SelectItem value={Gender.LAKI_LAKI}>
-											<span translate="no" className="notranslate">
-												Laki-laki
-											</span>
+											{t.lakiLaki}
 										</SelectItem>
 										<SelectItem value={Gender.PEREMPUAN}>
-											<span translate="no" className="notranslate">
-												Perempuan
-											</span>
+											{t.perempuan}
 										</SelectItem>
 									</SelectContent>
 								</Select>
@@ -168,13 +261,11 @@ export default function MuridForm({
 							name="umur"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm" translate="no">
-										Umur
-									</FormLabel>
+									<FormLabel className="text-sm">{t.umur}</FormLabel>
 									<FormControl>
 										<Input
 											type="number"
-											placeholder="Umur"
+											placeholder={t.umur}
 											{...field}
 											value={field.value ?? ""}
 											onChange={(e) => field.onChange(e.target.valueAsNumber)}
@@ -190,9 +281,7 @@ export default function MuridForm({
 							name="noWA"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm" translate="no">
-										No. WA
-									</FormLabel>
+									<FormLabel className="text-sm">{t.noWA}</FormLabel>
 									<FormControl>
 										<Input type="tel" placeholder="08..." {...field} />
 									</FormControl>
@@ -206,9 +295,7 @@ export default function MuridForm({
 							name="instagram"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm" translate="no">
-										Instagram
-									</FormLabel>
+									<FormLabel className="text-sm">{t.instagram}</FormLabel>
 									<FormControl>
 										<Input
 											placeholder="@username"
@@ -229,38 +316,27 @@ export default function MuridForm({
 							name="pilihanProgram"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm" translate="no">
-										Pilihan Program
-									</FormLabel>
+									<FormLabel className="text-sm">{t.pilihanProgram}</FormLabel>
 									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
 											<SelectTrigger className="w-full">
-												<SelectValue
-													placeholder="Pilih program"
-													translate="no"
-												/>
+												<SelectValue placeholder={t.pilihProgram} />
 											</SelectTrigger>
 										</FormControl>
 										<SelectContent>
 											<SelectGroup>
-												<SelectLabel>Reguler</SelectLabel>
+												<SelectLabel>{t.reguler}</SelectLabel>
 												<SelectItem value="regulerSekolah">
-													<span translate="no" className="notranslate">
-														Reguler Sekolah (5-12 Siswa)
-													</span>
+													{t.regulerSekolah}
 												</SelectItem>
 											</SelectGroup>
 											<SelectGroup>
-												<SelectLabel>Privat</SelectLabel>
+												<SelectLabel>{t.privat}</SelectLabel>
 												<SelectItem value="privatSekolah">
-													<span translate="no" className="notranslate">
-														Privat Sekolah (1 Siswa 1 Tutor)
-													</span>
+													{t.privatSekolah}
 												</SelectItem>
 												<SelectItem value="privatDewasa">
-													<span translate="no" className="notranslate">
-														Privat Dewasa/Kerja (1 Siswa 1 Tutor)
-													</span>
+													{t.privatDewasa}
 												</SelectItem>
 											</SelectGroup>
 										</SelectContent>
@@ -276,9 +352,7 @@ export default function MuridForm({
 								name="cabangId"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className="text-sm" translate="no">
-											Pilih Cabang
-										</FormLabel>
+										<FormLabel className="text-sm">{t.pilihCabang}</FormLabel>
 										<FormControl>
 											<Select
 												onValueChange={field.onChange}
@@ -288,9 +362,8 @@ export default function MuridForm({
 												<SelectTrigger className="w-full">
 													<SelectValue
 														placeholder={
-															isLoadingCabang ? "Loading..." : "Pilih Cabang"
+															isLoadingCabang ? t.loading : t.pilihCabang
 														}
-														translate="no"
 													/>
 												</SelectTrigger>
 												<SelectContent>
@@ -316,15 +389,9 @@ export default function MuridForm({
 						name="asalSekolah"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm" translate="no">
-									Asal Sekolah
-								</FormLabel>
+								<FormLabel className="text-sm">{t.asalSekolah}</FormLabel>
 								<FormControl>
-									<Input
-										type="text"
-										placeholder="Masukkan asal sekolah"
-										{...field}
-									/>
+									<Input type="text" placeholder={t.masukkanAsal} {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -336,11 +403,9 @@ export default function MuridForm({
 						name="kelasSekolah"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm" translate="no">
-									Kelas Sekolah
-								</FormLabel>
+								<FormLabel className="text-sm">{t.kelasSekolah}</FormLabel>
 								<FormControl>
-									<Input type="text" placeholder="Kelas saat ini" {...field} />
+									<Input type="text" placeholder={t.kelasSaatIni} {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -354,9 +419,7 @@ export default function MuridForm({
 						name="sumberInfo"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm" translate="no">
-									Sumber Informasi
-								</FormLabel>
+								<FormLabel className="text-sm">{t.sumberInfo}</FormLabel>
 								<FormControl>
 									<div className="space-y-2">
 										<RadioGroup
@@ -376,36 +439,28 @@ export default function MuridForm({
 													value="Instagram"
 													id={`${idPrefix}-r1`}
 												/>
-												<Label htmlFor={`${idPrefix}-r1`} translate="no">
-													Instagram
-												</Label>
+												<Label htmlFor={`${idPrefix}-r1`}>Instagram</Label>
 											</div>
 											<div className="flex items-center gap-3">
 												<RadioGroupItem
 													value="WhatsApp"
 													id={`${idPrefix}-r2`}
 												/>
-												<Label htmlFor={`${idPrefix}-r2`} translate="no">
-													WhatsApp
-												</Label>
+												<Label htmlFor={`${idPrefix}-r2`}>WhatsApp</Label>
 											</div>
 											<div className="flex items-center gap-3">
 												<RadioGroupItem value="Teman" id={`${idPrefix}-r3`} />
-												<Label htmlFor={`${idPrefix}-r3`} translate="no">
-													Teman
-												</Label>
+												<Label htmlFor={`${idPrefix}-r3`}>{t.teman}</Label>
 											</div>
 											<div className="flex items-center gap-3">
 												<RadioGroupItem value="Other" id={`${idPrefix}-r4`} />
-												<Label htmlFor={`${idPrefix}-r4`} translate="no">
-													Other
-												</Label>
+												<Label htmlFor={`${idPrefix}-r4`}>{t.lainnya}</Label>
 											</div>
 										</RadioGroup>
 
 										{isOther && (
 											<Input
-												placeholder="Masukkan sumber informasi lain..."
+												placeholder={t.masukkanSumber}
 												value={otherValue}
 												onChange={(e) => {
 													const val = e.target.value;
@@ -429,12 +484,10 @@ export default function MuridForm({
 								name="deskripsi"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className="text-sm" translate="no">
-											Catatan Admin (Internal)
-										</FormLabel>
+										<FormLabel className="text-sm">{t.catatanAdmin}</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Catatan khusus mengenai murid ini..."
+												placeholder={t.masukkanCatatan}
 												{...field}
 												value={field.value ?? ""}
 											/>
@@ -457,12 +510,9 @@ export default function MuridForm({
 												/>
 											</FormControl>
 											<div className="space-y-1 leading-none">
-												<FormLabel translate="no">
-													Kenakan Biaya Pendaftaran (Rp 50.000)
-												</FormLabel>
+												<FormLabel>{t.biayaPendaftaran}</FormLabel>
 												<p className="text-muted-foreground text-sm">
-													Jika dicentang, tagihan pendaftaran akan otomatis
-													dibuat.
+													{t.deskripsiBiaya}
 												</p>
 											</div>
 										</FormItem>
@@ -476,7 +526,7 @@ export default function MuridForm({
 
 			<div className="mt-4">
 				<Button type="submit" size="sm" className="w-full" disabled={isPending}>
-					{isPending ? "Mengirim..." : "Kirim Pendaftaran"}
+					{isPending ? t.mengirim : t.kirim}
 				</Button>
 			</div>
 		</form>

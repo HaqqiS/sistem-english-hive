@@ -131,6 +131,7 @@ export const pembayaranRouter = createTRPCRouter({
 								Kelas: {
 									select: {
 										kodeKelas: true,
+										level: true,
 										hargaKelas: true,
 										cabang: {
 											select: {
@@ -201,6 +202,7 @@ export const pembayaranRouter = createTRPCRouter({
 								Kelas: {
 									select: {
 										kodeKelas: true,
+										level: true,
 										cabang: {
 											select: {
 												namaCabang: true,

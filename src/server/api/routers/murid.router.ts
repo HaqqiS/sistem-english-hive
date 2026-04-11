@@ -114,6 +114,15 @@ export const muridRouter = createTRPCRouter({
 								createdAt: true,
 								cabangId: true,
 								pendaftaranKelases: {
+									where: {
+										status: {
+											in: [
+												StatusPendaftaran.AKTIF,
+												StatusPendaftaran.TRIAL,
+												StatusPendaftaran.WAITING_LIST,
+											],
+										},
+									},
 									include: {
 										Kelas: {
 											select: {

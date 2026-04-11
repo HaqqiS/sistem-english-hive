@@ -261,6 +261,8 @@ export const columnsJatuhTempo = ({
 								noRekening,
 								bank,
 								atasNama,
+								row.original.pembayaranKe,
+								row.original.pendaftaranKelas.Kelas.level,
 							)}
 							target="_blank"
 						>

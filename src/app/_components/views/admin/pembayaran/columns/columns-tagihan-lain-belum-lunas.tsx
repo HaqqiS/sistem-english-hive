@@ -166,6 +166,8 @@ export const columnsTagihanLainBelumLunas = ({
 								noRekening,
 								bank,
 								atasNama,
+								null,
+								null,
 							)}
 							target="_blank"
 						>

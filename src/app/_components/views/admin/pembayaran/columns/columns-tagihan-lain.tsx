@@ -262,6 +262,8 @@ export const columnsTagihanLain = ({
 									noRekening,
 									bank,
 									atasNama,
+									null,
+									null,
 								)}
 								target="_blank"
 							>
@@ -698,6 +700,8 @@ export const columnsTagihanLainGlobal = ({
 									noRekening,
 									bank,
 									atasNama,
+									null,
+									null,
 								)}
 								target="_blank"
 							>

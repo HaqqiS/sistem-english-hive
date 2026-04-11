@@ -456,7 +456,7 @@ export const absenGuruRouter = createTRPCRouter({
 									in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL],
 								},
 							},
-							select: { id: true, muridId: true },
+							select: { id: true, muridId: true, status: true },
 						});
 
 						if (muridAktif.length > 0) {
@@ -486,17 +486,9 @@ export const absenGuruRouter = createTRPCRouter({
 							await handleAutoLevelUp({ tx, jadwal });
 						}
 
-						// === SERVICE CALL: CLASS COMPLETION (Trigger di Sesi 24) ===
-						const isFinished = await handleClassCompletion(
-							tx,
-							jadwal.kelasId,
-							totalSesi,
-						);
-
 						return {
 							newSesiId: newSesi.id,
 							absensiId: null,
-							isFinished: isFinished,
 						};
 					},
 					{ timeout: 20000 },

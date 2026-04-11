@@ -1,6 +1,7 @@
 import { Prisma, StatusAbsenMurid, StatusPendaftaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
+import { handleClassCompletion } from "@/server/services/kelas.service";
 import { processAutoBilling } from "@/server/services/pembayaran.service";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 export const absenMuridRouter = createTRPCRouter({
@@ -212,7 +213,6 @@ export const absenMuridRouter = createTRPCRouter({
 						where: {
 							muridId: muridId,
 							kelasId: sesi.kelasId,
-							status: StatusPendaftaran.AKTIF,
 						},
 					});
 
@@ -262,11 +262,27 @@ export const absenMuridRouter = createTRPCRouter({
 				});
 			}
 
-			await db.sesiPertemuanKelas.update({
-				where: { id: input.sesiId },
-				data: { isSelesaiAbsen: true },
-			});
+			// Melakukan update dan pengecekan kelulusan dalam satu transaksi
+			return await db.$transaction(async (tx) => {
+				// 1. Update status sesi
+				await tx.sesiPertemuanKelas.update({
+					where: { id: input.sesiId },
+					data: { isSelesaiAbsen: true },
+				});
 
-			return { success: true };
+				// 2. Hitung total sesi yang sudah dijalani oleh kelas ini
+				const totalSesi = await tx.sesiPertemuanKelas.count({
+					where: { kelasId: sesi.kelasId },
+				});
+
+				// 3. Pemicu logika penutupan kelas (Jika sesi >= 24)
+				const isFinished = await handleClassCompletion(
+					tx,
+					sesi.kelasId,
+					totalSesi,
+				);
+
+				return { success: true, isFinished };
+			});
 		}),
 });

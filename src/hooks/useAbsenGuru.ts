@@ -17,7 +17,7 @@ interface UseGuruOptions {
 
 	// Mutation callbacks
 	onSuccessCreate?: () => void;
-	onSuccessStartSesi?: (newSesiId: string, isFinished: boolean) => void;
+	onSuccessStartSesi?: (newSesiId: string) => void;
 	onSuccessCreateManual?: (data: TypeCreateManualAbsensiData) => void;
 	onSuccessUpdate?: () => void;
 	onSuccessUpdateStatus?: () => void;
@@ -101,17 +101,11 @@ export function useAbsenGuru(options?: UseGuruOptions) {
 			await apiUtils.jadwalKelas.getJadwalHariIniForGuru.invalidate();
 			await apiUtils.absenGuru.getAllAbsensi.invalidate();
 
-			if (data.isFinished) {
-				toast.success(
-					"Selamat! Kelas ini telah menyelesaikan semua pertemuan (Lulus Level).",
-				);
-			} else {
-				toast.success("Sesi berhasil dimulai!");
-			}
+			toast.success("Sesi berhasil dimulai!");
 
-			// Teruskan status isFinished ke komponen UI
+			// Teruskan ID sesi baru ke komponen UI
 			if (options?.onSuccessStartSesi) {
-				options.onSuccessStartSesi(data.newSesiId, data.isFinished);
+				options.onSuccessStartSesi(data.newSesiId);
 			}
 			options?.onSuccessCreate?.();
 		},

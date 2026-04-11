@@ -341,6 +341,11 @@ export const processAutoBilling = async (
 	// Hitung sisa pertemuan
 	const billingStatus = await calculateSisaPertemuan(db, pendaftaranId);
 
+	// [BARU] Guard: Hanya murid berstatus AKTIF yang boleh dibuatkan tagihan otomatis
+	if (billingStatus.pendaftaranData.status !== "AKTIF") {
+		return;
+	}
+
 	// === LOGIC AUTO-BILLING ===
 	if (billingStatus.needNewBill) {
 		// [BARU] CIRCUIT BREAKER: Cek apakah kelas sudah di fase akhir (Sesi 20++)?

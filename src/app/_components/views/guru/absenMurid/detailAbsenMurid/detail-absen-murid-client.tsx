@@ -71,9 +71,18 @@ export default function DetailAbsenMuridClient() {
 
 	const handleSelesai = async () => {
 		try {
-			await mutations.selesaikanAbsen.mutateAsync({ sesiId });
+			const result = await mutations.selesaikanAbsen.mutateAsync({ sesiId });
+
+			if (result.isFinished) {
+				toast.success("Selamat! Seluruh sesi kelas telah selesai.", {
+					description:
+						"Daftar pendaftaran dan jadwal otomatis ditutup karena telah mencapai batas sesi.",
+				});
+			} else {
+				toast.success("Sesi absensi selesai.");
+			}
+
 			router.push("/guru");
-			toast.success("Sesi absensi selesai dan diverifikasi.");
 		} catch (e) {
 			console.error(e);
 		}

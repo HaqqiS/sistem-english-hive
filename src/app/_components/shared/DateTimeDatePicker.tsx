@@ -33,7 +33,9 @@ export function DateTimeDatePicker({
 		if (!newDate) return;
 
 		// 1. Ambil jam & menit WITA yang ada (atau 'Now' jika baru)
-		const currentDateTime = value ? dayjs(value).tz(TIMEZONE_BISNIS) : dayjs().tz(TIMEZONE_BISNIS);
+		const currentDateTime = value
+			? dayjs(value).tz(TIMEZONE_BISNIS)
+			: dayjs().tz(TIMEZONE_BISNIS);
 
 		// 2. Gabungkan Tanggal baru dengan Jam & Menit lama/sekarang
 		const localDateTime = dayjs(newDate)

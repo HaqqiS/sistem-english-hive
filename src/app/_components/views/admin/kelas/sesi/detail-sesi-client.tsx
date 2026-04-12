@@ -15,7 +15,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { DateTimeDatePicker } from "@/app/_components/shared/DateTimeDatePicker";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -38,21 +37,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
@@ -71,6 +60,7 @@ import {
 import { useSesiPertemuan } from "@/hooks/useSesiPertemuan";
 import { api } from "@/trpc/react";
 import { formatToWITA } from "@/utils/dateUtils";
+import EditSesiDialog from "./edit-sesi-dialog";
 import TambahSesiPertemuan from "./tambah-sesi-pertemuan";
 
 /**
@@ -98,8 +88,7 @@ export default function DetailSesiClient() {
 	// Dialog State
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [editingSesiId, setEditingSesiId] = useState<string | null>(null);
-	// Format string untuk input datetime-local: "YYYY-MM-DDTHH:mm"
-	const [editDateValue, setEditDateValue] = useState<Date | null>(null);
+	const [initialEditDate, setInitialEditDate] = useState<Date | null>(null);
 
 	// Delete Alert State
 	const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -133,24 +122,8 @@ export default function DetailSesiClient() {
 
 	const handleEditDateClick = (sesiId: string, currentDate: Date) => {
 		setEditingSesiId(sesiId);
-		setEditDateValue(currentDate);
+		setInitialEditDate(currentDate);
 		setIsEditDialogOpen(true);
-	};
-
-	const handleSaveDate = async () => {
-		if (!editingSesiId || !editDateValue) return;
-
-		try {
-			await mutations.update.mutateAsync({
-				id: editingSesiId,
-				tanggalWaktu: editDateValue,
-			});
-
-			setIsEditDialogOpen(false);
-			setEditingSesiId(null);
-		} catch (_error) {
-			// Error handled in hook
-		}
 	};
 
 	const handleDeleteClick = (sesiId: string) => {
@@ -326,18 +299,20 @@ export default function DetailSesiClient() {
 								<span className="sm:hidden">Detail</span>
 							</Link>
 						</Button>
-						<TambahSesiPertemuan
-							kelasId={kelasId}
-							cabangId={dataSummary?.kelasInfo?.cabangId}
-						/>
 					</div>
 				</HeaderActionPortal>
-				<Card className="flex flex-col items-center justify-center p-10">
-					<FileText className="text-muted-foreground h-16 w-16" />
-					<CardTitle className="mt-4">Belum Ada Sesi</CardTitle>
-					<CardDescription className="mt-2 text-center">
-						Belum ada sesi pertemuan yang tercatat untuk kelas ini.
-					</CardDescription>
+				<Card className="flex flex-col items-center justify-center p-10 gap-6">
+					<div className="flex flex-col items-center text-center">
+						<FileText className="text-muted-foreground h-16 w-16" />
+						<CardTitle className="mt-4">Belum Ada Sesi</CardTitle>
+						<CardDescription className="mt-2 text-center">
+							Belum ada sesi pertemuan yang tercatat untuk kelas ini.
+						</CardDescription>
+					</div>
+					<TambahSesiPertemuan
+						kelasId={kelasId}
+						cabangId={dataSummary?.kelasInfo?.cabangId}
+					/>
 				</Card>
 			</>
 		);
@@ -362,21 +337,23 @@ export default function DetailSesiClient() {
 						<span className="hidden sm:inline">Export PDF Presensi</span>
 						<span className="sm:hidden">Export</span>
 					</Button>
+				</div>
+			</HeaderActionPortal>
+			<Card>
+				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+					<div className="space-y-1">
+						<CardTitle>Detail Sesi: {kelasInfo.kodeKelas}</CardTitle>
+						<CardDescription>
+							Guru Aktif Saat Ini:{" "}
+							<span className="text-foreground font-medium">
+								{kelasInfo.guruAktif}
+							</span>
+						</CardDescription>
+					</div>
 					<TambahSesiPertemuan
 						kelasId={kelasId}
 						cabangId={kelasInfo.cabangId}
 					/>
-				</div>
-			</HeaderActionPortal>
-			<Card>
-				<CardHeader>
-					<CardTitle>Detail Sesi: {kelasInfo.kodeKelas}</CardTitle>
-					<CardDescription>
-						Guru Aktif Saat Ini:{" "}
-						<span className="text-foreground font-medium">
-							{kelasInfo.guruAktif}
-						</span>
-					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="overflow-x-auto rounded-md border pb-4">
@@ -590,43 +567,14 @@ export default function DetailSesiClient() {
 					</div>
 				</CardContent>
 
-				{/* Dialog Edit Sesi */}
-				<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Edit Sesi Pertemuan</DialogTitle>
-							<DialogDescription>
-								Ubah tanggal dan waktu untuk sesi pertemuan ini.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="grid gap-4 py-4">
-							<div className="flex flex-col gap-2">
-								<Label htmlFor="datetime">Tanggal Sesi</Label>
-								<DateTimeDatePicker
-									value={editDateValue}
-									onChange={(date) => setEditDateValue(date)}
-								/>
-							</div>
-						</div>
-						<DialogFooter>
-							<Button
-								variant="outline"
-								onClick={() => setIsEditDialogOpen(false)}
-							>
-								Batal
-							</Button>
-							<Button
-								onClick={handleSaveDate}
-								disabled={mutations.update.isPending}
-							>
-								{mutations.update.isPending && (
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								)}
-								Simpan Perubahan
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
+				{/* Dialog Edit Sesi (Pindahan) */}
+				<EditSesiDialog
+					open={isEditDialogOpen}
+					onOpenChange={setIsEditDialogOpen}
+					sesiId={editingSesiId}
+					initialDate={initialEditDate}
+					kelasId={kelasId}
+				/>
 
 				{/* Alert Dialog Konfirmasi Hapus Sesi */}
 				<AlertDialog

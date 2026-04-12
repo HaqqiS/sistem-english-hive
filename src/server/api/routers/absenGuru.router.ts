@@ -10,8 +10,8 @@ import z from "zod";
 import { UserRole } from "@/server/auth/type";
 import { getPeriodeGaji } from "@/server/services/gaji.service";
 import {
+	createSesiPertemuanCore,
 	handleAutoLevelUp,
-	handleClassCompletion,
 } from "@/server/services/kelas.service";
 import { processAutoBilling } from "@/server/services/pembayaran.service";
 import {
@@ -362,10 +362,7 @@ export const absenGuruRouter = createTRPCRouter({
 								id: true,
 								level: true,
 								cohortId: true,
-								// jenisKelas: true,
-								// jenisKelas: true,
 								jenisKelasRel: { select: { nama: true } },
-								// tipe: true,
 								grup: true,
 								hargaKelas: true,
 								deskripsi: true,
@@ -389,54 +386,35 @@ export const absenGuruRouter = createTRPCRouter({
 							"Anda tidak berhak memulai sesi untuk kelas di cabang lain.",
 					});
 				}
-
 				// 2. Tentukan ruangId yang akan dipakai
 				// Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
 				const finalRuangId = overrideRuangId ?? jadwal.ruangId;
 				// 3. Tentukan tanggalWaktu (REALITA)
 				// Gunakan Waktu WITA saat ini
 				const tanggalWaktuSesi = dayjs().tz(TIMEZONE_BISNIS).toDate();
-				const hariIniStart = dayjs()
-					.tz(TIMEZONE_BISNIS)
-					.startOf("day")
-					.toDate();
-				const hariIniEnd = dayjs().tz(TIMEZONE_BISNIS).endOf("day").toDate();
 
-				// 4. Mencegah pembuatan sesi ganda di hari yang sama untuk jadwal yang sama (Race condition / Double Click)
-				const sesiExistingHariIni = await db.sesiPertemuanKelas.findFirst({
-					where: {
-						jadwalKelasId: jadwalKelasId,
-						tanggalWaktu: {
-							gte: hariIniStart,
-							lte: hariIniEnd,
-						},
-					},
-					select: { id: true },
-				});
-
-				if (sesiExistingHariIni) {
-					// Jika sesi untuk jadwal ini sudah dibuat hari ini, langsung return isFinished false
-					// Mencegah double click membuat sesi berulang-ulang
-					return {
-						newSesiId: sesiExistingHariIni.id,
-						absensiId: null,
-						isFinished: false,
-					};
-				}
-
-				// 5. Transaction: Buat Sesi -> Cek Level Up -> Cek Finish
+				// 5. Transaction: Buat Sesi -> Buat Absensi -> Cek Level Up -> Cek Finish
 				const result = await db.$transaction(
 					async (tx) => {
-						// 4a. Buat SesiPertemuanKelas (Realisasi)
-						const newSesi = await tx.sesiPertemuanKelas.create({
-							data: {
+						// 4a. Buat SesiPertemuanKelas (Realisasi) via Core Service
+						const { sesi: newSesi, isExisting } = await createSesiPertemuanCore(
+							tx,
+							{
 								kelasId: jadwal.kelasId,
 								ruangId: finalRuangId,
 								tanggalWaktu: tanggalWaktuSesi,
 								jadwalKelasId: jadwalKelasId,
+								isTeacher: true,
 							},
-							select: { id: true },
-						});
+						);
+
+						if (isExisting) {
+							return {
+								newSesiId: newSesi.id,
+								absensiId: null,
+								isFinished: false,
+							};
+						}
 
 						// 4b. Buat AbsensiGuru
 						await tx.absensiGuru.create({
@@ -474,16 +452,6 @@ export const absenGuruRouter = createTRPCRouter({
 									processAutoBilling(tx, m.id, jadwal.kelasId),
 								),
 							);
-						}
-
-						// Hitung Total Sesi (Termasuk yang baru dibuat)
-						const totalSesi = await tx.sesiPertemuanKelas.count({
-							where: { kelasId: jadwal.kelasId },
-						});
-
-						// === SERVICE CALL: LEVEL UP (Trigger di Sesi 20) ===
-						if (totalSesi === 20) {
-							await handleAutoLevelUp({ tx, jadwal });
 						}
 
 						return {
@@ -949,7 +917,7 @@ export const absenGuruRouter = createTRPCRouter({
 				// Plan said "Trigger handleAutoLevelUp... logic".
 				// Let's try to do it best effort.
 
-				if (totalSesi === 20 || totalSesi === 24) {
+				if (totalSesi === 20) {
 					// We need full jadwal for auto level up
 					const fullJadwal = await tx.jadwalKelas.findUnique({
 						where: { id: jadwal.id },
@@ -963,11 +931,7 @@ export const absenGuruRouter = createTRPCRouter({
 					});
 
 					if (fullJadwal) {
-						if (totalSesi === 20) {
-							await handleAutoLevelUp({ tx, jadwal: fullJadwal });
-						}
-						// Class Completion (Sesi 24)
-						await handleClassCompletion(tx, kelasId, totalSesi);
+						await handleAutoLevelUp({ tx, jadwal: fullJadwal });
 					}
 				}
 

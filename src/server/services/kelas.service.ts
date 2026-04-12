@@ -5,7 +5,8 @@ import {
 	StatusPendaftaran,
 } from "@prisma/client";
 import { BATAS_SESI, JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
-import dayjs from "@/utils/dateUtils";
+import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
+import { TRPCError } from "@trpc/server";
 
 // Tipe untuk Transaksi Prisma (agar bisa dipakai di dalam tx)
 type PrismaTx = Omit<
@@ -290,4 +291,120 @@ export const handleClassCompletion = async (
 		return true; // Selesai
 	}
 	return false; // Belum selesai
+};
+
+/**
+ * Core Service untuk membuat Sesi Pertemuan Kelas (Internal use in mutations)
+ */
+export const createSesiPertemuanCore = async (
+	tx: PrismaTx,
+	input: {
+		kelasId: string;
+		ruangId: string;
+		tanggalWaktu: Date;
+		jadwalKelasId?: string;
+		isTeacher?: boolean; // Label for special logic (double session check)
+	},
+) => {
+	const { kelasId, ruangId, tanggalWaktu, jadwalKelasId, isTeacher } = input;
+
+	// 1. Validasi Kepemilikan & Konsistensi (Cabang)
+	const [kelas, ruang] = await Promise.all([
+		tx.kelas.findUnique({
+			where: { id: kelasId },
+			select: { cabangId: true, kodeKelas: true },
+		}),
+		tx.ruang.findUnique({
+			where: { id: ruangId },
+			select: { cabangId: true, namaRuang: true },
+		}),
+	]);
+
+	if (!kelas || !ruang) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "Kelas atau Ruang tidak ditemukan.",
+		});
+	}
+
+	if (kelas.cabangId !== ruang.cabangId) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `Konflik Cabang: Kelas ${kelas.kodeKelas} dan Ruang ${ruang.namaRuang} berbeda cabang.`,
+		});
+	}
+
+	// 2. Cek Total Sesi (Maksimal 24)
+	const totalSesiSebelum = await tx.sesiPertemuanKelas.count({
+		where: { kelasId: kelasId },
+	});
+
+	if (totalSesiSebelum >= BATAS_SESI) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: `Gagal membuat sesi: Kelas ini sudah mencapai batas maksimal ${BATAS_SESI} sesi.`,
+		});
+	}
+
+	// 3. Double-Click Protection (Khusus Guru/Jadwal)
+	if (isTeacher && jadwalKelasId) {
+		const hariIniStart = dayjs(tanggalWaktu)
+			.tz(TIMEZONE_BISNIS)
+			.startOf("day")
+			.toDate();
+		const hariIniEnd = dayjs(tanggalWaktu)
+			.tz(TIMEZONE_BISNIS)
+			.endOf("day")
+			.toDate();
+
+		const sesiExistingHariIni = await tx.sesiPertemuanKelas.findFirst({
+			where: {
+				jadwalKelasId: jadwalKelasId,
+				tanggalWaktu: {
+					gte: hariIniStart,
+					lte: hariIniEnd,
+				},
+			},
+			select: { id: true },
+		});
+
+		if (sesiExistingHariIni) {
+			// Perilaku "Toleran": Kembalikan sesi yang sudah ada
+			return {
+				sesi: sesiExistingHariIni,
+				isExisting: true,
+			};
+		}
+	}
+
+	// 4. Create Sesi
+	const newSesi = await tx.sesiPertemuanKelas.create({
+		data: {
+			kelasId,
+			ruangId,
+			tanggalWaktu,
+			jadwalKelasId,
+		},
+	});
+
+	// 5. Triggers
+	const totalSesiSetelah = totalSesiSebelum + 1;
+
+	// Level Up at Sesi 20
+	if (totalSesiSetelah === 20) {
+		// handleAutoLevelUp butuh 'jadwal' object. Jika tidak ada jadwalKelasId, kita buat mock minimal.
+		await handleAutoLevelUp({
+			tx,
+			jadwal: {
+				kelasId,
+				ruangId,
+				kelas: { id: kelasId },
+			},
+		});
+	}
+
+	return {
+		sesi: newSesi,
+		isExisting: false,
+	};
 };

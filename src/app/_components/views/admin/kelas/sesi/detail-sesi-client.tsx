@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DateTimeDatePicker } from "@/app/_components/shared/DateTimeDatePicker";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -69,11 +70,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useSesiPertemuan } from "@/hooks/useSesiPertemuan";
 import { api } from "@/trpc/react";
-import dayjs, {
-	convertWITAtoUTC,
-	formatToWITA,
-	TIMEZONE_BISNIS,
-} from "@/utils/dateUtils";
+import { formatToWITA } from "@/utils/dateUtils";
+import TambahSesiPertemuan from "./tambah-sesi-pertemuan";
 
 /**
  * Helper untuk mendapatkan teks dan varian badge berdasarkan status absensi
@@ -101,7 +99,7 @@ export default function DetailSesiClient() {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [editingSesiId, setEditingSesiId] = useState<string | null>(null);
 	// Format string untuk input datetime-local: "YYYY-MM-DDTHH:mm"
-	const [editDateValue, setEditDateValue] = useState<string>("");
+	const [editDateValue, setEditDateValue] = useState<Date | null>(null);
 
 	// Delete Alert State
 	const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
@@ -135,11 +133,7 @@ export default function DetailSesiClient() {
 
 	const handleEditDateClick = (sesiId: string, currentDate: Date) => {
 		setEditingSesiId(sesiId);
-		// Konversi Date ke format local string untuk input (WITA)
-		const formatted = dayjs(currentDate)
-			.tz(TIMEZONE_BISNIS)
-			.format("YYYY-MM-DDTHH:mm");
-		setEditDateValue(formatted);
+		setEditDateValue(currentDate);
 		setIsEditDialogOpen(true);
 	};
 
@@ -147,12 +141,9 @@ export default function DetailSesiClient() {
 		if (!editingSesiId || !editDateValue) return;
 
 		try {
-			// Konversi balik dari WITA string ke UTC Date
-			const newDate = convertWITAtoUTC(editDateValue);
-
 			await mutations.update.mutateAsync({
 				id: editingSesiId,
-				tanggalWaktu: newDate,
+				tanggalWaktu: editDateValue,
 			});
 
 			setIsEditDialogOpen(false);
@@ -323,13 +314,32 @@ export default function DetailSesiClient() {
 	// 4. Empty State (Data ada tapi tidak ada sesi)
 	if (!dataSummary || dataSummary.columnData.length === 0) {
 		return (
-			<Card className="flex flex-col items-center justify-center p-10">
-				<FileText className="text-muted-foreground h-16 w-16" />
-				<CardTitle className="mt-4">Belum Ada Sesi</CardTitle>
-				<CardDescription className="mt-2 text-center">
-					Belum ada sesi pertemuan yang tercatat untuk kelas ini.
-				</CardDescription>
-			</Card>
+			<>
+				<HeaderActionPortal>
+					<div className="flex items-center gap-2">
+						<Button variant="outline" size="sm" asChild>
+							<Link href={`/admin/kelas/detail/${kelasId}`}>
+								<ArrowLeft className="mr-2 h-4 w-4" />
+								<span className="hidden sm:inline">
+									Kembali ke Detail Kelas
+								</span>
+								<span className="sm:hidden">Detail</span>
+							</Link>
+						</Button>
+						<TambahSesiPertemuan
+							kelasId={kelasId}
+							cabangId={dataSummary?.kelasInfo?.cabangId}
+						/>
+					</div>
+				</HeaderActionPortal>
+				<Card className="flex flex-col items-center justify-center p-10">
+					<FileText className="text-muted-foreground h-16 w-16" />
+					<CardTitle className="mt-4">Belum Ada Sesi</CardTitle>
+					<CardDescription className="mt-2 text-center">
+						Belum ada sesi pertemuan yang tercatat untuk kelas ini.
+					</CardDescription>
+				</Card>
+			</>
 		);
 	}
 
@@ -352,6 +362,10 @@ export default function DetailSesiClient() {
 						<span className="hidden sm:inline">Export PDF Presensi</span>
 						<span className="sm:hidden">Export</span>
 					</Button>
+					<TambahSesiPertemuan
+						kelasId={kelasId}
+						cabangId={kelasInfo.cabangId}
+					/>
 				</div>
 			</HeaderActionPortal>
 			<Card>
@@ -580,22 +594,17 @@ export default function DetailSesiClient() {
 				<Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
 					<DialogContent>
 						<DialogHeader>
-							<DialogTitle>Edit Jadwal Sesi</DialogTitle>
+							<DialogTitle>Edit Sesi Pertemuan</DialogTitle>
 							<DialogDescription>
 								Ubah tanggal dan waktu untuk sesi pertemuan ini.
 							</DialogDescription>
 						</DialogHeader>
 						<div className="grid gap-4 py-4">
-							<div className="grid grid-cols-4 items-center gap-4">
-								<Label htmlFor="datetime" className="text-right">
-									Waktu
-								</Label>
-								<Input
-									id="datetime"
-									type="datetime-local"
+							<div className="flex flex-col gap-2">
+								<Label htmlFor="datetime">Tanggal Sesi</Label>
+								<DateTimeDatePicker
 									value={editDateValue}
-									onChange={(e) => setEditDateValue(e.target.value)}
-									className="col-span-3"
+									onChange={(date) => setEditDateValue(date)}
 								/>
 							</div>
 						</div>

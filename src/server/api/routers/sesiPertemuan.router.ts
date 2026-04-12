@@ -1,7 +1,7 @@
 import { Prisma, type StatusAbsenMurid } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
-import { handleClassCompletion } from "@/server/services/kelas.service";
+import { createSesiPertemuanCore } from "@/server/services/kelas.service";
 import {
 	deleteSesiPertemuanSchema,
 	serverSesiPertemuanSchema,
@@ -173,6 +173,7 @@ export const sesiPertemuanRouter = createTRPCRouter({
 			return {
 				kelasInfo: {
 					kodeKelas: kelasInfo.kodeKelas,
+					cabangId: kelasInfo.cabangId,
 					guruAktif: kelasInfo.historyGuruKelases[0]?.guru.name ?? "Belum ada",
 				},
 				columnData, // Daftar kolom (sesi)
@@ -184,61 +185,37 @@ export const sesiPertemuanRouter = createTRPCRouter({
 		.input(serverSesiPertemuanSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
+			const { kelasId, ruangId, tanggalWaktu } = input;
 
-			// 1. Validasi Kepemilikan & Konsistensi
-			const [kelas, ruang] = await Promise.all([
-				db.kelas.findUnique({
-					where: { id: input.kelasId },
-					select: { cabangId: true, kodeKelas: true },
-				}),
-				db.ruang.findUnique({
-					where: { id: input.ruangId },
-					select: { cabangId: true, namaRuang: true },
-				}),
-			]);
-
-			if (!kelas || !ruang) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Kelas atau Ruang tidak ditemukan.",
+			// 1. Validasi Kepemilikan Cabang (Router level)
+			if (allowedCabangId) {
+				const kelas = await db.kelas.findUnique({
+					where: { id: kelasId },
+					select: { cabangId: true },
 				});
-			}
-
-			if (kelas.cabangId !== ruang.cabangId) {
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message: `Konflik Cabang: Kelas ${kelas.kodeKelas} dan Ruang ${ruang.namaRuang} berbeda cabang.`,
-				});
-			}
-
-			if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Anda tidak berhak membuat sesi di cabang lain.",
-				});
+				if (kelas && kelas.cabangId !== allowedCabangId) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Anda tidak berhak membuat sesi di cabang lain.",
+					});
+				}
 			}
 
 			try {
-				const newSesi = await db.sesiPertemuanKelas.create({
-					data: {
-						kelasId: input.kelasId,
-						ruangId: input.ruangId,
-						tanggalWaktu: input.tanggalWaktu,
-					},
+				const result = await db.$transaction(async (tx) => {
+					const { sesi } = await createSesiPertemuanCore(tx, {
+						kelasId,
+						ruangId,
+						tanggalWaktu,
+						isTeacher: false, // Admin creation
+					});
+					return sesi;
 				});
 
-				// Trigger: Cek apakah ini sesi ke-24
-				const totalSesi = await db.sesiPertemuanKelas.count({
-					where: { kelasId: input.kelasId },
-				});
-
-				if (totalSesi >= 24) {
-					// Panggil logic completion dari service (ubah status, matikan jadwal, dsb)
-					await handleClassCompletion(db, input.kelasId, totalSesi);
-				}
-
-				return newSesi;
+				return result;
 			} catch (error) {
+				if (error instanceof TRPCError) throw error;
+
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
 					// P2003: Foreign Key (Kelas atau Ruang tidak valid)
 					if (error.code === "P2003") {

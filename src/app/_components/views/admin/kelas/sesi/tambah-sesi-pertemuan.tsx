@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
 import { Button } from "@/components/ui/button";
@@ -14,17 +14,30 @@ import {
 } from "@/types/sesiPertemuan.type";
 import SesiPertemuanForm from "./sesi-pertemuan-form";
 
-export default function TambahSesiPertemuan() {
+export default function TambahSesiPertemuan({
+	kelasId,
+	cabangId,
+}: {
+	kelasId?: string;
+	cabangId?: string;
+}) {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const form = useForm<TypeClientSesiPertemuanSchema>({
 		resolver: zodResolver(clientSesiPertemuanSchema),
 		defaultValues: {
-			kelasId: "",
+			kelasId: kelasId ?? "",
 			ruangId: "",
-			tanggalWaktu: undefined,
+			tanggalWaktu: new Date(),
 		},
 	});
+
+	// Sync kelasId if it changes
+	useEffect(() => {
+		if (kelasId) {
+			form.setValue("kelasId", kelasId);
+		}
+	}, [kelasId, form]);
 
 	const { mutations } = useSesiPertemuan({
 		onSuccessCreate: () => {
@@ -46,23 +59,23 @@ export default function TambahSesiPertemuan() {
       </Button> */}
 
 			<AddDrawer
-				title="Tambah Jadwal Sesi"
-				description="Tambahkan Jadwal Sesi baru ke sistem"
+				title="Tambah Sesi"
+				description="Tambahkan Sesi baru ke sistem"
 				onSubmit={form.handleSubmit(onSubmit)}
 				isPending={mutations.create.isPending}
-				submitText="Tambah Jadwal Sesi"
+				submitText="Tambah Sesi"
 				cancelText="Batal"
 				trigger={
 					<Button>
 						<Plus className="mr-2 h-4 w-4" />
-						Tambah Jadwal Sesi
+						Tambah Sesi
 					</Button>
 				}
 				isOpen={isOpen}
 				onOpenChange={setIsOpen}
 			>
 				<Form {...form}>
-					<SesiPertemuanForm onSubmit={onSubmit} />
+					<SesiPertemuanForm onSubmit={onSubmit} cabangId={cabangId} />
 				</Form>
 			</AddDrawer>
 		</>

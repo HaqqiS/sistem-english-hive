@@ -1,9 +1,6 @@
 "use client";
-import { ChevronDownIcon } from "lucide-react";
-import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { FormDateTimeDatePicker } from "@/app/_components/shared/FormDateTimeDatePicker";
 import {
 	FormControl,
 	FormField,
@@ -11,11 +8,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import {
 	Select,
 	SelectContent,
@@ -27,21 +19,26 @@ import {
 import { useKelas } from "@/hooks/useKelas";
 import { useRuang } from "@/hooks/useRuang";
 import type { TypeClientSesiPertemuanSchema } from "@/types/sesiPertemuan.type";
-import dayjs, { JAM_MULAI_KELAS, TIMEZONE_BISNIS } from "@/utils/dateUtils";
 
 interface SesiPertemuanFormProps {
 	onSubmit: (data: TypeClientSesiPertemuanSchema) => void;
+	cabangId?: string;
 }
 
 export default function SesiPertemuanForm({
 	onSubmit,
+	cabangId,
 }: SesiPertemuanFormProps) {
 	const form = useFormContext<TypeClientSesiPertemuanSchema>();
 
-	const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-
-	const { dataKelasAktif: dataKelas } = useKelas();
-	const { data: dataRuang } = useRuang();
+	const { dataKelasAktif: dataKelas } = useKelas({
+		enableQueryGetKelasAktif: true,
+		filterCabang: cabangId,
+	});
+	const { data: dataRuang } = useRuang({
+		enableQuery: true,
+		filterCabang: cabangId,
+	});
 
 	return (
 		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -99,128 +96,11 @@ export default function SesiPertemuanForm({
 				)}
 			/>
 
-			<FormField
+			<FormDateTimeDatePicker
 				control={form.control}
 				name="tanggalWaktu"
-				render={({ field }) => (
-					<FormItem className="flex flex-col">
-						<FormLabel>Tanggal & Waktu Sesi (WITA)</FormLabel>
-						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							{/* === INPUT TANGGAL === */}
-							<Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-								<PopoverTrigger asChild>
-									<Button variant="outline" className="w-full justify-between">
-										{field.value
-											? dayjs(field.value)
-													.tz(TIMEZONE_BISNIS)
-													.format("DD MMMM YYYY")
-											: "Pilih Tanggal"}
-										<ChevronDownIcon />
-									</Button>
-
-									{/* <Button
-                    variant="outline"
-                    id="date"
-                    className="w-full justify-between"
-                  >
-                    {field.value
-                      ? dayjs(field.value)
-                          .tz(TIMEZONE_BISNIS)
-                          .format("DD MMMM YYYY")
-                      : "Pilih Tanggal"}
-                    <ChevronDownIcon />
-                  </Button> */}
-								</PopoverTrigger>
-								<PopoverContent className="w-auto p-0" align="start">
-									<Calendar
-										mode="single"
-										selected={field.value ? new Date(field.value) : undefined}
-										onSelect={(newDate) => {
-											if (!newDate) return;
-
-											// === LANGKAH 3 (KONVERSI) ===
-											// 1. Ambil jam & menit WITA yang ada
-											const currentTime = field.value
-												? dayjs(field.value).tz(TIMEZONE_BISNIS)
-												: dayjs().tz(TIMEZONE_BISNIS).hour(16).minute(0); // Default ke 16:00
-
-											// 2. Buat tanggal-waktu LOKAL (WITA) baru
-											const localDateTime = dayjs(newDate)
-												.hour(currentTime.hour())
-												.minute(currentTime.minute())
-												.second(0);
-
-											// 3. Konversi ke Date object (UTC) untuk disimpan
-											const dateToSave = dayjs
-												.tz(
-													localDateTime.format("YYYY-MM-DDTHH:mm:ss"),
-													TIMEZONE_BISNIS,
-												)
-												.toDate();
-
-											field.onChange(dateToSave);
-											setIsCalendarOpen(false);
-										}}
-										initialFocus
-									/>
-								</PopoverContent>
-							</Popover>
-
-							{/* === INPUT JAM === */}
-							<Select
-								value={
-									field.value
-										? dayjs(field.value).tz(TIMEZONE_BISNIS).format("HH:mm")
-										: ""
-								}
-								onValueChange={(newTime) => {
-									// --- PERBAIKAN DI SINI ---
-									// 'newTime' adalah "HH:mm", e.g., "16:00"
-									// Kita pisahkan dan konversi, beri fallback 0 jika gagal
-									const hour = Number(newTime.split(":")[0]) || 0;
-									const minute = Number(newTime.split(":")[1]) || 0;
-									// Tipe 'hour' dan 'minute' sekarang dijamin 'number'
-
-									// === LANGKAH 3 (KONVERSI) ===
-									// 1. Ambil tanggal WITA yang ada
-									const currentDate = field.value
-										? dayjs(field.value).tz(TIMEZONE_BISNIS)
-										: dayjs().tz(TIMEZONE_BISNIS);
-
-									// 2. Buat tanggal-waktu LOKAL (WITA) baru
-									const localDateTime = currentDate
-										.hour(hour)
-										.minute(minute)
-										.second(0);
-
-									// 3. Konversi ke Date object (UTC) untuk disimpan
-									const dateToSave = dayjs
-										.tz(
-											localDateTime.format("YYYY-MM-DDTHH:mm:ss"),
-											TIMEZONE_BISNIS,
-										)
-										.toDate();
-
-									field.onChange(dateToSave);
-								}}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Pilih Waktu" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectGroup>
-										{JAM_MULAI_KELAS.map((jam) => (
-											<SelectItem key={jam} value={jam}>
-												{jam}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						</div>
-						<FormMessage />
-					</FormItem>
-				)}
+				label="Tanggal"
+				placeholder="Pilih Tanggal"
 			/>
 		</form>
 	);

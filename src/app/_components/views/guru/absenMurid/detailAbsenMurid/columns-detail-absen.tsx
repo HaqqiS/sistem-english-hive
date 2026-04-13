@@ -58,7 +58,7 @@ export const createDetailAbsenMuridColumns = ({
 				<div className="flex items-center gap-2">
 					<div className="font-medium">{row.original.namaLengkap}</div>
 					{row.original.statusPendaftaran === "TRIAL" && (
-						<Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+						<Badge className="bg-(--badge-trial-bg) text-(--badge-trial-fg) border-none text-[10px] px-1.5 py-0">
 							Trial
 						</Badge>
 					)}

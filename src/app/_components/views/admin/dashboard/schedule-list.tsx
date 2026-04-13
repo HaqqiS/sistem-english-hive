@@ -18,17 +18,17 @@ import dayjs from "@/utils/dateUtils";
 const getBadgeKelasStatusTheme = (status?: StatusKelas | null) => {
 	switch (status) {
 		case StatusKelas.RUNNING:
-			return "bg-primary text-primary-foreground";
+			return "bg-(--badge-running-bg) text-(--badge-running-fg)";
 		case StatusKelas.WAITING:
-			return "bg-yellow-500 text-yellow-50 dark:bg-yellow-500 dark:text-yellow-50";
+			return "bg-(--badge-waiting-bg) text-(--badge-waiting-fg)";
 		case StatusKelas.TRIAL:
-			return "bg-purple-500 text-white dark:bg-purple-500 dark:text-white";
+			return "bg-(--badge-trial-bg) text-(--badge-trial-fg)";
 		case StatusKelas.LEVEL_UP:
-			return "bg-teal-500 text-white dark:bg-teal-500 dark:text-white";
+			return "bg-(--badge-level-up-bg) text-(--badge-level-up-fg)";
 		case StatusKelas.COMPLETED:
-			return "bg-slate-500 text-white dark:bg-slate-500 dark:text-white";
+			return "bg-(--badge-completed-bg) text-(--badge-completed-fg)";
 		default:
-			return "bg-blue-500 text-white dark:bg-blue-500 dark:text-white";
+			return "bg-blue-500 text-white";
 	}
 };
 

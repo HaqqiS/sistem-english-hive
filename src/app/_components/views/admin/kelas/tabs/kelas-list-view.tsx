@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
 import { formatToWITA } from "@/utils/dateUtils";
 import { toRupiah } from "@/utils/toRupiah";
@@ -165,7 +166,7 @@ export function KelasListView({
 															return (
 																<Badge
 																	variant="default"
-																	className="bg-green-500 hover:bg-green-600 flex items-center justify-center gap-0 p-1.5"
+																	className="bg-(--badge-sudah-dipesan-bg) text-(--badge-sudah-dipesan-fg) flex items-center justify-center gap-0 border-none p-1.5"
 																	title="Sudah Dipesan"
 																>
 																	<BookOpenCheck className="h-4 w-4" />
@@ -178,7 +179,7 @@ export function KelasListView({
 															return (
 																<Badge
 																	variant="secondary"
-																	className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center gap-0 p-1.5"
+																	className="bg-(--badge-menunggu-persetujuan-bg) text-(--badge-menunggu-persetujuan-fg) flex items-center justify-center gap-0 border-none p-1.5"
 																	title="Menunggu Persetujuan Order Buku"
 																>
 																	<Clock className="h-4 w-4" />
@@ -189,7 +190,7 @@ export function KelasListView({
 															return (
 																<Badge
 																	variant="destructive"
-																	className="flex items-center justify-center gap-0 p-1.5"
+																	className="bg-(--badge-dibatalkan-bg) text-(--badge-dibatalkan-fg) flex items-center justify-center gap-0 border-none p-1.5"
 																	title="Order Buku Dibatalkan"
 																>
 																	<BookX className="h-4 w-4" />
@@ -199,7 +200,7 @@ export function KelasListView({
 														return (
 															<Badge
 																variant="outline"
-																className="flex items-center justify-center gap-0 p-1.5 text-muted-foreground"
+																className="bg-(--badge-belum-diproses-bg) text-(--badge-belum-diproses-fg) flex items-center justify-center gap-0 border-none p-1.5"
 																title="Belum Diproses"
 															>
 																<BookX className="h-4 w-4" />
@@ -289,34 +290,39 @@ export function KelasListView({
 																		<div>
 																			{(() => {
 																				const status = p.status;
-																				let variant:
-																					| "default"
-																					| "secondary"
-																					| "destructive"
-																					| "outline" = "default";
 																				let label = "Aktif";
+																				let badgeClass = "";
 
 																				switch (status) {
 																					case StatusPendaftaran.AKTIF:
-																						variant = "default";
 																						label = "Aktif";
+																						badgeClass =
+																							"bg-(--badge-aktif-bg) text-(--badge-aktif-fg)";
 																						break;
 																					case StatusPendaftaran.TRIAL:
-																						variant = "secondary";
 																						label = "Trial";
+																						badgeClass =
+																							"bg-(--badge-trial-bg) text-(--badge-trial-fg)";
 																						break;
 																					case StatusPendaftaran.WAITING_LIST:
-																						variant = "outline";
 																						label = "Waiting List";
+																						badgeClass =
+																							"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)";
 																						break;
 																					case StatusPendaftaran.NON_AKTIF:
-																						variant = "destructive";
 																						label = "Non-Aktif";
+																						badgeClass =
+																							"bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)";
 																						break;
 																				}
 
 																				return (
-																					<Badge variant={variant}>
+																					<Badge
+																						className={cn(
+																							"border-none",
+																							badgeClass,
+																						)}
+																					>
 																						{label}
 																					</Badge>
 																				);

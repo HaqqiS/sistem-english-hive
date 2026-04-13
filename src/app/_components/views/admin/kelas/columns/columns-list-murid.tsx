@@ -145,30 +145,34 @@ export const columns = ({
 		),
 		cell: ({ row }) => {
 			const status = row.original.status;
-			let variant: "default" | "secondary" | "destructive" | "outline" =
-				"default";
 			let label = "Aktif";
+			let badgeClass = "";
 
 			switch (status) {
 				case StatusPendaftaran.AKTIF:
-					variant = "default";
 					label = "Aktif";
+					badgeClass = "bg-(--badge-aktif-bg) text-(--badge-aktif-fg)";
 					break;
 				case StatusPendaftaran.TRIAL:
-					variant = "secondary";
 					label = "Trial";
+					badgeClass = "bg-(--badge-trial-bg) text-(--badge-trial-fg)";
 					break;
 				case StatusPendaftaran.WAITING_LIST:
-					variant = "outline"; // Or customized color if possible
 					label = "Waiting List";
+					badgeClass =
+						"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)";
 					break;
 				case StatusPendaftaran.NON_AKTIF:
-					variant = "destructive";
 					label = "Non-Aktif";
+					badgeClass = "bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)";
 					break;
 			}
 
-			return <Badge variant={variant}>{label}</Badge>;
+			return (
+				<Badge className={`border-none ${badgeClass}`} variant="default">
+					{label}
+				</Badge>
+			);
 		},
 		filterFn: (row, id, value: unknown) => {
 			const cell = row.getValue(id);

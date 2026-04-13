@@ -25,29 +25,29 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 	switch (status) {
 		case "TRIAL":
 			cardStyles =
-				"border-l-4 border-l-purple-500 bg-purple-50/50 hover:bg-purple-100/50 dark:bg-purple-900/10 dark:hover:bg-purple-900/20";
-			headerColorClass = "bg-purple-500";
+				"border-l-4 border-l-(--badge-trial-bg) bg-(--badge-trial-bg)/10 hover:bg-(--badge-trial-bg)/20 shadow-xs transition-colors";
+			headerColorClass = "bg-(--badge-trial-bg) text-(--badge-trial-fg)";
 			break;
 		case "WAITING":
 			cardStyles =
-				"border-l-4 border-l-yellow-500 bg-yellow-50/50 hover:bg-yellow-100/50 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20";
-			headerColorClass = "bg-yellow-500";
+				"border-l-4 border-l-(--badge-waiting-bg) bg-(--badge-waiting-bg)/10 hover:bg-(--badge-waiting-bg)/20 shadow-xs transition-colors";
+			headerColorClass = "bg-(--badge-waiting-bg) text-(--badge-waiting-fg)";
 			break;
 		case "LEVEL_UP":
 			cardStyles =
-				"border-l-4 border-l-teal-500 bg-teal-50/50 hover:bg-teal-100/50 dark:bg-teal-900/10 dark:hover:bg-teal-900/20";
-			headerColorClass = "bg-teal-500";
+				"border-l-4 border-l-(--badge-level-up-bg) bg-(--badge-level-up-bg)/10 hover:bg-(--badge-level-up-bg)/20 shadow-xs transition-colors";
+			headerColorClass = "bg-(--badge-level-up-bg) text-(--badge-level-up-fg)";
 			break;
 		case "COMPLETED":
 			cardStyles =
-				"border-l-4 border-l-slate-500 bg-slate-50/50 hover:bg-slate-100/50 dark:bg-slate-900/10 dark:hover:bg-slate-900/20";
-			headerColorClass = "bg-slate-500";
+				"border-l-4 border-l-(--badge-completed-bg) bg-(--badge-completed-bg)/10 hover:bg-(--badge-completed-bg)/20 shadow-xs transition-colors";
+			headerColorClass =
+				"bg-(--badge-completed-bg) text-(--badge-completed-fg)";
 			break;
 		case "RUNNING":
-			// Menggunakan warna Accent (biasanya Primary/Brand)
 			cardStyles =
-				"border-l-4 border-l-primary bg-accent/20 hover:bg-accent/30 dark:bg-accent/10 dark:hover:bg-accent/20";
-			headerColorClass = "bg-primary";
+				"border-l-4 border-l-(--badge-running-bg) bg-(--badge-running-bg)/10 hover:bg-(--badge-running-bg)/20 shadow-xs transition-colors";
+			headerColorClass = "bg-(--badge-running-bg) text-(--badge-running-fg)";
 			break;
 	}
 
@@ -127,7 +127,7 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 							<Badge
 								key="status-kelas"
 								className={cn(
-									"h-5 px-1.5 text-[10px] font-normal",
+									"h-5 border-0 px-1.5 text-[10px] font-bold border-none",
 									headerColorClass,
 								)}
 							>

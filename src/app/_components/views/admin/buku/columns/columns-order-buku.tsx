@@ -42,28 +42,32 @@ export const columnsOrderBuku = ({
 						return {
 							label: "Sudah Dipesan",
 							variant: "default" as const,
-							className: "bg-green-500 hover:bg-green-600 text-white",
+							className:
+								"bg-(--badge-sudah-dipesan-bg) text-(--badge-sudah-dipesan-fg) border-none",
 							icon: <Check className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.MENUNGGU_PERSETUJUAN:
 						return {
 							label: "Menunggu Persetujuan",
 							variant: "secondary" as const,
-							className: "bg-yellow-500 hover:bg-yellow-600 text-white",
+							className:
+								"bg-(--badge-menunggu-persetujuan-bg) text-(--badge-menunggu-persetujuan-fg) border-none",
 							icon: <Clock className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.DIBATALKAN:
 						return {
 							label: "Dibatalkan",
 							variant: "destructive" as const,
-							className: "",
+							className:
+								"bg-(--badge-dibatalkan-bg) text-(--badge-dibatalkan-fg) border-none",
 							icon: <XCircle className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.BELUM_DIPROSES:
 						return {
 							label: "Belum Diproses",
 							variant: "outline" as const,
-							className: "text-muted-foreground",
+							className:
+								"bg-(--badge-belum-diproses-bg) text-(--badge-belum-diproses-fg) border-none",
 							icon: <Clock className="h-3 w-3" />,
 						};
 				}

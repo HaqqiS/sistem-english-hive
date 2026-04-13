@@ -71,6 +71,57 @@
   --shadow-2xl: 0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  /* --- StatusMurid --- */
+  --badge-aktif-bg:               oklch(0.6509 0.1197 173.0064); /* teal (= --accent) */
+  --badge-aktif-fg:               #ffffff;
+  --badge-non-aktif-bg:           oklch(0.55 0.02 60);           /* stone */
+  --badge-non-aktif-fg:           #ffffff;
+  --badge-pendaftar-baru-bg:      oklch(0.6356 0.2082 25.3782);  /* red (= --destructive) */
+  --badge-pendaftar-baru-fg:      #ffffff;
+  --badge-lulus-bg:               oklch(0.55 0.15 300);          /* purple */
+  --badge-lulus-fg:               #ffffff;
+  --badge-trial-bg:               oklch(0.60 0.13 220);          /* sky */
+  --badge-trial-fg:               #ffffff;
+  --badge-pending-bg:             oklch(0.65 0.16 55);           /* orange */
+  --badge-pending-fg:             #ffffff;
+  --badge-placement-test-bg:      oklch(0.63 0.18 355);          /* pink */
+  --badge-placement-test-fg:      #ffffff;
+  --badge-on-going-bg:            oklch(0.60 0.20 320);          /* fuchsia */
+  --badge-on-going-fg:            #ffffff;
+  --badge-waiting-list-bg:        oklch(0.72 0.17 90);           /* yellow */
+  --badge-waiting-list-fg:        #ffffff;
+  --badge-tunggu-konfirmasi-bg:   oklch(0.68 0.17 135);          /* lime */
+  --badge-tunggu-konfirmasi-fg:   #ffffff;
+  --badge-off-bg:                 oklch(0.55 0.02 240);          /* slate */
+  --badge-off-fg:                 #ffffff;
+
+  /* --- StatusKelas (seragam dengan StatusMurid) --- */
+  --badge-running-bg:             var(--badge-aktif-bg);         /* = AKTIF (teal) */
+  --badge-running-fg:             var(--badge-aktif-fg);
+  --badge-waiting-bg:             var(--badge-waiting-list-bg);  /* = WAITING_LIST (yellow) */
+  --badge-waiting-fg:             var(--badge-waiting-list-fg);
+  /* TRIAL → pakai --badge-trial-* */
+  --badge-level-up-bg:            var(--badge-lulus-bg);         /* = LULUS (purple) */
+  --badge-level-up-fg:            var(--badge-lulus-fg);
+  --badge-completed-bg:           var(--badge-off-bg);           /* = OFF (slate) */
+  --badge-completed-fg:           var(--badge-off-fg);
+
+  /* --- StatusPendaftaran (seragam dengan StatusMurid) --- */
+  /* AKTIF       → --badge-aktif-* */
+  /* NON_AKTIF   → --badge-non-aktif-* */
+  /* TRIAL       → --badge-trial-* */
+  /* WAITING_LIST→ --badge-waiting-list-* */
+
+  /* --- StatusOrderBuku --- */
+  --badge-belum-diproses-bg:          var(--badge-off-bg);               /* slate */
+  --badge-belum-diproses-fg:          var(--badge-off-fg);
+  --badge-dibatalkan-bg:              var(--badge-pendaftar-baru-bg);     /* red */
+  --badge-dibatalkan-fg:              var(--badge-pendaftar-baru-fg);
+  --badge-menunggu-persetujuan-bg:    var(--badge-pending-bg);            /* orange */
+  --badge-menunggu-persetujuan-fg:    var(--badge-pending-fg);
+  --badge-sudah-dipesan-bg:           var(--badge-aktif-bg);              /* teal */
+  --badge-sudah-dipesan-fg:           var(--badge-aktif-fg);
 }
 
 .dark {
@@ -129,6 +180,34 @@
   --shadow-xl:
     0 0.125rem 0.5rem 0 hsl(0 0% 0% / 0.5), 0 8px 10px -1px hsl(0 0% 0% / 0.5);
   --shadow-2xl: 0 0.125rem 0.5rem 0 hsl(0 0% 0% / 1.25);
+
+    /* --- StatusMurid dark --- */
+  --badge-aktif-bg:               oklch(0.798 0.1481 172.7484); /* teal light (= dark --primary) */
+  --badge-aktif-fg:               oklch(0.2156 0 0);
+  --badge-non-aktif-bg:           oklch(0.45 0.02 60);
+  --badge-non-aktif-fg:           #ffffff;
+  --badge-pendaftar-baru-bg:      oklch(0.5714 0.2121 27.2502); /* = dark --destructive */
+  --badge-pendaftar-baru-fg:      #ffffff;
+  --badge-lulus-bg:               oklch(0.65 0.17 300);
+  --badge-lulus-fg:               #ffffff;
+  --badge-trial-bg:               oklch(0.70 0.14 220);
+  --badge-trial-fg:               oklch(0.15 0 0);
+  --badge-pending-bg:             oklch(0.72 0.17 55);
+  --badge-pending-fg:             oklch(0.15 0 0);
+  --badge-placement-test-bg:      oklch(0.70 0.18 355);
+  --badge-placement-test-fg:      #ffffff;
+  --badge-on-going-bg:            oklch(0.68 0.20 320);
+  --badge-on-going-fg:            #ffffff;
+  --badge-waiting-list-bg:        oklch(0.78 0.17 90);
+  --badge-waiting-list-fg:        oklch(0.15 0 0);
+  --badge-tunggu-konfirmasi-bg:   oklch(0.75 0.17 135);
+  --badge-tunggu-konfirmasi-fg:   oklch(0.15 0 0);
+  --badge-off-bg:                 oklch(0.48 0.02 240);
+  --badge-off-fg:                 #ffffff;
+
+  /* StatusKelas, StatusPendaftaran, StatusOrderBuku
+     → otomatis inherit dari var() di :root karena pakai var(--badge-*-bg),
+       cukup override variable sumbernya saja di atas */
 }
 
 @theme inline {

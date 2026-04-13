@@ -33,6 +33,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { TypeAllMurid } from "@/types/murid.type";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppLink } from "@/utils/noWAUtils";
@@ -45,35 +46,28 @@ interface ColumnsConfig {
 
 export const getStatusColorBadge = (status: StatusMurid): string => {
 	switch (status) {
-		// --- STATUS UTAMA (Variable Global) ---
 		case StatusMurid.AKTIF:
-			return "bg-accent hover:bg-accent/90 text-accent-foreground text-white";
-
+			return "bg-(--badge-aktif-bg) text-(--badge-aktif-fg) border-none";
 		case StatusMurid.NON_AKTIF:
-			return "bg-stone-500 hover:bg-stone-600 text-white";
-
+			return "bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg) border-none";
 		case StatusMurid.PENDAFTAR_BARU:
-			return "bg-destructive hover:bg-destructive/90 text-destructive-foreground text-white";
-
+			return "bg-(--badge-pendaftar-baru-bg) text-(--badge-pendaftar-baru-fg) border-none";
 		case StatusMurid.LULUS:
-			return "bg-purple-600 hover:bg-purple-700 text-white";
-
+			return "bg-(--badge-lulus-bg) text-(--badge-lulus-fg) border-none";
 		case StatusMurid.TRIAL:
-			return "bg-sky-500 hover:bg-sky-600 text-white";
-
+			return "bg-(--badge-trial-bg) text-(--badge-trial-fg) border-none";
 		case StatusMurid.PENDING:
-			return "bg-orange-500 hover:bg-orange-600 text-white";
-
+			return "bg-(--badge-pending-bg) text-(--badge-pending-fg) border-none";
 		case StatusMurid.PLACEMENT_TEST:
-			return "bg-pink-500 hover:bg-pink-600 text-white";
+			return "bg-(--badge-placement-test-bg) text-(--badge-placement-test-fg) border-none";
 		case StatusMurid.ON_GOING:
-			return "bg-fuchsia-500 hover:bg-fuchsia-600 text-white";
+			return "bg-(--badge-on-going-bg) text-(--badge-on-going-fg) border-none";
 		case StatusMurid.WAITING_LIST:
-			return "bg-yellow-500 hover:bg-yellow-600 text-white";
+			return "bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg) border-none";
 		case StatusMurid.TUNGGU_KONFIRMASI:
-			return "bg-lime-500 hover:bg-lime-600 text-white";
+			return "bg-(--badge-tunggu-konfirmasi-bg) text-(--badge-tunggu-konfirmasi-fg) border-none";
 		case StatusMurid.OFF:
-			return "bg-slate-500 hover:bg-slate-600 text-white";
+			return "bg-(--badge-off-bg) text-(--badge-off-fg) border-none";
 		default:
 			return "bg-gray-500 text-white";
 	}
@@ -194,14 +188,17 @@ export const columns = ({
 														{idx + 1}. {reg.Kelas.kodeKelas}
 													</span>
 													<Badge
-														variant={
-															reg.status === "AKTIF"
-																? "default"
-																: reg.status === "TRIAL"
-																	? "secondary"
-																	: "outline"
-														}
-														className="h-4 px-1.5 text-[9px] font-bold"
+														className={cn(
+															"h-4 px-1.5 text-[9px] font-bold border-none",
+															reg.status === "AKTIF" &&
+																"bg-(--badge-aktif-bg) text-(--badge-aktif-fg)",
+															reg.status === "TRIAL" &&
+																"bg-(--badge-trial-bg) text-(--badge-trial-fg)",
+															reg.status === "WAITING_LIST" &&
+																"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)",
+															reg.status === "NON_AKTIF" &&
+																"bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)",
+														)}
 													>
 														{reg.status}
 													</Badge>

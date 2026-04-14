@@ -188,19 +188,21 @@ export default function MuridForm({
 							name="statusMurid"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm">{t.langsungDaftar}</FormLabel>
+									<FormLabel className="text-sm">
+										<span>{t.langsungDaftar}</span>
+									</FormLabel>
 									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
 											<SelectTrigger className="w-full">
-												<SelectValue placeholder={t.pilihOpsi} />
+												<SelectValue placeholder={<span>{t.pilihOpsi}</span>} />
 											</SelectTrigger>
 										</FormControl>
 										<SelectContent>
 											<SelectItem value={StatusMurid.PENDAFTAR_BARU}>
-												{t.daftarLangsung}
+												<span>{t.daftarLangsung}</span>
 											</SelectItem>
 											<SelectItem value={StatusMurid.TRIAL}>
-												{t.trial}
+												<span>{t.trial}</span>
 											</SelectItem>
 										</SelectContent>
 									</Select>
@@ -215,7 +217,9 @@ export default function MuridForm({
 						name="namaLengkap"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm">{t.namaLengkap}</FormLabel>
+								<FormLabel className="text-sm">
+									<span>{t.namaLengkap}</span>
+								</FormLabel>
 								<FormControl>
 									<Input placeholder={t.masukkanNama} {...field} />
 								</FormControl>
@@ -233,19 +237,21 @@ export default function MuridForm({
 						name="gender"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm">{t.jenisKelamin}</FormLabel>
+								<FormLabel className="text-sm">
+									<span>{t.jenisKelamin}</span>
+								</FormLabel>
 								<Select onValueChange={field.onChange} value={field.value}>
 									<FormControl>
 										<SelectTrigger className="w-full">
-											<SelectValue placeholder={t.pilihGender} />
+											<SelectValue placeholder={<span>{t.pilihGender}</span>} />
 										</SelectTrigger>
 									</FormControl>
 									<SelectContent>
 										<SelectItem value={Gender.LAKI_LAKI}>
-											{t.lakiLaki}
+											<span>{t.lakiLaki}</span>
 										</SelectItem>
 										<SelectItem value={Gender.PEREMPUAN}>
-											{t.perempuan}
+											<span>{t.perempuan}</span>
 										</SelectItem>
 									</SelectContent>
 								</Select>
@@ -261,7 +267,9 @@ export default function MuridForm({
 							name="umur"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm">{t.umur}</FormLabel>
+									<FormLabel className="text-sm">
+										<span>{t.umur}</span>
+									</FormLabel>
 									<FormControl>
 										<Input
 											type="number"
@@ -281,7 +289,9 @@ export default function MuridForm({
 							name="noWA"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm">{t.noWA}</FormLabel>
+									<FormLabel className="text-sm">
+										<span>{t.noWA}</span>
+									</FormLabel>
 									<FormControl>
 										<Input type="tel" placeholder="08..." {...field} />
 									</FormControl>
@@ -295,7 +305,9 @@ export default function MuridForm({
 							name="instagram"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm">{t.instagram}</FormLabel>
+									<FormLabel className="text-sm">
+										<span>{t.instagram}</span>
+									</FormLabel>
 									<FormControl>
 										<Input
 											placeholder="@username"
@@ -316,27 +328,35 @@ export default function MuridForm({
 							name="pilihanProgram"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-sm">{t.pilihanProgram}</FormLabel>
+									<FormLabel className="text-sm">
+										<span>{t.pilihanProgram}</span>
+									</FormLabel>
 									<Select onValueChange={field.onChange} value={field.value}>
 										<FormControl>
 											<SelectTrigger className="w-full">
-												<SelectValue placeholder={t.pilihProgram} />
+												<SelectValue
+													placeholder={<span>{t.pilihProgram}</span>}
+												/>
 											</SelectTrigger>
 										</FormControl>
 										<SelectContent>
 											<SelectGroup>
-												<SelectLabel>{t.reguler}</SelectLabel>
+												<SelectLabel>
+													<span>{t.reguler}</span>
+												</SelectLabel>
 												<SelectItem value="regulerSekolah">
-													{t.regulerSekolah}
+													<span>{t.regulerSekolah}</span>
 												</SelectItem>
 											</SelectGroup>
 											<SelectGroup>
-												<SelectLabel>{t.privat}</SelectLabel>
+												<SelectLabel>
+													<span>{t.privat}</span>
+												</SelectLabel>
 												<SelectItem value="privatSekolah">
-													{t.privatSekolah}
+													<span>{t.privatSekolah}</span>
 												</SelectItem>
 												<SelectItem value="privatDewasa">
-													{t.privatDewasa}
+													<span>{t.privatDewasa}</span>
 												</SelectItem>
 											</SelectGroup>
 										</SelectContent>
@@ -352,29 +372,33 @@ export default function MuridForm({
 								name="cabangId"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className="text-sm">{t.pilihCabang}</FormLabel>
-										<FormControl>
-											<Select
-												onValueChange={field.onChange}
-												value={field.value}
-												disabled={isLoadingCabang}
-											>
+										<FormLabel className="text-sm">
+											<span>{t.pilihCabang}</span>
+										</FormLabel>
+										<Select
+											onValueChange={field.onChange}
+											value={field.value}
+											disabled={isLoadingCabang}
+										>
+											<FormControl>
 												<SelectTrigger className="w-full">
 													<SelectValue
 														placeholder={
-															isLoadingCabang ? t.loading : t.pilihCabang
+															<span>
+																{isLoadingCabang ? t.loading : t.pilihCabang}
+															</span>
 														}
 													/>
 												</SelectTrigger>
-												<SelectContent>
-													{dataCabang?.map((items) => (
-														<SelectItem key={items.id} value={items.id}>
-															{items.namaCabang}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</FormControl>
+											</FormControl>
+											<SelectContent>
+												{dataCabang?.map((items) => (
+													<SelectItem key={items.id} value={items.id}>
+														<span>{items.namaCabang}</span>
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
 										<FormMessage />
 									</FormItem>
 								)}
@@ -389,7 +413,9 @@ export default function MuridForm({
 						name="asalSekolah"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm">{t.asalSekolah}</FormLabel>
+								<FormLabel className="text-sm">
+									<span>{t.asalSekolah}</span>
+								</FormLabel>
 								<FormControl>
 									<Input type="text" placeholder={t.masukkanAsal} {...field} />
 								</FormControl>
@@ -403,7 +429,9 @@ export default function MuridForm({
 						name="kelasSekolah"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm">{t.kelasSekolah}</FormLabel>
+								<FormLabel className="text-sm">
+									<span>{t.kelasSekolah}</span>
+								</FormLabel>
 								<FormControl>
 									<Input type="text" placeholder={t.kelasSaatIni} {...field} />
 								</FormControl>
@@ -419,7 +447,9 @@ export default function MuridForm({
 						name="sumberInfo"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className="text-sm">{t.sumberInfo}</FormLabel>
+								<FormLabel className="text-sm">
+									<span>{t.sumberInfo}</span>
+								</FormLabel>
 								<FormControl>
 									<div className="space-y-2">
 										<RadioGroup
@@ -450,11 +480,15 @@ export default function MuridForm({
 											</div>
 											<div className="flex items-center gap-3">
 												<RadioGroupItem value="Teman" id={`${idPrefix}-r3`} />
-												<Label htmlFor={`${idPrefix}-r3`}>{t.teman}</Label>
+												<Label htmlFor={`${idPrefix}-r3`}>
+													<span>{t.teman}</span>
+												</Label>
 											</div>
 											<div className="flex items-center gap-3">
 												<RadioGroupItem value="Other" id={`${idPrefix}-r4`} />
-												<Label htmlFor={`${idPrefix}-r4`}>{t.lainnya}</Label>
+												<Label htmlFor={`${idPrefix}-r4`}>
+													<span>{t.lainnya}</span>
+												</Label>
 											</div>
 										</RadioGroup>
 
@@ -484,7 +518,9 @@ export default function MuridForm({
 								name="deskripsi"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel className="text-sm">{t.catatanAdmin}</FormLabel>
+										<FormLabel className="text-sm">
+											<span>{t.catatanAdmin}</span>
+										</FormLabel>
 										<FormControl>
 											<Textarea
 												placeholder={t.masukkanCatatan}
@@ -510,9 +546,11 @@ export default function MuridForm({
 												/>
 											</FormControl>
 											<div className="space-y-1 leading-none">
-												<FormLabel>{t.biayaPendaftaran}</FormLabel>
+												<FormLabel>
+													<span>{t.biayaPendaftaran}</span>
+												</FormLabel>
 												<p className="text-muted-foreground text-sm">
-													{t.deskripsiBiaya}
+													<span>{t.deskripsiBiaya}</span>
 												</p>
 											</div>
 										</FormItem>
@@ -526,7 +564,7 @@ export default function MuridForm({
 
 			<div className="mt-4">
 				<Button type="submit" size="sm" className="w-full" disabled={isPending}>
-					{isPending ? t.mengirim : t.kirim}
+					<span>{isPending ? t.mengirim : t.kirim}</span>
 				</Button>
 			</div>
 		</form>

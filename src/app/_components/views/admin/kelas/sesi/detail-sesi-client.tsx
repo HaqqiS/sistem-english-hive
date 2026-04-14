@@ -206,14 +206,19 @@ export default function DetailSesiClient() {
 				return cellData;
 			});
 
+			const totalSessions = columnData.length;
+			const dynamicFontSize =
+				totalSessions > 20 ? 6 : totalSessions > 12 ? 7 : 8;
+			const dynamicPadding = totalSessions > 15 ? 1 : 1.5;
+
 			autoTable(doc, {
 				head: head,
 				body: body,
 				startY: 28,
 				theme: "grid",
 				styles: {
-					fontSize: 8,
-					cellPadding: 2,
+					fontSize: dynamicFontSize,
+					cellPadding: dynamicPadding,
 					overflow: "linebreak",
 					halign: "center",
 					valign: "middle",
@@ -223,9 +228,16 @@ export default function DetailSesiClient() {
 					textColor: 255,
 					halign: "center",
 					valign: "middle",
+					fontSize: dynamicFontSize,
+					cellPadding: dynamicPadding,
 				},
 				columnStyles: {
-					0: { halign: "left", cellWidth: 40, fontStyle: "bold" },
+					0: {
+						halign: "left",
+						cellWidth: 40,
+						fontStyle: "bold",
+						fontSize: dynamicFontSize + 0.5,
+					},
 				},
 				didParseCell: (data) => {
 					// Apply styling headers manually if needed

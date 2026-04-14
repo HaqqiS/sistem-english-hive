@@ -1,9 +1,4 @@
-import {
-	Prisma,
-	StatusMurid,
-	StatusPembayaran,
-	StatusPendaftaran,
-} from "@prisma/client";
+import { Prisma, StatusPembayaran, StatusPendaftaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import dayjs from "dayjs";
 import z from "zod";
@@ -14,6 +9,7 @@ import {
 import {
 	createBulkPendaftaran,
 	createPendaftaran,
+	syncMuridStatus,
 } from "@/server/services/pendaftaran.service";
 import {
 	clientBulkUpdateStatusSchema,
@@ -430,6 +426,9 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							});
 						}
 
+						// 1d. Sinkronisasi status murid (cerdas berdasarkan riwayat)
+						await syncMuridStatus(tx, input.muridId ?? existingRecord.muridId);
+
 						return newRegistration; // Return data baru
 					}
 
@@ -505,11 +504,8 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							});
 						}
 
-						// Update status murid jadi AKTIF juga (jika belum)
-						await tx.murid.update({
-							where: { id: existingRecord.muridId },
-							data: { statusMurid: StatusMurid.AKTIF },
-						});
+						// Update status murid (sync otomatis)
+						await syncMuridStatus(tx, existingRecord.muridId);
 
 						// Fallback: Check via relation in Kelas, but we already have existingRecord loaded without relation.
 						// Better to fetch fresh if needed, or rely on logic below.
@@ -582,20 +578,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
 					// Sync Murid Status if status changes
 					if (input.status) {
-						let targetMuridStatus: StatusMurid = StatusMurid.AKTIF;
-						if (input.status === StatusPendaftaran.TRIAL) {
-							targetMuridStatus = StatusMurid.TRIAL;
-						} else if (input.status === StatusPendaftaran.WAITING_LIST) {
-							targetMuridStatus = StatusMurid.WAITING_LIST;
-						} else if (input.status === StatusPendaftaran.NON_AKTIF) {
-							targetMuridStatus = StatusMurid.NON_AKTIF;
-						}
-						// AKTIF matches default
-
-						await tx.murid.update({
-							where: { id: existingRecord.muridId },
-							data: { statusMurid: targetMuridStatus },
-						});
+						await syncMuridStatus(tx, existingRecord.muridId);
 					}
 
 					return tx.pendaftaranKelas.update({
@@ -714,11 +697,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 								});
 							}
 
-							// Update Murid Status
-							await tx.murid.update({
-								where: { id: p.muridId },
-								data: { statusMurid: StatusMurid.AKTIF },
-							});
+							// Update Murid Status (handled below via syncMuridStatus)
 
 							// Generate Tagihan Buku (Logic Update Bulk)
 							const hargaBuku = p.Kelas.jenisKelasRel?.hargaBuku ?? 0;
@@ -765,19 +744,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						});
 
 						// Sync Murid Status
-						let targetMuridStatus: StatusMurid = StatusMurid.AKTIF;
-						if (status === StatusPendaftaran.TRIAL) {
-							targetMuridStatus = StatusMurid.TRIAL;
-						} else if (status === StatusPendaftaran.WAITING_LIST) {
-							targetMuridStatus = StatusMurid.WAITING_LIST;
-						} else if (status === StatusPendaftaran.NON_AKTIF) {
-							targetMuridStatus = StatusMurid.NON_AKTIF;
-						}
-
-						await tx.murid.update({
-							where: { id: p.muridId },
-							data: { statusMurid: targetMuridStatus },
-						});
+						await syncMuridStatus(tx, p.muridId);
 					}
 				});
 				return { success: true, count: pendaftarans.length };
@@ -847,11 +814,8 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							},
 						});
 
-						// 2. Update status murid yang terkait menjadi 'NON-AKTIF'
-						await tx.murid.update({
-							where: { id: existingMuridKelas.muridId },
-							data: { statusMurid: StatusMurid.NON_AKTIF },
-						});
+						// 2. Sinkronisasi status murid (secara cerdas mengecek pendaftaran lain)
+						await syncMuridStatus(tx, existingMuridKelas.muridId);
 
 						// 3. Hapus pendaftaran kelas itu sendiri
 						await tx.pendaftaranKelas.delete({

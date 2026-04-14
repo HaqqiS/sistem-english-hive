@@ -204,22 +204,7 @@ export const createPendaftaran = async ({
 		}
 	}
 
-	// D. Update Status Murid
-	// Jika WAITING_LIST -> Update status murid jadi WAITING_LIST
-	// Jika AKTIF -> Update status murid jadi AKTIF
-	let targetStatusMurid: StatusMurid = StatusMurid.AKTIF;
-	if (input.status === StatusPendaftaran.TRIAL) {
-		targetStatusMurid = StatusMurid.TRIAL;
-	} else if (input.status === StatusPendaftaran.WAITING_LIST) {
-		targetStatusMurid = StatusMurid.WAITING_LIST;
-	} else if (input.status === StatusPendaftaran.NON_AKTIF) {
-		targetStatusMurid = StatusMurid.NON_AKTIF;
-	}
-
-	await tx.murid.update({
-		where: { id: input.muridId },
-		data: { statusMurid: targetStatusMurid },
-	});
+	await syncMuridStatus(tx, input.muridId);
 
 	return { pendaftaran, nextLevelRegistrationId };
 };
@@ -344,20 +329,38 @@ export const createBulkPendaftaran = async ({
 		}
 	}
 
-	// D. Update Status Murid -> AKTIF (Bulk)
-	let targetStatusMurid: StatusMurid = StatusMurid.AKTIF;
-	if (status === StatusPendaftaran.TRIAL) {
-		targetStatusMurid = StatusMurid.TRIAL;
-	} else if (status === StatusPendaftaran.WAITING_LIST) {
-		targetStatusMurid = StatusMurid.WAITING_LIST;
-	} else if (status === StatusPendaftaran.NON_AKTIF) {
-		targetStatusMurid = StatusMurid.NON_AKTIF;
+	// D. Update Status Murid (Bulk)
+	for (const muridId of muridIds) {
+		await syncMuridStatus(tx, muridId);
 	}
 
-	await tx.murid.updateMany({
-		where: { id: { in: muridIds } },
-		data: { statusMurid: targetStatusMurid },
+	return { success: true, count: muridIds.length };
+};
+
+/**
+ * Sinkronisasi statusMurid berdasarkan seluruh riwayat pendaftaran kelas murid tersebut.
+ * Prioritas Status: AKTIF > TRIAL > WAITING_LIST > NON_AKTIF
+ */
+export const syncMuridStatus = async (tx: PrismaTx, muridId: string) => {
+	const allRegistrations = await tx.pendaftaranKelas.findMany({
+		where: { muridId },
+		select: { status: true },
 	});
 
-	return { success: true, count: muridIds.length };
+	const statuses = allRegistrations.map((r) => r.status);
+
+	let finalStatus: StatusMurid = StatusMurid.NON_AKTIF;
+
+	if (statuses.includes(StatusPendaftaran.AKTIF)) {
+		finalStatus = StatusMurid.AKTIF;
+	} else if (statuses.includes(StatusPendaftaran.TRIAL)) {
+		finalStatus = StatusMurid.TRIAL;
+	} else if (statuses.includes(StatusPendaftaran.WAITING_LIST)) {
+		finalStatus = StatusMurid.WAITING_LIST;
+	}
+
+	await tx.murid.update({
+		where: { id: muridId },
+		data: { statusMurid: finalStatus },
+	});
 };

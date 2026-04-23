@@ -1,6 +1,6 @@
 "use client";
 
-import { StatusAbsenMurid } from "@prisma/client";
+import { StatusAbsenMurid, StatusPendaftaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { UseTRPCMutationResult } from "@trpc/react-query/shared";
 import { Check, Loader2 } from "lucide-react";
@@ -12,8 +12,10 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { RouterInputs, RouterOutputs } from "@/trpc/react";
 import type { MuridForAbsensi } from "@/types/absenMurid.type";
+import { formatStatus, statusPendaftaranColorMap } from "@/utils/statusUtils";
 
 type AbsensiMutation = UseTRPCMutationResult<
 	RouterOutputs["absenMurid"]["createOrUpdateAbsensi"],
@@ -57,9 +59,14 @@ export const createDetailAbsenMuridColumns = ({
 			return (
 				<div className="flex items-center gap-2">
 					<div className="font-medium">{row.original.namaLengkap}</div>
-					{row.original.statusPendaftaran === "TRIAL" && (
-						<Badge className="bg-(--badge-trial-bg) text-(--badge-trial-fg) border-none text-[10px] px-1.5 py-0">
-							Trial
+					{row.original.statusPendaftaran === StatusPendaftaran.TRIAL && (
+						<Badge
+							className={cn(
+								"text-[10px] px-1.5 py-0 h-4",
+								statusPendaftaranColorMap[StatusPendaftaran.TRIAL],
+							)}
+						>
+							{formatStatus(StatusPendaftaran.TRIAL)}
 						</Badge>
 					)}
 				</div>

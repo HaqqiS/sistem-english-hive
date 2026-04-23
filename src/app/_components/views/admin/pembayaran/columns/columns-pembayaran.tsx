@@ -33,9 +33,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { TypePembayaran } from "@/types/pembayaran.type";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppReminder } from "@/utils/noWAUtils";
+import { formatStatus, statusPembayaranColorMap } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 // Kita gunakan tipe data dari router getAll yang baru
@@ -47,20 +49,7 @@ interface ColumnsConfig {
 	onDownloadClick: (item: TypePembayaran) => void;
 }
 
-const getStatusBadgeVariant = (
-	status: StatusPembayaran,
-): "default" | "destructive" | "secondary" | "outline" => {
-	switch (status) {
-		case StatusPembayaran.LUNAS:
-			return "default"; // Hijau
-		case StatusPembayaran.BELUM_LUNAS:
-			return "destructive"; // Merah
-		case StatusPembayaran.PENDING:
-			return "secondary"; // Abu-abu
-		default:
-			return "outline";
-	}
-};
+// Removed local getStatusBadgeVariant as it is now in @/utils/statusUtils
 
 export const columns = ({
 	onEditClick,
@@ -205,7 +194,11 @@ export const columns = ({
 			const status = row.original.statusBayar;
 			return (
 				<div className="flex flex-col items-start gap-1">
-					<Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>
+					<Badge
+						className={cn("font-medium", statusPembayaranColorMap[status])}
+					>
+						{formatStatus(status)}
+					</Badge>
 					{row.original.verifiedBy && (
 						<span className="text-muted-foreground text-[10px]">
 							Verif: {row.original.verifiedBy.name}

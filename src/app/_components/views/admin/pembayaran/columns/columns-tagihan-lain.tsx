@@ -43,9 +43,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppReminder } from "@/utils/noWAUtils";
+import { formatStatus, statusPembayaranColorMap } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 // Type definition inferred from Router
@@ -88,18 +90,7 @@ interface ColumnsConfig {
 	isBuku?: boolean;
 }
 
-const getStatusBadgeVariant = (
-	status: StatusPembayaran,
-): "default" | "destructive" | "secondary" | "outline" => {
-	switch (status) {
-		case StatusPembayaran.LUNAS:
-			return "default"; // Green
-		case StatusPembayaran.BELUM_LUNAS:
-			return "destructive"; // Red
-		default:
-			return "outline";
-	}
-};
+// Removed local getStatusBadgeVariant as it is now in @/utils/statusUtils
 
 export const columnsTagihanLain = ({
 	onEditClick,
@@ -202,7 +193,11 @@ export const columnsTagihanLain = ({
 		),
 		cell: ({ row }) => {
 			const status = row.original.status;
-			return <Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>;
+			return (
+				<Badge className={cn("font-medium", statusPembayaranColorMap[status])}>
+					{formatStatus(status)}
+				</Badge>
+			);
 		},
 	},
 
@@ -501,7 +496,11 @@ export const columnsTagihanLainGlobal = ({
 		),
 		cell: ({ row }) => {
 			const status = row.original.status;
-			return <Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>;
+			return (
+				<Badge className={cn("font-medium", statusPembayaranColorMap[status])}>
+					{formatStatus(status)}
+				</Badge>
+			);
 		},
 	},
 

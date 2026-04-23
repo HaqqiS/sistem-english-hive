@@ -1,6 +1,5 @@
 "use client";
 
-import { StatusMurid } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
 	Album,
@@ -37,6 +36,11 @@ import { cn } from "@/lib/utils";
 import type { TypeAllMurid } from "@/types/murid.type";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppLink } from "@/utils/noWAUtils";
+import {
+	formatStatus,
+	statusMuridColorMap,
+	statusPendaftaranColorMap,
+} from "@/utils/statusUtils";
 
 interface ColumnsConfig {
 	onEditClick: (item: TypeAllMurid) => void;
@@ -44,34 +48,7 @@ interface ColumnsConfig {
 	onDeleteClick: (id: string, namaLengkap: string) => void;
 }
 
-export const getStatusColorBadge = (status: StatusMurid): string => {
-	switch (status) {
-		case StatusMurid.AKTIF:
-			return "bg-(--badge-aktif-bg) text-(--badge-aktif-fg) border-none";
-		case StatusMurid.NON_AKTIF:
-			return "bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg) border-none";
-		case StatusMurid.PENDAFTAR_BARU:
-			return "bg-(--badge-pendaftar-baru-bg) text-(--badge-pendaftar-baru-fg) border-none";
-		case StatusMurid.LULUS:
-			return "bg-(--badge-lulus-bg) text-(--badge-lulus-fg) border-none";
-		case StatusMurid.TRIAL:
-			return "bg-(--badge-trial-bg) text-(--badge-trial-fg) border-none";
-		case StatusMurid.PENDING:
-			return "bg-(--badge-pending-bg) text-(--badge-pending-fg) border-none";
-		case StatusMurid.PLACEMENT_TEST:
-			return "bg-(--badge-placement-test-bg) text-(--badge-placement-test-fg) border-none";
-		case StatusMurid.ON_GOING:
-			return "bg-(--badge-on-going-bg) text-(--badge-on-going-fg) border-none";
-		case StatusMurid.WAITING_LIST:
-			return "bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg) border-none";
-		case StatusMurid.TUNGGU_KONFIRMASI:
-			return "bg-(--badge-tunggu-konfirmasi-bg) text-(--badge-tunggu-konfirmasi-fg) border-none";
-		case StatusMurid.OFF:
-			return "bg-(--badge-off-bg) text-(--badge-off-fg) border-none";
-		default:
-			return "bg-gray-500 text-white";
-	}
-};
+// Removed local getStatusColorBadge as it is now in @/utils/statusUtils
 export const columns = ({
 	onEditClick,
 	onEditStatusClick,
@@ -190,14 +167,7 @@ export const columns = ({
 													<Badge
 														className={cn(
 															"h-4 px-1.5 text-[9px] font-bold border-none",
-															reg.status === "AKTIF" &&
-																"bg-(--badge-aktif-bg) text-(--badge-aktif-fg)",
-															reg.status === "TRIAL" &&
-																"bg-(--badge-trial-bg) text-(--badge-trial-fg)",
-															reg.status === "WAITING_LIST" &&
-																"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)",
-															reg.status === "NON_AKTIF" &&
-																"bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)",
+															statusPendaftaranColorMap[reg.status],
 														)}
 													>
 														{reg.status}
@@ -360,8 +330,10 @@ export const columns = ({
 		cell: ({ row }) => {
 			const status = row.original.statusMurid;
 			return (
-				<Badge className={`${getStatusColorBadge(status)} capitalize`}>
-					{status.replaceAll("_", " ").toLowerCase()}
+				<Badge
+					className={cn("capitalize font-medium", statusMuridColorMap[status])}
+				>
+					{formatStatus(status).toLowerCase()}
 				</Badge>
 			);
 		},

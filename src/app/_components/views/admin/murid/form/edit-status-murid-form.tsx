@@ -17,6 +17,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import type { TypeUpdateStatusMuridSchema } from "@/types/murid.type";
+import { formatStatus } from "@/utils/statusUtils";
 
 // Simple schema for status update
 
@@ -46,10 +47,9 @@ export default function EditStatusMuridForm({
 							<SelectContent>
 								{Object.values(StatusMurid).map((status) => (
 									<SelectItem key={status} value={status}>
-										{status
-											.replaceAll("_", " ")
-											.toLowerCase()
-											.replace(/\b\w/g, (c) => c.toUpperCase())}
+										<span className="capitalize">
+											{formatStatus(status).toLowerCase()}
+										</span>
 									</SelectItem>
 								))}
 							</SelectContent>

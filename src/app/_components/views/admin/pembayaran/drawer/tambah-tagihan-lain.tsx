@@ -6,6 +6,7 @@ import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AddDrawer } from "@/app/_components/shared/add-drawer";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -46,6 +47,7 @@ import {
 	type CreateTagihanLainInput,
 	createTagihanLainSchema,
 } from "@/types/tagihanLain.type";
+import { formatStatus, statusMuridColorMap } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 interface TambahTagihanLainProps {
@@ -88,7 +90,7 @@ export default function TambahTagihanLain({
 		pagination: { pageIndex: 0, pageSize: 10 },
 		searchFilterAll: debouncedSearchMurid,
 		filterCabang: activeCabangId,
-		filterStatusAll: "AKTIF",
+		filterStatusAll: kategori === "REGISTRASI" ? "ALL" : "AKTIF",
 	});
 
 	// 2. STATE UNTUK PILIH KELAS (Available Enrollments)
@@ -223,7 +225,18 @@ export default function TambahTagihanLain({
 													)}
 												/>
 												<div className="flex flex-col">
-													<span>{murid.namaLengkap}</span>
+													<div className="flex items-center gap-2">
+														<span>{murid.namaLengkap}</span>
+														<Badge
+															variant="outline"
+															className={cn(
+																"text-[10px] h-4 px-1 leading-none font-normal",
+																statusMuridColorMap[murid.statusMurid],
+															)}
+														>
+															{formatStatus(murid.statusMurid)}
+														</Badge>
+													</div>
 													<span className="text-muted-foreground text-xs">
 														{murid.umur} Tahun - {murid.kelasSekolah}
 													</span>

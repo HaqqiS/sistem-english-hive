@@ -10,7 +10,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
+import { formatStatus, statusOrderBukuColorMap } from "@/utils/statusUtils";
 
 export type TypeKelasSiapOrderBuku =
 	RouterOutputs["kelas"]["getKelasSiapOrderBuku"][number];
@@ -32,37 +34,34 @@ export const columnsOrderBuku = ({
 			const isMutating = row.original.id === isMutatingId;
 
 			const getStatusConfig = (s: StatusOrderBuku) => {
+				const baseConfig = {
+					label: formatStatus(s),
+					className: cn("border-none", statusOrderBukuColorMap[s]),
+				};
+
 				switch (s) {
 					case StatusOrderBuku.SUDAH_DIPESAN:
 						return {
-							label: "Sudah Dipesan",
+							...baseConfig,
 							variant: "default" as const,
-							className:
-								"bg-(--badge-sudah-dipesan-bg) text-(--badge-sudah-dipesan-fg) border-none",
 							icon: <Check className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.MENUNGGU_PERSETUJUAN:
 						return {
-							label: "Menunggu Persetujuan",
+							...baseConfig,
 							variant: "secondary" as const,
-							className:
-								"bg-(--badge-menunggu-persetujuan-bg) text-(--badge-menunggu-persetujuan-fg) border-none",
 							icon: <Clock className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.DIBATALKAN:
 						return {
-							label: "Dibatalkan",
+							...baseConfig,
 							variant: "destructive" as const,
-							className:
-								"bg-(--badge-dibatalkan-bg) text-(--badge-dibatalkan-fg) border-none",
 							icon: <XCircle className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.BELUM_DIPROSES:
 						return {
-							label: "Belum Diproses",
+							...baseConfig,
 							variant: "outline" as const,
-							className:
-								"bg-(--badge-belum-diproses-bg) text-(--badge-belum-diproses-fg) border-none",
 							icon: <Clock className="h-3 w-3" />,
 						};
 				}

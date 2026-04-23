@@ -27,10 +27,11 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { TypeMuridNotRegistered } from "@/types/murid.type";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppLink } from "@/utils/noWAUtils";
-import { getStatusColorBadge } from "./columns-murid";
+import { formatStatus, statusMuridColorMap } from "@/utils/statusUtils";
 
 interface ColumnsConfig {
 	onEditClick: (item: TypeMuridNotRegistered) => void;
@@ -219,8 +220,8 @@ export const columns = ({
 		cell: ({ row }) => {
 			const status = row.original.statusMurid;
 			return (
-				<Badge className={`${getStatusColorBadge(status)} capitalize`}>
-					{status.replaceAll("_", " ").toLowerCase()}
+				<Badge className={cn("capitalize", statusMuridColorMap[status])}>
+					{formatStatus(status)}
 				</Badge>
 			);
 		},

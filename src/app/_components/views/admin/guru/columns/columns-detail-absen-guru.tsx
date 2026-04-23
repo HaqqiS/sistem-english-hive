@@ -1,30 +1,14 @@
-// src/app/_components/views/admin/guru/detail/columns-guru-history.tsx
 "use client";
 
-import { StatusAbsenGuru } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import type { TypeAbsensiGuruHistoryItem } from "@/types/absenGuru.type";
 import { formatToWITA } from "@/utils/dateUtils";
-
-// Helper untuk status badge
-const getStatusBadge = (status: StatusAbsenGuru) => {
-	switch (status) {
-		case StatusAbsenGuru.HADIR:
-			return <Badge variant="default">Hadir</Badge>;
-		case StatusAbsenGuru.SAKIT:
-			return <Badge variant="secondary">Sakit</Badge>;
-		case StatusAbsenGuru.IJIN:
-			return <Badge variant="secondary">Ijin</Badge>;
-		case StatusAbsenGuru.ALPA:
-			return <Badge variant="destructive">Alpa</Badge>;
-		default:
-			return <Badge variant="outline">{status}</Badge>;
-	}
-};
+import { formatStatus, statusAbsenGuruColorMap } from "@/utils/statusUtils";
 
 export const columns: ColumnDef<TypeAbsensiGuruHistoryItem>[] = [
 	// Checkbox selection
@@ -104,6 +88,13 @@ export const columns: ColumnDef<TypeAbsensiGuruHistoryItem>[] = [
 				<ArrowUpDown className="ml-2 h-4 w-4" />
 			</Button>
 		),
-		cell: ({ row }) => getStatusBadge(row.original.status),
+		cell: ({ row }) => {
+			const status = row.original.status;
+			return (
+				<Badge className={cn("font-medium", statusAbsenGuruColorMap[status])}>
+					{formatStatus(status)}
+				</Badge>
+			);
+		},
 	},
 ];

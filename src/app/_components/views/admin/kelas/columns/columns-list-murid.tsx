@@ -1,6 +1,5 @@
 "use client";
 
-import { StatusPendaftaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
 	ArrowUpDown,
@@ -20,9 +19,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppLink } from "@/utils/noWAUtils";
+import { formatStatus, statusPendaftaranColorMap } from "@/utils/statusUtils";
 
 export type DaftarMuridType =
 	RouterOutputs["pendaftaranKelas"]["getPendaftarByKelasId"][number];
@@ -145,32 +146,13 @@ export const columns = ({
 		),
 		cell: ({ row }) => {
 			const status = row.original.status;
-			let label = "Aktif";
-			let badgeClass = "";
-
-			switch (status) {
-				case StatusPendaftaran.AKTIF:
-					label = "Aktif";
-					badgeClass = "bg-(--badge-aktif-bg) text-(--badge-aktif-fg)";
-					break;
-				case StatusPendaftaran.TRIAL:
-					label = "Trial";
-					badgeClass = "bg-(--badge-trial-bg) text-(--badge-trial-fg)";
-					break;
-				case StatusPendaftaran.WAITING_LIST:
-					label = "Waiting List";
-					badgeClass =
-						"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)";
-					break;
-				case StatusPendaftaran.NON_AKTIF:
-					label = "Non-Aktif";
-					badgeClass = "bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)";
-					break;
-			}
 
 			return (
-				<Badge className={`border-none ${badgeClass}`} variant="default">
-					{label}
+				<Badge
+					className={cn("border-none", statusPendaftaranColorMap[status])}
+					variant="default"
+				>
+					{formatStatus(status)}
 				</Badge>
 			);
 		},

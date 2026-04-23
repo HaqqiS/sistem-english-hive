@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusKelas } from "@prisma/client";
 import dayjs from "dayjs";
 import { AlertCircle, Download } from "lucide-react";
 import { useMemo } from "react";
@@ -15,6 +16,8 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { useUser } from "@/hooks/useUser";
+import { cn } from "@/lib/utils";
+import { formatStatus } from "@/utils/statusUtils";
 
 const DAYS = [
 	"SENIN",
@@ -30,18 +33,20 @@ interface JadwalGuruTabProps {
 	cabangId?: string;
 }
 
-const getJadwalGuruStatusTheme = (status?: string | null) => {
+const getJadwalGuruStatusTheme = (status?: StatusKelas | null) => {
 	switch (status) {
-		case "TRIAL":
+		case StatusKelas.TRIAL:
 			return "border-l-purple-500 bg-purple-50 text-purple-900 dark:bg-purple-900/20 dark:text-purple-100";
-		case "WAITING":
+		case StatusKelas.WAITING:
 			return "border-l-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-100";
-		case "LEVEL_UP":
+		case StatusKelas.LEVEL_UP:
 			return "border-l-teal-500 bg-teal-50 text-teal-900 dark:bg-teal-900/20 dark:text-teal-100";
-		case "COMPLETED":
+		case StatusKelas.COMPLETED:
 			return "border-l-slate-500 bg-slate-50 text-slate-900 dark:bg-slate-900/20 dark:text-slate-100";
-		case "RUNNING":
+		case StatusKelas.RUNNING:
 			return "border-l-primary bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary";
+		default:
+			return "";
 	}
 };
 
@@ -280,13 +285,18 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 										>
 											{cellContent ? (
 												<div
-													className={`flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md ${getJadwalGuruStatusTheme(cellContent.status)}`}
+													className={cn(
+														"flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md",
+														getJadwalGuruStatusTheme(
+															cellContent.status as StatusKelas,
+														),
+													)}
 												>
 													<span className="font-bold tracking-tight">
 														{cellContent.kodeKelas}
 													</span>
 													<span className="text-[10px] font-medium opacity-80">
-														{cellContent.status}
+														{formatStatus(cellContent.status as StatusKelas)}
 													</span>
 												</div>
 											) : (

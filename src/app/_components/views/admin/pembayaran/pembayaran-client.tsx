@@ -32,6 +32,7 @@ import type {
 } from "@/types/pembayaran.type";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { downloadExcel } from "@/utils/exportUtils";
+import { formatStatus } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "./columns/columns-pembayaran";
 import EditPembayaran from "./drawer/edit-pembayaran";
@@ -325,12 +326,14 @@ export default function PembayaranClient({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="ALL">Semua Status</SelectItem>
-								<SelectItem value={StatusPembayaran.LUNAS}>Lunas</SelectItem>
+								<SelectItem value={StatusPembayaran.LUNAS}>
+									{formatStatus(StatusPembayaran.LUNAS)}
+								</SelectItem>
 								<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
-									Belum Lunas
+									{formatStatus(StatusPembayaran.BELUM_LUNAS)}
 								</SelectItem>
 								<SelectItem value={StatusPembayaran.PENDING}>
-									Pending
+									{formatStatus(StatusPembayaran.PENDING)}
 								</SelectItem>
 							</SelectContent>
 						</Select>

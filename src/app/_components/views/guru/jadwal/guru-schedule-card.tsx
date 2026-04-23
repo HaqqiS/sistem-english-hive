@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusKelas } from "@prisma/client";
 import { Album, Clock, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import type { TypeScheduleMatrixItem } from "@/types/jadwalKelas.type";
+import { formatStatus, statusKelasColorMap } from "@/utils/statusUtils";
 
 interface GuruScheduleCardProps {
 	data: TypeScheduleMatrixItem;
@@ -18,38 +20,23 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 	const isPrivate = data.tipeKelas === "PRIVATE";
 
 	// Logic warna berdasarkan Status Kelas (Request User)
-	let cardStyles = "";
-	let headerColorClass = "";
-	const status = data.statusKelas ?? "RUNNING"; // Default fallback
+	const status = (data.statusKelas as StatusKelas) ?? StatusKelas.RUNNING;
 
-	switch (status) {
-		case "TRIAL":
-			cardStyles =
-				"border-l-4 border-l-(--badge-trial-bg) bg-(--badge-trial-bg)/10 hover:bg-(--badge-trial-bg)/20 shadow-xs transition-colors";
-			headerColorClass = "bg-(--badge-trial-bg) text-(--badge-trial-fg)";
-			break;
-		case "WAITING":
-			cardStyles =
-				"border-l-4 border-l-(--badge-waiting-bg) bg-(--badge-waiting-bg)/10 hover:bg-(--badge-waiting-bg)/20 shadow-xs transition-colors";
-			headerColorClass = "bg-(--badge-waiting-bg) text-(--badge-waiting-fg)";
-			break;
-		case "LEVEL_UP":
-			cardStyles =
-				"border-l-4 border-l-(--badge-level-up-bg) bg-(--badge-level-up-bg)/10 hover:bg-(--badge-level-up-bg)/20 shadow-xs transition-colors";
-			headerColorClass = "bg-(--badge-level-up-bg) text-(--badge-level-up-fg)";
-			break;
-		case "COMPLETED":
-			cardStyles =
-				"border-l-4 border-l-(--badge-completed-bg) bg-(--badge-completed-bg)/10 hover:bg-(--badge-completed-bg)/20 shadow-xs transition-colors";
-			headerColorClass =
-				"bg-(--badge-completed-bg) text-(--badge-completed-fg)";
-			break;
-		case "RUNNING":
-			cardStyles =
-				"border-l-4 border-l-(--badge-running-bg) bg-(--badge-running-bg)/10 hover:bg-(--badge-running-bg)/20 shadow-xs transition-colors";
-			headerColorClass = "bg-(--badge-running-bg) text-(--badge-running-fg)";
-			break;
-	}
+	const cardStyles = cn(
+		"border-l-4 shadow-xs transition-colors hover:bg-opacity-20",
+		status === StatusKelas.TRIAL &&
+			"border-l-(--badge-trial-bg) bg-(--badge-trial-bg)/10 hover:bg-(--badge-trial-bg)/20",
+		status === StatusKelas.WAITING &&
+			"border-l-(--badge-waiting-bg) bg-(--badge-waiting-bg)/10 hover:bg-(--badge-waiting-bg)/20",
+		status === StatusKelas.LEVEL_UP &&
+			"border-l-(--badge-level-up-bg) bg-(--badge-level-up-bg)/10 hover:bg-(--badge-level-up-bg)/20",
+		status === StatusKelas.COMPLETED &&
+			"border-l-(--badge-completed-bg) bg-(--badge-completed-bg)/10 hover:bg-(--badge-completed-bg)/20",
+		status === StatusKelas.RUNNING &&
+			"border-l-(--badge-running-bg) bg-(--badge-running-bg)/10 hover:bg-(--badge-running-bg)/20",
+	);
+
+	const headerColorClass = statusKelasColorMap[status];
 
 	return (
 		<HoverCard openDelay={200}>
@@ -127,11 +114,11 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 							<Badge
 								key="status-kelas"
 								className={cn(
-									"h-5 border-0 px-1.5 text-[10px] font-bold border-none",
+									"h-5 border-0 px-1.5 text-[10px] font-bold",
 									headerColorClass,
 								)}
 							>
-								{data.statusKelas}
+								{formatStatus(status)}
 							</Badge>
 						</div>
 					</div>

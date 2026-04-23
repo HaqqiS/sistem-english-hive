@@ -1,6 +1,5 @@
 "use client";
 
-import { StatusKelas } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -14,23 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
 import dayjs from "@/utils/dateUtils";
+import { formatStatus, statusKelasColorMap } from "@/utils/statusUtils";
 
-const getBadgeKelasStatusTheme = (status?: StatusKelas | null) => {
-	switch (status) {
-		case StatusKelas.RUNNING:
-			return "bg-(--badge-running-bg) text-(--badge-running-fg)";
-		case StatusKelas.WAITING:
-			return "bg-(--badge-waiting-bg) text-(--badge-waiting-fg)";
-		case StatusKelas.TRIAL:
-			return "bg-(--badge-trial-bg) text-(--badge-trial-fg)";
-		case StatusKelas.LEVEL_UP:
-			return "bg-(--badge-level-up-bg) text-(--badge-level-up-fg)";
-		case StatusKelas.COMPLETED:
-			return "bg-(--badge-completed-bg) text-(--badge-completed-fg)";
-		default:
-			return "bg-blue-500 text-white";
-	}
-};
+// Removed local getBadgeKelasStatusTheme as it is now in @/utils/statusUtils
 
 export default function ScheduleList() {
 	const { todaySchedule } = useDashboard();
@@ -121,10 +106,12 @@ export default function ScheduleList() {
 												<Badge
 													className={cn(
 														"h-5 border-0 px-1.5 text-[10px] font-normal",
-														getBadgeKelasStatusTheme(jadwal.kelas.statusKelas),
+														jadwal.kelas.statusKelas &&
+															statusKelasColorMap[jadwal.kelas.statusKelas],
 													)}
 												>
-													{jadwal.kelas.statusKelas}
+													{jadwal.kelas.statusKelas &&
+														formatStatus(jadwal.kelas.statusKelas)}
 												</Badge>
 												<span>Guru: {guruName}</span>
 											</div>

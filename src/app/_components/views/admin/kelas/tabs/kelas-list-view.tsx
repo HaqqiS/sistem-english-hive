@@ -1,6 +1,6 @@
 "use client";
 
-import { StatusOrderBuku, StatusPendaftaran } from "@prisma/client";
+import type { StatusOrderBuku } from "@prisma/client";
 import {
 	Album,
 	ArrowRight,
@@ -38,6 +38,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
 import { formatToWITA } from "@/utils/dateUtils";
+import {
+	formatStatus,
+	statusOrderBukuColorMap,
+	statusPendaftaranColorMap,
+} from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 interface KelasListViewProps {
@@ -162,48 +167,45 @@ export function KelasListView({
 														const status = (
 															kelas as { statusOrderBuku?: StatusOrderBuku }
 														).statusOrderBuku;
-														if (status === StatusOrderBuku.SUDAH_DIPESAN) {
-															return (
-																<Badge
-																	variant="default"
-																	className="bg-(--badge-sudah-dipesan-bg) text-(--badge-sudah-dipesan-fg) flex items-center justify-center gap-0 border-none p-1.5"
-																	title="Sudah Dipesan"
-																>
-																	<BookOpenCheck className="h-4 w-4" />
-																</Badge>
-															);
-														}
-														if (
-															status === StatusOrderBuku.MENUNGGU_PERSETUJUAN
-														) {
-															return (
-																<Badge
-																	variant="secondary"
-																	className="bg-(--badge-menunggu-persetujuan-bg) text-(--badge-menunggu-persetujuan-fg) flex items-center justify-center gap-0 border-none p-1.5"
-																	title="Menunggu Persetujuan Order Buku"
-																>
-																	<Clock className="h-4 w-4" />
-																</Badge>
-															);
-														}
-														if (status === StatusOrderBuku.DIBATALKAN) {
-															return (
-																<Badge
-																	variant="destructive"
-																	className="bg-(--badge-dibatalkan-bg) text-(--badge-dibatalkan-fg) flex items-center justify-center gap-0 border-none p-1.5"
-																	title="Order Buku Dibatalkan"
-																>
-																	<BookX className="h-4 w-4" />
-																</Badge>
-															);
-														}
+														if (!status) return null;
+
+														const iconMap: Record<
+															StatusOrderBuku,
+															React.ReactNode
+														> = {
+															SUDAH_DIPESAN: (
+																<BookOpenCheck className="h-4 w-4" />
+															),
+															MENUNGGU_PERSETUJUAN: (
+																<Clock className="h-4 w-4" />
+															),
+															DIBATALKAN: <BookX className="h-4 w-4" />,
+															BELUM_DIPROSES: <BookX className="h-4 w-4" />,
+														};
+
+														const variantMap: Record<
+															StatusOrderBuku,
+															| "default"
+															| "secondary"
+															| "destructive"
+															| "outline"
+														> = {
+															SUDAH_DIPESAN: "default",
+															MENUNGGU_PERSETUJUAN: "secondary",
+															DIBATALKAN: "destructive",
+															BELUM_DIPROSES: "outline",
+														};
+
 														return (
 															<Badge
-																variant="outline"
-																className="bg-(--badge-belum-diproses-bg) text-(--badge-belum-diproses-fg) flex items-center justify-center gap-0 border-none p-1.5"
-																title="Belum Diproses"
+																variant={variantMap[status]}
+																className={cn(
+																	"flex items-center justify-center gap-0 border-none p-1.5",
+																	statusOrderBukuColorMap[status],
+																)}
+																title={formatStatus(status)}
 															>
-																<BookX className="h-4 w-4" />
+																{iconMap[status]}
 															</Badge>
 														);
 													})()}
@@ -288,45 +290,14 @@ export function KelasListView({
 																			</span>
 																		</div>
 																		<div>
-																			{(() => {
-																				const status = p.status;
-																				let label = "Aktif";
-																				let badgeClass = "";
-
-																				switch (status) {
-																					case StatusPendaftaran.AKTIF:
-																						label = "Aktif";
-																						badgeClass =
-																							"bg-(--badge-aktif-bg) text-(--badge-aktif-fg)";
-																						break;
-																					case StatusPendaftaran.TRIAL:
-																						label = "Trial";
-																						badgeClass =
-																							"bg-(--badge-trial-bg) text-(--badge-trial-fg)";
-																						break;
-																					case StatusPendaftaran.WAITING_LIST:
-																						label = "Waiting List";
-																						badgeClass =
-																							"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)";
-																						break;
-																					case StatusPendaftaran.NON_AKTIF:
-																						label = "Non-Aktif";
-																						badgeClass =
-																							"bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)";
-																						break;
-																				}
-
-																				return (
-																					<Badge
-																						className={cn(
-																							"border-none",
-																							badgeClass,
-																						)}
-																					>
-																						{label}
-																					</Badge>
-																				);
-																			})()}
+																			<Badge
+																				className={cn(
+																					"border-none",
+																					statusPendaftaranColorMap[p.status],
+																				)}
+																			>
+																				{formatStatus(p.status)}
+																			</Badge>
 																		</div>
 																	</div>
 

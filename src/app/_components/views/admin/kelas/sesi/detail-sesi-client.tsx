@@ -1,6 +1,6 @@
 "use client";
 
-import { StatusAbsenMurid } from "@prisma/client";
+import { StatusAbsenMurid, StatusPendaftaran } from "@prisma/client";
 import type { RowInput } from "jspdf-autotable";
 import {
 	AlertCircle,
@@ -58,8 +58,10 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSesiPertemuan } from "@/hooks/useSesiPertemuan";
+import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { formatToWITA } from "@/utils/dateUtils";
+import { formatStatus, statusPendaftaranColorMap } from "@/utils/statusUtils";
 import EditSesiDialog from "./edit-sesi-dialog";
 import TambahSesiPertemuan from "./tambah-sesi-pertemuan";
 
@@ -460,9 +462,16 @@ export default function DetailSesiClient() {
 										<TableCell className="bg-background sticky left-0 border-r font-medium text-sm z-20">
 											<div className="flex items-center gap-2">
 												<span>{row.namaSiswa}</span>
-												{row.statusPendaftaran === "TRIAL" && (
-													<Badge className="bg-(--badge-trial-bg) text-(--badge-trial-fg) border-none text-[10px] px-1.5 py-0">
-														Trial
+												{row.statusPendaftaran === StatusPendaftaran.TRIAL && (
+													<Badge
+														className={cn(
+															"text-[10px] px-1.5 py-0 h-4",
+															statusPendaftaranColorMap[
+																StatusPendaftaran.TRIAL
+															],
+														)}
+													>
+														{formatStatus(StatusPendaftaran.TRIAL)}
 													</Badge>
 												)}
 											</div>

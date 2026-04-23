@@ -1,6 +1,5 @@
 "use client";
 
-import { StatusPembayaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, CheckCircle, MessageCircle } from "lucide-react";
 import Link from "next/link";
@@ -18,29 +17,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import type { TypePembayaranJatuhTempo } from "@/types/pembayaran.type";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppReminder } from "@/utils/noWAUtils";
+import { formatStatus, statusPembayaranColorMap } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 interface ColumnsJatuhTempoConfig {
 	onVerifyClick: (item: TypePembayaranJatuhTempo) => void;
 }
 
-const getStatusBadgeVariant = (
-	status: StatusPembayaran,
-): "default" | "destructive" | "secondary" | "outline" => {
-	switch (status) {
-		case StatusPembayaran.LUNAS:
-			return "default"; // Hijau
-		case StatusPembayaran.BELUM_LUNAS:
-			return "destructive"; // Merah
-		case StatusPembayaran.PENDING:
-			return "secondary"; // Abu-abu
-		default:
-			return "outline";
-	}
-};
+// Removed local getStatusBadgeVariant as it is now in @/utils/statusUtils
 
 export const columnsJatuhTempo = ({
 	onVerifyClick,
@@ -179,7 +167,11 @@ export const columnsJatuhTempo = ({
 			const status = row.original.statusBayar;
 			return (
 				<div className="flex flex-col items-start gap-1">
-					<Badge variant={getStatusBadgeVariant(status)}>{status}</Badge>
+					<Badge
+						className={cn("font-medium", statusPembayaranColorMap[status])}
+					>
+						{formatStatus(status)}
+					</Badge>
 					{row.original.verifiedById && (
 						<span className="text-muted-foreground text-[10px]">
 							Verif: {row.original.verifiedById}

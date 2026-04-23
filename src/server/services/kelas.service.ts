@@ -7,6 +7,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import { BATAS_SESI, JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
+import { syncMuridStatus } from "./pendaftaran.service";
 
 // Tipe untuk Transaksi Prisma (agar bisa dipakai di dalam tx)
 type PrismaTx = Omit<
@@ -212,6 +213,8 @@ export const handleAutoLevelUp = async ({
 					},
 				});
 			}
+			// 3. Sync Status Murid
+			await syncMuridStatus(tx, student.muridId);
 		}),
 	);
 
@@ -229,11 +232,22 @@ export const handleClassCompletion = async (
 	if (totalSesi >= BATAS_SESI) {
 		console.log(`[AUTO-FINISH] Menutup kelas ID ${kelasId}`);
 
+		// A. Ambil daftar murid sebelum dimatikan untuk sinkronisasi status nanti
+		const studentsToSync = await tx.pendaftaranKelas.findMany({
+			where: { kelasId: kelasId },
+			select: { muridId: true },
+		});
+
 		// Matikan Pendaftaran Lama
 		await tx.pendaftaranKelas.updateMany({
 			where: { kelasId: kelasId },
 			data: { status: StatusPendaftaran.NON_AKTIF },
 		});
+
+		// Sinkronisasi status setiap murid secara cerdas
+		for (const s of studentsToSync) {
+			await syncMuridStatus(tx, s.muridId);
+		}
 
 		// Hapus Jadwal Lama
 		await tx.jadwalKelas.deleteMany({

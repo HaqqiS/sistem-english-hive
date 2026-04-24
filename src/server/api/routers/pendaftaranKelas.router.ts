@@ -427,7 +427,10 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 						}
 
 						// 1d. Sinkronisasi status murid (cerdas berdasarkan riwayat)
-						await syncMuridStatus(tx, input.muridId ?? existingRecord.muridId);
+						await syncMuridStatus(tx, existingRecord.muridId);
+						if (input.muridId && input.muridId !== existingRecord.muridId) {
+							await syncMuridStatus(tx, input.muridId);
+						}
 
 						return newRegistration; // Return data baru
 					}
@@ -504,9 +507,6 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							});
 						}
 
-						// Update status murid (sync otomatis)
-						await syncMuridStatus(tx, existingRecord.muridId);
-
 						// Fallback: Check via relation in Kelas, but we already have existingRecord loaded without relation.
 						// Better to fetch fresh if needed, or rely on logic below.
 						// Let's safe fetch logic:
@@ -571,20 +571,22 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 					const updateData: Prisma.PendaftaranKelasUpdateInput = {
 						tanggalMulai: input.tanggalMulai,
 					};
-					// Only update status if provided (though schema says optional, logic implies it matters)
+					// Only update status if provided
 					if (input.status) {
 						updateData.status = input.status;
 					}
+
+					const result = await tx.pendaftaranKelas.update({
+						where: { id: input.id },
+						data: updateData,
+					});
 
 					// Sync Murid Status if status changes
 					if (input.status) {
 						await syncMuridStatus(tx, existingRecord.muridId);
 					}
 
-					return tx.pendaftaranKelas.update({
-						where: { id: input.id },
-						data: updateData,
-					});
+					return result;
 				});
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -814,13 +816,13 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							},
 						});
 
-						// 2. Sinkronisasi status murid (secara cerdas mengecek pendaftaran lain)
-						await syncMuridStatus(tx, existingMuridKelas.muridId);
-
-						// 3. Hapus pendaftaran kelas itu sendiri
+						// 2. Hapus pendaftaran kelas itu sendiri
 						await tx.pendaftaranKelas.delete({
 							where: { id: input.id },
 						});
+
+						// 3. Sinkronisasi status murid (secara cerdas mengecek pendaftaran lain)
+						await syncMuridStatus(tx, existingMuridKelas.muridId);
 					});
 				}
 

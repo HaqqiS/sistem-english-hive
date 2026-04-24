@@ -61,6 +61,7 @@ export const createDetailAbsenMuridColumns = ({
 					<div className="font-medium">{row.original.namaLengkap}</div>
 					{row.original.statusPendaftaran === StatusPendaftaran.TRIAL && (
 						<Badge
+							variant="outline"
 							className={cn(
 								"text-[10px] px-1.5 py-0 h-4",
 								statusPendaftaranColorMap[StatusPendaftaran.TRIAL],

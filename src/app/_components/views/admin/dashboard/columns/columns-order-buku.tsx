@@ -43,22 +43,22 @@ export const columnsOrderBuku = ({
 					case StatusOrderBuku.SUDAH_DIPESAN:
 						return {
 							...baseConfig,
-							variant: "default" as const,
+							variant: "outline" as const,
 							icon: <Check className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.MENUNGGU_PERSETUJUAN:
 						return {
 							...baseConfig,
-							variant: "secondary" as const,
+							variant: "outline" as const,
 							icon: <Clock className="h-3 w-3" />,
 						};
 					case StatusOrderBuku.DIBATALKAN:
 						return {
 							...baseConfig,
-							variant: "destructive" as const,
+							variant: "outline" as const,
 							icon: <XCircle className="h-3 w-3" />,
 						};
-					case StatusOrderBuku.BELUM_DIPROSES:
+					default:
 						return {
 							...baseConfig,
 							variant: "outline" as const,

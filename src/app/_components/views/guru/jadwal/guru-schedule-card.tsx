@@ -112,6 +112,7 @@ export function GuruScheduleCard({ data }: GuruScheduleCardProps) {
 								{data.jumlahMurid} Siswa Terdaftar
 							</Badge>
 							<Badge
+								variant="outline"
 								key="status-kelas"
 								className={cn(
 									"h-5 border-0 px-1.5 text-[10px] font-bold",

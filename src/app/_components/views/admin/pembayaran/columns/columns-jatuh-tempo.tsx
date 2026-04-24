@@ -168,6 +168,7 @@ export const columnsJatuhTempo = ({
 			return (
 				<div className="flex flex-col items-start gap-1">
 					<Badge
+						variant="outline"
 						className={cn("font-medium", statusPembayaranColorMap[status])}
 					>
 						{formatStatus(status)}

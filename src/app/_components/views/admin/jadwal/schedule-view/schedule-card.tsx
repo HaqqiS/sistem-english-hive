@@ -176,6 +176,7 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 								{data.jumlahMurid} Siswa Terdaftar
 							</Badge>
 							<Badge
+								variant="outline"
 								className={cn(
 									"h-5 border-0 px-1.5 text-[10px] font-bold",
 									headerColorClass,

@@ -91,7 +91,10 @@ export const columns: ColumnDef<TypeAbsensiGuruHistoryItem>[] = [
 		cell: ({ row }) => {
 			const status = row.original.status;
 			return (
-				<Badge className={cn("font-medium", statusAbsenGuruColorMap[status])}>
+				<Badge
+					variant="outline"
+					className={cn("font-medium", statusAbsenGuruColorMap[status])}
+				>
 					{formatStatus(status)}
 				</Badge>
 			);

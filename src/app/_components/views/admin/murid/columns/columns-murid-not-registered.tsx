@@ -220,7 +220,10 @@ export const columns = ({
 		cell: ({ row }) => {
 			const status = row.original.statusMurid;
 			return (
-				<Badge className={cn("capitalize", statusMuridColorMap[status])}>
+				<Badge
+					variant="outline"
+					className={cn("capitalize", statusMuridColorMap[status])}
+				>
 					{formatStatus(status)}
 				</Badge>
 			);

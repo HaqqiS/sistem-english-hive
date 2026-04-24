@@ -331,6 +331,7 @@ export const columns = ({
 			const status = row.original.statusMurid;
 			return (
 				<Badge
+					variant="outline"
 					className={cn("capitalize font-medium", statusMuridColorMap[status])}
 				>
 					{formatStatus(status).toLowerCase()}

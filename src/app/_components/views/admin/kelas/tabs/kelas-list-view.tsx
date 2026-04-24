@@ -183,22 +183,11 @@ export function KelasListView({
 															BELUM_DIPROSES: <BookX className="h-4 w-4" />,
 														};
 
-														const variantMap: Record<
-															StatusOrderBuku,
-															| "default"
-															| "secondary"
-															| "destructive"
-															| "outline"
-														> = {
-															SUDAH_DIPESAN: "default",
-															MENUNGGU_PERSETUJUAN: "secondary",
-															DIBATALKAN: "destructive",
-															BELUM_DIPROSES: "outline",
-														};
+														// Removed variantMap as we use outline for all status badges to allow custom colors
 
 														return (
 															<Badge
-																variant={variantMap[status]}
+																variant="outline"
 																className={cn(
 																	"flex items-center justify-center gap-0 border-none p-1.5",
 																	statusOrderBukuColorMap[status],
@@ -291,6 +280,7 @@ export function KelasListView({
 																		</div>
 																		<div>
 																			<Badge
+																				variant="outline"
 																				className={cn(
 																					"border-none",
 																					statusPendaftaranColorMap[p.status],

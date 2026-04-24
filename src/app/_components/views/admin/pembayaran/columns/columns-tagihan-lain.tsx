@@ -497,7 +497,10 @@ export const columnsTagihanLainGlobal = ({
 		cell: ({ row }) => {
 			const status = row.original.status;
 			return (
-				<Badge className={cn("font-medium", statusPembayaranColorMap[status])}>
+				<Badge
+					variant="outline"
+					className={cn("font-medium", statusPembayaranColorMap[status])}
+				>
 					{formatStatus(status)}
 				</Badge>
 			);

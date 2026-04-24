@@ -149,8 +149,8 @@ export const columns = ({
 
 			return (
 				<Badge
-					className={cn("border-none", statusPendaftaranColorMap[status])}
-					variant="default"
+					variant="outline"
+					className={cn("font-medium", statusPendaftaranColorMap[status])}
 				>
 					{formatStatus(status)}
 				</Badge>

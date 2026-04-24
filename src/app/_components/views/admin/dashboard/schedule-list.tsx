@@ -104,6 +104,7 @@ export default function ScheduleList() {
 											</div>
 											<div className="flex items-center justify-between text-xs text-muted-foreground">
 												<Badge
+													variant="outline"
 													className={cn(
 														"h-5 border-0 px-1.5 text-[10px] font-normal",
 														jadwal.kelas.statusKelas &&

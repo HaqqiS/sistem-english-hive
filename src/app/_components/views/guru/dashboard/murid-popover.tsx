@@ -36,15 +36,14 @@ export function MuridPopover({
 		<Popover open={isOpen} onOpenChange={setIsOpen}>
 			<PopoverTrigger asChild>
 				<Button
-					variant="secondary"
-					size="sm"
+					variant="outline"
 					className={cn(
-						"h-7 gap-1.5 rounded-full px-3 text-xs font-semibold transition-all hover:bg-secondary/80 active:scale-95",
-						isOpen && "bg-secondary ring-2 ring-primary/20",
+						"gap-2 font-semibold transition-all active:scale-[0.98]",
+						isOpen && "bg-muted ring-2 ring-primary/10",
 						className,
 					)}
 				>
-					<Users className="h-3.5 w-3.5" />
+					<Users className="h-4 w-4 text-primary" />
 					<span>{jumlahMurid} Murid</span>
 				</Button>
 			</PopoverTrigger>

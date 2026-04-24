@@ -3,6 +3,7 @@
 import { StatusAbsenGuru } from "@prisma/client";
 import {
 	AlertCircle,
+	CalendarClock,
 	CheckCircle2,
 	Ellipsis,
 	Loader2,
@@ -17,6 +18,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -274,12 +276,15 @@ export default function GuruDashboardClient() {
 							className={isThisItemLoading ? "border-primary/50 shadow-md" : ""}
 						>
 							<CardHeader>
-								<CardTitle className="flex items-start justify-between gap-2">
+								<CardTitle className="flex items-center justify-between gap-2">
 									<span>{`${jadwal.jamMulai} - ${jadwal.jamSelesai}`}</span>
-									<MuridPopover
-										kelasId={jadwal.kelasId}
-										jumlahMurid={jadwal.jumlahMurid ?? 0}
-									/>
+									<Badge
+										variant="secondary"
+										className="h-7 gap-1.5 rounded-full px-3 text-xs font-semibold"
+									>
+										<CalendarClock className="h-3.5 w-3.5" />
+										{jadwal.jumlahSesi} Sesi
+									</Badge>
 								</CardTitle>
 								<CardDescription className="text-primary font-medium">
 									{jadwal.kodeKelas}
@@ -301,7 +306,12 @@ export default function GuruDashboardClient() {
 									<span className="font-medium">{jadwal.namaRuang}</span>
 								</p>
 							</CardContent>
-							<CardFooter className="flex items-center gap-2 pt-0">
+							<CardFooter className="flex flex-col items-center gap-2 pt-0">
+								<MuridPopover
+									kelasId={jadwal.kelasId}
+									jumlahMurid={jadwal.jumlahMurid ?? 0}
+									className="w-full"
+								/>
 								{sudahDimulai ? (
 									jadwal.isAbsenSelesai ? (
 										<Button

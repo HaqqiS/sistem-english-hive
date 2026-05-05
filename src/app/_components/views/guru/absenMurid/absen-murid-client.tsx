@@ -1,6 +1,13 @@
 "use client";
 
-import { CalendarDays, ChevronRight, Clock, School, Users } from "lucide-react";
+import {
+	CalendarDays,
+	ChevronRight,
+	Clock,
+	FileText,
+	School,
+	Users,
+} from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import {
@@ -110,6 +117,22 @@ export default function AbsenMuridClient() {
 
 									<AccordionContent className="pb-0">
 										<div className="bg-muted/10 flex flex-col border-t">
+											<div className="flex items-center justify-between border-b bg-muted/30 px-6 py-2">
+												<span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
+													Riwayat Sesi
+												</span>
+												<Button
+													variant="link"
+													size="sm"
+													asChild
+													className="h-auto p-0 text-xs"
+												>
+													<Link href={`/guru/absen/rekap/${kelas.id}`}>
+														<FileText className="mr-1 h-3 w-3" />
+														Lihat Rekap Presensi
+													</Link>
+												</Button>
+											</div>
 											{kelas.sesiPertemuanKelases.map((sesi, sesiIndex) => {
 												// Hitung pertemuan ke berapa (karena sort desc, index 0 adalah pertemuan terakhir)
 												const pertemuanKe = totalSesi - sesiIndex;

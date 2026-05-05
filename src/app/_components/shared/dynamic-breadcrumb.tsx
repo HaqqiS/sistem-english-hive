@@ -14,10 +14,11 @@ import {
 
 // Peta untuk mengganti nama segmen teknis ke nama tampilan yang ramah user
 const RENAME_MAP: Record<string, string> = {
-	guru: "Gaji Guru",
+	guru: "Guru",
 	pembayaran: "Pembayaran",
 	kelas: "Kelas",
 	verifikasi: "Verifikasi",
+	absen: "Absensi",
 };
 
 // Fungsi helper untuk membuat huruf pertama kapital
@@ -59,6 +60,11 @@ export function DynamicBreadcrumb() {
 
 		if (segment === "sesi") {
 			labelPrefix = "Detail Sesi ";
+			continue;
+		}
+
+		if (segment === "rekap") {
+			labelPrefix = "Rekap ";
 			continue;
 		}
 

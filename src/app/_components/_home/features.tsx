@@ -72,7 +72,7 @@ export default function Features() {
 	};
 
 	return (
-		<section className="bg-muted/30 py-16 sm:py-24">
+		<section id="features" className="bg-muted/30 py-16 sm:py-24">
 			<div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
 				<ScrollAnimation
 					variant="fadeUp"

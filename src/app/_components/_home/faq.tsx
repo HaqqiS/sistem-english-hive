@@ -34,7 +34,10 @@ const faqs = [
 
 export default function FAQ() {
 	return (
-		<section className="bg-background flex min-h-screen items-center px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+		<section
+			id="faq"
+			className="bg-background flex min-h-screen items-center px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+		>
 			<div className="mx-auto w-full max-w-3xl">
 				{/* Header Animasi */}
 				<ScrollAnimation

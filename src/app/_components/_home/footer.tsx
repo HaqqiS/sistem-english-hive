@@ -238,7 +238,7 @@ export default function Footer() {
 				>
 					<div className="flex flex-col items-center justify-between gap-4 md:flex-row">
 						<p className="text-muted-foreground text-sm">
-							© 2025 English Hive. All rights reserved.
+							© {new Date().getFullYear()} English Hive. All rights reserved.
 						</p>
 						<div className="flex gap-6 text-sm">
 							<Link

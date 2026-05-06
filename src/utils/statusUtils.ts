@@ -44,6 +44,8 @@ export const statusPendaftaranColorMap: Record<StatusPendaftaran, string> = {
 	TRIAL: "bg-(--badge-trial-bg) text-(--badge-trial-fg) border-0",
 	WAITING_LIST:
 		"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg) border-0",
+	OFF_SEMENTARA:
+		"bg-(--badge-off-sementara-bg) text-(--badge-off-sementara-fg) border-0",
 };
 
 export const statusOrderBukuColorMap: Record<StatusOrderBuku, string> = {

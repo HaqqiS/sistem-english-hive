@@ -95,6 +95,8 @@
   --badge-tunggu-konfirmasi-fg:   #ffffff;
   --badge-off-bg:                 oklch(0.55 0.02 240);          /* slate */
   --badge-off-fg:                 #ffffff;
+  --badge-off-sementara-bg:       oklch(0.65 0.17 50);           /* amber */
+  --badge-off-sementara-fg:       #ffffff;
 
   /* --- StatusKelas (seragam dengan StatusMurid) --- */
   --badge-running-bg:             var(--badge-aktif-bg);         /* = AKTIF (teal) */
@@ -108,10 +110,11 @@
   --badge-completed-fg:           var(--badge-off-fg);
 
   /* --- StatusPendaftaran (seragam dengan StatusMurid) --- */
-  /* AKTIF       → --badge-aktif-* */
-  /* NON_AKTIF   → --badge-non-aktif-* */
-  /* TRIAL       → --badge-trial-* */
-  /* WAITING_LIST→ --badge-waiting-list-* */
+  /* AKTIF        → --badge-aktif-* */
+  /* NON_AKTIF    → --badge-non-aktif-* */
+  /* TRIAL        → --badge-trial-* */
+  /* WAITING_LIST → --badge-waiting-list-* */
+  /* OFF_SEMENTARA→ --badge-off-sementara-* */
 
   /* --- StatusOrderBuku --- */
   --badge-belum-diproses-bg:          var(--badge-off-bg);               /* slate */
@@ -222,6 +225,8 @@
   --badge-tunggu-konfirmasi-fg:   oklch(0.15 0 0);
   --badge-off-bg:                 oklch(0.48 0.02 240);
   --badge-off-fg:                 #ffffff;
+  --badge-off-sementara-bg:       oklch(0.72 0.17 50);
+  --badge-off-sementara-fg:       oklch(0.15 0 0);
 
   /* StatusKelas, StatusPendaftaran, StatusOrderBuku, StatusPembayaran, StatusAbsenGuru
      → otomatis inherit dari var() di :root karena pakai var(--badge-*-bg),

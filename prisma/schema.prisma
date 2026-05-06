@@ -436,6 +436,7 @@ enum StatusPendaftaran {
   NON_AKTIF
   TRIAL
   WAITING_LIST
+  OFF_SEMENTARA
 }
 
 enum StatusPembayaran {

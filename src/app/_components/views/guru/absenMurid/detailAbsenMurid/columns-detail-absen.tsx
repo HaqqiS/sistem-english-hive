@@ -70,6 +70,18 @@ export const createDetailAbsenMuridColumns = ({
 							{formatStatus(StatusPendaftaran.TRIAL)}
 						</Badge>
 					)}
+					{row.original.statusPendaftaran ===
+						StatusPendaftaran.OFF_SEMENTARA && (
+						<Badge
+							variant="outline"
+							className={cn(
+								"text-[10px] px-1.5 py-0 h-4",
+								statusPendaftaranColorMap[StatusPendaftaran.OFF_SEMENTARA],
+							)}
+						>
+							{formatStatus(StatusPendaftaran.OFF_SEMENTARA)}
+						</Badge>
+					)}
 				</div>
 			);
 		},
@@ -84,6 +96,25 @@ export const createDetailAbsenMuridColumns = ({
 			const isThisRowPending =
 				isPending && variables?.muridId === currentMuridId;
 
+			const status = row.original.status as StatusAbsenMurid | null;
+			const { text, variant } = getBadgeContent(status);
+
+			// Murid OFF_SEMENTARA: tampilkan badge statis, tidak bisa diubah
+			if (
+				row.original.statusPendaftaran === StatusPendaftaran.OFF_SEMENTARA ||
+				status === StatusAbsenMurid.OFF_SEMENTARA
+			) {
+				return (
+					<Badge
+						variant="secondary"
+						className="h-7 px-2 text-xs cursor-not-allowed opacity-80"
+						title="Murid sedang OFF Sementara — absensi tidak dapat diubah"
+					>
+						Off
+					</Badge>
+				);
+			}
+
 			// Handler saat status diubah
 			const handleChange = (value: string) => {
 				if (value) {
@@ -94,9 +125,6 @@ export const createDetailAbsenMuridColumns = ({
 					});
 				}
 			};
-
-			const status = row.original.status as StatusAbsenMurid | null;
-			const { text, variant } = getBadgeContent(status);
 
 			return (
 				<DropdownMenu>

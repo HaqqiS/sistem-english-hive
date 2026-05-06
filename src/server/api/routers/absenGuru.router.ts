@@ -426,16 +426,32 @@ export const absenGuruRouter = createTRPCRouter({
 							},
 						});
 
-						// 4c. Buat AbsensiMurid (Default: ALPA) untuk murid yang AKTIF di kelas ini
-						const muridAktif = await tx.pendaftaranKelas.findMany({
+						// 4c. Buat AbsensiMurid untuk murid yang AKTIF/TRIAL/OFF_SEMENTARA di kelas ini
+						// Pisah menjadi 2 grup:
+						// - AKTIF & TRIAL → status ALPA (default) + trigger billing
+						// - OFF_SEMENTARA  → status OFF_SEMENTARA (no billing, read-only)
+						const semuaMuridKelas = await tx.pendaftaranKelas.findMany({
 							where: {
 								kelasId: jadwal.kelasId,
 								status: {
-									in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL],
+									in: [
+										StatusPendaftaran.AKTIF,
+										StatusPendaftaran.TRIAL,
+										StatusPendaftaran.OFF_SEMENTARA,
+									],
 								},
 							},
 							select: { id: true, muridId: true, status: true },
 						});
+
+						const muridAktif = semuaMuridKelas.filter(
+							(m) =>
+								m.status === StatusPendaftaran.AKTIF ||
+								m.status === StatusPendaftaran.TRIAL,
+						);
+						const muridOffSementara = semuaMuridKelas.filter(
+							(m) => m.status === StatusPendaftaran.OFF_SEMENTARA,
+						);
 
 						if (muridAktif.length > 0) {
 							await tx.absensiMurid.createMany({
@@ -446,12 +462,23 @@ export const absenGuruRouter = createTRPCRouter({
 								})),
 							});
 
-							// [NEW] Kalkulasi Tagihan (On-the-Fly) untuk absensi auto ALPA
+							// Kalkulasi Tagihan hanya untuk murid AKTIF/TRIAL
 							await Promise.all(
 								muridAktif.map((m) =>
 									processAutoBilling(tx, m.id, jadwal.kelasId),
 								),
 							);
+						}
+
+						// Buat absensi OFF_SEMENTARA (read-only, tidak trigger billing)
+						if (muridOffSementara.length > 0) {
+							await tx.absensiMurid.createMany({
+								data: muridOffSementara.map((m) => ({
+									muridId: m.muridId,
+									sesiPertemuanKelasId: newSesi.id,
+									status: StatusAbsenMurid.OFF_SEMENTARA,
+								})),
+							});
 						}
 
 						return {

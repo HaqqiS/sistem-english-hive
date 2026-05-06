@@ -474,6 +474,19 @@ export default function DetailSesiClient() {
 														{formatStatus(StatusPendaftaran.TRIAL)}
 													</Badge>
 												)}
+												{row.statusPendaftaran ===
+													StatusPendaftaran.OFF_SEMENTARA && (
+													<Badge
+														className={cn(
+															"text-[10px] px-1.5 py-0 h-4",
+															statusPendaftaranColorMap[
+																StatusPendaftaran.OFF_SEMENTARA
+															],
+														)}
+													>
+														{formatStatus(StatusPendaftaran.OFF_SEMENTARA)}
+													</Badge>
+												)}
 											</div>
 										</TableCell>
 

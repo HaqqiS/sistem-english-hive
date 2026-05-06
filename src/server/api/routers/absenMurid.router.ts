@@ -70,6 +70,9 @@ export const absenMuridRouter = createTRPCRouter({
 							status: StatusPendaftaran.TRIAL,
 						},
 						{
+							status: StatusPendaftaran.OFF_SEMENTARA,
+						},
+						{
 							muridId: { in: existingMuridIds },
 						},
 					],
@@ -164,6 +167,15 @@ export const absenMuridRouter = createTRPCRouter({
 			const isStatusValid =
 				pendaftaran.status === StatusPendaftaran.AKTIF ||
 				pendaftaran.status === StatusPendaftaran.TRIAL;
+
+			// Guard: Murid OFF_SEMENTARA tidak boleh diubah absensinya oleh guru
+			if (pendaftaran.status === StatusPendaftaran.OFF_SEMENTARA) {
+				throw new TRPCError({
+					code: "PRECONDITION_FAILED",
+					message:
+						"Absensi tidak dapat diubah: murid sedang dalam status OFF Sementara.",
+				});
+			}
 
 			if (!isStatusValid) {
 				// Cek apakah ini update data lama (history)

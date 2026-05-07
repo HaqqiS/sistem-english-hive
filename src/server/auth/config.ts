@@ -2,11 +2,18 @@
 // import { UserRole } from "@prisma/client";
 
 import { compare } from "bcryptjs";
+import { headers } from "next/headers";
 import type { DefaultSession, NextAuthConfig, Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 import { env } from "@/env";
 import { UserRole } from "./type";
+
+const loginRateLimiter = new RateLimiterMemory({
+	points: 5, // 5 attempts
+	duration: 60 * 15, // 15 minutes
+});
 
 declare module "next-auth" {
 	interface Session extends DefaultSession {
@@ -71,6 +78,17 @@ export const authConfig: NextAuthConfig = {
 				password: { label: "Password", type: "password" },
 			},
 			async authorize(credentials): Promise<User | null> {
+				const headersList = await headers();
+				const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
+
+				try {
+					await loginRateLimiter.consume(ip);
+				} catch {
+					throw new Error(
+						"Terlalu banyak percobaan login. Silakan coba lagi nanti.",
+					);
+				}
+
 				const { db } = await import("@/server/db");
 				const email = credentials?.email as string;
 				const password = credentials?.password as string;

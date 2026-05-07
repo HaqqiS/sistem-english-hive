@@ -49,8 +49,19 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 const t = initTRPC.context<typeof createTRPCContext>().create({
 	transformer: superjson,
 	errorFormatter({ shape, error }) {
+		const isProduction = process.env.NODE_ENV === "production";
+		const message =
+			isProduction &&
+			(shape.message.includes(":\\") ||
+				shape.message.includes("/") ||
+				shape.message.toLowerCase().includes("database") ||
+				shape.message.toLowerCase().includes("prisma"))
+				? "Internal server error"
+				: shape.message;
+
 		return {
 			...shape,
+			message,
 			data: {
 				...shape.data,
 				zodError:

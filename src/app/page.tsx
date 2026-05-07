@@ -154,7 +154,11 @@ export default async function Home() {
 	return (
 		<HydrateClient>
 			{/* JSON-LD Structured Data for Rich Snippets */}
-			<script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+			<script
+				type="application/ld+json"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: Standard pattern for JSON-LD
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+			/>
 			<main className="bg-background selection:bg-accent selection:text-accent-foreground min-h-screen overflow-x-hidden">
 				<Navbar />
 

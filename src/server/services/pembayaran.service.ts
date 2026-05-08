@@ -3,6 +3,7 @@ import {
 	type PrismaClient,
 	StatusAbsenMurid,
 	StatusPembayaran,
+	StatusPendaftaran,
 } from "@prisma/client";
 
 import {
@@ -342,7 +343,7 @@ export const processAutoBilling = async (
 	const billingStatus = await calculateSisaPertemuan(db, pendaftaranId);
 
 	// [BARU] Guard: Hanya murid berstatus AKTIF yang boleh dibuatkan tagihan otomatis
-	if (billingStatus.pendaftaranData.status !== "AKTIF") {
+	if (billingStatus.pendaftaranData.status !== StatusPendaftaran.AKTIF) {
 		return;
 	}
 

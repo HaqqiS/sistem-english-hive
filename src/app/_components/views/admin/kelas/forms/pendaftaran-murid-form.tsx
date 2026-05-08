@@ -40,6 +40,7 @@ import { useMurid } from "@/hooks/useMurid";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { TypeClientTambahMuridSchema } from "@/types/pendaftaranKelas.type";
+import { formatStatus } from "@/utils/statusUtils";
 
 interface PendaftaranMuridFormProps {
 	onSubmit: (data: TypeClientTambahMuridSchema) => void;
@@ -271,11 +272,13 @@ export default function PendaftaranMuridForm({
 									<SelectValue placeholder="Pilih Status" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value={StatusPendaftaran.AKTIF}>Aktif</SelectItem>
-									<SelectItem value={StatusPendaftaran.TRIAL}>Trial</SelectItem>
-									<SelectItem value={StatusPendaftaran.WAITING_LIST}>
-										Waiting List
-									</SelectItem>
+									{Object.values(StatusPendaftaran).map((status) => (
+										<SelectItem key={status} value={status}>
+											<span className="capitalize">
+												{formatStatus(status).toLowerCase()}
+											</span>
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</FormControl>

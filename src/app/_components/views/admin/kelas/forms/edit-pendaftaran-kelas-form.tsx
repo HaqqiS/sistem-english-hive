@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { usePendaftaranKelasStore } from "@/store/useKelasStore";
 import type { TypeClientUpdatePendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
+import { formatStatus } from "@/utils/statusUtils";
 
 interface EditPendaftaranKelasFormProps {
 	onSubmit: (data: TypeClientUpdatePendaftaranKelasSchema) => void;
@@ -77,14 +78,13 @@ export default function EditPendaftaranKelasForm({
 									<SelectValue placeholder="Pilih Status" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value={StatusPendaftaran.AKTIF}>Aktif</SelectItem>
-									<SelectItem value={StatusPendaftaran.TRIAL}>Trial</SelectItem>
-									<SelectItem value={StatusPendaftaran.WAITING_LIST}>
-										Waiting List
-									</SelectItem>
-									<SelectItem value={StatusPendaftaran.NON_AKTIF}>
-										Non-Aktif
-									</SelectItem>
+									{Object.values(StatusPendaftaran).map((status) => (
+										<SelectItem key={status} value={status}>
+											<span className="capitalize">
+												{formatStatus(status).toLowerCase()}
+											</span>
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</FormControl>

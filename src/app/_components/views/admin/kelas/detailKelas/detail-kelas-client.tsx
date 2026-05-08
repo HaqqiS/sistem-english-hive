@@ -214,7 +214,7 @@ export default function DetailKelasClient() {
 	// COLUMNS
 	const columnsMurid = murid({
 		onEditClick: (item) => {
-			console.log("Edit clicked for:", item);
+			// console.log("Edit clicked for:", item);
 			openPendaftaranDrawer("edit", item);
 		},
 		onDeleteClick: (id, namaLengkap) => {

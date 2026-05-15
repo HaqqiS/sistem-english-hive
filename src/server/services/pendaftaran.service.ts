@@ -356,7 +356,7 @@ export const syncMuridStatus = async (tx: PrismaTx, muridId: string) => {
 	} else if (statuses.includes(StatusPendaftaran.TRIAL)) {
 		finalStatus = StatusMurid.TRIAL;
 	} else if (statuses.includes(StatusPendaftaran.OFF_SEMENTARA)) {
-		finalStatus = StatusMurid.OFF;
+		finalStatus = StatusMurid.OFF_SEMENTARA;
 	} else if (statuses.includes(StatusPendaftaran.WAITING_LIST)) {
 		finalStatus = StatusMurid.WAITING_LIST;
 	}

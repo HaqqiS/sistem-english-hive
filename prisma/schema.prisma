@@ -192,7 +192,7 @@ enum StatusMurid {
   ON_GOING //murid sedang dalam tahap on going
   WAITING_LIST //murid sedang dalam tahap waiting list
   TUNGGU_KONFIRMASI //murid sedang dalam tahap tunggu konfirmasi
-  OFF //
+  OFF_SEMENTARA // murid sedang off sementara (sync dari pendaftaranKelas)
 }
 
 model Murid {

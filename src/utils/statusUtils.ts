@@ -27,7 +27,7 @@ export const statusMuridColorMap: Record<StatusMurid, string> = {
 		"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg) border-0",
 	TUNGGU_KONFIRMASI:
 		"bg-(--badge-tunggu-konfirmasi-bg) text-(--badge-tunggu-konfirmasi-fg) border-0",
-	OFF: "bg-(--badge-off-bg) text-(--badge-off-fg) border-0",
+	OFF_SEMENTARA: "bg-(--badge-off-bg) text-(--badge-off-fg) border-0",
 };
 
 export const statusKelasColorMap: Record<StatusKelas, string> = {

@@ -120,6 +120,7 @@ export const muridRouter = createTRPCRouter({
 												StatusPendaftaran.AKTIF,
 												StatusPendaftaran.TRIAL,
 												StatusPendaftaran.WAITING_LIST,
+												StatusPendaftaran.OFF_SEMENTARA,
 											],
 										},
 									},

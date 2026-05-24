@@ -18,6 +18,7 @@ const teacherNavItems: NavItem[] = [
 		url: "/guru/jadwal",
 		icon: "CalendarDays",
 	},
+	{ title: "Final Report", url: "/guru/final-report", icon: "FileText" },
 ];
 
 export default async function TeacherLayout({

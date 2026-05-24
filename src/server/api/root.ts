@@ -1,3 +1,4 @@
+import { finalReportRouter } from "@/server/api/routers/finalReport";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { absenGuruRouter } from "./routers/absenGuru.router";
 import { absenMuridRouter } from "./routers/absenMurid.router";
@@ -38,6 +39,7 @@ export const appRouter = createTRPCRouter({
 	dashboard: dashboardRouter,
 	jenisKelas: jenisKelasRouter,
 	tagihanLain: tagihanLainRouter,
+	finalReport: finalReportRouter,
 });
 
 // export type definition of API

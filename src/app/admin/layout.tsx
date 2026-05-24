@@ -11,6 +11,7 @@ const adminNavItems: NavItem[] = [
 	{ title: "Pembayaran", url: "/admin/pembayaran", icon: "Banknote" },
 	{ title: "Order Buku", url: "/admin/buku", icon: "BookOpen" },
 	{ title: "Kelas", url: "/admin/kelas", icon: "School" },
+	{ title: "Final Report", url: "/admin/final-report", icon: "FileText" },
 ];
 
 export default async function AdminLayout({

@@ -10,7 +10,6 @@ import {
 } from "../trpc";
 
 export const cabangRouter = createTRPCRouter({
-
 	getAllForFinalReport: publicProcedure.query(async ({ ctx }) => {
 		return await ctx.db.cabang.findMany({
 			orderBy: { namaCabang: "asc" },

@@ -10,6 +10,20 @@ import {
 } from "../trpc";
 
 export const cabangRouter = createTRPCRouter({
+
+	getAllForFinalReport: publicProcedure.query(async ({ ctx }) => {
+		return await ctx.db.cabang.findMany({
+			orderBy: { namaCabang: "asc" },
+			select: {
+				id: true,
+				namaCabang: true,
+				noTelp: true,
+				alamat: true,
+				email: true,
+			},
+		});
+	}),
+
 	getAll: cabangProtectedProcedure.query(async ({ ctx }) => {
 		const { db, allowedCabangId } = ctx;
 
@@ -26,10 +40,7 @@ export const cabangRouter = createTRPCRouter({
 	getCabangList: publicProcedure.query(async ({ ctx }) => {
 		return await ctx.db.cabang.findMany({
 			orderBy: { namaCabang: "asc" },
-			select: {
-				id: true,
-				namaCabang: true,
-			},
+			select: { id: true, namaCabang: true },
 		});
 	}),
 
@@ -44,6 +55,7 @@ export const cabangRouter = createTRPCRouter({
 						namaCabang: input.namaCabang,
 						alamat: input.alamat,
 						noTelp: input.noTelp,
+						email: input.email ?? null,
 						noRekening: input.noRekening,
 						bank: input.bank,
 						atasNama: input.atasNama,
@@ -69,9 +81,6 @@ export const cabangRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			const { db } = ctx;
 
-			// Manager Procedure sudah menjamin hanya Manager yang bisa akses
-			// Dan Manager berhak edit cabang manapun.
-
 			try {
 				const cabang = await db.cabang.update({
 					where: { id: input.id },
@@ -79,6 +88,7 @@ export const cabangRouter = createTRPCRouter({
 						namaCabang: input.namaCabang,
 						alamat: input.alamat,
 						noTelp: input.noTelp,
+						email: input.email ?? null,
 						noRekening: input.noRekening,
 						bank: input.bank,
 						atasNama: input.atasNama,
@@ -117,7 +127,6 @@ export const cabangRouter = createTRPCRouter({
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
 					if (error.code === "P2003") {
-						// Foreign Key Violation
 						throw new TRPCError({
 							code: "PRECONDITION_FAILED",
 							message:

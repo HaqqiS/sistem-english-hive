@@ -11,6 +11,11 @@ const baseCabangSchema = z.object({
 		.min(1, "No Telepon harus diisi")
 		.max(15, "No Telepon maksimal 15 karakter")
 		.regex(/^\+?[0-9]*$/, { message: "No Telepon tidak valid" }),
+	email: z
+		.string()
+		.email("Format email tidak valid")
+		.optional()
+		.or(z.literal("")),
 	noRekening: z
 		.string()
 		.regex(/^\+?[0-9]*$/, { message: "No Rekening tidak valid" })

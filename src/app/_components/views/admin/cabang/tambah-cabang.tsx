@@ -23,6 +23,7 @@ export default function TambahCabang() {
 			namaCabang: "",
 			alamat: "",
 			noTelp: "",
+			email: "",
 			noRekening: "",
 			bank: "",
 			atasNama: "",

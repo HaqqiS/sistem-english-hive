@@ -84,6 +84,7 @@ model Cabang {
   namaCabang String  @unique
   alamat     String
   noTelp     String
+  email      String?
   bank       String?
   atasNama   String?
   noRekening String?
@@ -502,4 +503,49 @@ model TagihanLain {
   @@index([muridId])
   @@index([kelasId])
   @@index([verifiedById])
+}
+
+model FinalReport {
+  id String @id @default(cuid())
+
+  studentName String
+  studentId String?
+
+  teacherName String
+  teacherUserId String
+
+  level String
+
+  midTest Float
+  finalTest Float
+
+  listening Float
+  speaking Float
+  reading Float
+  writing Float
+
+  recording Int
+  attendance Int
+
+  projectParticipation Float
+  finalScore Float
+
+  notes String?
+  cabangNama   String?
+  cabangAlamat String?
+  cabangNoTelp String?
+  cabangEmail  String?
+
+  isPrinted Boolean @default(false)
+
+  status FinalReportStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum FinalReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

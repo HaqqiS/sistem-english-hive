@@ -46,6 +46,7 @@ async function main() {
 				namaCabang: row.namaCabang,
 				alamat: row.alamat,
 				noTelp: row.noTelp,
+				email: row.email,
 				noRekening: row.noRekening || null,
 				bank: row.bank || null,
 				atasNama: row.atasNama || null,

@@ -1,4 +1,3 @@
-// src/app/admin/cabang/cabang-form.tsx
 "use client";
 
 import { useFormContext } from "react-hook-form";
@@ -74,6 +73,26 @@ export default function CabangForm({ onSubmit }: CabangFormProps) {
 					</FormItem>
 				)}
 			/>
+
+			{/* Email */}
+			<FormField
+				control={form.control}
+				name="email"
+				render={({ field }) => (
+					<FormItem>
+						<FormLabel>Email</FormLabel>
+						<FormControl>
+							<Input
+								type="email"
+								placeholder="Masukkan email cabang"
+								{...field}
+							/>
+						</FormControl>
+						<FormMessage />
+					</FormItem>
+				)}
+			/>
+
 			{/* No Rekening */}
 			<FormField
 				control={form.control}
@@ -88,6 +107,7 @@ export default function CabangForm({ onSubmit }: CabangFormProps) {
 					</FormItem>
 				)}
 			/>
+
 			{/* Bank */}
 			<FormField
 				control={form.control}
@@ -105,6 +125,7 @@ export default function CabangForm({ onSubmit }: CabangFormProps) {
 					</FormItem>
 				)}
 			/>
+
 			{/* Atas Nama */}
 			<FormField
 				control={form.control}

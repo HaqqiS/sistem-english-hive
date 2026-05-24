@@ -91,6 +91,16 @@ export const columns = ({
 	},
 
 	{
+		accessorKey: "email",
+		header: "Email",
+		cell: ({ row }) => (
+			<div className="max-w-[300px] truncate" title={row.original.email ?? ""}>
+				{row.original.email}
+			</div>
+		),
+	},
+
+	{
 		accessorKey: "noRekening",
 		header: ({ column }) => {
 			return (

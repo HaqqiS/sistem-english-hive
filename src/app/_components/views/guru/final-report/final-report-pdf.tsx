@@ -6,6 +6,7 @@ import {
 	Text,
 	View,
 } from "@react-pdf/renderer";
+import { LOGO_BASE64 } from "@/utils/logo-base64";
 
 const PAGE_PADDING_H = 40;
 const TABLE_MARGIN_H = 130;
@@ -212,8 +213,16 @@ export function FinalReportPDF({ data }: Props) {
 	const noTelp = data.cabangNoTelp ?? "";
 	const email = data.cabangEmail ?? "";
 
+	const logoUrl = LOGO_BASE64;
 	// PENTING: Ubah ekstensi gambar ke .png di server kamu agar aman dibaca PDF engine
-	const logoUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/logo_header.png`;
+	// const logoUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/logo_header.png`;
+
+	// Gunakan path absolut dari origin saat ini — bekerja di localhost maupun Railway
+	// karena @react-pdf/renderer fetch gambar via URL di browser
+	// const logoUrl =
+	// 	typeof window !== "undefined"
+	// 		? `${window.location.origin}/logo_header.png`
+	// 		: "/logo_header.png";
 
 	return (
 		<Document>

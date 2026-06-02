@@ -3,6 +3,7 @@
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +25,15 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { RouterOutputs } from "@/trpc/react";
 import { api } from "@/trpc/react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type FinalReport = RouterOutputs["finalReport"]["getAll"][number];
+type CabangOption =
+	RouterOutputs["finalReport"]["getCabangForApproval"][number];
 
 interface CabangForm {
 	cabangNama: string;
@@ -40,15 +49,58 @@ const EMPTY_CABANG: CabangForm = {
 	cabangEmail: "",
 };
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getStatusBadge(status: FinalReport["status"]) {
+	if (status === "APPROVED")
+		return (
+			<Badge
+				className="bg-green-100 text-green-700 border-green-300"
+				variant="outline"
+			>
+				Approved
+			</Badge>
+		);
+	if (status === "REJECTED")
+		return <Badge variant="destructive">Rejected</Badge>;
+	return (
+		<Badge
+			variant="secondary"
+			className="text-yellow-700 bg-yellow-50 border-yellow-300"
+		>
+			Pending
+		</Badge>
+	);
+}
+
+function cabangToCabangForm(cabang: CabangOption): CabangForm {
+	return {
+		cabangNama: cabang.namaCabang,
+		cabangAlamat: cabang.alamat,
+		cabangNoTelp: cabang.noTelp,
+		cabangEmail: cabang.email ?? "",
+	};
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function AdminFinalReportClient() {
 	const utils = api.useUtils();
 
 	const { data, isLoading } = api.finalReport.getAll.useQuery();
-	const { data: allCabang } = api.cabang.getAllForFinalReport.useQuery();
+
+	// Cabang list sesuai role — MANAGER dapat semua, ADMIN hanya cabang sendiri
+	const { data: cabangOptions } =
+		api.finalReport.getCabangForApproval.useQuery();
+
+	const isManager = (cabangOptions?.length ?? 0) > 1;
+	// Jika ADMIN: hanya ada satu cabang di list, langsung pre-fill
+	const adminSingleCabang =
+		!isManager && cabangOptions?.length === 1 ? cabangOptions[0] : null;
 
 	const approve = api.finalReport.updateStatus.useMutation({
 		onSuccess: () => {
-			utils.finalReport.getAll.invalidate();
+			void utils.finalReport.getAll.invalidate();
 			toast.success("Final Report berhasil diupdate");
 		},
 		onError: () => toast.error("Gagal mengupdate status"),
@@ -56,28 +108,44 @@ export default function AdminFinalReportClient() {
 
 	const deleteFR = api.finalReport.delete.useMutation({
 		onSuccess: () => {
-			utils.finalReport.getAll.invalidate();
+			void utils.finalReport.getAll.invalidate();
 			toast.success("Final Report berhasil dihapus");
 		},
 		onError: () => toast.error("Gagal menghapus"),
 	});
 
-	// ── State ─────────────────────────────────────────
-	const [selectedFR, setSelectedFR] = useState<any>(null);
-	const [deletingId, setDeletingId] = useState<string | null>(null);
-	const [approveDialogFR, setApproveDialogFR] = useState<any>(null);
+	// ── State ─────────────────────────────────────────────────────────────────
+	const [previewFR, setPreviewFR] = useState<FinalReport | null>(null);
+	const [deleteTarget, setDeleteTarget] = useState<Pick<
+		FinalReport,
+		"id" | "studentName"
+	> | null>(null);
+	const [isDeleting, setIsDeleting] = useState(false);
+	const [approveDialogFR, setApproveDialogFR] = useState<FinalReport | null>(
+		null,
+	);
 	const [cabangForm, setCabangForm] = useState<CabangForm>(EMPTY_CABANG);
-	const [isManual, setIsManual] = useState(false);
+	// Hanya relevan untuk MANAGER (bisa pilih cabang lain)
 	const [selectedCabangId, setSelectedCabangId] = useState<string>("");
+	// Mode input manual — tersedia untuk semua role
+	const [isManual, setIsManual] = useState(false);
 
-	// ── Handlers ──────────────────────────────────────
-	const handleOpenApproveDialog = (fr: any) => {
+	// ── Handlers ──────────────────────────────────────────────────────────────
+
+	const handleOpenApproveDialog = (fr: FinalReport) => {
 		setApproveDialogFR(fr);
-		setCabangForm(EMPTY_CABANG);
 		setIsManual(false);
 		setSelectedCabangId("");
+
+		// ADMIN: langsung pre-fill cabang sendiri
+		if (adminSingleCabang) {
+			setCabangForm(cabangToCabangForm(adminSingleCabang));
+		} else {
+			setCabangForm(EMPTY_CABANG);
+		}
 	};
 
+	// Hanya digunakan oleh MANAGER (ada dropdown pilih cabang)
 	const handleSelectCabang = (value: string) => {
 		setSelectedCabangId(value);
 
@@ -88,14 +156,9 @@ export default function AdminFinalReportClient() {
 		}
 
 		setIsManual(false);
-		const cabang = allCabang?.find((c) => c.id === value);
+		const cabang = cabangOptions?.find((c) => c.id === value);
 		if (cabang) {
-			setCabangForm({
-				cabangNama: cabang.namaCabang,
-				cabangAlamat: cabang.alamat,
-				cabangNoTelp: cabang.noTelp,
-				cabangEmail: cabang.email ?? "",
-			});
+			setCabangForm(cabangToCabangForm(cabang));
 		}
 	};
 
@@ -113,41 +176,53 @@ export default function AdminFinalReportClient() {
 		approve.mutate({ id, status: "REJECTED" });
 	};
 
-	const handleDelete = async (id: string) => {
-		if (!confirm("Yakin ingin menghapus Final Report ini?")) return;
-		setDeletingId(id);
+	const handleConfirmDelete = async () => {
+		if (!deleteTarget) return;
+		setIsDeleting(true);
 		try {
-			await deleteFR.mutateAsync({ id });
+			await deleteFR.mutateAsync({ id: deleteTarget.id });
 		} finally {
-			setDeletingId(null);
+			setIsDeleting(false);
+			setDeleteTarget(null);
 		}
 	};
 
-	const getStatusBadge = (status: string) => {
-		if (status === "APPROVED")
-			return (
-				<Badge
-					className="bg-green-100 text-green-700 border-green-300"
-					variant="outline"
-				>
-					Approved
-				</Badge>
-			);
-		if (status === "REJECTED")
-			return <Badge variant="destructive">Rejected</Badge>;
+	// ── Render ────────────────────────────────────────────────────────────────
+
+	if (isLoading) {
 		return (
-			<Badge
-				variant="secondary"
-				className="text-yellow-700 bg-yellow-50 border-yellow-300"
-			>
-				Pending
-			</Badge>
+			<div className="space-y-4 p-6">
+				<Skeleton className="h-8 w-56" />
+				{[1, 2, 3].map((i) => (
+					<Card key={i}>
+						<CardContent className="p-5">
+							<div className="flex items-center justify-between">
+								{/* Kiri: nama, badge status, level·guru, final score */}
+								<div className="space-y-2">
+									<div className="flex items-center gap-2">
+										<Skeleton className="h-5 w-36" />
+										<Skeleton className="h-5 w-16 rounded-full" />
+									</div>
+									<Skeleton className="h-4 w-48" />
+									<Skeleton className="h-4 w-24" />
+								</div>
+								{/* Kanan: tombol Preview + Approve + Reject + hapus */}
+								<div className="flex items-center gap-2">
+									<Skeleton className="h-8 w-16 rounded-md" />
+									<Skeleton className="h-8 w-20 rounded-md" />
+									<Skeleton className="h-8 w-16 rounded-md" />
+									<Skeleton className="h-8 w-8 rounded-md" />
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				))}
+			</div>
 		);
-	};
+	}
 
-	if (isLoading) return <p className="p-6">Loading...</p>;
-
-	const showForm = cabangForm.cabangNama || isManual;
+	// Cabang form tampil jika: ada isi cabangNama ATAU sedang manual
+	const showCabangDetail = !!cabangForm.cabangNama || isManual;
 
 	return (
 		<div className="space-y-4 p-6">
@@ -183,10 +258,10 @@ export default function AdminFinalReportClient() {
 									variant="outline"
 									size="sm"
 									onClick={() =>
-										setSelectedFR(selectedFR?.id === fr.id ? null : fr)
+										setPreviewFR(previewFR?.id === fr.id ? null : fr)
 									}
 								>
-									{selectedFR?.id === fr.id ? "Hide" : "Preview"}
+									{previewFR?.id === fr.id ? "Hide" : "Preview"}
 								</Button>
 
 								{fr.status === "PENDING" && (
@@ -211,14 +286,11 @@ export default function AdminFinalReportClient() {
 									variant="ghost"
 									size="icon"
 									className="text-destructive hover:text-destructive hover:bg-destructive/10"
-									onClick={() => handleDelete(fr.id)}
-									disabled={deletingId === fr.id}
+									onClick={() =>
+										setDeleteTarget({ id: fr.id, studentName: fr.studentName })
+									}
 								>
-									{deletingId === fr.id ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									) : (
-										<Trash2 className="h-4 w-4" />
-									)}
+									<Trash2 className="h-4 w-4" />
 								</Button>
 							</div>
 						</div>
@@ -238,91 +310,136 @@ export default function AdminFinalReportClient() {
 						)}
 
 						{/* PREVIEW DETAIL */}
-						{selectedFR?.id === fr.id && (
-							<div className="space-y-4 border-t pt-4">
-								<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-									{[
-										{ label: "Mid Test", value: fr.midTest },
-										{ label: "Final Test", value: fr.finalTest },
-										{ label: "Listening", value: fr.listening },
-										{ label: "Speaking", value: fr.speaking },
-										{ label: "Reading", value: fr.reading },
-										{ label: "Writing", value: fr.writing },
-										{ label: "Recording", value: fr.recording },
-										{ label: "Attendance", value: fr.attendance },
-									].map((item) => (
-										<div key={item.label}>
-											<p className="text-xs text-muted-foreground">
-												{item.label}
-											</p>
-											<p className="font-bold">{item.value}</p>
-										</div>
-									))}
-								</div>
+						<div
+							className={[
+								"grid transition-all duration-300 ease-in-out",
+								previewFR?.id === fr.id
+									? "grid-rows-[1fr] opacity-100"
+									: "grid-rows-[0fr] opacity-0",
+							].join(" ")}
+						>
+							<div className="overflow-hidden">
+								<div className="space-y-4 border-t pt-4">
+									<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+										{(
+											[
+												{ label: "Mid Test", value: fr.midTest },
+												{ label: "Final Test", value: fr.finalTest },
+												{ label: "Listening", value: fr.listening },
+												{ label: "Speaking", value: fr.speaking },
+												{ label: "Reading", value: fr.reading },
+												{ label: "Writing", value: fr.writing },
+												{ label: "Recording", value: fr.recording },
+												{ label: "Attendance", value: fr.attendance },
+											] as const
+										).map((item) => (
+											<div key={item.label}>
+												<p className="text-xs text-muted-foreground">
+													{item.label}
+												</p>
+												<p className="font-bold">{item.value}</p>
+											</div>
+										))}
+									</div>
 
-								<div className="rounded-xl bg-muted p-4">
-									<p className="text-sm text-muted-foreground">
-										Project & Participation
-									</p>
-									<p className="text-xl font-bold">{fr.projectParticipation}</p>
-								</div>
-
-								{fr.notes && (
 									<div className="rounded-xl bg-muted p-4">
 										<p className="text-sm text-muted-foreground">
-											Teacher Notes
+											Project & Participation
 										</p>
-										<p>{fr.notes}</p>
+										<p className="text-xl font-bold">
+											{fr.projectParticipation}
+										</p>
 									</div>
-								)}
+
+									{fr.notes && (
+										<div className="rounded-xl bg-muted p-4">
+											<p className="text-sm text-muted-foreground">
+												Teacher Notes
+											</p>
+											<p>{fr.notes}</p>
+										</div>
+									)}
+								</div>
 							</div>
-						)}
+						</div>
 					</CardContent>
 				</Card>
 			))}
 
-			{/* ── DIALOG APPROVE ──────────────────────────────── */}
+			{/* ── DIALOG APPROVE ─────────────────────────────── */}
 			<Dialog
 				open={!!approveDialogFR}
-				onOpenChange={() => setApproveDialogFR(null)}
+				onOpenChange={(open) => {
+					if (!open) setApproveDialogFR(null);
+				}}
 			>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
 						<DialogTitle>Approve Final Report</DialogTitle>
 						<DialogDescription>
-							Pilih cabang untuk mengisi data yang tampil di PDF.
+							{isManager
+								? "Pilih cabang yang akan tertera di PDF laporan."
+								: "Konfirmasi data cabang yang akan tertera di PDF laporan."}
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="space-y-4 py-2">
-						{/* PILIH CABANG */}
-						<div className="space-y-1.5">
-							<Label>Pilih Cabang</Label>
-							<Select
-								value={selectedCabangId}
-								onValueChange={handleSelectCabang}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Pilih cabang..." />
-								</SelectTrigger>
-								<SelectContent>
-									{allCabang?.map((cabang) => (
-										<SelectItem key={cabang.id} value={cabang.id}>
-											{cabang.namaCabang}
-										</SelectItem>
-									))}
-									<Separator className="my-1" />
-									<SelectItem value="manual">✏️ Input manual</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+						{/* PILIH CABANG — hanya tampil untuk MANAGER */}
+						{isManager && (
+							<div className="space-y-1.5">
+								<Label>Pilih Cabang</Label>
+								<Select
+									value={selectedCabangId}
+									onValueChange={handleSelectCabang}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Pilih cabang..." />
+									</SelectTrigger>
+									<SelectContent>
+										{cabangOptions?.map((cabang) => (
+											<SelectItem key={cabang.id} value={cabang.id}>
+												{cabang.namaCabang}
+											</SelectItem>
+										))}
+										<Separator className="my-1" />
+										<SelectItem value="manual">✏️ Input manual</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						)}
 
-						{/* FORM DETAIL CABANG */}
-						{showForm && (
+						{/* DETAIL CABANG — selalu tampil untuk ADMIN (pre-filled), tampil setelah pilih untuk MANAGER */}
+						{(showCabangDetail || !isManager) && (
 							<div className="space-y-3 rounded-lg border p-4">
-								<p className="text-sm font-medium text-muted-foreground">
-									{isManual ? "Input alamat cabang" : "Detail cabang"}
-								</p>
+								<div className="flex items-center justify-between">
+									<p className="text-sm font-medium text-muted-foreground">
+										{isManual ? "Input alamat cabang" : "Detail cabang"}
+									</p>
+									{/* ADMIN bisa switch ke manual jika perlu koreksi */}
+									{!isManager && !isManual && (
+										<button
+											type="button"
+											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+											onClick={() => setIsManual(true)}
+										>
+											Edit manual
+										</button>
+									)}
+									{!isManager && isManual && (
+										<button
+											type="button"
+											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+											onClick={() => {
+												setIsManual(false);
+												if (adminSingleCabang) {
+													setCabangForm(cabangToCabangForm(adminSingleCabang));
+												}
+											}}
+										>
+											Reset ke cabang
+										</button>
+									)}
+								</div>
 
 								<div className="space-y-1.5">
 									<Label>Nama Cabang</Label>
@@ -335,7 +452,7 @@ export default function AdminFinalReportClient() {
 											}))
 										}
 										placeholder="Contoh: Cabang Denpasar"
-										disabled={!isManual}
+										disabled={!isManual && !isManager}
 									/>
 								</div>
 
@@ -350,7 +467,7 @@ export default function AdminFinalReportClient() {
 											}))
 										}
 										placeholder="Jl. ..."
-										disabled={!isManual}
+										disabled={!isManual && !isManager}
 									/>
 								</div>
 
@@ -365,7 +482,7 @@ export default function AdminFinalReportClient() {
 											}))
 										}
 										placeholder="+62..."
-										disabled={!isManual}
+										disabled={!isManual && !isManager}
 									/>
 								</div>
 
@@ -380,7 +497,7 @@ export default function AdminFinalReportClient() {
 											}))
 										}
 										placeholder="email@englishhive.com"
-										disabled={!isManual}
+										disabled={!isManual && !isManager}
 									/>
 								</div>
 							</div>
@@ -400,6 +517,26 @@ export default function AdminFinalReportClient() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* ── DIALOG KONFIRMASI HAPUS ─────────────────────── */}
+			<DeleteConfirmationDialog
+				isOpen={!!deleteTarget}
+				onOpenChange={(open) => {
+					if (!open) setDeleteTarget(null);
+				}}
+				title="Hapus Final Report?"
+				description={
+					<span>
+						Final Report milik{" "}
+						<span className="font-semibold">{deleteTarget?.studentName}</span>{" "}
+						akan dihapus permanen dan tidak bisa dikembalikan.
+					</span>
+				}
+				onConfirm={handleConfirmDelete}
+				confirmText="Hapus"
+				cancelText="Batal"
+				isLoading={isDeleting}
+			/>
 		</div>
 	);
 }

@@ -1,12 +1,10 @@
 import { z } from "zod";
-
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { UserRole } from "@/server/auth/type";
 
 export const finalReportRouter = createTRPCRouter({
 	// =========================
 	// GET KELAS BY CABANG GURU
-	// Ambil semua kelas aktif di cabang guru yang sedang login
-	// Include murid yang terdaftar di kelas tersebut
 	// =========================
 	getKelasByCabangGuru: protectedProcedure.query(async ({ ctx }) => {
 		const user = await ctx.db.user.findUnique({
@@ -23,7 +21,7 @@ export const finalReportRouter = createTRPCRouter({
 				historyGuruKelases: {
 					some: {
 						guruId: ctx.session.user.id,
-						selesaiPada: null, // masih aktif mengajar
+						selesaiPada: null,
 					},
 				},
 			},
@@ -33,13 +31,12 @@ export const finalReportRouter = createTRPCRouter({
 				level: true,
 				kodeKelas: true,
 				jenisKelasRel: {
-					select: {
-						nama: true,
-					},
+					select: { nama: true },
 				},
 				pendaftaranKelases: {
 					where: { status: "AKTIF" },
 					select: {
+						id: true,
 						murid: {
 							select: {
 								id: true,
@@ -53,12 +50,40 @@ export const finalReportRouter = createTRPCRouter({
 	}),
 
 	// =========================
+	// GET ATTENDANCE BY MURID & KELAS
+	// Hitung kehadiran (HADIR) murid di kelas tertentu dari AbsensiMurid
+	// =========================
+	getAttendanceByMuridKelas: protectedProcedure
+		.input(
+			z.object({
+				muridId: z.string(),
+				kelasId: z.string(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const hadirCount = await ctx.db.absensiMurid.count({
+				where: {
+					muridId: input.muridId,
+					sesiPertemuanKelas: { kelasId: input.kelasId },
+					status: "HADIR",
+				},
+			});
+
+			const totalSesi = await ctx.db.sesiPertemuanKelas.count({
+				where: { kelasId: input.kelasId },
+			});
+
+			return { hadirCount, totalSesi };
+		}),
+
+	// =========================
 	// CREATE
 	// =========================
 	create: protectedProcedure
 		.input(
 			z.object({
 				studentName: z.string(),
+				studentId: z.string().optional(),
 				level: z.string(),
 				midTest: z.number(),
 				finalTest: z.number(),
@@ -85,9 +110,31 @@ export const finalReportRouter = createTRPCRouter({
 
 	// =========================
 	// GET ALL
+	// MANAGER: semua FR.
+	// ADMIN: hanya FR dari guru yang satu cabang dengannya.
 	// =========================
 	getAll: protectedProcedure.query(async ({ ctx }) => {
+		const { role, cabangId } = ctx.session.user;
+
+		// MANAGER melihat semua
+		if (role === UserRole.MANAGER) {
+			return ctx.db.finalReport.findMany({
+				orderBy: { createdAt: "desc" },
+			});
+		}
+
+		// ADMIN hanya melihat FR guru di cabangnya
+		if (!cabangId) return [];
+
+		// Ambil ID semua guru yang terdaftar di cabang ini
+		const guruDiCabang = await ctx.db.user.findMany({
+			where: { cabangId },
+			select: { id: true },
+		});
+		const guruIds = guruDiCabang.map((g) => g.id);
+
 		return ctx.db.finalReport.findMany({
+			where: { teacherUserId: { in: guruIds } },
 			orderBy: { createdAt: "desc" },
 		});
 	}),
@@ -120,10 +167,31 @@ export const finalReportRouter = createTRPCRouter({
 	}),
 
 	// =========================
-	// GET ALL CABANG (untuk dropdown admin)
+	// GET CABANG FOR APPROVAL
+	// MANAGER: semua cabang (bisa pilih bebas).
+	// ADMIN: hanya cabang mereka sendiri.
 	// =========================
-	getAllCabang: protectedProcedure.query(async ({ ctx }) => {
+	getCabangForApproval: protectedProcedure.query(async ({ ctx }) => {
+		const { role, cabangId } = ctx.session.user;
+
+		if (role === UserRole.MANAGER) {
+			return ctx.db.cabang.findMany({
+				select: {
+					id: true,
+					namaCabang: true,
+					alamat: true,
+					noTelp: true,
+					email: true,
+				},
+				orderBy: { namaCabang: "asc" },
+			});
+		}
+
+		// ADMIN: kembalikan hanya cabang sendiri (array satu item, konsisten dengan manager)
+		if (!cabangId) return [];
+
 		return ctx.db.cabang.findMany({
+			where: { id: cabangId },
 			select: {
 				id: true,
 				namaCabang: true,
@@ -131,7 +199,6 @@ export const finalReportRouter = createTRPCRouter({
 				noTelp: true,
 				email: true,
 			},
-			orderBy: { namaCabang: "asc" },
 		});
 	}),
 

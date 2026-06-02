@@ -19,4 +19,4 @@ const {
 // const { auth: uncachedAuth, handlers, signIn, signOut } = NextAuth(authConfig);
 
 export const auth = cache(uncachedAuth);
-export { handlers, signIn, signOut, authConfig };
+export { authConfig, handlers, signIn, signOut };

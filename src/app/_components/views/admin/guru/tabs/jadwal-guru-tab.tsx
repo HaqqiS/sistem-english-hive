@@ -260,7 +260,7 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 					<TableBody>
 						{processedData.map((item) =>
 							item.rows.map((row, index) => (
-								<TableRow key={`${item.guru.id}-${index}`}>
+								<TableRow key={item.guru.id}>
 									{/* Guru Name Column - Merged */}
 									{index === 0 && (
 										<TableCell

@@ -8,7 +8,7 @@ import {
 } from "@react-pdf/renderer";
 
 const PAGE_PADDING_H = 40;
-const TABLE_MARGIN_H = 30;
+const TABLE_MARGIN_H = 130;
 
 const styles = StyleSheet.create({
 	page: {
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
 	},
 	tableRowHeader: {
 		flexDirection: "row",
-		backgroundColor: "#d0d0d0",
+		backgroundColor: "#ffffff",
 		borderBottomWidth: 1,
 		borderBottomColor: "#000000",
 	},
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
 	},
 	tableRowFinal: {
 		flexDirection: "row",
-		backgroundColor: "#f0f0f0",
+		backgroundColor: "#ffffff",
 	},
 	cellSkill: {
 		width: "45%",
@@ -245,7 +245,7 @@ export function FinalReportPDF({ data }: Props) {
 				{/* STUDENT INFO */}
 				<View style={styles.studentInfo}>
 					<Text style={styles.studentName}>Name : {data.studentName}</Text>
-					<Text style={styles.studentLevel}>Level: {data.level}</Text>
+					<Text style={styles.studentLevel}>Level : {data.level}</Text>
 				</View>
 
 				{/* TABLE */}

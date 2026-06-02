@@ -226,8 +226,8 @@ export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
 							<ul className="text-foreground ml-6 list-disc space-y-1 text-xs font-medium">
 								{data.originalData.kelas.pendaftaranKelases.length > 0 ? (
 									data.originalData.kelas.pendaftaranKelases.map(
-										(pendaftaran, idx) => (
-											<li key={`${pendaftaran.id}-${idx}`}>
+										(pendaftaran) => (
+											<li key={pendaftaran.id}>
 												{pendaftaran.murid.namaLengkap}
 											</li>
 										),

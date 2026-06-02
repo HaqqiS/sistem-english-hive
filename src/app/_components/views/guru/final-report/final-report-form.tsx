@@ -9,9 +9,19 @@ import {
 	Loader2,
 	Printer,
 	Send,
+	Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+	AlertDialog,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +54,8 @@ interface ScoreField {
 
 type ScoreMap = Record<string, string>;
 
+// ─── Constants (outside component — stable references, no dependency issues) ──
+
 const SKILL_FIELDS: ScoreField[] = [
 	{ key: "listening", label: "Listening" },
 	{ key: "speaking", label: "Speaking" },
@@ -52,11 +64,50 @@ const SKILL_FIELDS: ScoreField[] = [
 ];
 
 const RECORDING_OPTIONS = [
-	{ value: "1", label: "1 — Tidak ada recording" },
-	{ value: "2", label: "2 — Recording sekali" },
-	{ value: "3", label: "3 — Recording dua kali" },
+	{ value: "0", label: "0 — Tidak recording sama sekali" },
+	{ value: "1", label: "1 — Recording sekali" },
+	{ value: "2", label: "2 — Recording dua kali" },
+	{ value: "3", label: "3 — Recording tiga kali" },
 	{ value: "4", label: "4 — Recording lengkap" },
 ];
+
+const RECORDING_MAP: Record<string, number> = {
+	"0": 0,
+	"1": 55,
+	"2": 70,
+	"3": 85,
+	"4": 100,
+};
+
+const REQUIRED_SCORE_KEYS = [
+	"midTest",
+	"finalTest",
+	"listening",
+	"speaking",
+	"reading",
+	"writing",
+	"attendance",
+] as const;
+
+const SCORE_LABELS: Record<string, string> = {
+	midTest: "Mid Test",
+	finalTest: "Final Test",
+	listening: "Listening",
+	speaking: "Speaking",
+	reading: "Reading",
+	writing: "Writing",
+	attendance: "Kehadiran",
+};
+
+const INITIAL_SCORES: ScoreMap = {
+	midTest: "",
+	finalTest: "",
+	listening: "",
+	speaking: "",
+	reading: "",
+	writing: "",
+	attendance: "",
+};
 
 // ─── Helpers ──────────────────────────────────────────
 
@@ -108,18 +159,11 @@ export default function FinalReportForm() {
 	// ── Form state ────────────────────────────────────
 	const [selectedKelasId, setSelectedKelasId] = useState("");
 	const [selectedMuridId, setSelectedMuridId] = useState("");
-	const [scores, setScores] = useState<ScoreMap>({
-		midTest: "",
-		finalTest: "",
-		listening: "",
-		speaking: "",
-		reading: "",
-		writing: "",
-		attendance: "",
-	});
+	const [scores, setScores] = useState<ScoreMap>(INITIAL_SCORES);
 	const [recording, setRecording] = useState("1");
 	const [notes, setNotes] = useState("");
 	const [isPrintingId, setIsPrintingId] = useState<string | null>(null);
+	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
 	// ── Derived data ──────────────────────────────────
 	const selectedKelas = kelasList?.find((k) => k.id === selectedKelasId);
@@ -128,34 +172,48 @@ export default function FinalReportForm() {
 
 	const selectedMurid = muridList.find((m) => m.id === selectedMuridId);
 
-	// Label kelas: "NamaJenis Level X" contoh: "Little Star Level 3"
 	const kelasLabel = selectedKelas
 		? `${selectedKelas.jenisKelasRel?.nama ?? "Kelas"} Level ${selectedKelas.level}`
 		: "";
 
+	// ── Auto-fetch kehadiran dari absensi ─────────────
+	const { data: attendanceData, isLoading: loadingAttendance } =
+		api.finalReport.getAttendanceByMuridKelas.useQuery(
+			{ muridId: selectedMuridId, kelasId: selectedKelasId },
+			{ enabled: !!(selectedMuridId && selectedKelasId) },
+		);
+
+	useEffect(() => {
+		if (attendanceData) {
+			setScores((prev) => ({
+				...prev,
+				attendance: String(attendanceData.hadirCount),
+			}));
+		}
+	}, [attendanceData]);
+
+	useEffect(() => {
+		if (!selectedMuridId || !selectedKelasId) {
+			setScores((prev) => ({ ...prev, attendance: "" }));
+		}
+	}, [selectedMuridId, selectedKelasId]);
+
 	// ── Calculated scores ─────────────────────────────
 	const n = (key: string) => Number(scores[key]) || 0;
 
-	const recordingMap: Record<string, number> = {
-		"1": 55,
-		"2": 70,
-		"3": 85,
-		"4": 100,
-	};
-
 	const projectParticipation = useMemo(() => {
-		const recordingScore = recordingMap[recording] ?? 55;
+		const recordingScore = RECORDING_MAP[recording] ?? 55;
 		const attendanceScore = ((Number(scores.attendance) || 0) / 23) * 100;
 		return Number((recordingScore * 0.5 + attendanceScore * 0.5).toFixed(1));
 	}, [recording, scores.attendance]);
 
 	const finalScore = useMemo(() => {
-		const listening = Number(scores.listening) || 0;
-		const speaking = Number(scores.speaking) || 0;
-		const reading = Number(scores.reading) || 0;
-		const writing = Number(scores.writing) || 0;
 		const total =
-			listening + speaking + reading + writing + projectParticipation;
+			Number(scores.listening || 0) +
+			Number(scores.speaking || 0) +
+			Number(scores.reading || 0) +
+			Number(scores.writing || 0) +
+			projectParticipation;
 		return Number((total / 5).toFixed(1));
 	}, [
 		scores.listening,
@@ -165,44 +223,58 @@ export default function FinalReportForm() {
 		projectParticipation,
 	]);
 
+	// ── Form validation ───────────────────────────────
+	const formErrors = useMemo(() => {
+		const errors: string[] = [];
+		if (!selectedKelasId) errors.push("Pilih kelas terlebih dahulu");
+		if (!selectedMuridId) errors.push("Pilih siswa terlebih dahulu");
+		for (const key of REQUIRED_SCORE_KEYS) {
+			if (scores[key] === "" || scores[key] === undefined) {
+				errors.push(`${SCORE_LABELS[key]} belum diisi`);
+			}
+		}
+		return errors;
+	}, [selectedKelasId, selectedMuridId, scores]);
+
+	const isFormValid = formErrors.length === 0;
+
 	// ── Handlers ──────────────────────────────────────
 	const resetForm = () => {
 		setSelectedKelasId("");
 		setSelectedMuridId("");
-		setScores({
-			midTest: "",
-			finalTest: "",
-			listening: "",
-			speaking: "",
-			reading: "",
-			writing: "",
-			attendance: "",
-		});
+		setScores(INITIAL_SCORES);
 		setRecording("1");
 		setNotes("");
 	};
 
 	const handleKelasChange = (kelasId: string) => {
 		setSelectedKelasId(kelasId);
-		setSelectedMuridId(""); // reset murid saat kelas berubah
+		setSelectedMuridId("");
 	};
 
 	const handleScoreChange = (key: string, value: string) => {
-		setScores((prev) => ({ ...prev, [key]: value }));
+		if (value === "" || value === "-") {
+			setScores((prev) => ({ ...prev, [key]: value }));
+			return;
+		}
+		const max = key === "attendance" ? 23 : 100;
+		const clamped = Math.min(Math.max(0, Number(value)), max);
+		setScores((prev) => ({ ...prev, [key]: String(clamped) }));
 	};
 
-	const handleSubmit = () => {
-		if (!selectedMurid) {
-			toast.error("Pilih siswa terlebih dahulu");
+	const handleSubmitClick = () => {
+		if (!isFormValid) {
+			toast.error(formErrors[0] ?? "Lengkapi semua data terlebih dahulu");
 			return;
 		}
-		if (!selectedKelas) {
-			toast.error("Pilih kelas terlebih dahulu");
-			return;
-		}
+		setShowConfirmDialog(true);
+	};
 
+	const handleConfirmSubmit = () => {
+		setShowConfirmDialog(false);
 		submitReport.mutate({
-			studentName: selectedMurid.namaLengkap,
+			studentName: selectedMurid!.namaLengkap,
+			studentId: selectedMuridId,
 			level: kelasLabel,
 			midTest: n("midTest"),
 			finalTest: n("finalTest"),
@@ -274,7 +346,6 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-4">
-							{/* Pilih Kelas */}
 							<div className="space-y-1.5">
 								<Label>Kelas</Label>
 								<Select
@@ -309,7 +380,6 @@ export default function FinalReportForm() {
 								</Select>
 							</div>
 
-							{/* Pilih Murid */}
 							<div className="space-y-1.5">
 								<Label>Siswa</Label>
 								<Select
@@ -338,7 +408,6 @@ export default function FinalReportForm() {
 								</Select>
 							</div>
 
-							{/* Info terpilih */}
 							{selectedMurid && selectedKelas && (
 								<div className="bg-muted flex items-center gap-3 rounded-lg p-3">
 									<CheckCircle2 className="text-primary h-4 w-4 shrink-0" />
@@ -365,14 +434,17 @@ export default function FinalReportForm() {
 							</CardTitle>
 						</CardHeader>
 
-						<CardContent className="space-y-4">
+						<CardContent>
 							<div className="grid grid-cols-2 gap-4">
 								{[
 									{ key: "midTest", label: "Mid Test" },
 									{ key: "finalTest", label: "Final Test" },
 								].map((field) => (
 									<div key={field.key} className="space-y-1.5">
-										<Label>{field.label}</Label>
+										<Label>
+											{field.label}
+											<span className="text-destructive ml-0.5">*</span>
+										</Label>
 										<Input
 											type="number"
 											min={0}
@@ -404,7 +476,10 @@ export default function FinalReportForm() {
 							<div className="grid grid-cols-2 gap-4">
 								{SKILL_FIELDS.map((field) => (
 									<div key={field.key} className="space-y-1.5">
-										<Label>{field.label}</Label>
+										<Label>
+											{field.label}
+											<span className="text-destructive ml-0.5">*</span>
+										</Label>
 										<Input
 											type="number"
 											min={0}
@@ -436,41 +511,63 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-4">
-							<div className="grid grid-cols-2 gap-4">
-								{/* Recording */}
-								<div className="space-y-1.5">
-									<Label>Recording</Label>
-									<Select value={recording} onValueChange={setRecording}>
-										<SelectTrigger>
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											{RECORDING_OPTIONS.map((opt) => (
-												<SelectItem key={opt.value} value={opt.value}>
-													{opt.label}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-
-								{/* Attendance */}
-								<div className="space-y-1.5">
-									<Label>Kehadiran (maks. 23)</Label>
-									<Input
-										type="number"
-										min={0}
-										max={23}
-										placeholder="0 – 23"
-										value={scores.attendance}
-										onChange={(e) =>
-											handleScoreChange("attendance", e.target.value)
-										}
-									/>
-								</div>
+							<div className="space-y-1.5">
+								<Label>
+									Recording (0 – 4)
+									<span className="text-destructive ml-0.5">*</span>
+								</Label>
+								<Select value={recording} onValueChange={setRecording}>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{RECORDING_OPTIONS.map((opt) => (
+											<SelectItem key={opt.value} value={opt.value}>
+												{opt.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</div>
 
-							{/* Kalkulasi project */}
+							<div className="space-y-1.5">
+								<div className="flex items-center justify-between">
+									<Label>
+										Kehadiran (maks. 23)
+										<span className="text-destructive ml-0.5">*</span>
+									</Label>
+									{loadingAttendance && selectedMuridId && (
+										<span className="text-muted-foreground flex items-center gap-1 text-xs">
+											<Loader2 className="h-3 w-3 animate-spin" />
+											Mengambil data...
+										</span>
+									)}
+									{!loadingAttendance && attendanceData && selectedMuridId && (
+										<span className="flex items-center gap-1 text-xs text-green-600">
+											<Users className="h-3 w-3" />
+											Otomatis dari absensi
+										</span>
+									)}
+								</div>
+								<Input
+									type="number"
+									min={0}
+									max={23}
+									placeholder="0 – 23"
+									value={scores.attendance}
+									onChange={(e) =>
+										handleScoreChange("attendance", e.target.value)
+									}
+								/>
+								{attendanceData && selectedMuridId && (
+									<p className="text-muted-foreground text-xs">
+										Hadir {attendanceData.hadirCount} dari{" "}
+										{attendanceData.totalSesi} sesi. Bisa diedit manual jika
+										perlu.
+									</p>
+								)}
+							</div>
+
 							<div className="bg-muted rounded-lg p-3 text-sm flex justify-between items-center">
 								<span className="text-muted-foreground">
 									Project & Participation (otomatis)
@@ -512,8 +609,8 @@ export default function FinalReportForm() {
 					<Button
 						className="w-full"
 						size="lg"
-						onClick={handleSubmit}
-						disabled={submitReport.isPending || !selectedMurid}
+						onClick={handleSubmitClick}
+						disabled={submitReport.isPending}
 					>
 						{submitReport.isPending ? (
 							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -539,7 +636,6 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-3">
-							{/* Tes */}
 							<div className="space-y-2">
 								{[
 									{ label: "Mid Test", value: n("midTest") },
@@ -557,7 +653,6 @@ export default function FinalReportForm() {
 
 							<Separator />
 
-							{/* Skills */}
 							<div className="space-y-2">
 								{SKILL_FIELDS.map((field) => {
 									const val = n(field.key);
@@ -589,7 +684,6 @@ export default function FinalReportForm() {
 
 							<Separator />
 
-							{/* Final Score */}
 							<div className="rounded-xl bg-muted p-4 text-center">
 								<p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider">
 									Final Score
@@ -616,6 +710,69 @@ export default function FinalReportForm() {
 					</Card>
 				</div>
 			</div>
+
+			{/* ── DIALOG KONFIRMASI SUBMIT ──────────────────── */}
+			<AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle className="flex items-center gap-2">
+							<Send className="h-5 w-5" />
+							Kirim Final Report?
+						</AlertDialogTitle>
+						<AlertDialogDescription asChild>
+							<div className="space-y-2">
+								<p>
+									Pastikan semua nilai sudah benar sebelum dikirim ke admin.
+								</p>
+								{selectedMurid && (
+									<div className="rounded-lg border p-3 text-sm space-y-1">
+										<p>
+											<span className="text-muted-foreground">Siswa: </span>
+											<span className="font-semibold">
+												{selectedMurid.namaLengkap}
+											</span>
+										</p>
+										<p>
+											<span className="text-muted-foreground">Kelas: </span>
+											<span className="font-semibold">{kelasLabel}</span>
+										</p>
+										<p>
+											<span className="text-muted-foreground">
+												Final Score:{" "}
+											</span>
+											<span
+												className={`font-bold ${getScoreColor(finalScore)}`}
+											>
+												{finalScore} ({getDescription(finalScore)})
+											</span>
+										</p>
+									</div>
+								)}
+								<p className="text-xs text-muted-foreground">
+									Setelah dikirim, laporan tidak bisa diedit dan akan menunggu
+									persetujuan admin.
+								</p>
+							</div>
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={submitReport.isPending}>
+							Batal
+						</AlertDialogCancel>
+						<Button
+							onClick={handleConfirmSubmit}
+							disabled={submitReport.isPending}
+						>
+							{submitReport.isPending ? (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							) : (
+								<Send className="mr-2 h-4 w-4" />
+							)}
+							Ya, Kirim
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			{/* ── PENDING LIST ─────────────────────────────── */}
 			<Card>

@@ -21,8 +21,8 @@ export {
 	clientCreatePembayaranSchema,
 	clientUpdatePembayaranSchema,
 	createPembayaranSchema,
-	updatePembayaranSchema,
 	type TypeClientCreatePembayaranSchema,
 	type TypeClientUpdatePembayaranSchema,
 	type TypeUpdatePembayaranSchema,
+	updatePembayaranSchema,
 };

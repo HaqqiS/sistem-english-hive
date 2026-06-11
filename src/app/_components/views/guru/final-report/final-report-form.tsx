@@ -2,6 +2,7 @@
 
 import { pdf } from "@react-pdf/renderer";
 import {
+	CalendarIcon,
 	CheckCircle2,
 	ChevronRight,
 	Clock,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Card,
 	CardContent,
@@ -34,6 +36,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+
+import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -42,6 +50,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { FinalReportPDF } from "./final-report-pdf";
 
@@ -54,60 +63,28 @@ interface ScoreField {
 
 type ScoreMap = Record<string, string>;
 
-// ─── Constants (outside component — stable references, no dependency issues) ──
+type ReportType = "4-aspek" | "2-aspek";
 
-const SKILL_FIELDS: ScoreField[] = [
+const SKILL_FIELDS_FULL: ScoreField[] = [
 	{ key: "listening", label: "Listening" },
 	{ key: "speaking", label: "Speaking" },
 	{ key: "reading", label: "Reading" },
 	{ key: "writing", label: "Writing" },
 ];
 
-const RECORDING_OPTIONS = [
-	{ value: "0", label: "0 — Tidak recording sama sekali" },
-	{ value: "1", label: "1 — Recording sekali" },
-	{ value: "2", label: "2 — Recording dua kali" },
-	{ value: "3", label: "3 — Recording tiga kali" },
-	{ value: "4", label: "4 — Recording lengkap" },
+const SKILL_FIELDS_SIMPLE: ScoreField[] = [
+	{ key: "listening", label: "Listening" },
+	{ key: "speaking", label: "Speaking" },
 ];
 
-const RECORDING_MAP: Record<string, number> = {
-	"0": 0,
-	"1": 55,
-	"2": 70,
-	"3": 85,
-	"4": 100,
-};
-
-const REQUIRED_SCORE_KEYS = [
-	"midTest",
-	"finalTest",
-	"listening",
-	"speaking",
-	"reading",
-	"writing",
-	"attendance",
-] as const;
-
-const SCORE_LABELS: Record<string, string> = {
-	midTest: "Mid Test",
-	finalTest: "Final Test",
-	listening: "Listening",
-	speaking: "Speaking",
-	reading: "Reading",
-	writing: "Writing",
-	attendance: "Kehadiran",
-};
-
-const INITIAL_SCORES: ScoreMap = {
-	midTest: "",
-	finalTest: "",
-	listening: "",
-	speaking: "",
-	reading: "",
-	writing: "",
-	attendance: "",
-};
+// Recording 0–4
+const RECORDING_OPTIONS = [
+	{ value: "0", label: "0 — Tidak recording sama sekali" },
+	{ value: "1", label: "1 — Tidak ada recording" },
+	{ value: "2", label: "2 — Recording sekali" },
+	{ value: "3", label: "3 — Recording dua kali" },
+	{ value: "4", label: "4 — Recording lengkap" },
+];
 
 // ─── Helpers ──────────────────────────────────────────
 
@@ -159,9 +136,20 @@ export default function FinalReportForm() {
 	// ── Form state ────────────────────────────────────
 	const [selectedKelasId, setSelectedKelasId] = useState("");
 	const [selectedMuridId, setSelectedMuridId] = useState("");
-	const [scores, setScores] = useState<ScoreMap>(INITIAL_SCORES);
-	const [recording, setRecording] = useState("1");
+	const [scores, setScores] = useState<ScoreMap>({
+		midTest: "",
+		finalTest: "",
+		listening: "",
+		speaking: "",
+		reading: "",
+		writing: "",
+		attendance: "",
+	});
+	const [recording, setRecording] = useState("0");
 	const [notes, setNotes] = useState("");
+	const [reportType, setReportType] = useState<ReportType>("4-aspek");
+	const [graduationDate, setGraduationDate] = useState<string>("");
+	const [graduationDateOpen, setGraduationDateOpen] = useState(false);
 	const [isPrintingId, setIsPrintingId] = useState<string | null>(null);
 	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
@@ -172,6 +160,12 @@ export default function FinalReportForm() {
 
 	const selectedMurid = muridList.find((m) => m.id === selectedMuridId);
 
+	// Cari pendaftaranId untuk murid yang dipilih di kelas ini
+	const selectedPendaftaranId = selectedKelas?.pendaftaranKelases.find(
+		(p) => p.murid.id === selectedMuridId,
+	)?.id;
+
+	// Label kelas: "NamaJenis Level X"
 	const kelasLabel = selectedKelas
 		? `${selectedKelas.jenisKelasRel?.nama ?? "Kelas"} Level ${selectedKelas.level}`
 		: "";
@@ -179,10 +173,16 @@ export default function FinalReportForm() {
 	// ── Auto-fetch kehadiran dari absensi ─────────────
 	const { data: attendanceData, isLoading: loadingAttendance } =
 		api.finalReport.getAttendanceByMuridKelas.useQuery(
-			{ muridId: selectedMuridId, kelasId: selectedKelasId },
-			{ enabled: !!(selectedMuridId && selectedKelasId) },
+			{
+				muridId: selectedMuridId,
+				kelasId: selectedKelasId,
+			},
+			{
+				enabled: !!(selectedMuridId && selectedKelasId),
+			},
 		);
 
+	// Sync attendance ke form state ketika data absensi datang
 	useEffect(() => {
 		if (attendanceData) {
 			setScores((prev) => ({
@@ -192,6 +192,7 @@ export default function FinalReportForm() {
 		}
 	}, [attendanceData]);
 
+	// Reset attendance saat murid/kelas berubah
 	useEffect(() => {
 		if (!selectedMuridId || !selectedKelasId) {
 			setScores((prev) => ({ ...prev, attendance: "" }));
@@ -201,19 +202,34 @@ export default function FinalReportForm() {
 	// ── Calculated scores ─────────────────────────────
 	const n = (key: string) => Number(scores[key]) || 0;
 
+	const recordingMap: Record<string, number> = {
+		"0": 0,
+		"1": 55,
+		"2": 70,
+		"3": 85,
+		"4": 100,
+	};
+
 	const projectParticipation = useMemo(() => {
-		const recordingScore = RECORDING_MAP[recording] ?? 55;
+		const recordingMap: Record<string, number> = {
+			"0": 0,
+			"1": 55,
+			"2": 70,
+			"3": 85,
+			"4": 100,
+		};
+		const recordingScore = recordingMap[recording] ?? 55;
 		const attendanceScore = ((Number(scores.attendance) || 0) / 23) * 100;
 		return Number((recordingScore * 0.5 + attendanceScore * 0.5).toFixed(1));
 	}, [recording, scores.attendance]);
 
 	const finalScore = useMemo(() => {
+		const listening = Number(scores.listening) || 0;
+		const speaking = Number(scores.speaking) || 0;
+		const reading = Number(scores.reading) || 0;
+		const writing = Number(scores.writing) || 0;
 		const total =
-			Number(scores.listening || 0) +
-			Number(scores.speaking || 0) +
-			Number(scores.reading || 0) +
-			Number(scores.writing || 0) +
-			projectParticipation;
+			listening + speaking + reading + writing + projectParticipation;
 		return Number((total / 5).toFixed(1));
 	}, [
 		scores.listening,
@@ -223,18 +239,49 @@ export default function FinalReportForm() {
 		projectParticipation,
 	]);
 
-	// ── Form validation ───────────────────────────────
+	// ── Validasi form lengkap ─────────────────────────
+	const skillFields =
+		reportType === "2-aspek" ? SKILL_FIELDS_SIMPLE : SKILL_FIELDS_FULL;
+
+	const requiredScoreKeys = useMemo(
+		() => [
+			"midTest",
+			"finalTest",
+			"listening",
+			"speaking",
+			...(reportType === "4-aspek" ? ["reading", "writing"] : []),
+			"attendance",
+		],
+		[reportType],
+	);
+
 	const formErrors = useMemo(() => {
 		const errors: string[] = [];
 		if (!selectedKelasId) errors.push("Pilih kelas terlebih dahulu");
 		if (!selectedMuridId) errors.push("Pilih siswa terlebih dahulu");
-		for (const key of REQUIRED_SCORE_KEYS) {
+		if (!graduationDate) errors.push("Tanggal kelulusan belum diisi");
+		for (const key of requiredScoreKeys) {
 			if (scores[key] === "" || scores[key] === undefined) {
-				errors.push(`${SCORE_LABELS[key]} belum diisi`);
+				const labels: Record<string, string> = {
+					midTest: "Mid Test",
+					finalTest: "Final Test",
+					listening: "Listening",
+					speaking: "Speaking",
+					reading: "Reading",
+					writing: "Writing",
+					attendance: "Kehadiran",
+				};
+				errors.push(`${labels[key]} belum diisi`);
 			}
 		}
 		return errors;
-	}, [selectedKelasId, selectedMuridId, scores]);
+	}, [
+		selectedKelasId,
+		selectedMuridId,
+		scores,
+		graduationDate,
+		requiredScoreKeys,
+	]);
 
 	const isFormValid = formErrors.length === 0;
 
@@ -242,14 +289,23 @@ export default function FinalReportForm() {
 	const resetForm = () => {
 		setSelectedKelasId("");
 		setSelectedMuridId("");
-		setScores(INITIAL_SCORES);
+		setScores({
+			midTest: "",
+			finalTest: "",
+			listening: "",
+			speaking: "",
+			reading: "",
+			writing: "",
+			attendance: "",
+		});
 		setRecording("1");
 		setNotes("");
+		setGraduationDate("");
 	};
 
 	const handleKelasChange = (kelasId: string) => {
 		setSelectedKelasId(kelasId);
-		setSelectedMuridId("");
+		setSelectedMuridId(""); // reset murid saat kelas berubah
 	};
 
 	const handleScoreChange = (key: string, value: string) => {
@@ -262,6 +318,7 @@ export default function FinalReportForm() {
 		setScores((prev) => ({ ...prev, [key]: String(clamped) }));
 	};
 
+	// Klik tombol submit → cek validasi dulu, lalu tampilkan dialog konfirmasi
 	const handleSubmitClick = () => {
 		if (!isFormValid) {
 			toast.error(formErrors[0] ?? "Lengkapi semua data terlebih dahulu");
@@ -270,6 +327,7 @@ export default function FinalReportForm() {
 		setShowConfirmDialog(true);
 	};
 
+	// Konfirmasi OK di dialog → kirim ke server
 	const handleConfirmSubmit = () => {
 		setShowConfirmDialog(false);
 		submitReport.mutate({
@@ -280,13 +338,15 @@ export default function FinalReportForm() {
 			finalTest: n("finalTest"),
 			listening: n("listening"),
 			speaking: n("speaking"),
-			reading: n("reading"),
-			writing: n("writing"),
+			// Mode 2 aspek: reading & writing dikirim 0, tidak dinilai
+			reading: reportType === "2-aspek" ? 0 : n("reading"),
+			writing: reportType === "2-aspek" ? 0 : n("writing"),
 			recording: Number(recording),
 			attendance: n("attendance"),
 			projectParticipation,
 			finalScore,
 			notes: notes || undefined,
+			graduationDate: graduationDate ? new Date(graduationDate) : undefined,
 		});
 	};
 
@@ -346,6 +406,7 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-4">
+							{/* Pilih Kelas */}
 							<div className="space-y-1.5">
 								<Label>Kelas</Label>
 								<Select
@@ -380,6 +441,7 @@ export default function FinalReportForm() {
 								</Select>
 							</div>
 
+							{/* Pilih Murid */}
 							<div className="space-y-1.5">
 								<Label>Siswa</Label>
 								<Select
@@ -408,6 +470,7 @@ export default function FinalReportForm() {
 								</Select>
 							</div>
 
+							{/* Info terpilih */}
 							{selectedMurid && selectedKelas && (
 								<div className="bg-muted flex items-center gap-3 rounded-lg p-3">
 									<CheckCircle2 className="text-primary h-4 w-4 shrink-0" />
@@ -434,7 +497,7 @@ export default function FinalReportForm() {
 							</CardTitle>
 						</CardHeader>
 
-						<CardContent>
+						<CardContent className="space-y-4">
 							<div className="grid grid-cols-2 gap-4">
 								{[
 									{ key: "midTest", label: "Mid Test" },
@@ -461,12 +524,51 @@ export default function FinalReportForm() {
 						</CardContent>
 					</Card>
 
-					{/* STEP 3: English Skills */}
+					{/* STEP 2.5: Tipe Laporan */}
+					<Card>
+						<CardHeader className="pb-3">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
+									3
+								</span>
+								Tipe Final Report
+							</CardTitle>
+							<CardDescription>
+								Sesuaikan dengan jenis kelas yang diajar
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="flex gap-2">
+								{(["4-aspek", "2-aspek"] as ReportType[]).map((type) => (
+									<button
+										key={type}
+										type="button"
+										onClick={() => setReportType(type)}
+										className={cn(
+											"rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+											reportType === type
+												? "bg-primary text-primary-foreground border-primary"
+												: "bg-background text-muted-foreground hover:bg-muted",
+										)}
+									>
+										{type === "4-aspek" ? "4 Aspek" : "2 Aspek"}
+									</button>
+								))}
+							</div>
+							<p className="text-muted-foreground mt-2 text-xs">
+								{reportType === "4-aspek"
+									? "Listening + Speaking + Reading + Writing"
+									: "Listening + Speaking"}
+							</p>
+						</CardContent>
+					</Card>
+
+					{/* STEP 4: English Skills */}
 					<Card>
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-									3
+									4
 								</span>
 								English Skills
 							</CardTitle>
@@ -474,7 +576,7 @@ export default function FinalReportForm() {
 
 						<CardContent>
 							<div className="grid grid-cols-2 gap-4">
-								{SKILL_FIELDS.map((field) => (
+								{skillFields.map((field) => (
 									<div key={field.key} className="space-y-1.5">
 										<Label>
 											{field.label}
@@ -496,12 +598,12 @@ export default function FinalReportForm() {
 						</CardContent>
 					</Card>
 
-					{/* STEP 4: Project & Participation */}
+					{/* STEP 5: Project & Participation */}
 					<Card>
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-									4
+									5
 								</span>
 								Project & Participation
 							</CardTitle>
@@ -511,6 +613,7 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-4">
+							{/* Recording — atas */}
 							<div className="space-y-1.5">
 								<Label>
 									Recording (0 – 4)
@@ -530,6 +633,7 @@ export default function FinalReportForm() {
 								</Select>
 							</div>
 
+							{/* Kehadiran — bawah (otomatis dari absensi) */}
 							<div className="space-y-1.5">
 								<div className="flex items-center justify-between">
 									<Label>
@@ -568,6 +672,7 @@ export default function FinalReportForm() {
 								)}
 							</div>
 
+							{/* Kalkulasi project */}
 							<div className="bg-muted rounded-lg p-3 text-sm flex justify-between items-center">
 								<span className="text-muted-foreground">
 									Project & Participation (otomatis)
@@ -586,7 +691,7 @@ export default function FinalReportForm() {
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-									5
+									6
 								</span>
 								Catatan Guru
 								<Badge variant="outline" className="text-xs font-normal">
@@ -595,10 +700,63 @@ export default function FinalReportForm() {
 							</CardTitle>
 						</CardHeader>
 
-						<CardContent>
+						<CardContent className="space-y-4">
+							{/* Tanggal Kelulusan */}
+							<div className="space-y-1.5">
+								<Label>
+									Tanggal Kelulusan
+									<span className="text-destructive ml-0.5">*</span>
+								</Label>
+								<Popover
+									open={graduationDateOpen}
+									onOpenChange={setGraduationDateOpen}
+								>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											className={cn(
+												"w-full justify-start text-left font-normal",
+												!graduationDate && "text-muted-foreground",
+											)}
+										>
+											<CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+											{graduationDate
+												? new Date(graduationDate).toLocaleDateString("id-ID", {
+														day: "numeric",
+														month: "long",
+														year: "numeric",
+													})
+												: "Pilih tanggal kelulusan..."}
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-auto p-0" align="start">
+										<Calendar
+											mode="single"
+											selected={
+												graduationDate ? new Date(graduationDate) : undefined
+											}
+											onSelect={(date) => {
+												if (!date) return;
+												// Simpan sebagai YYYY-MM-DD
+												const y = date.getFullYear();
+												const m = String(date.getMonth() + 1).padStart(2, "0");
+												const d = String(date.getDate()).padStart(2, "0");
+												setGraduationDate(`${y}-${m}-${d}`);
+												setGraduationDateOpen(false);
+											}}
+											initialFocus
+										/>
+									</PopoverContent>
+								</Popover>
+								<p className="text-muted-foreground text-xs">
+									Akan tampil di halaman sertifikat kelulusan PDF.
+								</p>
+							</div>
+
+							{/* Catatan */}
 							<Textarea
 								placeholder="Tambahkan catatan atau komentar tentang perkembangan siswa..."
-								rows={4}
+								rows={3}
 								value={notes}
 								onChange={(e) => setNotes(e.target.value)}
 							/>
@@ -636,6 +794,7 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-3">
+							{/* Tes */}
 							<div className="space-y-2">
 								{[
 									{ label: "Mid Test", value: n("midTest") },
@@ -653,8 +812,9 @@ export default function FinalReportForm() {
 
 							<Separator />
 
+							{/* Skills */}
 							<div className="space-y-2">
-								{SKILL_FIELDS.map((field) => {
+								{skillFields.map((field) => {
 									const val = n(field.key);
 									return (
 										<div
@@ -684,6 +844,7 @@ export default function FinalReportForm() {
 
 							<Separator />
 
+							{/* Final Score */}
 							<div className="rounded-xl bg-muted p-4 text-center">
 								<p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider">
 									Final Score

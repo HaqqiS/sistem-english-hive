@@ -96,6 +96,7 @@ export const finalReportRouter = createTRPCRouter({
 				projectParticipation: z.number(),
 				finalScore: z.number(),
 				notes: z.string().optional(),
+				graduationDate: z.date().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {

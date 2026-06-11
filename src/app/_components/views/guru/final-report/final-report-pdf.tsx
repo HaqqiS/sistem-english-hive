@@ -170,6 +170,91 @@ const styles = StyleSheet.create({
 	},
 });
 
+// ── STYLES PAGE 2: CERTIFICATE ──────────────────────────────────────────────
+// Layout mengikuti template Word: A4 Landscape, margin 1in semua sisi
+// Teks ada di kanan halaman (x ~344pt dari content left), rata tengah dalam group ~395pt lebar
+const certStyles = StyleSheet.create({
+	page: {
+		// A4 Landscape: 841.89 x 595.28pt, padding = margin dokumen (72pt = 1in)
+		paddingTop: 72,
+		paddingBottom: 72,
+		paddingLeft: 72,
+		paddingRight: 72,
+		fontFamily: "Helvetica",
+		backgroundColor: "#ffffff",
+	},
+	// Wrapper absolut untuk seluruh group teks
+	group: {
+		position: "absolute",
+		// Group dari kiri content: 344pt, dari atas page (termasuk padding): 72 + 96.8 = 168.8pt
+		left: 420,
+		top: 168,
+		width: 395,
+	},
+	// Text box 1: Nama siswa
+	nama: {
+		width: 395,
+		textAlign: "center",
+		fontFamily: "Helvetica-Bold",
+	},
+	// Text box 2: Level (y=143pt dari top group)
+	level: {
+		position: "absolute",
+		top: 143,
+		width: 395,
+		textAlign: "center",
+		fontFamily: "Helvetica-Bold",
+		fontSize: 24,
+	},
+	// Text box 3: Lokasi + tanggal (y=216pt dari top group)
+	tanggal: {
+		position: "absolute",
+		top: 216,
+		width: 395,
+		textAlign: "center",
+		fontFamily: "Helvetica",
+		fontSize: 11,
+	},
+});
+
+function getNameFontSize(name: string): number {
+	const len = name.length;
+	if (len <= 20) return 22;
+	if (len <= 28) return 18;
+	if (len <= 36) return 15;
+	return 12;
+}
+
+function formatLevel(level: string): string {
+	// "TinyTods Level 1" → "TINY TODS 1"
+	// "Little Star Level 3" → "LITTLE STAR 3"
+	return level
+		.replace(/\blevel\b/gi, "") // hapus kata "Level"
+		.replace(/\s+/g, " ") // normalkan spasi ganda
+		.trim()
+		.toUpperCase();
+}
+
+function formatGraduationDate(d?: Date | string | null): string {
+	if (!d) return "";
+	const date = typeof d === "string" ? new Date(d) : d;
+	const months = [
+		"JANUARY",
+		"FEBRUARY",
+		"MARCH",
+		"APRIL",
+		"MAY",
+		"JUNE",
+		"JULY",
+		"AUGUST",
+		"SEPTEMBER",
+		"OCTOBER",
+		"NOVEMBER",
+		"DECEMBER",
+	];
+	return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 function getDescription(score: number) {
 	if (score >= 90) return "Excellent";
 	if (score >= 80) return "Very good";
@@ -193,6 +278,7 @@ export interface FinalReportData {
 	cabangAlamat?: string | null;
 	cabangNoTelp?: string | null;
 	cabangEmail?: string | null;
+	graduationDate?: Date | string | null;
 }
 
 interface Props {
@@ -213,16 +299,8 @@ export function FinalReportPDF({ data }: Props) {
 	const noTelp = data.cabangNoTelp ?? "";
 	const email = data.cabangEmail ?? "";
 
-	const logoUrl = LOGO_BASE64;
 	// PENTING: Ubah ekstensi gambar ke .png di server kamu agar aman dibaca PDF engine
-	// const logoUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/logo_header.png`;
-
-	// Gunakan path absolut dari origin saat ini — bekerja di localhost maupun Railway
-	// karena @react-pdf/renderer fetch gambar via URL di browser
-	// const logoUrl =
-	// 	typeof window !== "undefined"
-	// 		? `${window.location.origin}/logo_header.png`
-	// 		: "/logo_header.png";
+	const logoUrl = LOGO_BASE64;
 
 	return (
 		<Document>
@@ -273,37 +351,43 @@ export function FinalReportPDF({ data }: Props) {
 							</View>
 						</View>
 
-						{/* Skill rows */}
-						{assessments.map((item) => (
-							<View key={item.label} style={styles.tableRow}>
+						{/* Skill rows — skip kalau nilai 0 */}
+						{assessments
+							.filter((item) => item.score !== 0)
+							.map((item) => (
+								<View key={item.label} style={styles.tableRow}>
+									<View style={styles.cellSkill}>
+										<Text style={styles.cellText}>{item.label}</Text>
+									</View>
+									<View style={styles.cellScore}>
+										<Text style={styles.cellTextCenter}>{item.score}</Text>
+									</View>
+									<View style={styles.cellDesc}>
+										<Text style={styles.cellTextCenter}>
+											{getDescription(item.score)}
+										</Text>
+									</View>
+								</View>
+							))}
+
+						{/* Final Score row — skip kalau nilai 0 */}
+						{data.finalScore !== 0 && (
+							<View style={styles.tableRowFinal}>
 								<View style={styles.cellSkill}>
-									<Text style={styles.cellText}>{item.label}</Text>
+									<Text style={styles.cellTextBold}>FINAL SCORE</Text>
 								</View>
 								<View style={styles.cellScore}>
-									<Text style={styles.cellTextCenter}>{item.score}</Text>
+									<Text style={styles.cellTextCenterBold}>
+										{data.finalScore}
+									</Text>
 								</View>
 								<View style={styles.cellDesc}>
 									<Text style={styles.cellTextCenter}>
-										{getDescription(item.score)}
+										{getDescription(data.finalScore)}
 									</Text>
 								</View>
 							</View>
-						))}
-
-						{/* Final Score row */}
-						<View style={styles.tableRowFinal}>
-							<View style={styles.cellSkill}>
-								<Text style={styles.cellTextBold}>FINAL SCORE</Text>
-							</View>
-							<View style={styles.cellScore}>
-								<Text style={styles.cellTextCenterBold}>{data.finalScore}</Text>
-							</View>
-							<View style={styles.cellDesc}>
-								<Text style={styles.cellTextCenter}>
-									{getDescription(data.finalScore)}
-								</Text>
-							</View>
-						</View>
+						)}
 					</View>
 				</View>
 
@@ -321,6 +405,40 @@ export function FinalReportPDF({ data }: Props) {
 				<View style={styles.signatureSection}>
 					<Text style={styles.signatureLabel}>Classroom Teacher,</Text>
 					<Text style={styles.signatureName}>{data.teacherName}</Text>
+				</View>
+			</Page>
+			{/* ── PAGE 2: CERTIFICATE — layout persis mengikuti template Word ── */}
+			<Page size="A4" orientation="landscape" style={certStyles.page}>
+				{/*
+				  Group teks diposisikan absolut persis seperti di Word:
+				  - left: 420pt dari margin kiri
+				  - top:  168pt dari atas halaman (margin 72pt + posV 96.8pt)
+				  Dalam group, 3 text box:
+				    1. Nama  — y=0,   Century Gothic Bold 22pt, center
+				    2. Level — y=143, Century Gothic Bold 24pt, center
+				    3. Tanggal — y=216, Arial 11pt, center
+				*/}
+				<View style={certStyles.group}>
+					{/* Text Box 1: Nama Siswa */}
+					<Text
+						style={{
+							...certStyles.nama,
+							fontSize: getNameFontSize(data.studentName),
+						}}
+					>
+						{data.studentName.toUpperCase()}
+					</Text>
+
+					{/* Text Box 2: Level */}
+					<Text style={certStyles.level}>{formatLevel(data.level)}</Text>
+
+					{/* Text Box 3: Lokasi + Tanggal Kelulusan */}
+					{data.graduationDate ? (
+						<Text style={certStyles.tanggal}>
+							{data.cabangNama ? `${data.cabangNama.toUpperCase()}, ` : ""}
+							{formatGraduationDate(data.graduationDate)}
+						</Text>
+					) : null}
 				</View>
 			</Page>
 		</Document>

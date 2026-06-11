@@ -26,20 +26,25 @@ describe("Kelas Service", () => {
 		kelas: {
 			findFirst: vi.fn(),
 			findUnique: vi.fn(),
+			findMany: vi.fn().mockResolvedValue([]),
 			create: vi.fn(),
+			update: vi.fn().mockResolvedValue({ cohortId: "cohort-1", level: 1 }),
+			updateMany: vi.fn(),
 		},
 		historyGuruKelas: {
 			findFirst: vi.fn(),
+			findMany: vi.fn().mockResolvedValue([]),
 			create: vi.fn(),
+			createMany: vi.fn(),
 			updateMany: vi.fn(),
 		},
 		jadwalKelas: {
-			findMany: vi.fn(),
+			findMany: vi.fn().mockResolvedValue([]),
 			createMany: vi.fn(),
 			deleteMany: vi.fn(),
 		},
 		pendaftaranKelas: {
-			findMany: vi.fn(),
+			findMany: vi.fn().mockResolvedValue([]),
 			create: vi.fn(),
 			updateMany: vi.fn(),
 		},
@@ -48,6 +53,9 @@ describe("Kelas Service", () => {
 		},
 		tagihanLain: {
 			create: vi.fn(),
+		},
+		murid: {
+			update: vi.fn(),
 		},
 	} as unknown as PrismaTx;
 
@@ -144,7 +152,7 @@ describe("Kelas Service", () => {
 			} as Kelas);
 
 			// 3. Mock dependencies (Guru, Jadwal, Murid)
-			vi.mocked(mockTx.historyGuruKelas.findFirst).mockResolvedValue(null);
+			vi.mocked(mockTx.historyGuruKelas.findMany).mockResolvedValue([]);
 			vi.mocked(mockTx.jadwalKelas.findMany).mockResolvedValue([]);
 			vi.mocked(mockTx.pendaftaranKelas.findMany).mockResolvedValue([]);
 
@@ -190,7 +198,7 @@ describe("Kelas Service", () => {
 			expect(createCall.data.hargaKelas).toBe(70000); // New Price
 
 			// Verify name replacement logic (TinyTods 4 -> TinyStar 1)
-			expect(createCall.data.kodeKelas).toContain("TinyStar 1");
+			expect(createCall.data.kodeKelas).toContain("TINYSTAR 1");
 
 			expect(result).toEqual({
 				id: "k-new-prog",
@@ -233,9 +241,9 @@ describe("Kelas Service", () => {
 			} as Kelas);
 
 			// Mock prev guru
-			vi.mocked(mockTx.historyGuruKelas.findFirst).mockResolvedValue({
-				guruId: "g-1",
-			} as HistoryGuruKelas);
+			vi.mocked(mockTx.historyGuruKelas.findMany).mockResolvedValue([
+				{ guruId: "g-1" } as HistoryGuruKelas,
+			]);
 
 			// Mock old schedules
 			vi.mocked(mockTx.jadwalKelas.findMany).mockResolvedValue([
@@ -274,12 +282,14 @@ describe("Kelas Service", () => {
 			expect(createCall.data.level).toBe(2);
 
 			// Validation: Teacher Migration
-			expect(mockTx.historyGuruKelas.create).toHaveBeenCalledWith(
+			expect(mockTx.historyGuruKelas.createMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					data: expect.objectContaining({
-						guruId: "g-1",
-						kelasId: "k-new",
-					}),
+					data: expect.arrayContaining([
+						expect.objectContaining({
+							guruId: "g-1",
+							kelasId: "k-new",
+						}),
+					]),
 				}),
 			);
 
@@ -359,6 +369,53 @@ describe("Kelas Service", () => {
 						kategori: "BUKU",
 						jumlah: 25000,
 						muridId: "m-1",
+					}),
+				}),
+			);
+		});
+
+		it("should migrate students with status OFF_SEMENTARA and keep the status", async () => {
+			resetMocks();
+			// Setup: Level 1 -> 2
+			vi.mocked(mockTx.kelas.findUnique).mockResolvedValue({
+				id: "k-1",
+				level: 1,
+				jenisKelasId: "jen-reg",
+				cohortId: "c-1",
+				kodeKelas: "A",
+				jenisKelasRel: {
+					id: "jen-reg",
+					nama: "Regular",
+					harga: 50000,
+					hargaBuku: 0,
+					nextLevel: null,
+				},
+			} as unknown as MockKelasWithRelations);
+
+			vi.mocked(mockTx.kelas.findFirst).mockResolvedValue(null);
+			vi.mocked(mockTx.kelas.create).mockResolvedValue({
+				id: "k-new",
+				level: 2,
+				hargaKelas: 50000,
+			} as Kelas);
+			vi.mocked(mockTx.pendaftaranKelas.findMany).mockResolvedValue([
+				{ muridId: "m-1", status: StatusPendaftaran.OFF_SEMENTARA } as PendaftaranKelas,
+			]);
+			vi.mocked(mockTx.pendaftaranKelas.create).mockResolvedValue({
+				id: "reg-new",
+			} as PendaftaranKelas);
+
+			await handleAutoLevelUp({
+				tx: mockTx,
+				jadwal: { kelasId: "k-1", ruangId: "r-1" },
+			});
+
+			expect(mockTx.pendaftaranKelas.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					data: expect.objectContaining({
+						muridId: "m-1",
+						kelasId: "k-new",
+						status: StatusPendaftaran.OFF_SEMENTARA,
 					}),
 				}),
 			);

@@ -156,9 +156,12 @@ export const handleAutoLevelUp = async ({
 			data: jadwalData,
 		});
 	}
-	// C. Pindahkan Murid Aktif
+	// C. Pindahkan Murid Aktif & Off Sementara
 	const activeStudents = await tx.pendaftaranKelas.findMany({
-		where: { kelasId: currentClass.id, status: StatusPendaftaran.AKTIF }, // UPDATED: isAktif is deprecated
+		where: {
+			kelasId: currentClass.id,
+			status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.OFF_SEMENTARA] },
+		},
 	});
 
 	const totalTagihan = newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
@@ -183,7 +186,7 @@ export const handleAutoLevelUp = async ({
 					muridId: student.muridId,
 					kelasId: newKelas.id,
 					tanggalMulai: estimasiMulaiString,
-					status: StatusPendaftaran.AKTIF,
+					status: student.status ?? StatusPendaftaran.AKTIF,
 				},
 			});
 

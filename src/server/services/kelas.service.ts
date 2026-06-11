@@ -160,7 +160,9 @@ export const handleAutoLevelUp = async ({
 	const activeStudents = await tx.pendaftaranKelas.findMany({
 		where: {
 			kelasId: currentClass.id,
-			status: { in: [StatusPendaftaran.AKTIF, StatusPendaftaran.OFF_SEMENTARA] },
+			status: {
+				in: [StatusPendaftaran.AKTIF, StatusPendaftaran.OFF_SEMENTARA],
+			},
 		},
 	});
 

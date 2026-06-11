@@ -399,7 +399,10 @@ describe("Kelas Service", () => {
 				hargaKelas: 50000,
 			} as Kelas);
 			vi.mocked(mockTx.pendaftaranKelas.findMany).mockResolvedValue([
-				{ muridId: "m-1", status: StatusPendaftaran.OFF_SEMENTARA } as PendaftaranKelas,
+				{
+					muridId: "m-1",
+					status: StatusPendaftaran.OFF_SEMENTARA,
+				} as PendaftaranKelas,
 			]);
 			vi.mocked(mockTx.pendaftaranKelas.create).mockResolvedValue({
 				id: "reg-new",

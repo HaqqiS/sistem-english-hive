@@ -45,28 +45,6 @@ import {
 } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
-// ── Priority sort: Tiny → Kids → Teen → Junior → Adult ──────────────────────
-const JENIS_PRIORITY: Record<string, number> = {
-	tiny: 1,
-	tods: 1,
-	"tiny tods": 1,
-	tinytods: 1,
-	kids: 2,
-	teen: 3,
-	teens: 3,
-	junior: 4,
-	adult: 5,
-	adults: 5,
-};
-
-function getJenisPriority(nama: string): number {
-	const lower = nama.toLowerCase();
-	for (const [key, val] of Object.entries(JENIS_PRIORITY)) {
-		if (lower.includes(key)) return val;
-	}
-	return 99;
-}
-
 // ── Props ─────────────────────────────────────────────────────────────────────
 interface KelasListViewProps {
 	data?: TypeKelasWithSesiPertemuanCount[];
@@ -421,12 +399,8 @@ export function KelasListView({
 		}
 	}
 
-	// 3. Sort groups: Tiny → Kids → Teen → Junior → Adult → lainnya
-	const groups = [...groupMap.entries()].sort(([a], [b]) => {
-		const pa = getJenisPriority(a);
-		const pb = getJenisPriority(b);
-		return pa !== pb ? pa - pb : a.localeCompare(b);
-	});
+	// 3. Sort groups A→Z by jenis nama (abjad murni, tidak berdasarkan level)
+	const groups = [...groupMap.entries()].sort(([a], [b]) => a.localeCompare(b));
 
 	const cardProps = { onEditKelas, onEditGuruKelas, onUpLevel, onDelete };
 

@@ -282,7 +282,6 @@ export default function DetailGuruClient() {
 									string,
 									{
 										kodeKelas: string;
-										bulanTahun: string;
 										count: number;
 									}
 								> = {};
@@ -292,33 +291,22 @@ export default function DetailGuruClient() {
 
 									const kelas = item.sesiPertemuanKelas.kelas;
 									const kode = kelas.kodeKelas;
-									const bulanTahun = dayjs(
-										item.sesiPertemuanKelas.tanggalWaktu,
-									).format("MM/YYYY");
 
-									const key = `${kode}-${bulanTahun}`;
-									if (!groups[key]) {
-										groups[key] = {
+									if (!groups[kode]) {
+										groups[kode] = {
 											kodeKelas: kode,
-											bulanTahun,
 											count: 0,
 										};
 									}
-									groups[key].count++;
+									groups[kode].count++;
 								});
 
 								return Object.values(groups).map((group) => (
 									<div
-										key={`${group.kodeKelas}-${group.bulanTahun}`}
+										key={group.kodeKelas}
 										className="bg-muted/50 flex items-center justify-between rounded-md border px-3 py-2 text-xs font-medium"
 									>
-										<div className="flex items-center gap-2">
-											<span className="font-semibold">{group.kodeKelas}</span>
-											<span className="text-muted-foreground">|</span>
-											<span className="text-muted-foreground">
-												{group.bulanTahun}
-											</span>
-										</div>
+										<span className="font-semibold">{group.kodeKelas}</span>
 										<span className="font-bold text-blue-600">
 											{group.count}x
 										</span>

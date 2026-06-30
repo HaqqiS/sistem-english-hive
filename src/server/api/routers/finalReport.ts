@@ -50,6 +50,61 @@ export const finalReportRouter = createTRPCRouter({
 	}),
 
 	// =========================
+	// GET KELAS BY CABANG FILTER (untuk ADMIN/MANAGER)
+	// Ambil semua kelas dari cabang yang sedang difilter (activeCabangId di sidebar),
+	// lengkap dengan daftar guru per kelas untuk dipilih manual saat submit FR.
+	// =========================
+	getKelasByCabangFilter: protectedProcedure
+		.input(
+			z.object({
+				cabangId: z.string().optional(), // undefined / "ALL" artinya semua cabang
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { role, cabangId: userCabangId } = ctx.session.user;
+
+			// ADMIN selalu dibatasi ke cabangnya sendiri, walau filter cabang diabaikan
+			const targetCabangId =
+				role === UserRole.MANAGER ? input.cabangId : userCabangId;
+
+			return ctx.db.kelas.findMany({
+				where: {
+					...(targetCabangId ? { cabangId: targetCabangId } : {}),
+					statusKelas: { not: "COMPLETED" },
+				},
+				orderBy: { createdAt: "desc" },
+				select: {
+					id: true,
+					level: true,
+					kodeKelas: true,
+					jenisKelasRel: {
+						select: { nama: true },
+					},
+					pendaftaranKelases: {
+						where: { status: "AKTIF" },
+						select: {
+							id: true,
+							murid: {
+								select: {
+									id: true,
+									namaLengkap: true,
+								},
+							},
+						},
+					},
+					historyGuruKelases: {
+						where: { selesaiPada: null },
+						select: {
+							guru: {
+								select: { id: true, name: true },
+							},
+						},
+					},
+				},
+			});
+		}),
+
+	// =========================
 	// GET ATTENDANCE BY MURID & KELAS
 	// Hitung kehadiran (HADIR) murid di kelas tertentu dari AbsensiMurid
 	// =========================
@@ -78,6 +133,8 @@ export const finalReportRouter = createTRPCRouter({
 
 	// =========================
 	// CREATE
+	// GURU: submit FR sendiri, status PENDING, menunggu approval admin.
+	// ADMIN/MANAGER: bisa pilih guru manual (teacherUserId), status langsung APPROVED.
 	// =========================
 	create: protectedProcedure
 		.input(
@@ -97,48 +154,132 @@ export const finalReportRouter = createTRPCRouter({
 				finalScore: z.number(),
 				notes: z.string().optional(),
 				graduationDate: z.date().optional(),
+				// Hanya dipakai ADMIN/MANAGER saat submit atas nama guru lain
+				teacherUserId: z.string().optional(),
+				teacherName: z.string().optional(),
+				// Hanya dipakai ADMIN/MANAGER. MANAGER wajib pilih,
+				// ADMIN otomatis dari cabangnya sendiri jika tidak dikirim.
+				cabangId: z.string().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
+			const { role, cabangId: userCabangId } = ctx.session.user;
+			const isStaff = role === UserRole.ADMIN || role === UserRole.MANAGER;
+			const { teacherUserId, teacherName, cabangId, ...rest } = input;
+
+			// Staff (ADMIN/MANAGER) wajib pilih guru manual
+			if (isStaff && (!teacherUserId || !teacherName)) {
+				throw new Error("Guru wajib dipilih sebelum mengirim Final Report");
+			}
+
+			// Resolve cabang info untuk dicetak di laporan (hanya berlaku saat APPROVED / staff submit)
+			let cabangInfo: {
+				cabangNama?: string;
+				cabangAlamat?: string;
+				cabangNoTelp?: string;
+				cabangEmail?: string;
+			} = {};
+
+			if (isStaff) {
+				// MANAGER wajib pilih cabang manual. ADMIN otomatis pakai cabangnya sendiri.
+				const targetCabangId =
+					role === UserRole.MANAGER ? cabangId : userCabangId;
+
+				if (role === UserRole.MANAGER && !targetCabangId) {
+					throw new Error("Cabang wajib dipilih sebelum mengirim Final Report");
+				}
+
+				if (targetCabangId) {
+					const cabang = await ctx.db.cabang.findUnique({
+						where: { id: targetCabangId },
+						select: {
+							namaCabang: true,
+							alamat: true,
+							noTelp: true,
+							email: true,
+						},
+					});
+
+					if (cabang) {
+						cabangInfo = {
+							cabangNama: cabang.namaCabang,
+							cabangAlamat: cabang.alamat ?? undefined,
+							cabangNoTelp: cabang.noTelp ?? undefined,
+							cabangEmail: cabang.email ?? undefined,
+						};
+					}
+				}
+			}
+
 			return ctx.db.finalReport.create({
 				data: {
-					...input,
-					teacherUserId: ctx.session.user.id,
-					teacherName: ctx.session.user.name ?? "Unknown",
+					...rest,
+					...cabangInfo,
+					teacherUserId: isStaff
+						? (teacherUserId as string)
+						: ctx.session.user.id,
+					teacherName: isStaff
+						? (teacherName as string)
+						: (ctx.session.user.name ?? "Unknown"),
+					// Staff yang submit langsung approved, guru tetap PENDING
+					status: isStaff ? "APPROVED" : "PENDING",
 				},
 			});
 		}),
 
 	// =========================
 	// GET ALL
-	// MANAGER: semua FR.
+	// MANAGER: semua FR, atau filter berdasarkan cabangId yang dipilih.
 	// ADMIN: hanya FR dari guru yang satu cabang dengannya.
 	// =========================
-	getAll: protectedProcedure.query(async ({ ctx }) => {
-		const { role, cabangId } = ctx.session.user;
+	getAll: protectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const { role, cabangId } = ctx.session.user;
 
-		// MANAGER melihat semua
-		if (role === UserRole.MANAGER) {
+			// MANAGER melihat semua, atau hanya cabang yang dipilih (filter)
+			if (role === UserRole.MANAGER) {
+				const filterCabangId = input?.cabangId;
+
+				if (filterCabangId) {
+					const guruDiCabang = await ctx.db.user.findMany({
+						where: { cabangId: filterCabangId },
+						select: { id: true },
+					});
+					const guruIds = guruDiCabang.map((g) => g.id);
+
+					return ctx.db.finalReport.findMany({
+						where: { teacherUserId: { in: guruIds } },
+						orderBy: { createdAt: "desc" },
+					});
+				}
+
+				return ctx.db.finalReport.findMany({
+					orderBy: { createdAt: "desc" },
+				});
+			}
+
+			// ADMIN hanya melihat FR guru di cabangnya
+			if (!cabangId) return [];
+
+			// Ambil ID semua guru yang terdaftar di cabang ini
+			const guruDiCabang = await ctx.db.user.findMany({
+				where: { cabangId },
+				select: { id: true },
+			});
+			const guruIds = guruDiCabang.map((g) => g.id);
+
 			return ctx.db.finalReport.findMany({
+				where: { teacherUserId: { in: guruIds } },
 				orderBy: { createdAt: "desc" },
 			});
-		}
-
-		// ADMIN hanya melihat FR guru di cabangnya
-		if (!cabangId) return [];
-
-		// Ambil ID semua guru yang terdaftar di cabang ini
-		const guruDiCabang = await ctx.db.user.findMany({
-			where: { cabangId },
-			select: { id: true },
-		});
-		const guruIds = guruDiCabang.map((g) => g.id);
-
-		return ctx.db.finalReport.findMany({
-			where: { teacherUserId: { in: guruIds } },
-			orderBy: { createdAt: "desc" },
-		});
-	}),
+		}),
 
 	// =========================
 	// GET PENDING BY GURU

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, PlusCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
@@ -26,8 +26,11 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { RouterOutputs } from "@/trpc/react";
 import { api } from "@/trpc/react";
+import { AdminFinalReportForm } from "./admin-final-report-form";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,7 +90,12 @@ function cabangToCabangForm(cabang: CabangOption): CabangForm {
 export default function AdminFinalReportClient() {
 	const utils = api.useUtils();
 
-	const { data, isLoading } = api.finalReport.getAll.useQuery();
+	// Filter cabang global (pojok kiri atas sidebar) — "ALL" artinya semua cabang
+	const { activeCabangId } = useGlobalCabangStore();
+
+	const { data, isLoading } = api.finalReport.getAll.useQuery({
+		cabangId: activeCabangId === "ALL" ? undefined : activeCabangId,
+	});
 
 	// Cabang list sesuai role — MANAGER dapat semua, ADMIN hanya cabang sendiri
 	const { data: cabangOptions } =
@@ -225,318 +233,353 @@ export default function AdminFinalReportClient() {
 	const showCabangDetail = !!cabangForm.cabangNama || isManual;
 
 	return (
-		<div className="space-y-4 p-6">
-			<h1 className="text-2xl font-bold">Final Report Approval</h1>
+		<Tabs defaultValue="approval" className="space-y-4 p-6">
+			<TabsList>
+				<TabsTrigger value="approval">Final Report Approval</TabsTrigger>
+				<TabsTrigger value="buat-sendiri">
+					<PlusCircle className="mr-2 h-4 w-4" />
+					Buat Final Report
+				</TabsTrigger>
+			</TabsList>
 
-			{data?.length === 0 && (
-				<p className="text-sm text-muted-foreground">
-					Belum ada Final Report masuk.
-				</p>
-			)}
+			<TabsContent value="buat-sendiri" className="-mx-6 -mt-2">
+				<AdminFinalReportForm />
+			</TabsContent>
 
-			{data?.map((fr) => (
-				<Card key={fr.id}>
-					<CardContent className="space-y-4 p-5">
-						{/* ROW UTAMA */}
-						<div className="flex items-center justify-between">
-							<div className="space-y-0.5">
-								<div className="flex items-center gap-2">
-									<p className="font-bold">{fr.studentName}</p>
-									{getStatusBadge(fr.status)}
+			<TabsContent value="approval" className="space-y-4">
+				<h1 className="text-2xl font-bold">Final Report Approval</h1>
+
+				{/* Info filter cabang aktif — mengikuti switcher cabang di sidebar (pojok kiri atas) */}
+				{isManager && activeCabangId !== "ALL" && (
+					<p className="text-muted-foreground text-sm">
+						Menampilkan Final Report dari cabang:{" "}
+						<span className="text-foreground font-medium">
+							{cabangOptions?.find((c) => c.id === activeCabangId)
+								?.namaCabang ?? "-"}
+						</span>
+					</p>
+				)}
+
+				{data?.length === 0 && (
+					<p className="text-sm text-muted-foreground">
+						Belum ada Final Report masuk.
+					</p>
+				)}
+
+				{data?.map((fr) => (
+					<Card key={fr.id}>
+						<CardContent className="space-y-4 p-5">
+							{/* ROW UTAMA */}
+							<div className="flex items-center justify-between">
+								<div className="space-y-0.5">
+									<div className="flex items-center gap-2">
+										<p className="font-bold">{fr.studentName}</p>
+										{getStatusBadge(fr.status)}
+									</div>
+									<p className="text-sm text-muted-foreground">
+										{fr.level} · {fr.teacherName}
+									</p>
+									<p className="text-sm">
+										Final Score:{" "}
+										<span className="font-semibold">{fr.finalScore}</span>
+									</p>
 								</div>
-								<p className="text-sm text-muted-foreground">
-									{fr.level} · {fr.teacherName}
-								</p>
-								<p className="text-sm">
-									Final Score:{" "}
-									<span className="font-semibold">{fr.finalScore}</span>
-								</p>
+
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() =>
+											setPreviewFR(previewFR?.id === fr.id ? null : fr)
+										}
+									>
+										{previewFR?.id === fr.id ? "Hide" : "Preview"}
+									</Button>
+
+									{fr.status === "PENDING" && (
+										<>
+											<Button
+												size="sm"
+												onClick={() => handleOpenApproveDialog(fr)}
+											>
+												Approve
+											</Button>
+											<Button
+												size="sm"
+												variant="destructive"
+												onClick={() => handleReject(fr.id)}
+											>
+												Reject
+											</Button>
+										</>
+									)}
+
+									<Button
+										variant="ghost"
+										size="icon"
+										className="text-destructive hover:text-destructive hover:bg-destructive/10"
+										onClick={() =>
+											setDeleteTarget({
+												id: fr.id,
+												studentName: fr.studentName,
+											})
+										}
+									>
+										<Trash2 className="h-4 w-4" />
+									</Button>
+								</div>
 							</div>
 
-							<div className="flex items-center gap-2">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() =>
-										setPreviewFR(previewFR?.id === fr.id ? null : fr)
-									}
-								>
-									{previewFR?.id === fr.id ? "Hide" : "Preview"}
-								</Button>
+							{/* CABANG INFO — tampil jika sudah approved */}
+							{fr.status === "APPROVED" && fr.cabangNama && (
+								<div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm">
+									<p className="font-semibold text-green-800">
+										{fr.cabangNama}
+									</p>
+									<p className="text-green-700">{fr.cabangAlamat}</p>
+									{fr.cabangNoTelp && (
+										<p className="text-green-700">Telp: {fr.cabangNoTelp}</p>
+									)}
+									{fr.cabangEmail && (
+										<p className="text-green-700">Email: {fr.cabangEmail}</p>
+									)}
+								</div>
+							)}
 
-								{fr.status === "PENDING" && (
-									<>
-										<Button
-											size="sm"
-											onClick={() => handleOpenApproveDialog(fr)}
-										>
-											Approve
-										</Button>
-										<Button
-											size="sm"
-											variant="destructive"
-											onClick={() => handleReject(fr.id)}
-										>
-											Reject
-										</Button>
-									</>
-								)}
+							{/* PREVIEW DETAIL */}
+							<div
+								className={[
+									"grid transition-all duration-300 ease-in-out",
+									previewFR?.id === fr.id
+										? "grid-rows-[1fr] opacity-100"
+										: "grid-rows-[0fr] opacity-0",
+								].join(" ")}
+							>
+								<div className="overflow-hidden">
+									<div className="space-y-4 border-t pt-4">
+										<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+											{(
+												[
+													{ label: "Mid Test", value: fr.midTest },
+													{ label: "Final Test", value: fr.finalTest },
+													{ label: "Listening", value: fr.listening },
+													{ label: "Speaking", value: fr.speaking },
+													{ label: "Reading", value: fr.reading },
+													{ label: "Writing", value: fr.writing },
+													{ label: "Recording", value: fr.recording },
+													{ label: "Attendance", value: fr.attendance },
+												] as const
+											).map((item) => (
+												<div key={item.label}>
+													<p className="text-xs text-muted-foreground">
+														{item.label}
+													</p>
+													<p className="font-bold">{item.value}</p>
+												</div>
+											))}
+										</div>
 
-								<Button
-									variant="ghost"
-									size="icon"
-									className="text-destructive hover:text-destructive hover:bg-destructive/10"
-									onClick={() =>
-										setDeleteTarget({ id: fr.id, studentName: fr.studentName })
-									}
-								>
-									<Trash2 className="h-4 w-4" />
-								</Button>
-							</div>
-						</div>
-
-						{/* CABANG INFO — tampil jika sudah approved */}
-						{fr.status === "APPROVED" && fr.cabangNama && (
-							<div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm">
-								<p className="font-semibold text-green-800">{fr.cabangNama}</p>
-								<p className="text-green-700">{fr.cabangAlamat}</p>
-								{fr.cabangNoTelp && (
-									<p className="text-green-700">Telp: {fr.cabangNoTelp}</p>
-								)}
-								{fr.cabangEmail && (
-									<p className="text-green-700">Email: {fr.cabangEmail}</p>
-								)}
-							</div>
-						)}
-
-						{/* PREVIEW DETAIL */}
-						<div
-							className={[
-								"grid transition-all duration-300 ease-in-out",
-								previewFR?.id === fr.id
-									? "grid-rows-[1fr] opacity-100"
-									: "grid-rows-[0fr] opacity-0",
-							].join(" ")}
-						>
-							<div className="overflow-hidden">
-								<div className="space-y-4 border-t pt-4">
-									<div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-										{(
-											[
-												{ label: "Mid Test", value: fr.midTest },
-												{ label: "Final Test", value: fr.finalTest },
-												{ label: "Listening", value: fr.listening },
-												{ label: "Speaking", value: fr.speaking },
-												{ label: "Reading", value: fr.reading },
-												{ label: "Writing", value: fr.writing },
-												{ label: "Recording", value: fr.recording },
-												{ label: "Attendance", value: fr.attendance },
-											] as const
-										).map((item) => (
-											<div key={item.label}>
-												<p className="text-xs text-muted-foreground">
-													{item.label}
-												</p>
-												<p className="font-bold">{item.value}</p>
-											</div>
-										))}
-									</div>
-
-									<div className="rounded-xl bg-muted p-4">
-										<p className="text-sm text-muted-foreground">
-											Project & Participation
-										</p>
-										<p className="text-xl font-bold">
-											{fr.projectParticipation}
-										</p>
-									</div>
-
-									{fr.notes && (
 										<div className="rounded-xl bg-muted p-4">
 											<p className="text-sm text-muted-foreground">
-												Teacher Notes
+												Project & Participation
 											</p>
-											<p>{fr.notes}</p>
+											<p className="text-xl font-bold">
+												{fr.projectParticipation}
+											</p>
 										</div>
-									)}
+
+										{fr.notes && (
+											<div className="rounded-xl bg-muted p-4">
+												<p className="text-sm text-muted-foreground">
+													Teacher Notes
+												</p>
+												<p>{fr.notes}</p>
+											</div>
+										)}
+									</div>
 								</div>
 							</div>
-						</div>
-					</CardContent>
-				</Card>
-			))}
+						</CardContent>
+					</Card>
+				))}
 
-			{/* ── DIALOG APPROVE ─────────────────────────────── */}
-			<Dialog
-				open={!!approveDialogFR}
-				onOpenChange={(open) => {
-					if (!open) setApproveDialogFR(null);
-				}}
-			>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Approve Final Report</DialogTitle>
-						<DialogDescription>
-							{isManager
-								? "Pilih cabang yang akan tertera di PDF laporan."
-								: "Konfirmasi data cabang yang akan tertera di PDF laporan."}
-						</DialogDescription>
-					</DialogHeader>
+				{/* ── DIALOG APPROVE ─────────────────────────────── */}
+				<Dialog
+					open={!!approveDialogFR}
+					onOpenChange={(open) => {
+						if (!open) setApproveDialogFR(null);
+					}}
+				>
+					<DialogContent className="sm:max-w-md">
+						<DialogHeader>
+							<DialogTitle>Approve Final Report</DialogTitle>
+							<DialogDescription>
+								{isManager
+									? "Pilih cabang yang akan tertera di PDF laporan."
+									: "Konfirmasi data cabang yang akan tertera di PDF laporan."}
+							</DialogDescription>
+						</DialogHeader>
 
-					<div className="space-y-4 py-2">
-						{/* PILIH CABANG — hanya tampil untuk MANAGER */}
-						{isManager && (
-							<div className="space-y-1.5">
-								<Label>Pilih Cabang</Label>
-								<Select
-									value={selectedCabangId}
-									onValueChange={handleSelectCabang}
-								>
-									<SelectTrigger>
-										<SelectValue placeholder="Pilih cabang..." />
-									</SelectTrigger>
-									<SelectContent>
-										{cabangOptions?.map((cabang) => (
-											<SelectItem key={cabang.id} value={cabang.id}>
-												{cabang.namaCabang}
-											</SelectItem>
-										))}
-										<Separator className="my-1" />
-										<SelectItem value="manual">✏️ Input manual</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						)}
-
-						{/* DETAIL CABANG — selalu tampil untuk ADMIN (pre-filled), tampil setelah pilih untuk MANAGER */}
-						{(showCabangDetail || !isManager) && (
-							<div className="space-y-3 rounded-lg border p-4">
-								<div className="flex items-center justify-between">
-									<p className="text-sm font-medium text-muted-foreground">
-										{isManual ? "Input alamat cabang" : "Detail cabang"}
-									</p>
-									{/* ADMIN bisa switch ke manual jika perlu koreksi */}
-									{!isManager && !isManual && (
-										<button
-											type="button"
-											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-											onClick={() => setIsManual(true)}
-										>
-											Edit manual
-										</button>
-									)}
-									{!isManager && isManual && (
-										<button
-											type="button"
-											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-											onClick={() => {
-												setIsManual(false);
-												if (adminSingleCabang) {
-													setCabangForm(cabangToCabangForm(adminSingleCabang));
-												}
-											}}
-										>
-											Reset ke cabang
-										</button>
-									)}
-								</div>
-
+						<div className="space-y-4 py-2">
+							{/* PILIH CABANG — hanya tampil untuk MANAGER */}
+							{isManager && (
 								<div className="space-y-1.5">
-									<Label>Nama Cabang</Label>
-									<Input
-										value={cabangForm.cabangNama}
-										onChange={(e) =>
-											setCabangForm((f) => ({
-												...f,
-												cabangNama: e.target.value,
-											}))
-										}
-										placeholder="Contoh: Cabang Denpasar"
-										disabled={!isManual && !isManager}
-									/>
+									<Label>Pilih Cabang</Label>
+									<Select
+										value={selectedCabangId}
+										onValueChange={handleSelectCabang}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Pilih cabang..." />
+										</SelectTrigger>
+										<SelectContent>
+											{cabangOptions?.map((cabang) => (
+												<SelectItem key={cabang.id} value={cabang.id}>
+													{cabang.namaCabang}
+												</SelectItem>
+											))}
+											<Separator className="my-1" />
+											<SelectItem value="manual">✏️ Input manual</SelectItem>
+										</SelectContent>
+									</Select>
 								</div>
-
-								<div className="space-y-1.5">
-									<Label>Alamat</Label>
-									<Input
-										value={cabangForm.cabangAlamat}
-										onChange={(e) =>
-											setCabangForm((f) => ({
-												...f,
-												cabangAlamat: e.target.value,
-											}))
-										}
-										placeholder="Jl. ..."
-										disabled={!isManual && !isManager}
-									/>
-								</div>
-
-								<div className="space-y-1.5">
-									<Label>No. Telepon</Label>
-									<Input
-										value={cabangForm.cabangNoTelp}
-										onChange={(e) =>
-											setCabangForm((f) => ({
-												...f,
-												cabangNoTelp: e.target.value,
-											}))
-										}
-										placeholder="+62..."
-										disabled={!isManual && !isManager}
-									/>
-								</div>
-
-								<div className="space-y-1.5">
-									<Label>Email</Label>
-									<Input
-										value={cabangForm.cabangEmail}
-										onChange={(e) =>
-											setCabangForm((f) => ({
-												...f,
-												cabangEmail: e.target.value,
-											}))
-										}
-										placeholder="email@englishhive.com"
-										disabled={!isManual && !isManager}
-									/>
-								</div>
-							</div>
-						)}
-					</div>
-
-					<DialogFooter className="gap-2">
-						<Button variant="outline" onClick={() => setApproveDialogFR(null)}>
-							Batal
-						</Button>
-						<Button onClick={handleApprove} disabled={approve.isPending}>
-							{approve.isPending && (
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 							)}
-							Approve
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
 
-			{/* ── DIALOG KONFIRMASI HAPUS ─────────────────────── */}
-			<DeleteConfirmationDialog
-				isOpen={!!deleteTarget}
-				onOpenChange={(open) => {
-					if (!open) setDeleteTarget(null);
-				}}
-				title="Hapus Final Report?"
-				description={
-					<span>
-						Final Report milik{" "}
-						<span className="font-semibold">{deleteTarget?.studentName}</span>{" "}
-						akan dihapus permanen dan tidak bisa dikembalikan.
-					</span>
-				}
-				onConfirm={handleConfirmDelete}
-				confirmText="Hapus"
-				cancelText="Batal"
-				isLoading={isDeleting}
-			/>
-		</div>
+							{/* DETAIL CABANG — selalu tampil untuk ADMIN (pre-filled), tampil setelah pilih untuk MANAGER */}
+							{(showCabangDetail || !isManager) && (
+								<div className="space-y-3 rounded-lg border p-4">
+									<div className="flex items-center justify-between">
+										<p className="text-sm font-medium text-muted-foreground">
+											{isManual ? "Input alamat cabang" : "Detail cabang"}
+										</p>
+										{/* ADMIN bisa switch ke manual jika perlu koreksi */}
+										{!isManager && !isManual && (
+											<button
+												type="button"
+												className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+												onClick={() => setIsManual(true)}
+											>
+												Edit manual
+											</button>
+										)}
+										{!isManager && isManual && (
+											<button
+												type="button"
+												className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+												onClick={() => {
+													setIsManual(false);
+													if (adminSingleCabang) {
+														setCabangForm(
+															cabangToCabangForm(adminSingleCabang),
+														);
+													}
+												}}
+											>
+												Reset ke cabang
+											</button>
+										)}
+									</div>
+
+									<div className="space-y-1.5">
+										<Label>Nama Cabang</Label>
+										<Input
+											value={cabangForm.cabangNama}
+											onChange={(e) =>
+												setCabangForm((f) => ({
+													...f,
+													cabangNama: e.target.value,
+												}))
+											}
+											placeholder="Contoh: Cabang Denpasar"
+											disabled={!isManual && !isManager}
+										/>
+									</div>
+
+									<div className="space-y-1.5">
+										<Label>Alamat</Label>
+										<Input
+											value={cabangForm.cabangAlamat}
+											onChange={(e) =>
+												setCabangForm((f) => ({
+													...f,
+													cabangAlamat: e.target.value,
+												}))
+											}
+											placeholder="Jl. ..."
+											disabled={!isManual && !isManager}
+										/>
+									</div>
+
+									<div className="space-y-1.5">
+										<Label>No. Telepon</Label>
+										<Input
+											value={cabangForm.cabangNoTelp}
+											onChange={(e) =>
+												setCabangForm((f) => ({
+													...f,
+													cabangNoTelp: e.target.value,
+												}))
+											}
+											placeholder="+62..."
+											disabled={!isManual && !isManager}
+										/>
+									</div>
+
+									<div className="space-y-1.5">
+										<Label>Email</Label>
+										<Input
+											value={cabangForm.cabangEmail}
+											onChange={(e) =>
+												setCabangForm((f) => ({
+													...f,
+													cabangEmail: e.target.value,
+												}))
+											}
+											placeholder="email@englishhive.com"
+											disabled={!isManual && !isManager}
+										/>
+									</div>
+								</div>
+							)}
+						</div>
+
+						<DialogFooter className="gap-2">
+							<Button
+								variant="outline"
+								onClick={() => setApproveDialogFR(null)}
+							>
+								Batal
+							</Button>
+							<Button onClick={handleApprove} disabled={approve.isPending}>
+								{approve.isPending && (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								)}
+								Approve
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+
+				{/* ── DIALOG KONFIRMASI HAPUS ─────────────────────── */}
+				<DeleteConfirmationDialog
+					isOpen={!!deleteTarget}
+					onOpenChange={(open) => {
+						if (!open) setDeleteTarget(null);
+					}}
+					title="Hapus Final Report?"
+					description={
+						<span>
+							Final Report milik{" "}
+							<span className="font-semibold">{deleteTarget?.studentName}</span>{" "}
+							akan dihapus permanen dan tidak bisa dikembalikan.
+						</span>
+					}
+					onConfirm={handleConfirmDelete}
+					confirmText="Hapus"
+					cancelText="Batal"
+					isLoading={isDeleting}
+				/>
+			</TabsContent>
+		</Tabs>
 	);
 }

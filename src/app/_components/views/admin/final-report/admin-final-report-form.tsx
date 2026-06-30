@@ -1,14 +1,11 @@
 "use client";
 
-import { pdf } from "@react-pdf/renderer";
 import {
 	CalendarIcon,
 	CheckCircle2,
 	ChevronRight,
-	Clock,
 	FileText,
 	Loader2,
-	Printer,
 	Send,
 	Users,
 } from "lucide-react";
@@ -40,7 +37,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-
 import {
 	Select,
 	SelectContent,
@@ -48,11 +44,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { api } from "@/trpc/react";
-import { FinalReportPDF } from "./final-report-pdf";
 
 // ─── Types ────────────────────────────────────────────
 
@@ -62,7 +57,6 @@ interface ScoreField {
 }
 
 type ScoreMap = Record<string, string>;
-
 type ReportType = "4-aspek" | "2-aspek";
 
 const SKILL_FIELDS_FULL: ScoreField[] = [
@@ -77,7 +71,6 @@ const SKILL_FIELDS_SIMPLE: ScoreField[] = [
 	{ key: "speaking", label: "Speaking" },
 ];
 
-// Recording 0–4
 const RECORDING_OPTIONS = [
 	{ value: "0", label: "0 — Tidak recording sama sekali" },
 	{ value: "1", label: "1 — Recording Sekali" },
@@ -104,38 +97,50 @@ function getScoreColor(score: number) {
 
 // ─── Component ────────────────────────────────────────
 
-export default function FinalReportForm() {
+export function AdminFinalReportForm() {
 	const utils = api.useUtils();
+
+	// Cabang yang sedang aktif di filter sidebar (pojok kiri atas)
+	const { activeCabangId } = useGlobalCabangStore();
 
 	// ── Data queries ──────────────────────────────────
 	const { data: kelasList, isLoading: loadingKelas } =
-		api.finalReport.getKelasByCabangGuru.useQuery();
+		api.finalReport.getKelasByCabangFilter.useQuery({
+			cabangId: activeCabangId === "ALL" ? undefined : activeCabangId,
+		});
 
-	const { data: pendingReports, isLoading: loadingPending } =
-		api.finalReport.getPendingByGuru.useQuery();
+	// Daftar Jenis Kelas untuk dropdown Level manual (independen dari kelas yang dipilih)
+	const { data: jenisKelasList, isLoading: loadingJenisKelas } =
+		api.jenisKelas.getJenisKelasList.useQuery({
+			cabangId: activeCabangId === "ALL" ? undefined : activeCabangId,
+		});
 
-	const { data: approvedReports, isLoading: loadingApproved } =
-		api.finalReport.getApprovedByGuru.useQuery();
+	// Cabang yang akan tercetak di laporan.
+	// MANAGER: dapat semua cabang & wajib pilih manual.
+	// ADMIN: dapat array satu item (cabangnya sendiri), otomatis terpilih.
+	const { data: cabangOptions, isLoading: loadingCabang } =
+		api.finalReport.getCabangForApproval.useQuery();
+	const isManagerCabang = (cabangOptions?.length ?? 0) > 1;
 
 	// ── Mutations ─────────────────────────────────────
 	const submitReport = api.finalReport.create.useMutation({
 		onSuccess: async () => {
-			toast.success("Final Report berhasil dikirim");
+			toast.success("Final Report berhasil dibuat & otomatis disetujui");
 			resetForm();
-			await utils.finalReport.getPendingByGuru.invalidate();
+			await utils.finalReport.getAll.invalidate();
 		},
-		onError: (err) => toast.error(err.message ?? "Gagal mengirim Final Report"),
-	});
-
-	const markPrinted = api.finalReport.markAsPrinted.useMutation({
-		onSuccess: async () => {
-			await utils.finalReport.getApprovedByGuru.invalidate();
-		},
+		onError: (err) => toast.error(err.message ?? "Gagal membuat Final Report"),
 	});
 
 	// ── Form state ────────────────────────────────────
 	const [selectedKelasId, setSelectedKelasId] = useState("");
 	const [selectedMuridId, setSelectedMuridId] = useState("");
+	const [selectedGuruId, setSelectedGuruId] = useState("");
+	// Level laporan — independen dari kelas yang dipilih (untuk ambil data murid)
+	const [selectedJenisKelasId, setSelectedJenisKelasId] = useState("");
+	const [selectedLevel, setSelectedLevel] = useState("");
+	// Cabang yang tercetak di laporan — MANAGER pilih manual, ADMIN otomatis
+	const [selectedCabangId, setSelectedCabangId] = useState("");
 	const [scores, setScores] = useState<ScoreMap>({
 		midTest: "",
 		finalTest: "",
@@ -150,39 +155,40 @@ export default function FinalReportForm() {
 	const [reportType, setReportType] = useState<ReportType>("4-aspek");
 	const [graduationDate, setGraduationDate] = useState<string>("");
 	const [graduationDateOpen, setGraduationDateOpen] = useState(false);
-	const [isPrintingId, setIsPrintingId] = useState<string | null>(null);
 	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
 	// ── Derived data ──────────────────────────────────
 	const selectedKelas = kelasList?.find((k) => k.id === selectedKelasId);
 
 	const muridList = selectedKelas?.pendaftaranKelases.map((p) => p.murid) ?? [];
+	const guruList = selectedKelas?.historyGuruKelases.map((h) => h.guru) ?? [];
 
 	const selectedMurid = muridList.find((m) => m.id === selectedMuridId);
+	const selectedGuru = guruList.find((g) => g.id === selectedGuruId);
 
-	// Cari pendaftaranId untuk murid yang dipilih di kelas ini
-	const selectedPendaftaranId = selectedKelas?.pendaftaranKelases.find(
-		(p) => p.murid.id === selectedMuridId,
-	)?.id;
+	const selectedJenisKelas = jenisKelasList?.find(
+		(j) => j.id === selectedJenisKelasId,
+	);
 
-	// Label kelas: "NamaJenis Level X"
-	const kelasLabel = selectedKelas
-		? `${selectedKelas.jenisKelasRel?.nama ?? "Kelas"} Level ${selectedKelas.level}`
-		: "";
+	// Label level laporan — diambil dari pilihan manual Jenis Kelas + Level
+	const kelasLabel =
+		selectedJenisKelas && selectedLevel
+			? `${selectedJenisKelas.nama} Level ${selectedLevel}`
+			: "";
+
+	const handleKelasChange = (kelasId: string) => {
+		setSelectedKelasId(kelasId);
+		setSelectedMuridId("");
+		setSelectedGuruId("");
+	};
 
 	// ── Auto-fetch kehadiran dari absensi ─────────────
 	const { data: attendanceData, isLoading: loadingAttendance } =
 		api.finalReport.getAttendanceByMuridKelas.useQuery(
-			{
-				muridId: selectedMuridId,
-				kelasId: selectedKelasId,
-			},
-			{
-				enabled: !!(selectedMuridId && selectedKelasId),
-			},
+			{ muridId: selectedMuridId, kelasId: selectedKelasId },
+			{ enabled: !!(selectedMuridId && selectedKelasId) },
 		);
 
-	// Sync attendance ke form state ketika data absensi datang
 	useEffect(() => {
 		if (attendanceData) {
 			setScores((prev) => ({
@@ -192,23 +198,21 @@ export default function FinalReportForm() {
 		}
 	}, [attendanceData]);
 
-	// Reset attendance saat murid/kelas berubah
 	useEffect(() => {
 		if (!selectedMuridId || !selectedKelasId) {
 			setScores((prev) => ({ ...prev, attendance: "" }));
 		}
 	}, [selectedMuridId, selectedKelasId]);
 
+	// Auto-pilih cabang untuk ADMIN (hanya ada 1 opsi: cabangnya sendiri)
+	useEffect(() => {
+		if (!isManagerCabang && cabangOptions?.length === 1) {
+			setSelectedCabangId(cabangOptions[0]?.id ?? "");
+		}
+	}, [isManagerCabang, cabangOptions]);
+
 	// ── Calculated scores ─────────────────────────────
 	const n = (key: string) => Number(scores[key]) || 0;
-
-	const recordingMap: Record<string, number> = {
-		"0": 0,
-		"1": 55,
-		"2": 70,
-		"3": 85,
-		"4": 100,
-	};
 
 	const projectParticipation = useMemo(() => {
 		const recordingMap: Record<string, number> = {
@@ -218,7 +222,7 @@ export default function FinalReportForm() {
 			"3": 85,
 			"4": 100,
 		};
-		const recordingScore = recordingMap[recording] ?? 55;
+		const recordingScore = recordingMap[recording] ?? 0;
 		const attendanceScore = ((Number(scores.attendance) || 0) / 23) * 100;
 		return Number((recordingScore * 0.5 + attendanceScore * 0.5).toFixed(1));
 	}, [recording, scores.attendance]);
@@ -259,6 +263,11 @@ export default function FinalReportForm() {
 		const errors: string[] = [];
 		if (!selectedKelasId) errors.push("Pilih kelas terlebih dahulu");
 		if (!selectedMuridId) errors.push("Pilih siswa terlebih dahulu");
+		if (!selectedGuruId) errors.push("Pilih guru pengajar terlebih dahulu");
+		if (!selectedJenisKelasId) errors.push("Pilih jenis kelas untuk laporan");
+		if (!selectedLevel) errors.push("Pilih level untuk laporan");
+		if (isManagerCabang && !selectedCabangId)
+			errors.push("Pilih cabang untuk laporan");
 		if (!graduationDate) errors.push("Tanggal kelulusan belum diisi");
 		for (const key of requiredScoreKeys) {
 			if (scores[key] === "" || scores[key] === undefined) {
@@ -278,6 +287,11 @@ export default function FinalReportForm() {
 	}, [
 		selectedKelasId,
 		selectedMuridId,
+		selectedGuruId,
+		selectedJenisKelasId,
+		selectedLevel,
+		selectedCabangId,
+		isManagerCabang,
 		scores,
 		graduationDate,
 		requiredScoreKeys,
@@ -289,6 +303,10 @@ export default function FinalReportForm() {
 	const resetForm = () => {
 		setSelectedKelasId("");
 		setSelectedMuridId("");
+		setSelectedGuruId("");
+		setSelectedJenisKelasId("");
+		setSelectedLevel("");
+		if (isManagerCabang) setSelectedCabangId("");
 		setScores({
 			midTest: "",
 			finalTest: "",
@@ -298,14 +316,9 @@ export default function FinalReportForm() {
 			writing: "",
 			attendance: "",
 		});
-		setRecording("1");
+		setRecording("0");
 		setNotes("");
 		setGraduationDate("");
-	};
-
-	const handleKelasChange = (kelasId: string) => {
-		setSelectedKelasId(kelasId);
-		setSelectedMuridId(""); // reset murid saat kelas berubah
 	};
 
 	const handleScoreChange = (key: string, value: string) => {
@@ -318,7 +331,6 @@ export default function FinalReportForm() {
 		setScores((prev) => ({ ...prev, [key]: String(clamped) }));
 	};
 
-	// Klik tombol submit → cek validasi dulu, lalu tampilkan dialog konfirmasi
 	const handleSubmitClick = () => {
 		if (!isFormValid) {
 			toast.error(formErrors[0] ?? "Lengkapi semua data terlebih dahulu");
@@ -327,18 +339,17 @@ export default function FinalReportForm() {
 		setShowConfirmDialog(true);
 	};
 
-	// Konfirmasi OK di dialog → kirim ke server
 	const handleConfirmSubmit = () => {
 		setShowConfirmDialog(false);
+		if (!selectedMurid || !selectedGuru) return;
 		submitReport.mutate({
-			studentName: selectedMurid!.namaLengkap,
+			studentName: selectedMurid.namaLengkap,
 			studentId: selectedMuridId,
 			level: kelasLabel,
 			midTest: n("midTest"),
 			finalTest: n("finalTest"),
 			listening: n("listening"),
 			speaking: n("speaking"),
-			// Mode 2 aspek: reading & writing dikirim 0, tidak dinilai
 			reading: reportType === "2-aspek" ? 0 : n("reading"),
 			writing: reportType === "2-aspek" ? 0 : n("writing"),
 			recording: Number(recording),
@@ -347,28 +358,10 @@ export default function FinalReportForm() {
 			finalScore,
 			notes: notes || undefined,
 			graduationDate: graduationDate ? new Date(graduationDate) : undefined,
+			teacherUserId: selectedGuru.id,
+			teacherName: selectedGuru.name ?? "Unknown",
+			cabangId: selectedCabangId || undefined,
 		});
-	};
-
-	const handlePrintPDF = async (report: any) => {
-		try {
-			setIsPrintingId(report.id);
-			const blob = await pdf(<FinalReportPDF data={report} />).toBlob();
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = `FinalReport_${report.studentName}.pdf`;
-			document.body.appendChild(link);
-			link.click();
-			link.remove();
-			URL.revokeObjectURL(url);
-			await markPrinted.mutateAsync({ id: report.id });
-			toast.success("PDF berhasil didownload");
-		} catch {
-			toast.error("Gagal membuat PDF");
-		} finally {
-			setIsPrintingId(null);
-		}
 	};
 
 	// ─── Render ───────────────────────────────────────
@@ -380,9 +373,10 @@ export default function FinalReportForm() {
 					<FileText className="text-primary h-6 w-6" />
 				</div>
 				<div>
-					<h1 className="text-2xl font-bold">Final Report</h1>
+					<h1 className="text-2xl font-bold">Buat Final Report</h1>
 					<p className="text-muted-foreground text-sm">
-						Buat laporan akhir siswa untuk dikirim ke admin
+						Dibuat oleh Admin/Manager — otomatis tersetujui (APPROVED).
+						Mengambil semua kelas dari cabang yang sedang difilter.
 					</p>
 				</div>
 			</div>
@@ -391,17 +385,17 @@ export default function FinalReportForm() {
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 				{/* KIRI: Form Input */}
 				<div className="lg:col-span-2 space-y-5">
-					{/* STEP 1: Pilih Kelas & Siswa */}
+					{/* STEP 1: Pilih Kelas, Guru & Siswa */}
 					<Card>
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
 									1
 								</span>
-								Pilih Kelas & Siswa
+								Pilih Kelas, Guru & Siswa
 							</CardTitle>
 							<CardDescription>
-								Siswa akan otomatis terisi sesuai kelas yang dipilih
+								Kelas diambil dari cabang yang sedang difilter di sidebar
 							</CardDescription>
 						</CardHeader>
 
@@ -424,7 +418,7 @@ export default function FinalReportForm() {
 									<SelectContent>
 										{kelasList?.length === 0 && (
 											<SelectItem value="_empty" disabled>
-												Tidak ada kelas aktif
+												Tidak ada kelas aktif di cabang ini
 											</SelectItem>
 										)}
 										{kelasList?.map((kelas) => (
@@ -435,6 +429,38 @@ export default function FinalReportForm() {
 												<span className="text-muted-foreground ml-1.5">
 													Level {kelas.level} · {kelas.kodeKelas}
 												</span>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* Pilih Guru */}
+							<div className="space-y-1.5">
+								<Label>
+									Guru Pengajar
+									<span className="text-destructive ml-0.5">*</span>
+								</Label>
+								<Select
+									value={selectedGuruId}
+									onValueChange={setSelectedGuruId}
+									disabled={!selectedKelasId || guruList.length === 0}
+								>
+									<SelectTrigger>
+										<SelectValue
+											placeholder={
+												!selectedKelasId
+													? "Pilih kelas dulu"
+													: guruList.length === 0
+														? "Belum ada guru aktif"
+														: "Pilih guru..."
+											}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										{guruList.map((guru) => (
+											<SelectItem key={guru.id} value={guru.id}>
+												{guru.name ?? "Tanpa nama"}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -479,19 +505,155 @@ export default function FinalReportForm() {
 											{selectedMurid.namaLengkap}
 										</span>
 										<ChevronRight className="inline h-3 w-3 mx-1 text-muted-foreground" />
-										<span className="text-muted-foreground">{kelasLabel}</span>
+										<span className="text-muted-foreground">
+											{kelasLabel || "Level belum dipilih"}
+										</span>
+										{selectedGuru && (
+											<>
+												<ChevronRight className="inline h-3 w-3 mx-1 text-muted-foreground" />
+												<span className="text-muted-foreground">
+													{selectedGuru.name}
+												</span>
+											</>
+										)}
 									</div>
 								</div>
 							)}
 						</CardContent>
 					</Card>
 
-					{/* STEP 2: Nilai Tes */}
+					{/* STEP 2: Level Laporan (independen dari kelas yang dipilih) */}
 					<Card>
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
 									2
+								</span>
+								Level Laporan
+							</CardTitle>
+							<CardDescription>
+								Jenis & level yang akan tercetak di Final Report — boleh berbeda
+								dari kelas aktif siswa di atas
+							</CardDescription>
+						</CardHeader>
+
+						<CardContent className="space-y-4">
+							{/* Pilih Jenis Kelas */}
+							<div className="space-y-1.5">
+								<Label>
+									Jenis Kelas
+									<span className="text-destructive ml-0.5">*</span>
+								</Label>
+								<Select
+									value={selectedJenisKelasId}
+									onValueChange={setSelectedJenisKelasId}
+									disabled={loadingJenisKelas}
+								>
+									<SelectTrigger>
+										<SelectValue
+											placeholder={
+												loadingJenisKelas
+													? "Memuat jenis kelas..."
+													: "Pilih jenis kelas..."
+											}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										{jenisKelasList?.length === 0 && (
+											<SelectItem value="_empty" disabled>
+												Tidak ada jenis kelas
+											</SelectItem>
+										)}
+										{jenisKelasList?.map((jenis) => (
+											<SelectItem key={jenis.id} value={jenis.id}>
+												{jenis.nama}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* Pilih Level */}
+							<div className="space-y-1.5">
+								<Label>
+									Level
+									<span className="text-destructive ml-0.5">*</span>
+								</Label>
+								<Select value={selectedLevel} onValueChange={setSelectedLevel}>
+									<SelectTrigger>
+										<SelectValue placeholder="Pilih level..." />
+									</SelectTrigger>
+									<SelectContent>
+										{["1", "2", "3", "4"].map((lvl) => (
+											<SelectItem key={lvl} value={lvl}>
+												Level {lvl}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							{kelasLabel && (
+								<p className="text-muted-foreground text-xs">
+									Akan tercetak sebagai:{" "}
+									<span className="text-foreground font-medium">
+										{kelasLabel}
+									</span>
+								</p>
+							)}
+
+							{/* Pilih Cabang — MANAGER wajib pilih, ADMIN otomatis dari cabangnya sendiri */}
+							<div className="space-y-1.5">
+								<Label>
+									Cabang
+									{isManagerCabang && (
+										<span className="text-destructive ml-0.5">*</span>
+									)}
+								</Label>
+								{isManagerCabang ? (
+									<Select
+										value={selectedCabangId}
+										onValueChange={setSelectedCabangId}
+										disabled={loadingCabang}
+									>
+										<SelectTrigger>
+											<SelectValue
+												placeholder={
+													loadingCabang ? "Memuat cabang..." : "Pilih cabang..."
+												}
+											/>
+										</SelectTrigger>
+										<SelectContent>
+											{cabangOptions?.map((cabang) => (
+												<SelectItem key={cabang.id} value={cabang.id}>
+													{cabang.namaCabang}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								) : (
+									<div className="bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
+										{loadingCabang
+											? "Memuat cabang..."
+											: (cabangOptions?.[0]?.namaCabang ??
+												"Cabang tidak ditemukan")}
+									</div>
+								)}
+								{!isManagerCabang && (
+									<p className="text-muted-foreground text-xs">
+										Otomatis diambil dari cabang akun Anda.
+									</p>
+								)}
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* STEP 3: Nilai Tes */}
+					<Card>
+						<CardHeader className="pb-4">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
+									3
 								</span>
 								Nilai Tes
 							</CardTitle>
@@ -524,12 +686,12 @@ export default function FinalReportForm() {
 						</CardContent>
 					</Card>
 
-					{/* STEP 2.5: Tipe Laporan */}
+					{/* STEP 4: Tipe Laporan */}
 					<Card>
 						<CardHeader className="pb-3">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-									3
+									4
 								</span>
 								Tipe Final Report
 							</CardTitle>
@@ -557,18 +719,18 @@ export default function FinalReportForm() {
 							</div>
 							<p className="text-muted-foreground mt-2 text-xs">
 								{reportType === "4-aspek"
-									? "Listening + Speaking + Reading + Writing"
-									: "Listening + Speaking"}
+									? "Final Score = (Listening + Speaking + Reading + Writing + Project) ÷ 5"
+									: "Final Score = (Listening + Speaking + Project) ÷ 3"}
 							</p>
 						</CardContent>
 					</Card>
 
-					{/* STEP 4: English Skills */}
+					{/* STEP 5: English Skills */}
 					<Card>
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-									4
+									5
 								</span>
 								English Skills
 							</CardTitle>
@@ -598,12 +760,12 @@ export default function FinalReportForm() {
 						</CardContent>
 					</Card>
 
-					{/* STEP 5: Project & Participation */}
+					{/* STEP 6: Project & Participation */}
 					<Card>
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-									5
+									6
 								</span>
 								Project & Participation
 							</CardTitle>
@@ -613,7 +775,6 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-4">
-							{/* Recording — atas */}
 							<div className="space-y-1.5">
 								<Label>
 									Recording (0 – 4)
@@ -633,7 +794,6 @@ export default function FinalReportForm() {
 								</Select>
 							</div>
 
-							{/* Kehadiran — bawah (otomatis dari absensi) */}
 							<div className="space-y-1.5">
 								<div className="flex items-center justify-between">
 									<Label>
@@ -672,7 +832,6 @@ export default function FinalReportForm() {
 								)}
 							</div>
 
-							{/* Kalkulasi project */}
 							<div className="bg-muted rounded-lg p-3 text-sm flex justify-between items-center">
 								<span className="text-muted-foreground">
 									Project & Participation (otomatis)
@@ -686,14 +845,14 @@ export default function FinalReportForm() {
 						</CardContent>
 					</Card>
 
-					{/* STEP 5: Catatan */}
+					{/* STEP 7: Catatan */}
 					<Card>
 						<CardHeader className="pb-4">
 							<CardTitle className="flex items-center gap-2 text-base">
 								<span className="bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
-									6
+									7
 								</span>
-								Catatan Guru
+								Catatan
 								<Badge variant="outline" className="text-xs font-normal">
 									Opsional
 								</Badge>
@@ -701,7 +860,6 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-4">
-							{/* Tanggal Kelulusan */}
 							<div className="space-y-1.5">
 								<Label>
 									Tanggal Kelulusan
@@ -737,7 +895,6 @@ export default function FinalReportForm() {
 											}
 											onSelect={(date) => {
 												if (!date) return;
-												// Simpan sebagai YYYY-MM-DD
 												const y = date.getFullYear();
 												const m = String(date.getMonth() + 1).padStart(2, "0");
 												const d = String(date.getDate()).padStart(2, "0");
@@ -753,7 +910,6 @@ export default function FinalReportForm() {
 								</p>
 							</div>
 
-							{/* Catatan */}
 							<Textarea
 								placeholder="Tambahkan catatan atau komentar tentang perkembangan siswa..."
 								rows={3}
@@ -775,7 +931,7 @@ export default function FinalReportForm() {
 						) : (
 							<Send className="mr-2 h-4 w-4" />
 						)}
-						Kirim Final Report
+						Buat & Setujui Final Report
 					</Button>
 				</div>
 
@@ -794,7 +950,6 @@ export default function FinalReportForm() {
 						</CardHeader>
 
 						<CardContent className="space-y-3">
-							{/* Tes */}
 							<div className="space-y-2">
 								{[
 									{ label: "Mid Test", value: n("midTest") },
@@ -810,9 +965,6 @@ export default function FinalReportForm() {
 								))}
 							</div>
 
-							<Separator />
-
-							{/* Skills */}
 							<div className="space-y-2">
 								{skillFields.map((field) => {
 									const val = n(field.key);
@@ -842,9 +994,6 @@ export default function FinalReportForm() {
 								</div>
 							</div>
 
-							<Separator />
-
-							{/* Final Score */}
 							<div className="rounded-xl bg-muted p-4 text-center">
 								<p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider">
 									Final Score
@@ -878,12 +1027,16 @@ export default function FinalReportForm() {
 					<AlertDialogHeader>
 						<AlertDialogTitle className="flex items-center gap-2">
 							<Send className="h-5 w-5" />
-							Kirim Final Report?
+							Buat Final Report?
 						</AlertDialogTitle>
 						<AlertDialogDescription asChild>
 							<div className="space-y-2">
 								<p>
-									Pastikan semua nilai sudah benar sebelum dikirim ke admin.
+									Laporan ini akan langsung berstatus{" "}
+									<span className="font-semibold text-foreground">
+										APPROVED
+									</span>{" "}
+									karena dibuat oleh Admin/Manager.
 								</p>
 								{selectedMurid && (
 									<div className="rounded-lg border p-3 text-sm space-y-1">
@@ -898,6 +1051,19 @@ export default function FinalReportForm() {
 											<span className="font-semibold">{kelasLabel}</span>
 										</p>
 										<p>
+											<span className="text-muted-foreground">Guru: </span>
+											<span className="font-semibold">
+												{selectedGuru?.name}
+											</span>
+										</p>
+										<p>
+											<span className="text-muted-foreground">Cabang: </span>
+											<span className="font-semibold">
+												{cabangOptions?.find((c) => c.id === selectedCabangId)
+													?.namaCabang ?? "-"}
+											</span>
+										</p>
+										<p>
 											<span className="text-muted-foreground">
 												Final Score:{" "}
 											</span>
@@ -909,10 +1075,6 @@ export default function FinalReportForm() {
 										</p>
 									</div>
 								)}
-								<p className="text-xs text-muted-foreground">
-									Setelah dikirim, laporan tidak bisa diedit dan akan menunggu
-									persetujuan admin.
-								</p>
 							</div>
 						</AlertDialogDescription>
 					</AlertDialogHeader>
@@ -929,156 +1091,11 @@ export default function FinalReportForm() {
 							) : (
 								<Send className="mr-2 h-4 w-4" />
 							)}
-							Ya, Kirim
+							Ya, Buat & Setujui
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-
-			{/* ── PENDING LIST ─────────────────────────────── */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Clock className="h-5 w-5" />
-						Menunggu Approval
-						{!!pendingReports?.length && (
-							<Badge variant="secondary">{pendingReports.length}</Badge>
-						)}
-					</CardTitle>
-					<CardDescription>
-						FR yang sudah dikirim dan sedang menunggu persetujuan admin
-					</CardDescription>
-				</CardHeader>
-
-				<CardContent>
-					{loadingPending ? (
-						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Loader2 className="h-4 w-4 animate-spin" />
-							Memuat...
-						</div>
-					) : pendingReports?.length === 0 ? (
-						<p className="text-sm text-muted-foreground">
-							Tidak ada FR yang sedang pending.
-						</p>
-					) : (
-						<div className="space-y-3">
-							{pendingReports?.map((fr) => (
-								<div
-									key={fr.id}
-									className="flex items-center justify-between rounded-xl border p-4"
-								>
-									<div className="space-y-0.5">
-										<div className="flex items-center gap-2">
-											<p className="font-semibold">{fr.studentName}</p>
-											<Badge
-												variant="outline"
-												className="border-yellow-300 bg-yellow-50 text-yellow-700 text-xs"
-											>
-												Pending
-											</Badge>
-										</div>
-										<p className="text-muted-foreground text-xs">{fr.level}</p>
-										<p className="text-sm">
-											Final Score:{" "}
-											<span
-												className={`font-bold ${getScoreColor(fr.finalScore)}`}
-											>
-												{fr.finalScore}
-											</span>
-											<span className="text-muted-foreground ml-1 text-xs">
-												· {getDescription(fr.finalScore)}
-											</span>
-										</p>
-									</div>
-									<p className="text-muted-foreground text-xs">
-										{new Date(fr.createdAt).toLocaleDateString("id-ID", {
-											day: "numeric",
-											month: "short",
-											year: "numeric",
-										})}
-									</p>
-								</div>
-							))}
-						</div>
-					)}
-				</CardContent>
-			</Card>
-
-			{/* ── APPROVED LIST ────────────────────────────── */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<Printer className="h-5 w-5" />
-						Siap Diprint
-						{!!approvedReports?.length && (
-							<Badge>{approvedReports.length}</Badge>
-						)}
-					</CardTitle>
-					<CardDescription>
-						FR yang sudah diapprove admin dan siap diunduh sebagai PDF
-					</CardDescription>
-				</CardHeader>
-
-				<CardContent>
-					{loadingApproved ? (
-						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Loader2 className="h-4 w-4 animate-spin" />
-							Memuat...
-						</div>
-					) : approvedReports?.length === 0 ? (
-						<p className="text-sm text-muted-foreground">
-							Belum ada FR yang diapprove.
-						</p>
-					) : (
-						<div className="space-y-3">
-							{approvedReports?.map((report) => (
-								<div
-									key={report.id}
-									className="flex items-center justify-between rounded-xl border p-4"
-								>
-									<div className="space-y-0.5">
-										<div className="flex items-center gap-2">
-											<p className="font-semibold">{report.studentName}</p>
-											<Badge
-												variant="outline"
-												className="border-green-300 bg-green-50 text-green-700 text-xs"
-											>
-												Approved
-											</Badge>
-										</div>
-										<p className="text-muted-foreground text-xs">
-											{report.level}
-										</p>
-										<p className="text-sm">
-											Final Score:{" "}
-											<span
-												className={`font-bold ${getScoreColor(report.finalScore)}`}
-											>
-												{report.finalScore}
-											</span>
-											<span className="text-muted-foreground ml-1 text-xs">
-												· {getDescription(report.finalScore)}
-											</span>
-										</p>
-									</div>
-									<Button
-										size="sm"
-										onClick={() => handlePrintPDF(report)}
-										disabled={isPrintingId === report.id}
-									>
-										{isPrintingId === report.id ? (
-											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										) : (
-											<Printer className="mr-2 h-4 w-4" />
-										)}
-										Print PDF
-									</Button>
-								</div>
-							))}
-						</div>
-					)}
-				</CardContent>
-			</Card>
 		</div>
 	);
 }

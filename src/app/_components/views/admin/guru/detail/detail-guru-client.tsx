@@ -24,6 +24,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -32,11 +33,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import { useUser } from "@/hooks/useUser";
-import {
-	calculateTotalGaji,
-	GAJI_PER_SESI,
-	getPeriodeGaji,
-} from "@/server/services/gaji.service";
+import { GAJI_PER_SESI, getPeriodeGaji } from "@/server/services/gaji.service";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import dayjs, { formatToWITA } from "@/utils/dateUtils";
 import { downloadExcel } from "@/utils/exportUtils";
@@ -47,6 +44,9 @@ export default function DetailGuruClient() {
 	const { guruId } = useParams<{ guruId: string }>();
 	const { activeCabangId } = useGlobalCabangStore();
 	const [open, setOpen] = useState(false);
+
+	// Rate gaji per kode kelas — input manual oleh admin, default GAJI_PER_SESI
+	const [rateByKelas, setRateByKelas] = useState<Record<string, number>>({});
 
 	// State untuk menyimpan bulan gaji yang dipilih (misal: November 2025)
 	const [month, setMonth] = useState<Date | undefined>(new Date());
@@ -84,15 +84,41 @@ export default function DetailGuruClient() {
 		return dataGuru?.find((g) => g.id === guruId)?.name ?? "Guru";
 	}, [dataGuru, guruId]);
 
-	// 3. Hitung total gaji menggunakan logic yang sama dengan service (atau panggil logic service jika perlu)
-	const { totalAbsen, totalGaji } = useMemo(() => {
-		if (!dataHistory) return { totalAbsen: 0, totalGaji: 0 };
+	// 3. Rekap jumlah kehadiran per kode kelas
+	const rekapPerKelas = useMemo(() => {
+		if (!dataHistory) return [];
 
-		// Kita bisa pakai helper dari service agar logic tetap 1 sumber
-		const { totalHadir, totalGaji } = calculateTotalGaji(dataHistory);
+		const groups: Record<string, { kodeKelas: string; count: number }> = {};
+
+		dataHistory.forEach((item) => {
+			if (item.status !== "HADIR") return;
+
+			const kode = item.sesiPertemuanKelas.kelas.kodeKelas;
+			if (!groups[kode]) {
+				groups[kode] = { kodeKelas: kode, count: 0 };
+			}
+			groups[kode].count++;
+		});
+
+		return Object.values(groups);
+	}, [dataHistory]);
+
+	// 4. Hitung total gaji = Σ (jumlah hadir per kelas × rate kelas tersebut)
+	const { totalAbsen, totalGaji } = useMemo(() => {
+		const totalHadir = rekapPerKelas.reduce((sum, g) => sum + g.count, 0);
+
+		const totalGaji = rekapPerKelas.reduce((sum, g) => {
+			const rate = rateByKelas[g.kodeKelas] ?? GAJI_PER_SESI;
+			return sum + g.count * rate;
+		}, 0);
 
 		return { totalAbsen: totalHadir, totalGaji };
-	}, [dataHistory]);
+	}, [rekapPerKelas, rateByKelas]);
+
+	const handleRateChange = (kodeKelas: string, value: string) => {
+		const num = Number(value.replace(/\D/g, "")) || 0;
+		setRateByKelas((prev) => ({ ...prev, [kodeKelas]: num }));
+	};
 
 	const handleExport = async () => {
 		const toastId = toast.loading("Menyiapkan slip gaji...");
@@ -107,18 +133,22 @@ export default function DetailGuruClient() {
 			}
 
 			// Format Data untuk CSV (Slip Gaji)
-			const csvData = data.map((item) => ({
-				Tanggal: formatToWITA(
-					item.sesiPertemuanKelas.tanggalWaktu,
-					"DD/MM/YYYY",
-				),
-				Jam: formatToWITA(item.sesiPertemuanKelas.tanggalWaktu, "HH:mm"),
-				Kelas: item.sesiPertemuanKelas.kelas.kodeKelas,
-				Ruang: item.sesiPertemuanKelas.ruang.namaRuang,
-				Status: item.status, // HADIR/SAKIT/IJIN
-				"Rate (Rp)": item.status === "HADIR" ? GAJI_PER_SESI : 0, // Honor per sesi
-				Verifikasi: item.isVerified ? "Terverifikasi" : "Pending",
-			}));
+			const csvData = data.map((item) => {
+				const kode = item.sesiPertemuanKelas.kelas.kodeKelas;
+				const rate = rateByKelas[kode] ?? GAJI_PER_SESI;
+				return {
+					Tanggal: formatToWITA(
+						item.sesiPertemuanKelas.tanggalWaktu,
+						"DD/MM/YYYY",
+					),
+					Jam: formatToWITA(item.sesiPertemuanKelas.tanggalWaktu, "HH:mm"),
+					Kelas: kode,
+					Ruang: item.sesiPertemuanKelas.ruang.namaRuang,
+					Status: item.status, // HADIR/SAKIT/IJIN
+					"Rate (Rp)": item.status === "HADIR" ? rate : 0, // Honor per sesi (sesuai rate kelas)
+					Verifikasi: item.isVerified ? "Terverifikasi" : "Pending",
+				};
+			});
 
 			const filename = `SlipGaji-${guruName}-${selectedMonthYYYYMM}`;
 			downloadExcel(csvData, filename);
@@ -191,6 +221,7 @@ export default function DetailGuruClient() {
 								onMonthChange={(newMonth) => {
 									if (newMonth) {
 										setMonth(newMonth);
+										setRateByKelas({});
 										setOpen(false);
 									}
 								}}
@@ -216,7 +247,7 @@ export default function DetailGuruClient() {
 						Slip Gaji Bulan {dayjs(month).format("MMMM")}
 					</CardTitle>
 					<span className="text-muted-foreground bg-muted rounded px-2 py-1 text-xs">
-						Rate: {toRupiah(GAJI_PER_SESI)} / Sesi
+						Rate per kelas — atur di Rekap Absensi Per Kelas
 					</span>
 				</CardHeader>
 				<CardContent className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2">
@@ -246,7 +277,8 @@ export default function DetailGuruClient() {
 							{toRupiah(totalGaji)}
 						</div>
 						<p className="text-muted-foreground mt-1 text-xs">
-							{totalAbsen} Sesi x {toRupiah(GAJI_PER_SESI)}
+							Dihitung dari {rekapPerKelas.length} kelas dengan rate
+							masing-masing
 						</p>
 					</div>
 				</CardContent>
@@ -264,55 +296,56 @@ export default function DetailGuruClient() {
 				</CardFooter>
 			</Card>
 
-			{/* Rekap Per Kelas (TINYTODS 1-L | 01/2026 7x) */}
-			{dataHistory && dataHistory.length > 0 && (
+			{/* Rekap Per Kelas + Input Rate Gaji */}
+			{rekapPerKelas.length > 0 && (
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-sm font-medium">
 							Rekap Absensi Per Kelas
 						</CardTitle>
 						<CardDescription className="text-xs">
-							Ringkasan jumlah pertemuan hadir berdasarkan kode kelas.
+							Atur rate gaji per kelas untuk menghitung Total Gaji Diterima.
+							Default {toRupiah(GAJI_PER_SESI)} / sesi jika tidak diubah.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-							{(() => {
-								const groups: Record<
-									string,
-									{
-										kodeKelas: string;
-										count: number;
-									}
-								> = {};
-
-								dataHistory.forEach((item) => {
-									if (item.status !== "HADIR") return;
-
-									const kelas = item.sesiPertemuanKelas.kelas;
-									const kode = kelas.kodeKelas;
-
-									if (!groups[kode]) {
-										groups[kode] = {
-											kodeKelas: kode,
-											count: 0,
-										};
-									}
-									groups[kode].count++;
-								});
-
-								return Object.values(groups).map((group) => (
+						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+							{rekapPerKelas.map((group) => {
+								const rate = rateByKelas[group.kodeKelas] ?? GAJI_PER_SESI;
+								const subtotal = group.count * rate;
+								return (
 									<div
 										key={group.kodeKelas}
-										className="bg-muted/50 flex items-center justify-between rounded-md border px-3 py-2 text-xs font-medium"
+										className="bg-muted/50 space-y-2 rounded-md border p-3"
 									>
-										<span className="font-semibold">{group.kodeKelas}</span>
-										<span className="font-bold text-blue-600">
-											{group.count}x
-										</span>
+										<div className="flex items-center justify-between text-xs font-medium">
+											<span className="font-semibold">{group.kodeKelas}</span>
+											<span className="font-bold text-blue-600">
+												{group.count}x
+											</span>
+										</div>
+										<div className="flex items-center gap-1.5">
+											<span className="text-muted-foreground text-xs">Rp</span>
+											<Input
+												type="text"
+												inputMode="numeric"
+												value={rate.toLocaleString("id-ID")}
+												onChange={(e) =>
+													handleRateChange(group.kodeKelas, e.target.value)
+												}
+												className="h-8 text-xs"
+												placeholder="50.000"
+											/>
+											<span className="text-muted-foreground shrink-0 text-xs">
+												/ sesi
+											</span>
+										</div>
+										<div className="text-primary border-t pt-1.5 text-right text-xs font-bold">
+											{toRupiah(subtotal)}
+										</div>
 									</div>
-								));
-							})()}
+								);
+							})}
 						</div>
 					</CardContent>
 				</Card>

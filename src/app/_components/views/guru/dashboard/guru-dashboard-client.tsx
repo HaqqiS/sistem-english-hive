@@ -57,6 +57,7 @@ import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
+import { PengambilanBukuSection } from "../buku/pengambilan-buku-client";
 import { MuridPopover } from "./murid-popover";
 
 export default function GuruDashboardClient() {
@@ -380,6 +381,9 @@ export default function GuruDashboardClient() {
 					);
 				})}
 			</div>
+
+			{/* Pengambilan Buku — muncul otomatis kalau ada buku READY untuk kelas guru ini */}
+			<PengambilanBukuSection />
 
 			{/* --- Dialog untuk Ganti Ruang --- */}
 			<Dialog open={isGantiRuangOpen} onOpenChange={setIsGantiRuangOpen}>

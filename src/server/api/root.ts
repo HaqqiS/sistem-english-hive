@@ -14,6 +14,7 @@ import { pembayaranRouter } from "./routers/pembayaran.router";
 import { pendaftaranKelasRouter } from "./routers/pendaftaranKelas.router";
 import { ruangRouter } from "./routers/ruang.router";
 import { sesiPertemuanRouter } from "./routers/sesiPertemuan.router";
+import { stokBukuRouter } from "./routers/stokBuku.router";
 import { tagihanLainRouter } from "./routers/tagihanLain.router";
 import { userRouter } from "./routers/user.router";
 
@@ -40,6 +41,7 @@ export const appRouter = createTRPCRouter({
 	jenisKelas: jenisKelasRouter,
 	tagihanLain: tagihanLainRouter,
 	finalReport: finalReportRouter,
+	stokBuku: stokBukuRouter,
 });
 
 // export type definition of API

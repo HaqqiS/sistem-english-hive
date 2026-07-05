@@ -98,6 +98,7 @@ model Cabang {
   jamSlotTetaps JamSlotTetap[]
   kelas         Kelas[]
   jenisKelases  JenisKelasModel[]
+  stokBukus     StokBuku[]
 }
 
 model Ruang {
@@ -222,6 +223,7 @@ model Murid {
   absensiMurids      AbsensiMurid[]
   pendaftaranKelases PendaftaranKelas[]
   tagihanLains       TagihanLain[]
+  penerimaBukus      PenerimaBuku[]
 
   @@index([cabangId])
   @@index([namaLengkap])
@@ -248,6 +250,7 @@ model JenisKelasModel {
   prevLevel   JenisKelasModel? @relation("Progression")
 
   kelas Kelas[]
+  stokBukus StokBuku[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -272,6 +275,66 @@ enum StatusOrderBuku {
   DIBATALKAN
   MENUNGGU_PERSETUJUAN
   SUDAH_DIPESAN
+}
+
+enum StatusPenerimaanBuku {
+  BELUM_DIAMBIL
+  SUDAH_DIAMBIL
+}
+
+enum StatusStokBuku {
+  ORDER
+  READY
+}
+
+// Stok buku per Jenis Kelas (nama buku diambil dari nama Jenis Kelas), per cabang.
+model StokBuku {
+  id String @id @default(cuid())
+
+  jenisKelasId String
+  jenisKelas   JenisKelasModel @relation(fields: [jenisKelasId], references: [id], onDelete: Cascade)
+
+  cabangId String
+  cabang   Cabang @relation(fields: [cabangId], references: [id], onDelete: Cascade)
+
+  jumlahStok   Int            @default(0)
+  statusStok   StatusStokBuku @default(ORDER)
+  tanggalReady DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  penerimaBukus PenerimaBuku[]
+
+  @@unique([jenisKelasId, cabangId])
+  @@index([cabangId])
+  @@map("stok_buku")
+}
+
+// Daftar murid yang seharusnya menerima sebuah buku (manual assign oleh admin/manager).
+model PenerimaBuku {
+  id String @id @default(cuid())
+
+  stokBukuId String
+  stokBuku   StokBuku @relation(fields: [stokBukuId], references: [id], onDelete: Cascade)
+
+  muridId String
+  murid   Murid  @relation(fields: [muridId], references: [id], onDelete: Cascade)
+
+  kelasId String?
+  kelas   Kelas?  @relation(fields: [kelasId], references: [id], onDelete: SetNull)
+
+  status       StatusPenerimaanBuku @default(BELUM_DIAMBIL)
+  tanggalAmbil DateTime?
+  catatan      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([stokBukuId, muridId])
+  @@index([muridId])
+  @@index([kelasId])
+  @@map("penerima_buku")
 }
 
 model Kelas {
@@ -303,6 +366,7 @@ model Kelas {
   historyGuruKelases   HistoryGuruKelas[]
   jadwalKelas          JadwalKelas[]
   tagihanLains         TagihanLain[]
+  penerimaBukus        PenerimaBuku[]
 
   @@unique([cabangId, kodeKelas])
   @@index([kodeKelas])

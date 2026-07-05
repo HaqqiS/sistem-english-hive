@@ -1,7 +1,7 @@
 "use client";
 
 import type { StatusOrderBuku } from "@prisma/client";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { BookOpen, Package, RefreshCw } from "lucide-react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useKelas } from "@/hooks/useKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { columnsOrderBuku } from "./columns/columns-order-buku";
+import StokBukuClient from "./stok-buku-client";
 
 export default function BookOrderClient() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -49,7 +51,7 @@ export default function BookOrderClient() {
 	});
 
 	return (
-		<div className="space-y-4">
+		<Tabs defaultValue="order-buku" className="space-y-4">
 			<HeaderActionPortal>
 				<div className="flex items-center gap-2">
 					<Button
@@ -67,37 +69,54 @@ export default function BookOrderClient() {
 				</div>
 			</HeaderActionPortal>
 
-			<Card className="border-l-4 shadow-sm border-l-green-500">
-				<CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-					<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600">
-						<BookOpen className="h-6 w-6" />
-					</div>
-					<div className="space-y-1">
-						<CardTitle className="text-xl">Daftar Order Buku Kelas</CardTitle>
-						<CardDescription>
-							Mengelola pemesanan buku untuk semua kelas yang sedang berjalan
-							(RUNNING).
-						</CardDescription>
-					</div>
-				</CardHeader>
-				<CardContent className="pt-4">
-					{isLoadingKelasOrderBuku ? (
-						<div className="text-muted-foreground flex h-96 items-center justify-center border rounded-md border-dashed">
-							<div className="flex flex-col items-center gap-2">
-								<RefreshCw className="h-8 w-8 animate-spin opacity-20" />
-								<span>Memuat data kelas...</span>
-							</div>
+			<TabsList>
+				<TabsTrigger value="order-buku">
+					<BookOpen className="mr-2 h-4 w-4" />
+					Order Buku Kelas
+				</TabsTrigger>
+				<TabsTrigger value="stok-buku">
+					<Package className="mr-2 h-4 w-4" />
+					Stok Buku
+				</TabsTrigger>
+			</TabsList>
+
+			<TabsContent value="order-buku" className="space-y-4">
+				<Card className="border-l-4 shadow-sm border-l-green-500">
+					<CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600">
+							<BookOpen className="h-6 w-6" />
 						</div>
-					) : (
-						<DataTable
-							data={dataKelasOrderBuku ?? []}
-							columns={tableColumns}
-							filterColumnPlaceholder="Cari kode kelas..."
-							filterColumnId="kodeKelas"
-						/>
-					)}
-				</CardContent>
-			</Card>
-		</div>
+						<div className="space-y-1">
+							<CardTitle className="text-xl">Daftar Order Buku Kelas</CardTitle>
+							<CardDescription>
+								Mengelola pemesanan buku untuk semua kelas yang sedang berjalan
+								(RUNNING).
+							</CardDescription>
+						</div>
+					</CardHeader>
+					<CardContent className="pt-4">
+						{isLoadingKelasOrderBuku ? (
+							<div className="text-muted-foreground flex h-96 items-center justify-center border rounded-md border-dashed">
+								<div className="flex flex-col items-center gap-2">
+									<RefreshCw className="h-8 w-8 animate-spin opacity-20" />
+									<span>Memuat data kelas...</span>
+								</div>
+							</div>
+						) : (
+							<DataTable
+								data={dataKelasOrderBuku ?? []}
+								columns={tableColumns}
+								filterColumnPlaceholder="Cari kode kelas..."
+								filterColumnId="kodeKelas"
+							/>
+						)}
+					</CardContent>
+				</Card>
+			</TabsContent>
+
+			<TabsContent value="stok-buku">
+				<StokBukuClient />
+			</TabsContent>
+		</Tabs>
 	);
 }

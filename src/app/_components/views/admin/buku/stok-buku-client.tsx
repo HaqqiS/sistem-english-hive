@@ -179,6 +179,9 @@ export default function StokBukuClient() {
 					const diambil = stok.penerimaBukus.filter(
 						(p) => p.status === "SUDAH_DIAMBIL",
 					).length;
+					const diorder = stok.penerimaBukus.filter(
+						(p) => p.statusOrder === "DIORDER",
+					).length;
 					const ready = stok.penerimaBukus.filter(
 						(p) => p.statusOrder === "READY",
 					).length;
@@ -272,7 +275,7 @@ export default function StokBukuClient() {
 								<div className="grid grid-cols-2 gap-2 text-xs">
 									<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
 										<span className="text-muted-foreground">Order</span>
-										<span className="font-bold">{total}</span>
+										<span className="font-bold">{diorder}</span>
 									</div>
 									<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
 										<span className="text-muted-foreground">Ready</span>

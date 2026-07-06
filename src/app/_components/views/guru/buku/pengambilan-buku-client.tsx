@@ -4,13 +4,7 @@ import { BookOpen, CheckCircle2, Clock, Package } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
@@ -34,7 +28,7 @@ export function PengambilanBukuSection() {
 		onSuccess: async () => {
 			await utils.stokBuku.getPenerimaForGuru.invalidate();
 		},
-		onError: (err) => toast.error(err.message ?? "Gagal memperbarui status"),
+		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
 
 	if (isLoading) {
@@ -47,7 +41,6 @@ export function PengambilanBukuSection() {
 		);
 	}
 
-	// Kalau tidak ada, tidak render sama sekali (hidden)
 	if (!penerimaList || penerimaList.length === 0) return null;
 
 	// Group by kelas
@@ -65,86 +58,128 @@ export function PengambilanBukuSection() {
 					<Package className="text-primary h-5 w-5" />
 				</div>
 				<div>
-					<h2 className="text-lg font-bold">Pengambilan Buku</h2>
+					<h2 className="text-lg font-bold">Order Buku</h2>
 					<p className="text-muted-foreground text-sm">
-						Buku siap diambil oleh siswa di kelas Anda.
+						Daftar buku untuk siswa di kelas Anda.
 					</p>
 				</div>
 			</div>
 
-			{Object.entries(grouped).map(([kodeKelas, items]) => (
-				<Card key={kodeKelas}>
-					<CardHeader className="pb-3">
-						<div className="flex items-center gap-2">
-							<BookOpen className="text-primary h-4 w-4" />
-							<CardTitle className="text-base">{kodeKelas}</CardTitle>
-							<Badge variant="secondary" className="text-xs">
-								{items.filter((i) => i.status === "SUDAH_DIAMBIL").length}/
-								{items.length} diambil
-							</Badge>
-						</div>
-						{items[0]?.stokBuku.tanggalReady && (
-							<CardDescription className="text-xs">
-								Ready sejak: {formatDate(items[0].stokBuku.tanggalReady)}
-							</CardDescription>
-						)}
-					</CardHeader>
-					<CardContent className="space-y-2">
-						{items.map((p) => {
-							const sudahDiambil = p.status === "SUDAH_DIAMBIL";
-							return (
-								<div
-									key={p.id}
+			{Object.entries(grouped).map(([kodeKelas, items]) => {
+				const readyCount = items.filter(
+					(i) => i.statusOrder === "READY",
+				).length;
+				const diambilCount = items.filter(
+					(i) => i.status === "SUDAH_DIAMBIL",
+				).length;
+
+				return (
+					<Card key={kodeKelas}>
+						<CardHeader className="pb-3">
+							<div className="flex items-center gap-2 flex-wrap">
+								<BookOpen className="text-primary h-4 w-4 shrink-0" />
+								<CardTitle className="text-base">{kodeKelas}</CardTitle>
+								<Badge variant="secondary" className="text-xs">
+									{diambilCount}/{items.length} diambil
+								</Badge>
+								<Badge
+									variant="outline"
 									className={cn(
-										"flex items-center justify-between rounded-md border p-3",
-										sudahDiambil &&
-											"border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/20",
+										"text-xs ml-auto",
+										readyCount > 0 && "border-green-500 text-green-600",
 									)}
 								>
-									<div>
-										<p className="text-sm font-medium">{p.murid.namaLengkap}</p>
-										<div className="text-muted-foreground flex items-center gap-2 text-xs">
-											<span>{p.stokBuku.jenisKelas.nama}</span>
-											{p.murid.kelasSekolah && (
-												<span>· {p.murid.kelasSekolah}</span>
-											)}
-										</div>
-									</div>
-									<Button
-										size="sm"
-										variant={sudahDiambil ? "default" : "outline"}
+									{readyCount} ready
+								</Badge>
+							</div>
+						</CardHeader>
+						<CardContent className="space-y-2">
+							{items.map((p) => {
+								const isReady = p.statusOrder === "READY";
+								const sudahDiambil = p.status === "SUDAH_DIAMBIL";
+
+								return (
+									<div
+										key={p.id}
 										className={cn(
-											"h-8 text-xs",
-											sudahDiambil && "bg-green-600 hover:bg-green-700",
+											"rounded-md border p-3 space-y-1",
+											sudahDiambil
+												? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/20"
+												: !isReady
+													? "bg-muted/30"
+													: "",
 										)}
-										onClick={() =>
-											updateStatus.mutate({
-												penerimaBukuId: p.id,
-												status: sudahDiambil
-													? "BELUM_DIAMBIL"
-													: "SUDAH_DIAMBIL",
-											})
-										}
-										disabled={updateStatus.isPending}
 									>
-										{sudahDiambil ? (
-											<>
-												<CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-												Sudah Diambil
-											</>
-										) : (
-											<>
-												<Clock className="mr-1 h-3.5 w-3.5" />
-												Belum Diambil
-											</>
+										<div className="flex items-center justify-between gap-2">
+											<div className="min-w-0">
+												<p className="truncate text-sm font-medium">
+													{p.murid.namaLengkap}
+												</p>
+												{/* Jenis Buku + Level Buku */}
+												<p className="text-muted-foreground text-xs">
+													{p.stokBuku.jenisKelas.nama} · Level{" "}
+													{p.stokBuku.level}
+													{p.murid.kelasSekolah && ` · ${p.murid.kelasSekolah}`}
+												</p>
+											</div>
+
+											<div className="flex shrink-0 items-center gap-2">
+												{/* Badge status order */}
+												<Badge
+													variant={isReady ? "default" : "secondary"}
+													className={cn("text-xs", isReady && "bg-green-600")}
+												>
+													{isReady ? "Ready" : "Diorder"}
+												</Badge>
+
+												{/* Tombol ubah status ambil — hanya kalau READY */}
+												{isReady && (
+													<Button
+														size="sm"
+														variant={sudahDiambil ? "default" : "outline"}
+														className={cn(
+															"h-7 text-xs",
+															sudahDiambil && "bg-blue-600 hover:bg-blue-700",
+														)}
+														onClick={() =>
+															updateStatus.mutate({
+																penerimaBukuId: p.id,
+																status: sudahDiambil
+																	? "BELUM_DIAMBIL"
+																	: "SUDAH_DIAMBIL",
+															})
+														}
+														disabled={updateStatus.isPending}
+													>
+														{sudahDiambil ? (
+															<>
+																<CheckCircle2 className="mr-1 h-3 w-3" />
+																Diambil
+															</>
+														) : (
+															<>
+																<Clock className="mr-1 h-3 w-3" />
+																Belum
+															</>
+														)}
+													</Button>
+												)}
+											</div>
+										</div>
+
+										{/* Tanggal ready */}
+										{isReady && p.tanggalReady && (
+											<p className="text-xs text-muted-foreground">
+												Ready sejak: {formatDate(p.tanggalReady)}
+											</p>
 										)}
-									</Button>
-								</div>
-							);
-						})}
-					</CardContent>
-				</Card>
-			))}
+									</div>
+								);
+							})}
+						</CardContent>
+					</Card>
+				);
+			})}
 		</div>
 	);
 }

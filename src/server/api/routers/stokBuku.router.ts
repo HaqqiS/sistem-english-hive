@@ -7,21 +7,15 @@ import {
 	protectedProcedure,
 } from "@/server/api/trpc";
 
-// Workaround sampai prisma generate dijalankan ulang
+// Local enums (workaround sampai prisma generate dijalankan)
+const StatusOrderBuku2 = { DIORDER: "DIORDER", READY: "READY" } as const;
 const StatusPenerimaanBuku = {
 	BELUM_DIAMBIL: "BELUM_DIAMBIL",
 	SUDAH_DIAMBIL: "SUDAH_DIAMBIL",
 } as const;
 
-const StatusStokBuku = {
-	ORDER: "ORDER",
-	READY: "READY",
-} as const;
-
 export const stokBukuRouter = createTRPCRouter({
-	// =========================
-	// GET ALL STOK BUKU
-	// =========================
+	// ── GET ALL STOK BUKU ─────────────────────────────────────────────────────
 	getAllStokBuku: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional() }))
 		.query(async ({ ctx }) => {
@@ -30,108 +24,88 @@ export const stokBukuRouter = createTRPCRouter({
 					? { cabangId: ctx.allowedCabangId }
 					: undefined,
 				include: {
-					jenisKelas: {
-						select: { id: true, nama: true, tipe: true, hargaBuku: true },
-					},
+					jenisKelas: { select: { id: true, nama: true, tipe: true } },
 					cabang: { select: { id: true, namaCabang: true } },
 					penerimaBukus: {
-						select: { id: true, status: true },
+						select: { id: true, status: true, statusOrder: true },
 					},
 				},
-				orderBy: { jenisKelas: { nama: "asc" } },
+				orderBy: [{ jenisKelas: { nama: "asc" } }, { level: "asc" }],
 			});
 		}),
 
-	// =========================
-	// GET JENIS KELAS YANG BELUM PUNYA STOK
-	// =========================
-	getJenisKelasTanpaStok: cabangProtectedProcedure
+	// ── GET JENIS KELAS TERSEDIA ───────────────────────────────────────────────
+	getJenisKelasUntukStok: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional() }))
 		.query(async ({ ctx }) => {
 			if (!ctx.allowedCabangId) return [];
-
-			const existing = await ctx.db.stokBuku.findMany({
-				where: { cabangId: ctx.allowedCabangId },
-				select: { jenisKelasId: true },
-			});
-			const existingIds = existing.map((e) => e.jenisKelasId);
-
 			return ctx.db.jenisKelasModel.findMany({
-				where: {
-					cabangId: ctx.allowedCabangId,
-					id: { notIn: existingIds },
-				},
-				select: { id: true, nama: true, tipe: true, hargaBuku: true },
+				where: { cabangId: ctx.allowedCabangId },
+				select: { id: true, nama: true, tipe: true },
 				orderBy: { nama: "asc" },
 			});
 		}),
 
-	// =========================
-	// CREATE STOK BUKU
-	// =========================
+	// ── CREATE STOK BUKU ──────────────────────────────────────────────────────
 	createStokBuku: cabangProtectedProcedure
 		.input(
 			z.object({
 				jenisKelasId: z.string(),
+				level: z.number().int().min(1).max(4),
 				jumlahStok: z.number().int().min(0),
 				cabangId: z.string().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const targetCabangId = ctx.allowedCabangId;
-			if (!targetCabangId) {
+			if (!ctx.allowedCabangId)
 				throw new TRPCError({
 					code: "BAD_REQUEST",
-					message: "Cabang wajib dipilih.",
+					message: "Pilih cabang dulu.",
 				});
-			}
 			return ctx.db.stokBuku.create({
 				data: {
 					jenisKelasId: input.jenisKelasId,
+					level: input.level,
 					jumlahStok: input.jumlahStok,
-					cabangId: targetCabangId,
+					cabangId: ctx.allowedCabangId,
 				},
 			});
 		}),
 
-	// =========================
-	// UPDATE JUMLAH STOK + STATUS + TANGGAL READY
-	// =========================
-	updateStokBuku: protectedProcedure
+	// ── UPDATE STOK BUKU (jumlah) ─────────────────────────────────────────────
+	updateJumlahStok: protectedProcedure
 		.input(
-			z.object({
-				stokBukuId: z.string(),
-				jumlahStok: z.number().int().min(0).optional(),
-				statusStok: z.enum(["ORDER", "READY"]).optional(),
-				tanggalReady: z.date().optional().nullable(),
-			}),
+			z.object({ stokBukuId: z.string(), jumlahStok: z.number().int().min(0) }),
 		)
 		.mutation(async ({ ctx, input }) => {
-			const { stokBukuId, ...data } = input;
 			return ctx.db.stokBuku.update({
-				where: { id: stokBukuId },
-				data,
+				where: { id: input.stokBukuId },
+				data: { jumlahStok: input.jumlahStok },
 			});
 		}),
 
-	// =========================
-	// DELETE STOK BUKU
-	// =========================
+	// ── DELETE STOK BUKU ──────────────────────────────────────────────────────
 	deleteStokBuku: protectedProcedure
 		.input(z.object({ stokBukuId: z.string() }))
 		.mutation(async ({ ctx, input }) => {
 			return ctx.db.stokBuku.delete({ where: { id: input.stokBukuId } });
 		}),
 
-	// =========================
-	// GET KELAS BY JENIS KELAS (untuk dropdown bertingkat)
-	// =========================
+	// ── GET GURU BY KELAS (untuk dropdown Nama Guru) ──────────────────────────
+	getGuruByKelas: protectedProcedure
+		.input(z.object({ kelasId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const histori = await ctx.db.historyGuruKelas.findMany({
+				where: { kelasId: input.kelasId, selesaiPada: null },
+				select: { guru: { select: { id: true, name: true } } },
+			});
+			return histori.map((h) => h.guru);
+		}),
+
+	// ── GET KELAS BY JENIS KELAS (dropdown bertingkat) ────────────────────────
 	getKelasByJenisKelas: cabangProtectedProcedure
 		.input(
-			z.object({
-				jenisKelasId: z.string(),
-				cabangId: z.string().optional(),
-			}),
+			z.object({ jenisKelasId: z.string(), cabangId: z.string().optional() }),
 		)
 		.query(async ({ ctx, input }) => {
 			return ctx.db.kelas.findMany({
@@ -144,34 +118,37 @@ export const stokBukuRouter = createTRPCRouter({
 					id: true,
 					kodeKelas: true,
 					level: true,
+					historyGuruKelases: {
+						where: { selesaiPada: null },
+						select: { guru: { select: { id: true, name: true } } },
+					},
 					pendaftaranKelases: {
 						where: { status: "AKTIF" },
 						select: {
-							murid: { select: { id: true, namaLengkap: true } },
+							murid: {
+								select: { id: true, namaLengkap: true, kelasSekolah: true },
+							},
 						},
 					},
 				},
-				orderBy: { kodeKelas: "asc" },
+				orderBy: [{ level: "asc" }, { kodeKelas: "asc" }],
 			});
 		}),
 
-	// =========================
-	// GET MURID BELUM TERDAFTAR (dari kelas tertentu)
-	// =========================
-	getMuridBelumTerdaftar: cabangProtectedProcedure
+	// ── GET MURID BELUM TERDAFTAR (dari kelas tertentu) ───────────────────────
+	getMuridBelumTerdaftar: protectedProcedure
 		.input(
 			z.object({
 				stokBukuId: z.string(),
 				kelasId: z.string().optional(),
-				cabangId: z.string().optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
-			const stokBuku = await ctx.db.stokBuku.findUnique({
+			const stok = await ctx.db.stokBuku.findUnique({
 				where: { id: input.stokBukuId },
-				select: { cabangId: true, jenisKelasId: true },
+				select: { cabangId: true },
 			});
-			if (!stokBuku) return [];
+			if (!stok) return [];
 
 			const existing = await ctx.db.penerimaBuku.findMany({
 				where: { stokBukuId: input.stokBukuId },
@@ -179,42 +156,35 @@ export const stokBukuRouter = createTRPCRouter({
 			});
 			const existingIds = existing.map((e) => e.muridId);
 
-			// Kalau ada filter kelasId, ambil murid dari kelas itu saja
 			if (input.kelasId) {
 				const pendaftaran = await ctx.db.pendaftaranKelas.findMany({
 					where: {
 						kelasId: input.kelasId,
-						status: "AKTIF",
 						muridId: { notIn: existingIds },
 					},
 					include: {
 						murid: {
-							select: {
-								id: true,
-								namaLengkap: true,
-								kelasSekolah: true,
-							},
+							select: { id: true, namaLengkap: true, kelasSekolah: true },
 						},
+						Kelas: { select: { level: true } },
 					},
 					orderBy: { murid: { namaLengkap: "asc" } },
 				});
-				return pendaftaran.map((p) => p.murid);
+				return pendaftaran.map((p) => ({
+					...p.murid,
+					levelKelas: (p.Kelas as { level: number } | null)?.level ?? null,
+				}));
 			}
 
-			// Tanpa filter kelasId — ambil semua murid di cabang
-			return ctx.db.murid.findMany({
-				where: {
-					cabangId: stokBuku.cabangId,
-					id: { notIn: existingIds },
-				},
+			const murid = await ctx.db.murid.findMany({
+				where: { cabangId: stok.cabangId, id: { notIn: existingIds } },
 				select: { id: true, namaLengkap: true, kelasSekolah: true },
 				orderBy: { namaLengkap: "asc" },
 			});
+			return murid.map((m) => ({ ...m, levelKelas: null }));
 		}),
 
-	// =========================
-	// GET PENERIMA BY STOK BUKU
-	// =========================
+	// ── GET PENERIMA BY STOK BUKU ─────────────────────────────────────────────
 	getPenerimaByStokBuku: protectedProcedure
 		.input(z.object({ stokBukuId: z.string() }))
 		.query(async ({ ctx, input }) => {
@@ -222,45 +192,170 @@ export const stokBukuRouter = createTRPCRouter({
 				where: { stokBukuId: input.stokBukuId },
 				include: {
 					murid: {
-						select: {
-							id: true,
-							namaLengkap: true,
-							kelasSekolah: true,
-							noWA: true,
-						},
+						select: { id: true, namaLengkap: true, kelasSekolah: true },
 					},
 					kelas: { select: { id: true, kodeKelas: true, level: true } },
+					guruPenerima: {
+						include: { guru: { select: { id: true, name: true } } },
+					},
 				},
 				orderBy: { createdAt: "desc" },
 			});
 		}),
 
-	// =========================
-	// ADD PENERIMA BUKU (assign murid + kelasId)
-	// =========================
+	// ── ADD PENERIMA BUKU ─────────────────────────────────────────────────────
 	addPenerimaBuku: protectedProcedure
 		.input(
 			z.object({
 				stokBukuId: z.string(),
 				muridIds: z.array(z.string()).min(1),
 				kelasId: z.string().optional(),
+				guruIds: z.array(z.string()).optional(), // bisa 1 atau lebih guru
+				statusOrder: z.enum(["DIORDER", "READY"]).default("DIORDER"),
+				tanggalReady: z.date().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
-			return ctx.db.penerimaBuku.createMany({
+			// Buat penerima buku
+			await ctx.db.penerimaBuku.createMany({
 				data: input.muridIds.map((muridId) => ({
 					stokBukuId: input.stokBukuId,
 					muridId,
 					kelasId: input.kelasId ?? null,
+					statusOrder: input.statusOrder,
+					tanggalReady:
+						input.statusOrder === "READY" ? (input.tanggalReady ?? null) : null,
+				})),
+				skipDuplicates: true,
+			});
+
+			const newPenerima = await ctx.db.penerimaBuku.findMany({
+				where: {
+					stokBukuId: input.stokBukuId,
+					muridId: { in: input.muridIds },
+				},
+				select: { id: true, muridId: true },
+			});
+
+			if (input.guruIds && input.guruIds.length > 0) {
+				// Guru dipilih manual — pakai untuk semua siswa yang baru ditambahkan
+				await ctx.db.penerimaBukuGuru.createMany({
+					data: newPenerima.flatMap((p) =>
+						(input.guruIds ?? []).map((guruId) => ({
+							penerimaBukuId: p.id,
+							guruId,
+						})),
+					),
+					skipDuplicates: true,
+				});
+			} else {
+				// Tidak ada guru dipilih manual — deteksi otomatis dari kelas aktif
+				// masing-masing siswa, supaya buku tetap muncul di dashboard guru
+				// yang benar meski admin tidak memilih kelas/guru secara manual.
+				const guruAssignments: { penerimaBukuId: string; guruId: string }[] =
+					[];
+
+				for (const p of newPenerima) {
+					const pendaftaranAktif = await ctx.db.pendaftaranKelas.findMany({
+						where: {
+							muridId: p.muridId,
+							status: { not: "NON_AKTIF" },
+						},
+						select: {
+							Kelas: {
+								select: {
+									historyGuruKelases: {
+										where: { selesaiPada: null },
+										select: { guruId: true },
+									},
+								},
+							},
+						},
+					});
+
+					const guruIdsForMurid = new Set<string>();
+					for (const pk of pendaftaranAktif) {
+						for (const hg of pk.Kelas.historyGuruKelases) {
+							guruIdsForMurid.add(hg.guruId);
+						}
+					}
+
+					for (const guruId of guruIdsForMurid) {
+						guruAssignments.push({ penerimaBukuId: p.id, guruId });
+					}
+				}
+
+				if (guruAssignments.length > 0) {
+					await ctx.db.penerimaBukuGuru.createMany({
+						data: guruAssignments,
+						skipDuplicates: true,
+					});
+				}
+			}
+
+			return { success: true };
+		}),
+
+	// ── ADD GURU KE PENERIMA BUKU ─────────────────────────────────────────────
+	addGuruPenerima: protectedProcedure
+		.input(
+			z.object({
+				penerimaBukuId: z.string(),
+				guruIds: z.array(z.string()).min(1),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			return ctx.db.penerimaBukuGuru.createMany({
+				data: input.guruIds.map((guruId) => ({
+					penerimaBukuId: input.penerimaBukuId,
+					guruId,
 				})),
 				skipDuplicates: true,
 			});
 		}),
 
-	// =========================
-	// UPDATE STATUS PENERIMA (admin/manager & guru)
-	// Guru hanya bisa update jika dia handle kelas terkait
-	// =========================
+	// ── REMOVE GURU DARI PENERIMA BUKU ───────────────────────────────────────
+	removeGuruPenerima: protectedProcedure
+		.input(z.object({ penerimaBukuId: z.string(), guruId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			return ctx.db.penerimaBukuGuru.delete({
+				where: {
+					penerimaBukuId_guruId: {
+						penerimaBukuId: input.penerimaBukuId,
+						guruId: input.guruId,
+					},
+				},
+			});
+		}),
+
+	// ── UPDATE STATUS ORDER PER MURID (admin/manager only) ────────────────────
+	updateStatusOrder: protectedProcedure
+		.input(
+			z.object({
+				penerimaBukuId: z.string(),
+				statusOrder: z.enum(["DIORDER", "READY"]),
+				tanggalReady: z.date().optional().nullable(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { role } = ctx.session.user;
+			if (role === UserRole.GURU)
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Guru tidak dapat mengubah status order.",
+				});
+			return ctx.db.penerimaBuku.update({
+				where: { id: input.penerimaBukuId },
+				data: {
+					statusOrder: input.statusOrder,
+					tanggalReady: input.tanggalReady ?? null,
+				},
+			});
+		}),
+
+	// ── UPDATE STATUS PENGAMBILAN (guru & admin) ──────────────────────────────
+	// Stok berkurang otomatis saat SUDAH_DIAMBIL.
+	// Jika dihapus setelah SUDAH_DIAMBIL, stok tidak kembali.
 	updateStatusPenerima: protectedProcedure
 		.input(
 			z.object({
@@ -272,55 +367,63 @@ export const stokBukuRouter = createTRPCRouter({
 			const { role, id: userId } = ctx.session.user;
 			const isGuru = role === UserRole.GURU;
 
-			// Guru hanya boleh update kalau dia handle kelasnya
-			if (isGuru) {
-				const penerima = await ctx.db.penerimaBuku.findUnique({
-					where: { id: input.penerimaBukuId },
-					select: {
-						kelasId: true,
-						stokBuku: { select: { statusStok: true } },
-					},
+			const penerima = await ctx.db.penerimaBuku.findUnique({
+				where: { id: input.penerimaBukuId },
+				select: {
+					kelasId: true,
+					status: true,
+					stokBukuId: true,
+					statusOrder: true,
+				},
+			});
+
+			if (!penerima)
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Data tidak ditemukan.",
 				});
 
-				if (penerima?.stokBuku.statusStok !== StatusStokBuku.READY) {
+			// Guru hanya bisa update kalau statusOrder = READY
+			if (isGuru && penerima.statusOrder !== StatusOrderBuku2.READY)
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Buku belum berstatus READY.",
+				});
+
+			// Guru hanya bisa update kalau dia terdaftar sebagai guru penerima
+			if (isGuru) {
+				const isHandle = await ctx.db.penerimaBukuGuru.findFirst({
+					where: { penerimaBukuId: input.penerimaBukuId, guruId: userId },
+				});
+				if (!isHandle)
 					throw new TRPCError({
 						code: "FORBIDDEN",
-						message: "Buku belum berstatus READY.",
+						message: "Kamu tidak terdaftar sebagai guru untuk buku ini.",
 					});
-				}
+			}
 
-				if (penerima?.kelasId) {
-					const isHandle = await ctx.db.historyGuruKelas.findFirst({
-						where: {
-							kelasId: penerima.kelasId,
-							guruId: userId,
-							selesaiPada: null,
-						},
-					});
-					if (!isHandle) {
-						throw new TRPCError({
-							code: "FORBIDDEN",
-							message: "Kamu tidak mengajar kelas ini.",
-						});
-					}
-				}
+			// Kurangi stok saat pertama kali jadi SUDAH_DIAMBIL
+			const wasNotTaken =
+				penerima.status === StatusPenerimaanBuku.BELUM_DIAMBIL;
+			const willBeTaken = input.status === StatusPenerimaanBuku.SUDAH_DIAMBIL;
+			if (wasNotTaken && willBeTaken) {
+				await ctx.db.stokBuku.update({
+					where: { id: penerima.stokBukuId },
+					data: { jumlahStok: { decrement: 1 } },
+				});
 			}
 
 			return ctx.db.penerimaBuku.update({
 				where: { id: input.penerimaBukuId },
 				data: {
 					status: input.status,
-					tanggalAmbil:
-						input.status === StatusPenerimaanBuku.SUDAH_DIAMBIL
-							? new Date()
-							: null,
+					tanggalAmbil: willBeTaken ? new Date() : null,
 				},
 			});
 		}),
 
-	// =========================
-	// DELETE PENERIMA BUKU
-	// =========================
+	// ── DELETE PENERIMA BUKU ──────────────────────────────────────────────────
+	// Stok tidak dikembalikan meski statusnya sudah SUDAH_DIAMBIL.
 	deletePenerimaBuku: protectedProcedure
 		.input(z.object({ penerimaBukuId: z.string() }))
 		.mutation(async ({ ctx, input }) => {
@@ -329,39 +432,29 @@ export const stokBukuRouter = createTRPCRouter({
 			});
 		}),
 
-	// =========================
-	// GET PENERIMA BUKU UNTUK GURU
-	// Hanya tampilkan kalau statusStok = READY dan guru handle kelasnya
-	// =========================
+	// ── GET PENERIMA UNTUK GURU ───────────────────────────────────────────────
 	getPenerimaForGuru: protectedProcedure.query(async ({ ctx }) => {
 		const guruId = ctx.session.user.id;
 
-		// Ambil semua kelas yang di-handle guru ini (aktif)
-		const kelasHandled = await ctx.db.historyGuruKelas.findMany({
-			where: { guruId, selesaiPada: null },
-			select: { kelasId: true },
-		});
-		const kelasIds = kelasHandled.map((k) => k.kelasId);
-
-		if (kelasIds.length === 0) return [];
-
+		// Ambil penerima yang guru ini terdaftar sebagai penanggung jawab
 		return ctx.db.penerimaBuku.findMany({
 			where: {
-				kelasId: { in: kelasIds },
-				stokBuku: { statusStok: StatusStokBuku.READY },
+				guruPenerima: { some: { guruId } },
 			},
 			include: {
 				murid: { select: { id: true, namaLengkap: true, kelasSekolah: true } },
 				kelas: { select: { id: true, kodeKelas: true, level: true } },
+				guruPenerima: {
+					include: { guru: { select: { id: true, name: true } } },
+				},
 				stokBuku: {
 					select: {
 						jenisKelas: { select: { nama: true } },
-						tanggalReady: true,
+						level: true,
 					},
 				},
 			},
-			orderBy: { createdAt: "desc" },
+			orderBy: [{ statusOrder: "asc" }, { createdAt: "desc" }],
 		});
 	}),
 });
-``;

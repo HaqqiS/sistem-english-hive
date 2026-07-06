@@ -3,7 +3,9 @@
 import {
 	BookOpen,
 	CalendarIcon,
+	Check,
 	CheckCircle2,
+	ChevronsUpDown,
 	Clock,
 	Loader2,
 	Package,
@@ -25,6 +27,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
 import {
 	Dialog,
 	DialogContent,
@@ -60,10 +70,8 @@ import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { api } from "@/trpc/react";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function formatDate(date: Date | string | null | undefined) {
-	if (!date) return "-";
+	if (!date) return null;
 	return new Date(date).toLocaleDateString("id-ID", {
 		day: "numeric",
 		month: "long",
@@ -71,85 +79,65 @@ function formatDate(date: Date | string | null | undefined) {
 	});
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function StokBukuClient() {
 	const utils = api.useUtils();
 	const { activeCabangId } = useGlobalCabangStore();
 	const queryCabangId = activeCabangId === "ALL" ? undefined : activeCabangId;
 
-	// Queries
 	const { data: stokBukuList, isLoading } =
 		api.stokBuku.getAllStokBuku.useQuery({ cabangId: queryCabangId });
 
-	const { data: jenisKelasTanpaStok } =
-		api.stokBuku.getJenisKelasTanpaStok.useQuery({ cabangId: queryCabangId });
+	const { data: jenisKelasList } = api.stokBuku.getJenisKelasUntukStok.useQuery(
+		{ cabangId: queryCabangId },
+	);
 
-	// Dialog states
-	const [addStokOpen, setAddStokOpen] = useState(false);
-	const [selectedJenisKelasId, setSelectedJenisKelasId] = useState("");
-	const [jumlahStokInput, setJumlahStokInput] = useState("");
+	// Add stok dialog
+	const [addOpen, setAddOpen] = useState(false);
+	const [newJenisKelasId, setNewJenisKelasId] = useState("");
+	const [newLevel, setNewLevel] = useState("");
+	const [newJumlah, setNewJumlah] = useState("");
+
 	const [editingStok, setEditingStok] = useState<{
 		id: string;
-		jumlahStok: number;
+		jumlah: number;
 	} | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<{
 		id: string;
 		nama: string;
 	} | null>(null);
-	const [siswaSheetStokId, setSiswaSheetStokId] = useState<string | null>(null);
-	const [tanggalReadyOpen, setTanggalReadyOpen] = useState<string | null>(null);
+	const [siswaSheetId, setSiswaSheetId] = useState<string | null>(null);
 
-	// Mutations
 	const createStok = api.stokBuku.createStokBuku.useMutation({
 		onSuccess: async () => {
-			toast.success("Stok buku berhasil ditambahkan");
-			setAddStokOpen(false);
-			setSelectedJenisKelasId("");
-			setJumlahStokInput("");
+			toast.success("Stok buku ditambahkan");
+			setAddOpen(false);
+			setNewJenisKelasId("");
+			setNewLevel("");
+			setNewJumlah("");
 			await utils.stokBuku.getAllStokBuku.invalidate();
-			await utils.stokBuku.getJenisKelasTanpaStok.invalidate();
 		},
-		onError: (err) => toast.error(err.message ?? "Gagal menambah stok"),
+		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
 
-	const updateStok = api.stokBuku.updateStokBuku.useMutation({
+	const updateJumlah = api.stokBuku.updateJumlahStok.useMutation({
 		onSuccess: async () => {
-			toast.success("Stok buku berhasil diperbarui");
+			toast.success("Jumlah stok diperbarui");
 			setEditingStok(null);
-			setTanggalReadyOpen(null);
 			await utils.stokBuku.getAllStokBuku.invalidate();
 		},
-		onError: (err) => toast.error(err.message ?? "Gagal memperbarui stok"),
+		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
 
 	const deleteStok = api.stokBuku.deleteStokBuku.useMutation({
 		onSuccess: async () => {
-			toast.success("Stok buku berhasil dihapus");
+			toast.success("Stok buku dihapus");
 			setDeleteTarget(null);
 			await utils.stokBuku.getAllStokBuku.invalidate();
-			await utils.stokBuku.getJenisKelasTanpaStok.invalidate();
 		},
-		onError: (err) => toast.error(err.message ?? "Gagal menghapus stok"),
+		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
-
-	// Handlers
-	const handleCreateStok = () => {
-		const jumlah = Number(jumlahStokInput);
-		if (!selectedJenisKelasId) {
-			toast.error("Pilih jenis buku");
-			return;
-		}
-		if (Number.isNaN(jumlah) || jumlah < 0) {
-			toast.error("Jumlah tidak valid");
-			return;
-		}
-		createStok.mutate({
-			jenisKelasId: selectedJenisKelasId,
-			jumlahStok: jumlah,
-			cabangId: queryCabangId,
-		});
-	};
 
 	if (isLoading) {
 		return (
@@ -167,10 +155,10 @@ export default function StokBukuClient() {
 				<div>
 					<h2 className="text-xl font-bold">Stok Buku</h2>
 					<p className="text-muted-foreground text-sm">
-						Kelola stok buku per jenis kelas dan siswa penerimanya.
+						Kelola stok buku per jenis kelas, level, dan siswa penerima.
 					</p>
 				</div>
-				<Button onClick={() => setAddStokOpen(true)}>
+				<Button onClick={() => setAddOpen(true)}>
 					<Plus className="mr-2 h-4 w-4" />
 					Tambah Stok Buku
 				</Button>
@@ -187,45 +175,29 @@ export default function StokBukuClient() {
 
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{stokBukuList?.map((stok) => {
-					const totalPenerima = stok.penerimaBukus.length;
-					const sudahDiambil = stok.penerimaBukus.filter(
+					const total = stok.penerimaBukus.length;
+					const diambil = stok.penerimaBukus.filter(
 						(p) => p.status === "SUDAH_DIAMBIL",
 					).length;
+					const ready = stok.penerimaBukus.filter(
+						(p) => p.statusOrder === "READY",
+					).length;
 					const isEditing = editingStok?.id === stok.id;
-					const isReady = stok.statusStok === "READY";
 
 					return (
-						<Card
-							key={stok.id}
-							className={cn(
-								"border-2",
-								isReady ? "border-green-400/60" : "border-amber-400/60",
-							)}
-						>
+						<Card key={stok.id}>
 							<CardHeader className="pb-3">
 								<div className="flex items-start justify-between gap-2">
 									<div className="flex items-center gap-2">
-										<div
-											className={cn(
-												"rounded-lg p-2",
-												isReady
-													? "bg-green-100 dark:bg-green-950"
-													: "bg-amber-100 dark:bg-amber-950",
-											)}
-										>
-											<BookOpen
-												className={cn(
-													"h-4 w-4",
-													isReady ? "text-green-600" : "text-amber-600",
-												)}
-											/>
+										<div className="bg-primary/10 rounded-lg p-2">
+											<BookOpen className="text-primary h-4 w-4" />
 										</div>
 										<div>
 											<CardTitle className="text-base">
 												{stok.jenisKelas.nama}
 											</CardTitle>
 											<CardDescription className="text-xs">
-												{stok.cabang.namaCabang}
+												Level {stok.level} · {stok.cabang.namaCabang}
 											</CardDescription>
 										</div>
 									</div>
@@ -236,7 +208,7 @@ export default function StokBukuClient() {
 										onClick={() =>
 											setDeleteTarget({
 												id: stok.id,
-												nama: stok.jenisKelas.nama,
+												nama: `${stok.jenisKelas.nama} Lv.${stok.level}`,
 											})
 										}
 									>
@@ -246,93 +218,21 @@ export default function StokBukuClient() {
 							</CardHeader>
 
 							<CardContent className="space-y-3">
-								{/* Status ORDER / READY */}
-								<div className="flex items-center justify-between rounded-md border p-3">
-									<span className="text-muted-foreground text-xs font-medium">
-										Status
-									</span>
-									<div className="flex items-center gap-2">
-										<Badge
-											variant={isReady ? "default" : "secondary"}
-											className={cn("text-xs", isReady && "bg-green-600")}
-										>
-											{isReady ? "READY" : "ORDER"}
-										</Badge>
-										<Button
-											size="sm"
-											variant="outline"
-											className="h-6 text-xs px-2"
-											disabled={updateStok.isPending}
-											onClick={() =>
-												updateStok.mutate({
-													stokBukuId: stok.id,
-													statusStok: isReady ? "ORDER" : "READY",
-												})
-											}
-										>
-											{isReady ? "Set ORDER" : "Set READY"}
-										</Button>
-									</div>
-								</div>
-
-								{/* Tanggal Ready */}
-								<div className="flex items-center justify-between rounded-md border p-3">
-									<span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-										<CalendarIcon className="h-3.5 w-3.5" />
-										Tanggal Ready
-									</span>
-									<Popover
-										open={tanggalReadyOpen === stok.id}
-										onOpenChange={(open) =>
-											setTanggalReadyOpen(open ? stok.id : null)
-										}
-									>
-										<PopoverTrigger asChild>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-6 text-xs px-2"
-											>
-												{stok.tanggalReady
-													? formatDate(stok.tanggalReady)
-													: "Set tanggal"}
-											</Button>
-										</PopoverTrigger>
-										<PopoverContent className="w-auto p-0" align="end">
-											<Calendar
-												mode="single"
-												selected={
-													stok.tanggalReady
-														? new Date(stok.tanggalReady)
-														: undefined
-												}
-												onSelect={(date) => {
-													updateStok.mutate({
-														stokBukuId: stok.id,
-														tanggalReady: date ?? null,
-													});
-												}}
-												initialFocus
-											/>
-										</PopoverContent>
-									</Popover>
-								</div>
-
 								{/* Jumlah Stok */}
 								<div className="flex items-center justify-between rounded-md border p-3">
 									<span className="text-muted-foreground text-xs font-medium">
-										Jumlah Stok
+										Stok Tersedia
 									</span>
 									{isEditing ? (
 										<div className="flex items-center gap-1.5">
 											<Input
 												type="number"
 												min={0}
-												value={editingStok.jumlahStok}
+												value={editingStok.jumlah}
 												onChange={(e) =>
 													setEditingStok({
 														id: stok.id,
-														jumlahStok: Number(e.target.value) || 0,
+														jumlah: Number(e.target.value) || 0,
 													})
 												}
 												className="h-7 w-20 text-sm"
@@ -341,14 +241,14 @@ export default function StokBukuClient() {
 												size="sm"
 												className="h-7"
 												onClick={() =>
-													updateStok.mutate({
+													updateJumlah.mutate({
 														stokBukuId: editingStok.id,
-														jumlahStok: editingStok.jumlahStok,
+														jumlahStok: editingStok.jumlah,
 													})
 												}
-												disabled={updateStok.isPending}
+												disabled={updateJumlah.isPending}
 											>
-												{updateStok.isPending ? (
+												{updateJumlah.isPending ? (
 													<Loader2 className="h-3 w-3 animate-spin" />
 												) : (
 													"Simpan"
@@ -359,10 +259,7 @@ export default function StokBukuClient() {
 										<button
 											type="button"
 											onClick={() =>
-												setEditingStok({
-													id: stok.id,
-													jumlahStok: stok.jumlahStok,
-												})
+												setEditingStok({ id: stok.id, jumlah: stok.jumlahStok })
 											}
 											className="text-sm font-bold hover:underline"
 										>
@@ -371,22 +268,31 @@ export default function StokBukuClient() {
 									)}
 								</div>
 
-								{/* Ringkasan Penerima */}
-								<div className="flex items-center justify-between rounded-md border p-3 text-xs">
-									<span className="text-muted-foreground flex items-center gap-1.5 font-medium">
-										<Users className="h-3.5 w-3.5" />
-										Penerima
-									</span>
-									<Badge variant="outline" className="text-xs">
-										{sudahDiambil}/{totalPenerima} diambil
-									</Badge>
+								{/* Ringkasan penerima */}
+								<div className="grid grid-cols-2 gap-2 text-xs">
+									<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+										<span className="text-muted-foreground">Order</span>
+										<span className="font-bold">{total}</span>
+									</div>
+									<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+										<span className="text-muted-foreground">Ready</span>
+										<span className="font-bold text-green-600">{ready}</span>
+									</div>
+									<div className="col-span-2 bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+										<span className="text-muted-foreground flex items-center gap-1.5">
+											<Users className="h-3.5 w-3.5" /> Diambil
+										</span>
+										<Badge variant="outline" className="text-xs">
+											{diambil}/{total}
+										</Badge>
+									</div>
 								</div>
 
 								<Button
 									variant="outline"
 									size="sm"
 									className="w-full"
-									onClick={() => setSiswaSheetStokId(stok.id)}
+									onClick={() => setSiswaSheetId(stok.id)}
 								>
 									<UserPlus className="mr-2 h-3.5 w-3.5" />
 									Kelola Siswa Penerima
@@ -398,33 +304,43 @@ export default function StokBukuClient() {
 			</div>
 
 			{/* Dialog Tambah Stok */}
-			<Dialog open={addStokOpen} onOpenChange={setAddStokOpen}>
+			<Dialog open={addOpen} onOpenChange={setAddOpen}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Tambah Stok Buku</DialogTitle>
 						<DialogDescription>
-							Nama buku diambil dari Jenis Kelas.
+							Stok dibedakan per Jenis Kelas dan Level.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4">
 						<div className="space-y-1.5">
 							<Label>Jenis Buku</Label>
 							<Select
-								value={selectedJenisKelasId}
-								onValueChange={setSelectedJenisKelasId}
+								value={newJenisKelasId}
+								onValueChange={setNewJenisKelasId}
 							>
 								<SelectTrigger>
 									<SelectValue placeholder="Pilih jenis kelas..." />
 								</SelectTrigger>
 								<SelectContent>
-									{jenisKelasTanpaStok?.length === 0 && (
-										<SelectItem value="_empty" disabled>
-											Semua jenis kelas sudah punya stok
-										</SelectItem>
-									)}
-									{jenisKelasTanpaStok?.map((j) => (
+									{jenisKelasList?.map((j) => (
 										<SelectItem key={j.id} value={j.id}>
 											{j.nama}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						<div className="space-y-1.5">
+							<Label>Level Buku</Label>
+							<Select value={newLevel} onValueChange={setNewLevel}>
+								<SelectTrigger>
+									<SelectValue placeholder="Pilih level..." />
+								</SelectTrigger>
+								<SelectContent>
+									{["1", "2", "3", "4"].map((l) => (
+										<SelectItem key={l} value={l}>
+											Level {l}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -436,20 +352,34 @@ export default function StokBukuClient() {
 								type="number"
 								min={0}
 								placeholder="0"
-								value={jumlahStokInput}
-								onChange={(e) => setJumlahStokInput(e.target.value)}
+								value={newJumlah}
+								onChange={(e) => setNewJumlah(e.target.value)}
 							/>
 						</div>
 					</div>
 					<DialogFooter>
 						<Button
 							variant="outline"
-							onClick={() => setAddStokOpen(false)}
+							onClick={() => setAddOpen(false)}
 							disabled={createStok.isPending}
 						>
 							Batal
 						</Button>
-						<Button onClick={handleCreateStok} disabled={createStok.isPending}>
+						<Button
+							onClick={() => {
+								if (!newJenisKelasId || !newLevel) {
+									toast.error("Lengkapi semua field");
+									return;
+								}
+								createStok.mutate({
+									jenisKelasId: newJenisKelasId,
+									level: Number(newLevel),
+									jumlahStok: Number(newJumlah) || 0,
+									cabangId: queryCabangId,
+								});
+							}}
+							disabled={createStok.isPending}
+						>
 							{createStok.isPending ? (
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 							) : (
@@ -468,7 +398,7 @@ export default function StokBukuClient() {
 				title="Hapus Stok Buku"
 				description={
 					<>
-						Yakin hapus stok buku{" "}
+						Yakin hapus{" "}
 						<span className="text-accent font-bold">{deleteTarget?.nama}</span>?
 						Semua penerima terkait juga terhapus.
 					</>
@@ -483,16 +413,16 @@ export default function StokBukuClient() {
 
 			{/* Sheet Kelola Siswa */}
 			<PenerimaBukuSheet
-				stokBukuId={siswaSheetStokId}
-				open={!!siswaSheetStokId}
-				onOpenChange={(open) => !open && setSiswaSheetStokId(null)}
+				stokBukuId={siswaSheetId}
+				open={!!siswaSheetId}
+				onOpenChange={(open) => !open && setSiswaSheetId(null)}
 				queryCabangId={queryCabangId}
 			/>
 		</div>
 	);
 }
 
-// ─── Sheet: Kelola Siswa Penerima ────────────────────────────────────────────
+// ─── Sheet: Kelola Siswa Penerima ─────────────────────────────────────────────
 
 function PenerimaBukuSheet({
 	stokBukuId,
@@ -507,40 +437,49 @@ function PenerimaBukuSheet({
 }) {
 	const utils = api.useUtils();
 
-	// Dropdown bertingkat: Jenis Kelas → Kelas → Siswa
-	const [selectedJenisKelasId, setSelectedJenisKelasId] = useState("");
 	const [selectedKelasId, setSelectedKelasId] = useState("");
 	const [selectedMuridId, setSelectedMuridId] = useState("");
-
-	// Query jenis kelas (semua, bukan yang belum punya stok — biar bisa pilih bebas)
-	const { data: jenisKelasList } = api.jenisKelas.getJenisKelasList.useQuery(
-		{ cabangId: queryCabangId },
-		{ enabled: open },
+	const [searchSiswa, setSearchSiswa] = useState("");
+	const [siswaPopoverOpen, setSiswaPopoverOpen] = useState(false);
+	const [kelasPopoverOpen, setKelasPopoverOpen] = useState(false);
+	const [searchKelas, setSearchKelas] = useState("");
+	const [statusOrder, setStatusOrder] = useState<"DIORDER" | "READY">(
+		"DIORDER",
 	);
+	const [tanggalReady, setTanggalReady] = useState<Date | undefined>();
+	const [tanggalOpen, setTanggalOpen] = useState(false);
 
-	// Query kelas berdasarkan jenis kelas yang dipilih
-	const { data: kelasList, isLoading: loadingKelas } =
-		api.stokBuku.getKelasByJenisKelas.useQuery(
-			{ jenisKelasId: selectedJenisKelasId, cabangId: queryCabangId },
-			{ enabled: !!selectedJenisKelasId && !!stokBukuId },
+	// Daftar kelas aktif untuk filter
+	const { data: kelasAktifList, isLoading: loadingKelasAktif } =
+		api.kelas.getKelasAktif.useQuery(
+			{ cabangId: queryCabangId },
+			{ enabled: open },
 		);
 
-	// Query murid yang belum terdaftar (difilter per kelas kalau ada)
-	const { data: muridList, isLoading: loadingMurid } =
-		api.stokBuku.getMuridBelumTerdaftar.useQuery(
-			{
-				stokBukuId: stokBukuId as string,
-				kelasId: selectedKelasId || undefined,
-				cabangId: queryCabangId,
-			},
-			{ enabled: !!stokBukuId },
-		);
+	const handleKelasChange = (id: string) => {
+		setSelectedKelasId(id);
+		setSelectedMuridId("");
+	};
 
-	// Query penerima yang sudah terdaftar
+	// Queries
+	const muridQuery = api.stokBuku.getMuridBelumTerdaftar.useQuery(
+		{
+			stokBukuId: stokBukuId as string,
+			kelasId: selectedKelasId || undefined,
+		},
+		{
+			enabled: !!stokBukuId && open,
+		},
+	);
+	const muridList = muridQuery.data as
+		| { id: string; namaLengkap: string; levelKelas?: number | null }[]
+		| undefined;
+	const loadingMurid = muridQuery.isLoading;
+
 	const { data: penerimaList, isLoading: loadingPenerima } =
 		api.stokBuku.getPenerimaByStokBuku.useQuery(
 			{ stokBukuId: stokBukuId as string },
-			{ enabled: !!stokBukuId },
+			{ enabled: !!stokBukuId && open },
 		);
 
 	const invalidateAll = async () => {
@@ -551,180 +490,226 @@ function PenerimaBukuSheet({
 
 	const addPenerima = api.stokBuku.addPenerimaBuku.useMutation({
 		onSuccess: async () => {
-			toast.success("Siswa berhasil ditambahkan");
+			toast.success("Siswa ditambahkan ke list order");
 			setSelectedMuridId("");
 			await invalidateAll();
 		},
 		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
 
-	const updateStatus = api.stokBuku.updateStatusPenerima.useMutation({
+	const updateStatusOrder = api.stokBuku.updateStatusOrder.useMutation({
+		onSuccess: invalidateAll,
+		onError: (err) => toast.error(err.message ?? "Gagal"),
+	});
+
+	const updateStatusAmbil = api.stokBuku.updateStatusPenerima.useMutation({
 		onSuccess: invalidateAll,
 		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
 
 	const removePenerima = api.stokBuku.deletePenerimaBuku.useMutation({
 		onSuccess: async () => {
-			toast.success("Siswa dihapus dari daftar");
+			toast.success("Siswa dihapus dari list");
 			await invalidateAll();
 		},
 		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
 
-	const handleJenisKelasChange = (id: string) => {
-		setSelectedJenisKelasId(id);
-		setSelectedKelasId("");
-		setSelectedMuridId("");
-	};
-
-	const handleKelasChange = (id: string) => {
-		setSelectedKelasId(id);
-		setSelectedMuridId("");
-	};
-
-	// Cari level dari kelas yang dipilih
-	const selectedKelasData = kelasList?.find((k) => k.id === selectedKelasId);
-
-	const handleAdd = () => {
-		if (!stokBukuId || !selectedMuridId) {
-			toast.error("Pilih siswa dulu");
-			return;
-		}
-		addPenerima.mutate({
-			stokBukuId,
-			muridIds: [selectedMuridId],
-			kelasId: selectedKelasId || undefined,
-		});
-	};
-
-	// Reset saat sheet ditutup
-	const handleOpenChange = (open: boolean) => {
+	const handleClose = (open: boolean) => {
 		if (!open) {
-			setSelectedJenisKelasId("");
 			setSelectedKelasId("");
+			setSearchKelas("");
 			setSelectedMuridId("");
+			setSearchSiswa("");
+			setStatusOrder("DIORDER");
+			setTanggalReady(undefined);
 		}
 		onOpenChange(open);
 	};
 
 	return (
-		<Sheet open={open} onOpenChange={handleOpenChange}>
+		<Sheet open={open} onOpenChange={handleClose}>
 			<SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
 				<SheetHeader>
 					<SheetTitle>Siswa Penerima Buku</SheetTitle>
 					<SheetDescription>
-						Pilih kelas terlebih dahulu, lalu tambahkan siswa penerima buku.
+						Cari dan pilih siswa untuk ditambahkan.
 					</SheetDescription>
 				</SheetHeader>
 
 				<div className="space-y-5 p-4">
-					{/* Dropdown bertingkat */}
+					{/* Form Tambah */}
 					<div className="space-y-3 rounded-lg border p-4">
-						<Label className="text-sm font-semibold">
-							Tambah Siswa Penerima
-						</Label>
+						<Label className="text-sm font-semibold">Tambah Siswa</Label>
 
-						{/* 1. Pilih Jenis Kelas */}
+						{/* Kelas — filter siswa berdasarkan kelas */}
 						<div className="space-y-1.5">
-							<Label className="text-xs text-muted-foreground">
-								1. Jenis Kelas
-							</Label>
-							<Select
-								value={selectedJenisKelasId}
-								onValueChange={handleJenisKelasChange}
+							<Label className="text-xs text-muted-foreground">Kelas</Label>
+							<Popover
+								open={kelasPopoverOpen}
+								onOpenChange={setKelasPopoverOpen}
 							>
-								<SelectTrigger className="h-9">
-									<SelectValue placeholder="Pilih jenis kelas..." />
-								</SelectTrigger>
-								<SelectContent>
-									{jenisKelasList?.map((j) => (
-										<SelectItem key={j.id} value={j.id}>
-											{j.nama}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						{/* 2. Pilih Kelas */}
-						<div className="space-y-1.5">
-							<Label className="text-xs text-muted-foreground">
-								2. Kelas & Level
-							</Label>
-							<Select
-								value={selectedKelasId}
-								onValueChange={handleKelasChange}
-								disabled={!selectedJenisKelasId || loadingKelas}
-							>
-								<SelectTrigger className="h-9">
-									<SelectValue
-										placeholder={
-											!selectedJenisKelasId
-												? "Pilih jenis kelas dulu"
-												: loadingKelas
-													? "Memuat..."
-													: "Pilih kelas..."
-										}
-									/>
-								</SelectTrigger>
-								<SelectContent>
-									{kelasList?.length === 0 && (
-										<SelectItem value="_empty" disabled>
-											Tidak ada kelas aktif
-										</SelectItem>
-									)}
-									{kelasList?.map((k) => (
-										<SelectItem key={k.id} value={k.id}>
-											{k.kodeKelas}
-											<span className="text-muted-foreground ml-1.5 text-xs">
-												— Level {k.level}
-											</span>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						{/* 3. Pilih Siswa */}
-						<div className="space-y-1.5">
-							<Label className="text-xs text-muted-foreground">3. Siswa</Label>
-							<div className="flex gap-2">
-								<Select
-									value={selectedMuridId}
-									onValueChange={setSelectedMuridId}
-									disabled={loadingMurid}
-								>
-									<SelectTrigger className="h-9 flex-1">
-										<SelectValue
-											placeholder={
-												loadingMurid ? "Memuat..." : "Pilih siswa..."
-											}
-										/>
-									</SelectTrigger>
-									<SelectContent>
-										{muridList?.length === 0 && (
-											<SelectItem value="_empty" disabled>
-												Semua siswa sudah terdaftar
-											</SelectItem>
+								<PopoverTrigger asChild>
+									<Button
+										variant="outline"
+										role="combobox"
+										aria-expanded={kelasPopoverOpen}
+										disabled={loadingKelasAktif}
+										className={cn(
+											"h-9 w-full justify-between font-normal",
+											!selectedKelasId && "text-muted-foreground",
 										)}
-										{muridList?.map((m) => (
-											<SelectItem key={m.id} value={m.id}>
-												{m.namaLengkap}
-												{m.kelasSekolah ? (
-													<span className="text-muted-foreground ml-1">
-														— {m.kelasSekolah}
-													</span>
-												) : (
-													""
-												)}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+									>
+										<span className="truncate">
+											{loadingKelasAktif
+												? "Memuat..."
+												: (kelasAktifList?.find((k) => k.id === selectedKelasId)
+														?.kodeKelas ?? "Pilih kelas...")}
+										</span>
+										<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent className="w-full min-w-md p-0" align="start">
+									<Command shouldFilter={false}>
+										<CommandInput
+											placeholder="Cari kelas..."
+											value={searchKelas}
+											onValueChange={setSearchKelas}
+										/>
+										<CommandList className="max-h-64 overflow-y-auto">
+											<CommandEmpty>Kelas tidak ditemukan.</CommandEmpty>
+											<CommandGroup>
+												{kelasAktifList
+													?.filter((k) =>
+														k.kodeKelas
+															.toLowerCase()
+															.includes(searchKelas.toLowerCase()),
+													)
+													.map((k) => (
+														<CommandItem
+															key={k.id}
+															value={k.id}
+															onSelect={() => {
+																handleKelasChange(k.id);
+																setKelasPopoverOpen(false);
+																setSearchKelas("");
+															}}
+														>
+															<Check
+																className={cn(
+																	"mr-2 h-4 w-4",
+																	selectedKelasId === k.id
+																		? "opacity-100"
+																		: "opacity-0",
+																)}
+															/>
+															<span>{k.kodeKelas}</span>
+															<span className="text-muted-foreground ml-1.5 text-xs">
+																— Level {k.level}
+															</span>
+														</CommandItem>
+													))}
+											</CommandGroup>
+										</CommandList>
+									</Command>
+								</PopoverContent>
+							</Popover>
+						</div>
+
+						{/* Siswa — tampilkan Nama + Level Kelas, bisa dicari, difilter oleh kelas di atas */}
+						<div className="space-y-1.5">
+							<Label className="text-xs text-muted-foreground">Siswa</Label>
+							<div className="flex gap-2">
+								<Popover
+									open={siswaPopoverOpen}
+									onOpenChange={setSiswaPopoverOpen}
+								>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											role="combobox"
+											aria-expanded={siswaPopoverOpen}
+											disabled={loadingMurid}
+											className={cn(
+												"h-9 flex-1 justify-between font-normal",
+												!selectedMuridId && "text-muted-foreground",
+											)}
+										>
+											<span className="truncate">
+												{loadingMurid
+													? "Memuat..."
+													: (muridList?.find((m) => m.id === selectedMuridId)
+															?.namaLengkap ?? "Pilih siswa...")}
+											</span>
+											<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-full min-w-md p-0" align="start">
+										<Command shouldFilter={false}>
+											<CommandInput
+												placeholder="Cari nama siswa..."
+												value={searchSiswa}
+												onValueChange={setSearchSiswa}
+											/>
+											<CommandList className="max-h-64 overflow-y-auto">
+												<CommandEmpty>
+													Semua siswa sudah terdaftar / tidak ditemukan
+												</CommandEmpty>
+												<CommandGroup>
+													{muridList
+														?.filter((m) =>
+															m.namaLengkap
+																.toLowerCase()
+																.includes(searchSiswa.toLowerCase()),
+														)
+														.map((m) => (
+															<CommandItem
+																key={m.id}
+																value={m.id}
+																onSelect={() => {
+																	setSelectedMuridId(m.id);
+																	setSiswaPopoverOpen(false);
+																	setSearchSiswa("");
+																}}
+															>
+																<Check
+																	className={cn(
+																		"mr-2 h-4 w-4",
+																		selectedMuridId === m.id
+																			? "opacity-100"
+																			: "opacity-0",
+																	)}
+																/>
+																<span>{m.namaLengkap}</span>
+																{m.levelKelas != null && (
+																	<span className="text-muted-foreground ml-1 text-xs">
+																		— Level {m.levelKelas}
+																	</span>
+																)}
+															</CommandItem>
+														))}
+												</CommandGroup>
+											</CommandList>
+										</Command>
+									</PopoverContent>
+								</Popover>
 								<Button
 									size="sm"
 									className="h-9 shrink-0"
-									onClick={handleAdd}
+									onClick={() => {
+										if (!stokBukuId || !selectedMuridId) {
+											toast.error("Pilih siswa dulu");
+											return;
+										}
+										addPenerima.mutate({
+											stokBukuId,
+											muridIds: [selectedMuridId],
+											kelasId: selectedKelasId || undefined,
+											statusOrder,
+											tanggalReady:
+												statusOrder === "READY" ? tanggalReady : undefined,
+										});
+									}}
 									disabled={addPenerima.isPending || !selectedMuridId}
 								>
 									{addPenerima.isPending ? (
@@ -736,13 +721,64 @@ function PenerimaBukuSheet({
 							</div>
 						</div>
 
-						{/* Info kelas terpilih */}
-						{selectedKelasData && (
-							<p className="text-xs text-muted-foreground">
-								Level{" "}
-								<span className="font-medium">{selectedKelasData.level}</span> ·{" "}
-								{selectedKelasData.pendaftaranKelases.length} murid aktif
-							</p>
+						{/* 4. Status Order awal */}
+						<div className="space-y-1.5">
+							<Label className="text-xs text-muted-foreground">
+								Status Awal
+							</Label>
+							<div className="flex gap-2">
+								{(["DIORDER", "READY"] as const).map((s) => (
+									<button
+										key={s}
+										type="button"
+										onClick={() => setStatusOrder(s)}
+										className={cn(
+											"rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+											statusOrder === s
+												? s === "READY"
+													? "bg-green-600 text-white border-green-600"
+													: "bg-primary text-primary-foreground border-primary"
+												: "bg-background text-muted-foreground hover:bg-muted",
+										)}
+									>
+										{s}
+									</button>
+								))}
+							</div>
+						</div>
+
+						{/* Tanggal Ready */}
+						{statusOrder === "READY" && (
+							<div className="space-y-1.5">
+								<Label className="text-xs text-muted-foreground">
+									Tanggal Ready
+								</Label>
+								<Popover open={tanggalOpen} onOpenChange={setTanggalOpen}>
+									<PopoverTrigger asChild>
+										<Button
+											variant="outline"
+											size="sm"
+											className="w-full justify-start h-9 text-xs"
+										>
+											<CalendarIcon className="mr-2 h-3.5 w-3.5" />
+											{tanggalReady
+												? formatDate(tanggalReady)
+												: "Pilih tanggal..."}
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-auto p-0" align="start">
+										<Calendar
+											mode="single"
+											selected={tanggalReady}
+											onSelect={(d) => {
+												setTanggalReady(d);
+												setTanggalOpen(false);
+											}}
+											initialFocus
+										/>
+									</PopoverContent>
+								</Popover>
+							</div>
 						)}
 					</div>
 
@@ -757,7 +793,7 @@ function PenerimaBukuSheet({
 						{loadingPenerima && (
 							<div className="space-y-2">
 								{Array.from({ length: 3 }, (_, i) => i).map((id) => (
-									<Skeleton key={id} className="h-16 w-full rounded-md" />
+									<Skeleton key={id} className="h-20 w-full rounded-md" />
 								))}
 							</div>
 						)}
@@ -770,42 +806,92 @@ function PenerimaBukuSheet({
 
 						<div className="space-y-2">
 							{penerimaList?.map((p) => {
+								const isReady = p.statusOrder === "READY";
 								const sudahDiambil = p.status === "SUDAH_DIAMBIL";
+								const guruNama = p.guruPenerima
+									.map((gp) => gp.guru.name)
+									.filter(Boolean)
+									.join(", ");
+
 								return (
-									<div key={p.id} className="rounded-md border p-3 space-y-1">
-										<div className="flex items-center justify-between">
+									<div
+										key={p.id}
+										className={cn(
+											"rounded-md border p-3 space-y-2",
+											sudahDiambil &&
+												"border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/20",
+										)}
+									>
+										<div className="flex items-start justify-between gap-2">
 											<div className="min-w-0">
 												<p className="truncate text-sm font-medium">
 													{p.murid.namaLengkap}
 												</p>
-												<div className="flex items-center gap-2 text-xs text-muted-foreground">
+												<div className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
 													{p.kelas && (
 														<span>
 															{p.kelas.kodeKelas} — Level {p.kelas.level}
 														</span>
 													)}
-													{p.murid.kelasSekolah && (
-														<span>· {p.murid.kelasSekolah}</span>
-													)}
+													{guruNama && <span>· {guruNama}</span>}
 												</div>
 											</div>
-											<div className="flex shrink-0 items-center gap-1.5">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="text-destructive h-7 w-7 shrink-0"
+												onClick={() =>
+													removePenerima.mutate({ penerimaBukuId: p.id })
+												}
+												disabled={removePenerima.isPending}
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</Button>
+										</div>
+
+										<div className="flex items-center gap-2 flex-wrap">
+											<Button
+												size="sm"
+												variant={isReady ? "default" : "outline"}
+												className={cn(
+													"h-7 text-xs",
+													isReady && "bg-green-600 hover:bg-green-700",
+												)}
+												onClick={() =>
+													updateStatusOrder.mutate({
+														penerimaBukuId: p.id,
+														statusOrder: isReady ? "DIORDER" : "READY",
+														tanggalReady: isReady ? null : new Date(),
+													})
+												}
+												disabled={updateStatusOrder.isPending}
+											>
+												{isReady ? "✓ Ready" : "Set Ready"}
+											</Button>
+
+											{isReady && p.tanggalReady && (
+												<span className="text-xs text-muted-foreground">
+													{formatDate(p.tanggalReady)}
+												</span>
+											)}
+
+											{isReady && (
 												<Button
 													size="sm"
 													variant={sudahDiambil ? "default" : "outline"}
 													className={cn(
-														"h-7 text-xs",
-														sudahDiambil && "bg-green-600 hover:bg-green-700",
+														"h-7 text-xs ml-auto",
+														sudahDiambil && "bg-blue-600 hover:bg-blue-700",
 													)}
 													onClick={() =>
-														updateStatus.mutate({
+														updateStatusAmbil.mutate({
 															penerimaBukuId: p.id,
 															status: sudahDiambil
 																? "BELUM_DIAMBIL"
 																: "SUDAH_DIAMBIL",
 														})
 													}
-													disabled={updateStatus.isPending}
+													disabled={updateStatusAmbil.isPending}
 												>
 													{sudahDiambil ? (
 														<>
@@ -815,22 +901,11 @@ function PenerimaBukuSheet({
 													) : (
 														<>
 															<Clock className="mr-1 h-3 w-3" />
-															Belum
+															Belum Diambil
 														</>
 													)}
 												</Button>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="text-destructive h-7 w-7"
-													onClick={() =>
-														removePenerima.mutate({ penerimaBukuId: p.id })
-													}
-													disabled={removePenerima.isPending}
-												>
-													<Trash2 className="h-3.5 w-3.5" />
-												</Button>
-											</div>
+											)}
 										</div>
 									</div>
 								);

@@ -1,0 +1,221 @@
+[33mcommit 3d3315765b4969848b1deed04d4c978ba5d569c7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: eh git <englishhivelearn@gmail.com>
+Date:   Sun Jul 5 15:16:44 2026 +0800
+
+    feat: add stock book management
+
+[33mcommit ec4aad01518c77843d1d2532debef7204ed814b0[m
+Author: eh git <englishhivelearn@gmail.com>
+Date:   Thu Jun 11 19:01:01 2026 +0800
+
+    refactor: final report 2 aspek & 2 page
+
+[33mcommit f58a2820137749e442f3f42e9acac43eb0145ce7[m
+Author: eh git <englishhivelearn@gmail.com>
+Date:   Sun May 24 12:47:16 2026 +0800
+
+    feat: add email field to cabang
+
+[33mcommit 237507b6b2f46b52fbd714fe2a14adf657958f9f[m[33m ([m[1;32magents/add-logo-to-final-report-pdf[m[33m)[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Fri May 15 15:39:49 2026 +0800
+
+    chore: rename off in murid to off_sementara
+
+[33mcommit 76abd0ff1d6cee332254a819933f7b894c074c85[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed May 6 15:46:30 2026 +0800
+
+    feat: added new status OFF_SEMENTARA in pendaftaranKelas doesnt processAutoBilling
+
+[33mcommit 54e449c3ffe2a3eeaa60306bdfff796c0ead5217[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sun Apr 5 19:51:55 2026 +0800
+
+    refactor: change enum status & fixed bug copy guru in levelUpKelas
+
+[33mcommit aa56fd9eef6626b9b859550d87f037f2f759c796[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sun Apr 5 17:54:18 2026 +0800
+
+    refactor: change isOrderBuku to statusOrderBuku
+
+[33mcommit 390890e31896dbc85c9f2ecfc10f5ad8a72b3904[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sat Apr 4 19:17:35 2026 +0800
+
+    chore: Move Guru Start Date Assignment to Class Completion
+
+[33mcommit f6bb13023a9e774eea4c249e7264eaeb0bee623b[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Fri Apr 3 20:31:07 2026 +0800
+
+    chore: save isOrderBuku in database
+
+[33mcommit 31af3d5775ef324b145defe6e522199bc488b787[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Thu Apr 2 21:13:02 2026 +0800
+
+    chore: Enhancing Guru Dashboard Card States
+
+[33mcommit 30c270e23506e9a90e9018b0a81aa186ea37be4c[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Mon Mar 9 19:00:58 2026 +0800
+
+    fix: issue pembuatan double sesi dan redirect ke kelas baru (sesi 1)
+
+[33mcommit d89f7027a614bd2820144577a03f74c28c0e7157[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Fri Mar 6 20:58:22 2026 +0800
+
+    chore: added new statusKelas & refine some auto trigger
+
+[33mcommit c66aa2be9ec90e7422a181621072cc0dddd09a75[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed Mar 4 21:04:48 2026 +0800
+
+    chore: changing for dynamic bank, noRek, atasNama at text WA & added bank, noRek, atasNama at model cabang
+
+[33mcommit d18ecfa99f4eed94563324e6bd2ecb6c66ca87e4[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed Feb 25 17:07:51 2026 +0800
+
+    feat: added tglBayar & verifiedBy at model tagihanLain
+
+[33mcommit d90483511de88ff32953d05d127fe6c85f62309d[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Mon Feb 23 19:42:09 2026 +0800
+
+    fix: bug auto level up kelas miss matching to old kelas
+
+[33mcommit 3658882088baaf0344c67f4a10982c0f5219e9f2[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Mon Jan 19 14:57:40 2026 +0800
+
+    refactor: guruHistoryKelas can be mustiple & add off statusMurid
+
+[33mcommit 9250872644c59bc079a8b763e724a8363308a1b7[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Tue Jan 13 21:46:26 2026 +0800
+
+    chore: remove alamat, jamPulang, email change instagram at murid model. delete isAktif at pendaftaranKelas model. remove jenis&type kelas model
+
+[33mcommit 0d876a22f523a3d6152993d09d769a81ae30e2a3[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sun Dec 28 23:17:08 2025 +0800
+
+    chore: split tagihan lain to buku & registrasi
+
+[33mcommit e46435623661aa45d5c50d6af0d5dfe67512f53c[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sun Dec 28 17:51:41 2025 +0800
+
+    refactor: added status kelas
+
+[33mcommit 4ecba87e8e3ee293913b1e5a1ae4d9ca185c5897[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sat Dec 27 15:51:00 2025 +0800
+
+    fix: auto create tagihan buku when pendaftaranKelas create
+
+[33mcommit 7a9e71b36aa415f47f7a68f22fcca5a23fea4548[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed Dec 24 22:18:06 2025 +0800
+
+    chore: edit columns jenisKelas
+
+[33mcommit 5d15ef545dba539cdb841cd5b41881e3aa32c202[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed Dec 24 20:59:12 2025 +0800
+
+    feat&refactor: added TagihanLain for fee registration & buku, refator status at pendaftaranKelas
+
+[33mcommit 5ba442461a70b1b5e076d6a0c6d82cb901c806c3[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Tue Dec 23 23:15:22 2025 +0800
+
+    change @unique to @unique([name, type])
+
+[33mcommit 3a31b534ce19da4bb041034aabf6ae06c35d6fef[m[33m ([m[1;31morigin/feat/fullcustom[m[33m)[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Tue Dec 23 18:16:15 2025 +0800
+
+    migrate to new db
+
+[33mcommit 24cd0cb3fbd20b87c82e2ee963066fd9e0d499eb[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Tue Dec 23 15:13:28 2025 +0800
+
+    feat: jenisKelas can change & price for kelas still flex
+
+[33mcommit 48f404b9a48b84128fad16be5fd318aca2809966[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed Dec 17 17:40:23 2025 +0800
+
+    chore: added tunggu_konfirmasi at statusMurid & search murid at detail kelas in tambah murid
+
+[33mcommit 138fc1310b1992c444176eee67225c49cdb02a9c[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed Dec 17 15:13:31 2025 +0800
+
+    chore: added Tiny star to JenisKelas and change export exel
+
+[33mcommit 95fa5e5a6eea388f23d25a5be3a4234d47954bdd[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Tue Dec 16 19:11:47 2025 +0800
+
+    chore: added waiting_list to statusMurid & add 100 in pagination
+
+[33mcommit 6a7af75d633c823c958effb44cd8334ecc2c0cd9[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Tue Dec 16 00:59:58 2025 +0800
+
+    init biomejs
+
+[33mcommit eab48b6d9dfd45e154c023cb258e22c9f4252f88[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sun Dec 14 19:29:57 2025 +0800
+
+    refactor: banyak
+
+[33mcommit 2b6afeef63f971c1eb44512f7e98ea2d8fcfe800[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Fri Dec 12 00:14:08 2025 +0800
+
+    refector&chore&fix: banyak:v
+
+[33mcommit 09bc9a2a001384ef47e4647f863e55a325ae60b4[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sat Dec 6 17:07:14 2025 +0800
+
+    feat: global filtering cabang in kelas.router and added conditional rendering in kelas form, murid form
+
+[33mcommit bdf5175d0724ea981c15f970d5a2b7393b5a1640[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Fri Dec 5 17:51:20 2025 +0800
+
+    feat&refactor: inital setup feature cabang mambal, refactor kelas
+
+[33mcommit 9152018ac0a1f8eca3897a903e7957ca7f830030[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Wed Dec 3 20:35:55 2025 +0800
+
+    feat: added unique constraint to kelas, pembayaran, cabang
+
+[33mcommit 7b681e8f74c849ef6c89f8da9ae364700df5a7af[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Mon Dec 1 00:38:43 2025 +0800
+
+    feat&refactor: view calendar for jadwalKelas & refactoring home page
+
+[33mcommit deef98a40d0669b9c742bb92137c000db41d2323[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Thu Nov 27 14:43:30 2025 +0800
+
+    refactor: remove kelas list change to kelasTab
+
+[33mcommit ff304185b99b2a62cc608e097df437b0a4621f7d[m
+Author: Haqqi Sukmara Ishfahani <haqqi30sukmara@gmail.com>
+Date:   Sun Nov 23 23:12:03 2025 +0800
+
+    refactor: added TRIAL&LULUS at statusMurid, change create l

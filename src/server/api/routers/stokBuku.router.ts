@@ -39,11 +39,29 @@ export const stokBukuRouter = createTRPCRouter({
 		.input(z.object({ cabangId: z.string().optional() }))
 		.query(async ({ ctx }) => {
 			if (!ctx.allowedCabangId) return [];
-			return ctx.db.jenisKelasModel.findMany({
+			const allJenisKelas = await ctx.db.jenisKelasModel.findMany({
 				where: { cabangId: ctx.allowedCabangId },
 				select: { id: true, nama: true, tipe: true },
 				orderBy: { nama: "asc" },
 			});
+
+			// Kalau ada jenis kelas REGULAR dan PRIVATE dengan nama yang sama,
+			// tampilkan yang REGULAR saja. Jenis kelas PRIVATE hanya ditampilkan
+			// kalau tidak ada versi REGULAR dengan nama yang sama.
+			const byNama = new Map<string, (typeof allJenisKelas)[number]>();
+			for (const jk of allJenisKelas) {
+				const existing = byNama.get(jk.nama);
+				if (!existing) {
+					byNama.set(jk.nama, jk);
+				} else if (existing.tipe !== "REGULAR" && jk.tipe === "REGULAR") {
+					// Upgrade ke versi REGULAR kalau sebelumnya cuma PRIVATE
+					byNama.set(jk.nama, jk);
+				}
+			}
+
+			return Array.from(byNama.values()).sort((a, b) =>
+				a.nama.localeCompare(b.nama),
+			);
 		}),
 
 	// ── CREATE STOK BUKU ──────────────────────────────────────────────────────

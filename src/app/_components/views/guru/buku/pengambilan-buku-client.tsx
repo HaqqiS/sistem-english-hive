@@ -141,14 +141,18 @@ export function PengambilanBukuSection() {
 															"h-7 text-xs",
 															sudahDiambil && "bg-blue-600 hover:bg-blue-700",
 														)}
-														onClick={() =>
+														onClick={() => {
+															if (sudahDiambil) {
+																toast.error(
+																	"Status sudah 'Diambil' dan tidak bisa diubah sendiri. Hubungi admin jika ingin merubah status.",
+																);
+																return;
+															}
 															updateStatus.mutate({
 																penerimaBukuId: p.id,
-																status: sudahDiambil
-																	? "BELUM_DIAMBIL"
-																	: "SUDAH_DIAMBIL",
-															})
-														}
+																status: "SUDAH_DIAMBIL",
+															});
+														}}
 														disabled={updateStatus.isPending}
 													>
 														{sudahDiambil ? (

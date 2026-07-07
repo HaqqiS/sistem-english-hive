@@ -390,6 +390,15 @@ export const stokBukuRouter = createTRPCRouter({
 					message: "Buku belum berstatus READY.",
 				});
 
+			// Guru tidak bisa mengubah status lagi kalau sudah "Diambil" —
+			// harus hubungi admin untuk perubahan lebih lanjut
+			if (isGuru && penerima.status === StatusPenerimaanBuku.SUDAH_DIAMBIL)
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Status sudah 'Diambil' dan tidak bisa diubah sendiri. Hubungi admin jika ingin merubah status.",
+				});
+
 			// Guru hanya bisa update kalau dia terdaftar sebagai guru penerima
 			if (isGuru) {
 				const isHandle = await ctx.db.penerimaBukuGuru.findFirst({

@@ -1,7 +1,7 @@
 "use client";
 
 import type { StatusOrderBuku } from "@prisma/client";
-import { BookOpen, Package, RefreshCw } from "lucide-react";
+import { BookOpen, ClipboardList, Package, RefreshCw } from "lucide-react";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { useKelas } from "@/hooks/useKelas";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { columnsOrderBuku } from "./columns/columns-order-buku";
+import LogPengambilanClient from "./log-pengambilan-client";
 import StokBukuClient from "./stok-buku-client";
 
 export default function BookOrderClient() {
@@ -78,6 +79,10 @@ export default function BookOrderClient() {
 					<Package className="mr-2 h-4 w-4" />
 					Stok Buku
 				</TabsTrigger>
+				<TabsTrigger value="log-pengambilan">
+					<ClipboardList className="mr-2 h-4 w-4" />
+					Log Pengambilan
+				</TabsTrigger>
 			</TabsList>
 
 			<TabsContent value="order-buku" className="space-y-4">
@@ -116,6 +121,10 @@ export default function BookOrderClient() {
 
 			<TabsContent value="stok-buku">
 				<StokBukuClient />
+			</TabsContent>
+
+			<TabsContent value="log-pengambilan">
+				<LogPengambilanClient />
 			</TabsContent>
 		</Tabs>
 	);

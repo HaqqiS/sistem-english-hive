@@ -502,4 +502,50 @@ export const stokBukuRouter = createTRPCRouter({
 				orderBy: [{ statusOrder: "asc" }, { createdAt: "desc" }],
 			});
 		}),
+
+	// ── LOG PENGAMBILAN BUKU ──────────────────────────────────────────────────
+	getLogPengambilanBuku: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional(),
+					search: z.string().optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const filterCabangId = ctx.allowedCabangId ?? input?.cabangId;
+
+			return ctx.db.penerimaBuku.findMany({
+				where: {
+					status: "SUDAH_DIAMBIL",
+					stokBuku: filterCabangId ? { cabangId: filterCabangId } : undefined,
+					murid: input?.search
+						? {
+								namaLengkap: {
+									contains: input.search,
+									mode: "insensitive",
+								},
+							}
+						: undefined,
+				},
+				include: {
+					murid: {
+						select: { id: true, namaLengkap: true, kelasSekolah: true },
+					},
+					kelas: { select: { id: true, kodeKelas: true, level: true } },
+					guruPenerima: {
+						include: { guru: { select: { id: true, name: true } } },
+					},
+					stokBuku: {
+						select: {
+							jenisKelas: { select: { nama: true } },
+							level: true,
+							cabang: { select: { namaCabang: true } },
+						},
+					},
+				},
+				orderBy: { tanggalAmbil: "desc" },
+			});
+		}),
 });

@@ -548,4 +548,38 @@ export const stokBukuRouter = createTRPCRouter({
 				orderBy: { tanggalAmbil: "desc" },
 			});
 		}),
+
+	// ── HAPUS LOG PENGAMBILAN ──────────────────────────────────────────────────
+	// Hapus data siswa/order-nya secara permanen. Stok TIDAK dikembalikan.
+	deleteLogPengambilan: protectedProcedure
+		.input(z.object({ penerimaBukuId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const { role } = ctx.session.user;
+			if (role !== UserRole.ADMIN && role !== UserRole.MANAGER)
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Hanya Admin/Manager yang bisa menghapus log ini.",
+				});
+
+			const penerima = await ctx.db.penerimaBuku.findUnique({
+				where: { id: input.penerimaBukuId },
+				select: { status: true },
+			});
+
+			if (!penerima)
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Data tidak ditemukan.",
+				});
+
+			if (penerima.status !== StatusPenerimaanBuku.SUDAH_DIAMBIL)
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Data ini belum berstatus 'Diambil'.",
+				});
+
+			return ctx.db.penerimaBuku.delete({
+				where: { id: input.penerimaBukuId },
+			});
+		}),
 });

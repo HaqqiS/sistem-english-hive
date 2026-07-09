@@ -1,7 +1,8 @@
 "use client";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { RouterOutputs } from "@/trpc/react";
 
 export type TypeLogPengambilanBuku =
@@ -18,7 +19,15 @@ function formatDateTime(date: Date | string | null | undefined) {
 	});
 }
 
-export const columnsLogPengambilan: ColumnDef<TypeLogPengambilanBuku>[] = [
+interface ColumnsLogPengambilanProps {
+	onDelete: (row: TypeLogPengambilanBuku) => void;
+	isMutatingId?: string | null;
+}
+
+export const columnsLogPengambilan = ({
+	onDelete,
+	isMutatingId,
+}: ColumnsLogPengambilanProps): ColumnDef<TypeLogPengambilanBuku>[] => [
 	{
 		id: "nomer",
 		header: "No",
@@ -83,5 +92,20 @@ export const columnsLogPengambilan: ColumnDef<TypeLogPengambilanBuku>[] = [
 		id: "cabang",
 		header: "Cabang",
 		cell: ({ row }) => row.original.stokBuku.cabang.namaCabang,
+	},
+	{
+		id: "aksi",
+		header: "",
+		cell: ({ row }) => (
+			<Button
+				variant="ghost"
+				size="icon"
+				className="text-destructive h-8 w-8"
+				disabled={isMutatingId === row.original.id}
+				onClick={() => onDelete(row.original)}
+			>
+				<Trash2 className="h-4 w-4" />
+			</Button>
+		),
 	},
 ];

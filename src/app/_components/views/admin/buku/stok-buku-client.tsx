@@ -223,16 +223,18 @@ export default function StokBukuClient() {
 										.sort((a, b) => a.level - b.level)
 										.map((stok) => {
 											const total = stok.penerimaBukus.length;
-											const ready = stok.penerimaBukus.filter(
-												(p) => p.statusOrder === "READY",
-											).length;
-											const diorder = stok.penerimaBukus.filter(
-												(p) => p.statusOrder === "DIORDER",
-											).length;
 											const diambil = stok.penerimaBukus.filter(
 												(p) =>
 													p.statusOrder === "READY" &&
 													p.status === "SUDAH_DIAMBIL",
+											).length;
+											const ready = stok.penerimaBukus.filter(
+												(p) =>
+													p.statusOrder === "READY" &&
+													p.status !== "SUDAH_DIAMBIL",
+											).length;
+											const diorder = stok.penerimaBukus.filter(
+												(p) => p.statusOrder === "DIORDER",
 											).length;
 											const dibutuhkan = diorder + ready;
 											const kurang = dibutuhkan > stok.jumlahStok;
@@ -334,8 +336,9 @@ export default function StokBukuClient() {
 															<div className="border-destructive/40 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border p-2.5 text-xs">
 																<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 																<span>
-																	Stok kurang {dibutuhkan - stok.jumlahStok},
-																	stok cuma {stok.jumlahStok}.
+																	Stok kurang {dibutuhkan - stok.jumlahStok}{" "}
+																	buku — dibutuhkan {dibutuhkan} (order +
+																	ready), stok cuma {stok.jumlahStok}.
 																</span>
 															</div>
 														)}

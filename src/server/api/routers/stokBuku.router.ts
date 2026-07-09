@@ -379,11 +379,15 @@ export const stokBukuRouter = createTRPCRouter({
 			z.object({
 				penerimaBukuId: z.string(),
 				status: z.enum(["BELUM_DIAMBIL", "SUDAH_DIAMBIL"]),
+				// Kalau diisi, berarti sedang dalam Mode Guru Pengganti —
+				// ambilkan buku atas nama guru yang digantikan ini.
+				onBehalfOfGuruId: z.string().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			const { role, id: userId } = ctx.session.user;
 			const isGuru = role === UserRole.GURU;
+			const effectiveGuruId = input.onBehalfOfGuruId ?? userId;
 
 			const penerima = await ctx.db.penerimaBuku.findUnique({
 				where: { id: input.penerimaBukuId },
@@ -417,15 +421,21 @@ export const stokBukuRouter = createTRPCRouter({
 						"Status sudah 'Diambil' dan tidak bisa diubah sendiri. Hubungi admin jika ingin merubah status.",
 				});
 
-			// Guru hanya bisa update kalau dia terdaftar sebagai guru penerima
+			// Guru (atau guru pengganti atas nama guru yang digantikan) hanya
+			// bisa update kalau guru tersebut terdaftar sebagai guru penerima
 			if (isGuru) {
 				const isHandle = await ctx.db.penerimaBukuGuru.findFirst({
-					where: { penerimaBukuId: input.penerimaBukuId, guruId: userId },
+					where: {
+						penerimaBukuId: input.penerimaBukuId,
+						guruId: effectiveGuruId,
+					},
 				});
 				if (!isHandle)
 					throw new TRPCError({
 						code: "FORBIDDEN",
-						message: "Kamu tidak terdaftar sebagai guru untuk buku ini.",
+						message: input.onBehalfOfGuruId
+							? "Guru yang digantikan tidak terdaftar sebagai penanggung jawab buku ini."
+							: "Kamu tidak terdaftar sebagai guru untuk buku ini.",
 					});
 			}
 
@@ -460,28 +470,36 @@ export const stokBukuRouter = createTRPCRouter({
 		}),
 
 	// ── GET PENERIMA UNTUK GURU ───────────────────────────────────────────────
-	getPenerimaForGuru: protectedProcedure.query(async ({ ctx }) => {
-		const guruId = ctx.session.user.id;
+	getPenerimaForGuru: protectedProcedure
+		.input(z.object({ guruId: z.string().optional() }).optional())
+		.query(async ({ ctx, input }) => {
+			// Mode Guru Pengganti: kalau guruId dikirim (guru lain dipilih di
+			// dashboard), tampilkan buku milik guru tersebut alih-alih guru yang
+			// sedang login — sama seperti pola "lihat jadwal guru lain" yang
+			// sudah ada di jadwalKelas.router.ts.
+			const targetGuruId = input?.guruId ?? ctx.session.user.id;
 
-		// Ambil penerima yang guru ini terdaftar sebagai penanggung jawab
-		return ctx.db.penerimaBuku.findMany({
-			where: {
-				guruPenerima: { some: { guruId } },
-			},
-			include: {
-				murid: { select: { id: true, namaLengkap: true, kelasSekolah: true } },
-				kelas: { select: { id: true, kodeKelas: true, level: true } },
-				guruPenerima: {
-					include: { guru: { select: { id: true, name: true } } },
+			// Ambil penerima yang guru ini terdaftar sebagai penanggung jawab
+			return ctx.db.penerimaBuku.findMany({
+				where: {
+					guruPenerima: { some: { guruId: targetGuruId } },
 				},
-				stokBuku: {
-					select: {
-						jenisKelas: { select: { nama: true } },
-						level: true,
+				include: {
+					murid: {
+						select: { id: true, namaLengkap: true, kelasSekolah: true },
+					},
+					kelas: { select: { id: true, kodeKelas: true, level: true } },
+					guruPenerima: {
+						include: { guru: { select: { id: true, name: true } } },
+					},
+					stokBuku: {
+						select: {
+							jenisKelas: { select: { nama: true } },
+							level: true,
+						},
 					},
 				},
-			},
-			orderBy: [{ statusOrder: "asc" }, { createdAt: "desc" }],
-		});
-	}),
+				orderBy: [{ statusOrder: "asc" }, { createdAt: "desc" }],
+			});
+		}),
 });

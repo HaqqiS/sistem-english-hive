@@ -383,7 +383,10 @@ export default function GuruDashboardClient() {
 			</div>
 
 			{/* Pengambilan Buku — muncul otomatis kalau ada buku READY untuk kelas guru ini */}
-			<PengambilanBukuSection />
+			<PengambilanBukuSection
+				guruId={selectedGuruId}
+				guruName={activeGuruName}
+			/>
 
 			{/* --- Dialog untuk Ganti Ruang --- */}
 			<Dialog open={isGantiRuangOpen} onOpenChange={setIsGantiRuangOpen}>

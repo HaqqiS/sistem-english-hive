@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	AlertTriangle,
 	BookOpen,
 	CalendarIcon,
 	Check,
@@ -191,21 +192,21 @@ export default function StokBukuClient() {
 						{ nama: string; items: NonNullable<typeof stokBukuList> }
 					>();
 					for (const stok of stokBukuList ?? []) {
-						const key = stok.jenisKelas.id;
+						const key = stok.jenisKelas.nama.trim().toLowerCase();
 						if (!groups.has(key)) {
 							groups.set(key, { nama: stok.jenisKelas.nama, items: [] });
 						}
 						groups.get(key)?.items.push(stok);
 					}
 
-					return Array.from(groups.entries()).map(([jenisKelasId], idx) => {
-						const group = groups.get(jenisKelasId);
+					return Array.from(groups.entries()).map(([groupKey], idx) => {
+						const group = groups.get(groupKey);
 						if (!group) return null;
 						const colorClass = palette[idx % palette.length];
 
 						return (
 							<div
-								key={jenisKelasId}
+								key={groupKey}
 								className={cn("space-y-3 rounded-xl border p-4", colorClass)}
 							>
 								<div className="flex items-center gap-2">
@@ -217,142 +218,167 @@ export default function StokBukuClient() {
 								</div>
 
 								<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-									{group.items.map((stok) => {
-										const total = stok.penerimaBukus.length;
-										const ready = stok.penerimaBukus.filter(
-											(p) => p.statusOrder === "READY",
-										).length;
-										const diorder = stok.penerimaBukus.filter(
-											(p) => p.statusOrder === "DIORDER",
-										).length;
-										const diambil = stok.penerimaBukus.filter(
-											(p) =>
-												p.statusOrder === "READY" &&
-												p.status === "SUDAH_DIAMBIL",
-										).length;
-										const isEditing = editingStok?.id === stok.id;
+									{group.items
+										.slice()
+										.sort((a, b) => a.level - b.level)
+										.map((stok) => {
+											const total = stok.penerimaBukus.length;
+											const ready = stok.penerimaBukus.filter(
+												(p) => p.statusOrder === "READY",
+											).length;
+											const diorder = stok.penerimaBukus.filter(
+												(p) => p.statusOrder === "DIORDER",
+											).length;
+											const diambil = stok.penerimaBukus.filter(
+												(p) =>
+													p.statusOrder === "READY" &&
+													p.status === "SUDAH_DIAMBIL",
+											).length;
+											const dibutuhkan = diorder + ready;
+											const kurang = dibutuhkan > stok.jumlahStok;
+											const isEditing = editingStok?.id === stok.id;
 
-										return (
-											<Card key={stok.id} className="bg-background">
-												<CardHeader className="pb-3">
-													<div className="flex items-start justify-between gap-2">
-														<div>
-															<CardTitle className="text-base">
-																Level {stok.level}
-															</CardTitle>
-															<CardDescription className="text-xs">
-																{stok.cabang.namaCabang}
-															</CardDescription>
-														</div>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="text-destructive h-7 w-7 shrink-0"
-															onClick={() =>
-																setDeleteTarget({
-																	id: stok.id,
-																	nama: `${stok.jenisKelas.nama} Lv.${stok.level}`,
-																})
-															}
-														>
-															<Trash2 className="h-3.5 w-3.5" />
-														</Button>
-													</div>
-												</CardHeader>
-
-												<CardContent className="space-y-3">
-													{/* Jumlah Stok */}
-													<div className="flex items-center justify-between rounded-md border p-3">
-														<span className="text-muted-foreground text-xs font-medium">
-															Stok Tersedia
-														</span>
-														{isEditing ? (
-															<div className="flex items-center gap-1.5">
-																<Input
-																	type="number"
-																	min={0}
-																	value={editingStok.jumlah}
-																	onChange={(e) =>
-																		setEditingStok({
-																			id: stok.id,
-																			jumlah: Number(e.target.value) || 0,
-																		})
-																	}
-																	className="h-7 w-20 text-sm"
-																/>
-																<Button
-																	size="sm"
-																	className="h-7"
-																	onClick={() =>
-																		updateJumlah.mutate({
-																			stokBukuId: editingStok.id,
-																			jumlahStok: editingStok.jumlah,
-																		})
-																	}
-																	disabled={updateJumlah.isPending}
-																>
-																	{updateJumlah.isPending ? (
-																		<Loader2 className="h-3 w-3 animate-spin" />
-																	) : (
-																		"Simpan"
-																	)}
-																</Button>
+											return (
+												<Card key={stok.id} className="bg-background">
+													<CardHeader className="pb-3">
+														<div className="flex items-start justify-between gap-2">
+															<div>
+																<CardTitle className="text-base">
+																	Level {stok.level}
+																</CardTitle>
+																<CardDescription className="text-xs">
+																	{stok.cabang.namaCabang}
+																</CardDescription>
 															</div>
-														) : (
-															<button
-																type="button"
+															<Button
+																variant="ghost"
+																size="icon"
+																className="text-destructive h-7 w-7 shrink-0"
 																onClick={() =>
-																	setEditingStok({
+																	setDeleteTarget({
 																		id: stok.id,
-																		jumlah: stok.jumlahStok,
+																		nama: `${stok.jenisKelas.nama} Lv.${stok.level}`,
 																	})
 																}
-																className="text-sm font-bold hover:underline"
 															>
-																{stok.jumlahStok} buku
-															</button>
+																<Trash2 className="h-3.5 w-3.5" />
+															</Button>
+														</div>
+													</CardHeader>
+
+													<CardContent className="space-y-3">
+														{/* Jumlah Stok */}
+														<div
+															className={cn(
+																"flex items-center justify-between rounded-md border p-3",
+																kurang &&
+																	"border-destructive/50 bg-destructive/5",
+															)}
+														>
+															<span className="text-muted-foreground text-xs font-medium">
+																Stok Tersedia
+															</span>
+															{isEditing ? (
+																<div className="flex items-center gap-1.5">
+																	<Input
+																		type="number"
+																		min={0}
+																		value={editingStok.jumlah}
+																		onChange={(e) =>
+																			setEditingStok({
+																				id: stok.id,
+																				jumlah: Number(e.target.value) || 0,
+																			})
+																		}
+																		className="h-7 w-20 text-sm"
+																	/>
+																	<Button
+																		size="sm"
+																		className="h-7"
+																		onClick={() =>
+																			updateJumlah.mutate({
+																				stokBukuId: editingStok.id,
+																				jumlahStok: editingStok.jumlah,
+																			})
+																		}
+																		disabled={updateJumlah.isPending}
+																	>
+																		{updateJumlah.isPending ? (
+																			<Loader2 className="h-3 w-3 animate-spin" />
+																		) : (
+																			"Simpan"
+																		)}
+																	</Button>
+																</div>
+															) : (
+																<button
+																	type="button"
+																	onClick={() =>
+																		setEditingStok({
+																			id: stok.id,
+																			jumlah: stok.jumlahStok,
+																		})
+																	}
+																	className={cn(
+																		"text-sm font-bold hover:underline",
+																		kurang && "text-destructive",
+																	)}
+																>
+																	{stok.jumlahStok} buku
+																</button>
+															)}
+														</div>
+
+														{/* Warning kalau stok kurang dari total order + ready */}
+														{kurang && (
+															<div className="border-destructive/40 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border p-2.5 text-xs">
+																<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+																<span>
+																	Stok kurang {dibutuhkan - stok.jumlahStok},
+																	stok cuma {stok.jumlahStok}.
+																</span>
+															</div>
 														)}
-													</div>
 
-													{/* Ringkasan penerima */}
-													<div className="grid grid-cols-2 gap-2 text-xs">
-														<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
-															<span className="text-muted-foreground">
-																Order
-															</span>
-															<span className="font-bold">{diorder}</span>
+														{/* Ringkasan penerima */}
+														<div className="grid grid-cols-2 gap-2 text-xs">
+															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+																<span className="text-muted-foreground">
+																	Order
+																</span>
+																<span className="font-bold">{diorder}</span>
+															</div>
+															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+																<span className="text-muted-foreground">
+																	Ready
+																</span>
+																<span className="font-bold text-green-600">
+																	{ready}
+																</span>
+															</div>
+															<div className="col-span-2 bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+																<span className="text-muted-foreground flex items-center gap-1.5">
+																	<Users className="h-3.5 w-3.5" /> Diambil
+																</span>
+																<Badge variant="outline" className="text-xs">
+																	{diambil}/{total}
+																</Badge>
+															</div>
 														</div>
-														<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
-															<span className="text-muted-foreground">
-																Ready
-															</span>
-															<span className="font-bold text-green-600">
-																{ready}
-															</span>
-														</div>
-														<div className="col-span-2 bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
-															<span className="text-muted-foreground flex items-center gap-1.5">
-																<Users className="h-3.5 w-3.5" /> Diambil
-															</span>
-															<Badge variant="outline" className="text-xs">
-																{diambil}/{total}
-															</Badge>
-														</div>
-													</div>
 
-													<Button
-														variant="outline"
-														size="sm"
-														className="w-full"
-														onClick={() => setSiswaSheetId(stok.id)}
-													>
-														<UserPlus className="mr-2 h-3.5 w-3.5" />
-														Kelola Siswa Penerima
-													</Button>
-												</CardContent>
-											</Card>
-										);
-									})}
+														<Button
+															variant="outline"
+															size="sm"
+															className="w-full"
+															onClick={() => setSiswaSheetId(stok.id)}
+														>
+															<UserPlus className="mr-2 h-3.5 w-3.5" />
+															Kelola Siswa Penerima
+														</Button>
+													</CardContent>
+												</Card>
+											);
+										})}
 								</div>
 							</div>
 						);
@@ -395,11 +421,13 @@ export default function StokBukuClient() {
 									<SelectValue placeholder="Pilih level..." />
 								</SelectTrigger>
 								<SelectContent>
-									{["1", "2", "3", "4"].map((l) => (
-										<SelectItem key={l} value={l}>
-											Level {l}
-										</SelectItem>
-									))}
+									{Array.from({ length: 10 }, (_, i) => String(i + 1)).map(
+										(l) => (
+											<SelectItem key={l} value={l}>
+												Level {l}
+											</SelectItem>
+										),
+									)}
 								</SelectContent>
 							</Select>
 						</div>

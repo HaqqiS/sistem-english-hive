@@ -18,11 +18,18 @@ function formatDate(date: Date | string | null | undefined) {
 	});
 }
 
-export function PengambilanBukuSection() {
+export function PengambilanBukuSection({
+	guruId,
+	guruName,
+}: {
+	/** Kalau diisi, sedang dalam Mode Guru Pengganti: tampilkan & ambilkan buku atas nama guru ini */
+	guruId?: string;
+	guruName?: string;
+}) {
 	const utils = api.useUtils();
 
 	const { data: penerimaList, isLoading } =
-		api.stokBuku.getPenerimaForGuru.useQuery();
+		api.stokBuku.getPenerimaForGuru.useQuery({ guruId });
 
 	const updateStatus = api.stokBuku.updateStatusPenerima.useMutation({
 		onSuccess: async () => {
@@ -60,7 +67,9 @@ export function PengambilanBukuSection() {
 				<div>
 					<h2 className="text-lg font-bold">Order Buku</h2>
 					<p className="text-muted-foreground text-sm">
-						Daftar buku untuk siswa di kelas Anda.
+						{guruId
+							? `Daftar buku untuk siswa di kelas ${guruName ?? "guru ini"}.`
+							: "Daftar buku untuk siswa di kelas Anda."}
 					</p>
 				</div>
 			</div>
@@ -151,6 +160,7 @@ export function PengambilanBukuSection() {
 															updateStatus.mutate({
 																penerimaBukuId: p.id,
 																status: "SUDAH_DIAMBIL",
+																onBehalfOfGuruId: guruId,
 															});
 														}}
 														disabled={updateStatus.isPending}
@@ -171,10 +181,15 @@ export function PengambilanBukuSection() {
 											</div>
 										</div>
 
-										{/* Tanggal ready */}
+										{/* Tanggal ready & tanggal diambil */}
 										{isReady && p.tanggalReady && (
 											<p className="text-xs text-muted-foreground">
 												Ready sejak: {formatDate(p.tanggalReady)}
+											</p>
+										)}
+										{sudahDiambil && p.tanggalAmbil && (
+											<p className="text-xs text-green-700 dark:text-green-500">
+												Diambil pada: {formatDate(p.tanggalAmbil)}
 											</p>
 										)}
 									</div>

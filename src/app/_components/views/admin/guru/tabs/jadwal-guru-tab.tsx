@@ -2,19 +2,13 @@
 
 import { StatusKelas } from "@prisma/client";
 import dayjs from "dayjs";
-import { AlertCircle, Download } from "lucide-react";
+import { AlertCircle, Download, User } from "lucide-react";
 import { useMemo } from "react";
 import { utils, writeFile } from "xlsx";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 import { formatStatus } from "@/utils/statusUtils";
@@ -154,6 +148,35 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 		});
 	}, [data]);
 
+	// Warna per jam mulai (bukan per jam selesai) — supaya slot dengan jam
+	// mulai yang sama terlihat sekelompok meski jam selesainya beda-beda.
+	const timeColorMap = useMemo(() => {
+		const palette = [
+			"bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300",
+			"bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300",
+			"bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300",
+			"bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300",
+			"bg-pink-50 dark:bg-pink-950 text-pink-700 dark:text-pink-300",
+			"bg-cyan-50 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300",
+			"bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300",
+			"bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300",
+		];
+
+		const uniqueStarts = Array.from(
+			new Set(
+				processedData.flatMap((item) =>
+					item.rows.map((row) => row.slot.jamMulai),
+				),
+			),
+		).sort();
+
+		const map = new Map<string, string>();
+		uniqueStarts.forEach((jamMulai, idx) => {
+			map.set(jamMulai, palette[idx % palette.length] ?? "");
+		});
+		return map;
+	}, [processedData]);
+
 	const handleExportExcel = () => {
 		if (processedData.length === 0) return;
 
@@ -235,88 +258,128 @@ export default function JadwalGuruTab({ cabangId }: JadwalGuruTabProps) {
 				<h2 className="text-lg font-semibold tracking-tight">
 					Grid Jadwal Guru
 				</h2>
+				<span className="text-muted-foreground text-xs">
+					{processedData.length} guru
+				</span>
 			</div>
 
-			<div className="rounded-md border bg-background overflow-auto h-[calc(100vh-250px)] relative">
-				<table className="w-full caption-bottom text-sm">
-					<TableHeader className="sticky top-0 z-40 bg-muted shadow-sm">
-						<TableRow className="hover:bg-muted">
-							<TableHead className="w-[150px] border-r bg-muted sticky top-0 left-0 z-50">
-								Nama Guru
-							</TableHead>
-							<TableHead className="w-[120px] border-r border-dotted bg-muted sticky top-0 left-[150px] z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
-								Jam
-							</TableHead>
-							{DAYS.map((day) => (
-								<TableHead
-									key={day}
-									className="text-center border-r last:border-r-0 bg-muted sticky top-0 z-40"
-								>
-									{day}
-								</TableHead>
-							))}
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{processedData.map((item) =>
-							item.rows.map((row, index) => (
-								<TableRow key={item.guru.id}>
-									{/* Guru Name Column - Merged */}
-									{index === 0 && (
-										<TableCell
-											rowSpan={item.rows.length}
-											className="font-medium border-r sticky top-[41px] left-0 z-30 bg-background/95 align-top p-0 min-w-[150px]"
-										>
-											<div className="p-4 sticky top-[41px] left-0">
-												{item.guru.name}
-											</div>
-										</TableCell>
-									)}
+			{processedData.length === 0 ? (
+				<div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
+					Tidak ada data jadwal.
+				</div>
+			) : (
+				<div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+					{processedData.map((item) => {
+						const jumlahKelas = item.rows.reduce(
+							(sum, row) => sum + row.cells.filter(Boolean).length,
+							0,
+						);
+						return (
+							<div
+								key={item.guru.id}
+								className="bg-background overflow-hidden rounded-lg border shadow-sm"
+							>
+								{/* Header per guru */}
+								<div className="bg-muted/40 flex items-center gap-2.5 border-b px-3 py-2">
+									<div className="bg-primary/10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full">
+										<User className="text-primary h-3.5 w-3.5" />
+									</div>
+									<span className="truncate text-sm font-semibold">
+										{item.guru.name ?? "Tanpa nama"}
+									</span>
+									<Badge
+										variant="secondary"
+										className="ml-auto shrink-0 text-[10px]"
+									>
+										{jumlahKelas} kelas
+									</Badge>
+								</div>
 
-									{/* Time Slot */}
-									<TableCell className="text-sm text-muted-foreground border-r border-dotted font-mono whitespace-nowrap sticky left-[150px] z-20 bg-background shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
-										{row.slot.jamMulai} - {row.slot.jamSelesai}
-									</TableCell>
-
-									{row.cells.map((cellContent, dayIdx) => (
-										<TableCell
-											key={DAYS[dayIdx]}
-											className="p-2 border-r last:border-r-0 text-center"
-										>
-											{cellContent ? (
-												<div
-													className={cn(
-														"flex min-w-[120px] flex-col gap-0.5 rounded-sm border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-all hover:shadow-md",
-														getJadwalGuruStatusTheme(
-															cellContent.status as StatusKelas,
-														),
-													)}
-												>
-													<span className="font-bold tracking-tight">
-														{cellContent.kodeKelas}
-													</span>
-													<span className="text-[10px] font-medium opacity-80">
-														{formatStatus(cellContent.status as StatusKelas)}
-													</span>
-												</div>
+								{/* Tabel compact per guru */}
+								<div className="overflow-x-auto">
+									<table className="w-full border-collapse text-xs">
+										<thead>
+											<tr className="bg-muted/20">
+												<th className="bg-muted/40 text-muted-foreground sticky left-0 z-10 border-r border-b px-2 py-1.5 text-left font-medium whitespace-nowrap">
+													Jam
+												</th>
+												{DAYS.map((day) => (
+													<th
+														key={day}
+														className="text-muted-foreground min-w-[74px] border-r border-b px-1 py-1.5 text-center font-medium last:border-r-0"
+													>
+														{day.slice(0, 3)}
+													</th>
+												))}
+											</tr>
+										</thead>
+										<tbody>
+											{item.rows.length === 0 ? (
+												<tr>
+													<td
+														colSpan={DAYS.length + 1}
+														className="text-muted-foreground p-3 text-center text-xs"
+													>
+														Belum ada jam mengajar
+													</td>
+												</tr>
 											) : (
-												<span className="text-muted-foreground/20">-</span>
+												item.rows.map((row) => {
+													const timeColor =
+														timeColorMap.get(row.slot.jamMulai) ?? "";
+													return (
+														<tr
+															key={`${row.slot.jamMulai}-${row.slot.jamSelesai}`}
+														>
+															<td
+																className={cn(
+																	"sticky left-0 z-10 border-r border-b px-2 py-1 font-mono font-semibold whitespace-nowrap",
+																	timeColor ||
+																		"bg-background text-muted-foreground",
+																)}
+															>
+																{row.slot.jamMulai}-{row.slot.jamSelesai}
+															</td>
+															{row.cells.map((cellContent, dayIdx) => (
+																<td
+																	key={DAYS[dayIdx]}
+																	className="border-r border-b p-1 text-center last:border-r-0"
+																>
+																	{cellContent ? (
+																		<div
+																			className={cn(
+																				"flex flex-col gap-0 rounded border-l-2 px-1.5 py-1 text-left leading-tight",
+																				getJadwalGuruStatusTheme(
+																					cellContent.status as StatusKelas,
+																				),
+																			)}
+																			title={formatStatus(
+																				cellContent.status as StatusKelas,
+																			)}
+																		>
+																			<span className="truncate text-[11px] font-bold">
+																				{cellContent.kodeKelas}
+																			</span>
+																		</div>
+																	) : (
+																		<span className="text-muted-foreground/20">
+																			-
+																		</span>
+																	)}
+																</td>
+															))}
+														</tr>
+													);
+												})
 											)}
-										</TableCell>
-									))}
-								</TableRow>
-							)),
-						)}
-						{processedData.length === 0 && (
-							<TableRow>
-								<TableCell colSpan={9} className="h-24 text-center">
-									Tidak ada data jadwal.
-								</TableCell>
-							</TableRow>
-						)}
-					</TableBody>
-				</table>
-			</div>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			)}
 		</div>
 	);
 }

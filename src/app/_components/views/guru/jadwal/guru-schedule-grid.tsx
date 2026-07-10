@@ -334,7 +334,7 @@ export default function GuruScheduleGrid() {
 										{dataMatrix.rooms.map((room) => (
 											<th
 												key={room.id}
-												className="bg-background text-foreground min-w-[250px] border-r border-b p-3 font-semibold"
+												className="bg-background text-foreground min-w-[160px] border-r border-b p-2 text-sm font-semibold"
 											>
 												{room.namaRuang}
 											</th>
@@ -371,10 +371,10 @@ export default function GuruScheduleGrid() {
 													return (
 														<td
 															key={`${time}-${room.id}`}
-															className="h-auto min-h-40 w-[200px] max-w-[200px] min-w-[200px] border-r border-b p-2 align-top"
+															className="h-auto min-h-28 w-[160px] max-w-[160px] min-w-[160px] border-r border-b p-1.5 align-top"
 														>
 															{schedules.length > 0 ? (
-																<div className="flex flex-col gap-2">
+																<div className="flex flex-col gap-1.5">
 																	{schedules.map((schedule) => (
 																		<GuruScheduleCard
 																			key={schedule.id}
@@ -384,7 +384,7 @@ export default function GuruScheduleGrid() {
 																</div>
 															) : (
 																// Empty Cell
-																<div className="hover:border-muted-foreground/20 h-full w-full min-h-[140px] rounded-md border border-dashed border-transparent transition-colors" />
+																<div className="hover:border-muted-foreground/20 h-full w-full min-h-[100px] rounded-md border border-dashed border-transparent transition-colors" />
 															)}
 														</td>
 													);

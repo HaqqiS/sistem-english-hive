@@ -18,6 +18,11 @@ const teacherNavItems: NavItem[] = [
 		url: "/guru/jadwal",
 		icon: "CalendarDays",
 	},
+	{
+		title: "Grid Jadwal Guru",
+		url: "/guru/grid-jadwal",
+		icon: "LayoutGrid",
+	},
 	{ title: "Final Report", url: "/guru/final-report", icon: "FileText" },
 ];
 

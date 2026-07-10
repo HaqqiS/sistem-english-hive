@@ -228,10 +228,22 @@ export default function FinalReportForm() {
 		const speaking = Number(scores.speaking) || 0;
 		const reading = Number(scores.reading) || 0;
 		const writing = Number(scores.writing) || 0;
-		const total =
-			listening + speaking + reading + writing + projectParticipation;
-		return Number((total / 5).toFixed(1));
+
+		// Cuma hitung aspek yang memang dinilai sesuai reportType.
+		// 2-aspek: Listening & Speaking masing-masing 50% dari nilai skill.
+		// 4-aspek: Listening, Speaking, Reading, Writing masing-masing 25%.
+		const skillScores =
+			reportType === "2-aspek"
+				? [listening, speaking]
+				: [listening, speaking, reading, writing];
+		const skillsAvg =
+			skillScores.reduce((sum, s) => sum + s, 0) / skillScores.length;
+
+		// Nilai skill (rata-rata aspek terpilih) digabung 50/50 dengan
+		// project participation (recording + kehadiran).
+		return Number(((skillsAvg + projectParticipation) / 2).toFixed(1));
 	}, [
+		reportType,
 		scores.listening,
 		scores.speaking,
 		scores.reading,
@@ -557,8 +569,8 @@ export default function FinalReportForm() {
 							</div>
 							<p className="text-muted-foreground mt-2 text-xs">
 								{reportType === "4-aspek"
-									? "Listening + Speaking + Reading + Writing"
-									: "Listening + Speaking"}
+									? "Listening + Speaking + Reading + Writing (masing-masing 25% dari nilai skill)"
+									: "Listening + Speaking (masing-masing 50% dari nilai skill)"}
 							</p>
 						</CardContent>
 					</Card>

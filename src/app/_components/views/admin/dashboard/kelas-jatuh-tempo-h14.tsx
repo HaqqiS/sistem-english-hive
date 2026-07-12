@@ -219,6 +219,10 @@ export default function KelasJatuhTempoH14() {
 																s.namaLengkap,
 																kelas.kodeKelas,
 																waItems,
+																undefined,
+																undefined,
+																undefined,
+																s.tenggatTerdekat,
 															)
 														: "";
 												const waLink =
@@ -228,6 +232,10 @@ export default function KelasJatuhTempoH14() {
 																s.namaLengkap,
 																kelas.kodeKelas,
 																waItems,
+																undefined,
+																undefined,
+																undefined,
+																s.tenggatTerdekat,
 															)
 														: "#";
 

@@ -52,7 +52,7 @@ export const formatWhatsAppReminder = (
 	// Template Pesan
 	const text = `Kepada Yth. Bapak/Ibu orang tua/wali murid *English Hive*.\n\nKami ingin mengingatkan tagihan ${tipe} untuk:\nNama: *${namaMurid}*\nKelas: *${kelas}*\nNominal: *${toRupiah(
 		jumlah,
-	)}*\nJatuh Tempo: *${jatuhTempo ? formatDateWITA(jatuhTempo) : "-"}*\n\n${infoText ? `${infoText}\n\n` : ""}Berikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
+	)}*\nJatuh Tempo: *${jatuhTempo ? formatDateWITA(jatuhTempo) : "-"}*\n\n${infoText ? `${infoText}\n\n` : ""}Berikut detail rekening untuk pembayarannya :\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
 
 	const encodedText = encodeURIComponent(text);
 
@@ -78,13 +78,19 @@ export const buildTeksReminderGabungan = (
 	noRekening?: string | null,
 	bank?: string | null,
 	atasNama?: string | null,
+	tenggatPembayaran?: Date | null,
 ) => {
 	const total = items.reduce((sum, item) => sum + item.jumlah, 0);
 
-	const nearestJatuhTempo = items
-		.map((item) => item.jatuhTempo)
-		.filter((d): d is Date => !!d)
-		.sort((a, b) => a.getTime() - b.getTime())[0];
+	// Tenggat yang ditampilkan: pakai yang di-set eksplisit (mis. tenggat SPP
+	// terdekat) kalau ada, kalau tidak ambil dari tanggal jatuh tempo termuda
+	// di antara item-item tagihan.
+	const nearestJatuhTempo =
+		tenggatPembayaran ??
+		items
+			.map((item) => item.jatuhTempo)
+			.filter((d): d is Date => !!d)
+			.sort((a, b) => a.getTime() - b.getTime())[0];
 
 	const rincian = items
 		.map((item, index) => {
@@ -97,7 +103,7 @@ export const buildTeksReminderGabungan = (
 
 	return `Kepada Yth. Bapak/Ibu orang tua/wali murid *English Hive*.\n\nKami ingin mengingatkan tagihan untuk:\nNama: *${namaMurid}*\nKelas: *${kodeKelas}*\n\nRincian tagihan:\n${rincian}\n\n*Total Tagihan: ${toRupiah(
 		total,
-	)}*${nearestJatuhTempo ? `\nJatuh Tempo Terdekat: *${formatDateWITA(nearestJatuhTempo)}*` : ""}\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
+	)}*${nearestJatuhTempo ? `\nTenggat Pembayaran: *${formatDateWITA(nearestJatuhTempo)}*` : ""}\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
 };
 
 /**
@@ -112,6 +118,7 @@ export const formatWhatsAppReminderGabungan = (
 	noRekening?: string | null,
 	bank?: string | null,
 	atasNama?: string | null,
+	tenggatPembayaran?: Date | null,
 ) => {
 	if (!noWA) return "#";
 	if (items.length === 0) return "#";
@@ -128,6 +135,7 @@ export const formatWhatsAppReminderGabungan = (
 		noRekening,
 		bank,
 		atasNama,
+		tenggatPembayaran,
 	);
 
 	const encodedText = encodeURIComponent(text);

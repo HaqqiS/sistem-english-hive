@@ -206,6 +206,7 @@ export default function RingkasanTagihanKelas({
 										data.kelas.noRekening,
 										data.kelas.bank,
 										data.kelas.atasNama,
+										murid.tenggatTerdekat,
 									)
 								: "";
 						const waLink =
@@ -218,6 +219,7 @@ export default function RingkasanTagihanKelas({
 										data.kelas.noRekening,
 										data.kelas.bank,
 										data.kelas.atasNama,
+										murid.tenggatTerdekat,
 									)
 								: "#";
 

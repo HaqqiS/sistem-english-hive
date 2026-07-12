@@ -553,6 +553,7 @@ export const dashboardRouter = createTRPCRouter({
 						id: true,
 						jumlahBayar: true,
 						pembayaranKe: true,
+						sudahDiingatkan: true,
 						pendaftaranKelas: { select: { kelasId: true, muridId: true } },
 					},
 				}),
@@ -571,6 +572,7 @@ export const dashboardRouter = createTRPCRouter({
 						kelasId: true,
 						muridId: true,
 						kategori: true,
+						sudahDiingatkan: true,
 					},
 				}),
 			]);
@@ -580,6 +582,7 @@ export const dashboardRouter = createTRPCRouter({
 				jenis: "SPP" | "BUKU" | "REGISTRASI";
 				label: string;
 				jumlah: number;
+				sudahDiingatkan: boolean;
 			};
 			const semuaTagihanMap = new Map<string, SemuaTagihanItem[]>(); // key: kelasId::muridId
 
@@ -591,6 +594,7 @@ export const dashboardRouter = createTRPCRouter({
 					jenis: "SPP",
 					label: `SPP Ke-${p.pembayaranKe}`,
 					jumlah: p.jumlahBayar,
+					sudahDiingatkan: p.sudahDiingatkan,
 				});
 				semuaTagihanMap.set(key, list);
 			}
@@ -603,6 +607,7 @@ export const dashboardRouter = createTRPCRouter({
 					jenis: t.kategori === "BUKU" ? "BUKU" : "REGISTRASI",
 					label: t.judul,
 					jumlah: t.jumlah,
+					sudahDiingatkan: t.sudahDiingatkan,
 				});
 				semuaTagihanMap.set(key, list);
 			}

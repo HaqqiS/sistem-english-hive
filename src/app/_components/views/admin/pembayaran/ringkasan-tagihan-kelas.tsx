@@ -34,6 +34,7 @@ import {
 } from "@/utils/noWAUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import SalinTeksButton from "./salin-teks-button";
+import StatusDiingatkanBadge from "./status-diingatkan-badge";
 import TambahTagihanCepat from "./tambah-tagihan-cepat";
 
 interface RingkasanTagihanKelasProps {
@@ -157,35 +158,41 @@ export default function RingkasanTagihanKelas({
 							...murid.spp
 								.filter((s) => s.statusBayar !== StatusPembayaran.LUNAS)
 								.map((s) => (
-									<Badge
+									<StatusDiingatkanBadge
 										key={`spp-${s.id}`}
-										variant="outline"
-										className="border-orange-300 text-orange-700"
-									>
-										{s.label}: {toRupiah(s.jumlahBayar)}
-									</Badge>
+										id={s.id}
+										jenis="SPP"
+										label={s.label}
+										jumlah={s.jumlahBayar}
+										sudahDiingatkan={s.sudahDiingatkan}
+										onToggled={invalidateAll}
+									/>
 								)),
 							...murid.buku
 								.filter((b) => b.status !== StatusPembayaran.LUNAS)
 								.map((b) => (
-									<Badge
+									<StatusDiingatkanBadge
 										key={`buku-${b.id}`}
-										variant="outline"
-										className="border-blue-300 text-blue-700"
-									>
-										{b.label}: {toRupiah(b.jumlah)}
-									</Badge>
+										id={b.id}
+										jenis="BUKU"
+										label={b.label}
+										jumlah={b.jumlah}
+										sudahDiingatkan={b.sudahDiingatkan}
+										onToggled={invalidateAll}
+									/>
 								)),
 							...murid.registrasi
 								.filter((r) => r.status !== StatusPembayaran.LUNAS)
 								.map((r) => (
-									<Badge
+									<StatusDiingatkanBadge
 										key={`reg-${r.id}`}
-										variant="outline"
-										className="border-purple-300 text-purple-700"
-									>
-										{r.label}: {toRupiah(r.jumlah)}
-									</Badge>
+										id={r.id}
+										jenis="REGISTRASI"
+										label={r.label}
+										jumlah={r.jumlah}
+										sudahDiingatkan={r.sudahDiingatkan}
+										onToggled={invalidateAll}
+									/>
 								)),
 						];
 

@@ -233,6 +233,37 @@ export const tagihanLainRouter = createTRPCRouter({
 			});
 		}),
 
+	// Tandai status "sudah diingatkan" / "belum diingatkan" via WA (per tagihan)
+	toggleDiingatkan: cabangProtectedProcedure
+		.input(z.object({ id: z.string(), value: z.boolean() }))
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const existing = await db.tagihanLain.findUnique({
+				where: { id: input.id },
+				include: { murid: { select: { cabangId: true } } },
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Tagihan tidak ditemukan",
+				});
+			}
+
+			if (allowedCabangId && existing.murid.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak mengubah data cabang lain",
+				});
+			}
+
+			return db.tagihanLain.update({
+				where: { id: input.id },
+				data: { sudahDiingatkan: input.value },
+			});
+		}),
+
 	// 4. Update (Edit)
 	update: cabangProtectedProcedure
 		.input(updateTagihanLainSchema)

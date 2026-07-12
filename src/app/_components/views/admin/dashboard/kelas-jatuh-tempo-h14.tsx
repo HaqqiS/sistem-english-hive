@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import SalinTeksButton from "@/app/_components/views/admin/pembayaran/salin-teks-button";
+import StatusDiingatkanBadge from "@/app/_components/views/admin/pembayaran/status-diingatkan-badge";
 import TambahTagihanCepat from "@/app/_components/views/admin/pembayaran/tambah-tagihan-cepat";
 import {
 	AlertDialog,
@@ -49,12 +50,6 @@ import {
 	formatWhatsAppReminderGabungan,
 } from "@/utils/noWAUtils";
 import { toRupiah } from "@/utils/toRupiah";
-
-const JENIS_BADGE_CLASS: Record<string, string> = {
-	SPP: "border-orange-300 text-orange-700",
-	BUKU: "border-blue-300 text-blue-700",
-	REGISTRASI: "border-purple-300 text-purple-700",
-};
 
 export default function KelasJatuhTempoH14() {
 	const { activeCabangId } = useGlobalCabangStore();
@@ -244,13 +239,15 @@ export default function KelasJatuhTempoH14() {
 														<TableCell>
 															<div className="flex flex-nowrap gap-1 whitespace-nowrap">
 																{s.semuaTagihan.map((item) => (
-																	<Badge
+																	<StatusDiingatkanBadge
 																		key={item.id}
-																		variant="outline"
-																		className={JENIS_BADGE_CLASS[item.jenis]}
-																	>
-																		{item.label}: {toRupiah(item.jumlah)}
-																	</Badge>
+																		id={item.id}
+																		jenis={item.jenis}
+																		label={item.label}
+																		jumlah={item.jumlah}
+																		sudahDiingatkan={item.sudahDiingatkan}
+																		onToggled={invalidateAll}
+																	/>
 																))}
 															</div>
 														</TableCell>

@@ -376,6 +376,7 @@ model Pembayaran {
   statusBayar        StatusPembayaran @default(BELUM_LUNAS)
   note               String?
   verifiedById       String?
+  sudahDiingatkan    Boolean          @default(false)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   pendaftaranKelas   PendaftaranKelas @relation(fields: [pendaftaranKelasId], references: [id], onDelete: Cascade)
@@ -389,21 +390,22 @@ model Pembayaran {
 }
 
 model TagihanLain {
-  id           String           @id @default(cuid())
-  muridId      String
-  kategori     KategoriTagihan
-  judul        String
-  deskripsi    String?
-  jumlah       Int
-  status       StatusPembayaran @default(BELUM_LUNAS)
-  kelasId      String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  tanggalBayar DateTime?
-  verifiedById String?
-  kelas        Kelas?           @relation(fields: [kelasId], references: [id])
-  murid        Murid            @relation(fields: [muridId], references: [id], onDelete: Cascade)
-  verifiedBy   User?            @relation(fields: [verifiedById], references: [id])
+  id              String           @id @default(cuid())
+  muridId         String
+  kategori        KategoriTagihan
+  judul           String
+  deskripsi       String?
+  jumlah          Int
+  status          StatusPembayaran @default(BELUM_LUNAS)
+  kelasId         String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  tanggalBayar    DateTime?
+  verifiedById    String?
+  sudahDiingatkan Boolean          @default(false)
+  kelas           Kelas?           @relation(fields: [kelasId], references: [id])
+  murid           Murid            @relation(fields: [muridId], references: [id], onDelete: Cascade)
+  verifiedBy      User?            @relation(fields: [verifiedById], references: [id])
 
   @@index([muridId])
   @@index([kelasId])

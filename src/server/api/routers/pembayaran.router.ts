@@ -481,6 +481,42 @@ export const pembayaranRouter = createTRPCRouter({
 			}
 		}),
 
+	// Tandai status "sudah diingatkan" / "belum diingatkan" via WA (per tagihan SPP)
+	toggleDiingatkan: cabangProtectedProcedure
+		.input(z.object({ id: z.string(), value: z.boolean() }))
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const existingPayment = await db.pembayaran.findUnique({
+				where: { id: input.id },
+				include: {
+					pendaftaranKelas: {
+						include: { Kelas: { select: { cabangId: true } } },
+					},
+				},
+			});
+
+			if (!existingPayment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Data pembayaran tidak ditemukan.",
+				});
+			}
+
+			const paymentCabangId = existingPayment.pendaftaranKelas.Kelas.cabangId;
+			if (allowedCabangId && paymentCabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak mengedit pembayaran dari cabang lain.",
+				});
+			}
+
+			return db.pembayaran.update({
+				where: { id: input.id },
+				data: { sudahDiingatkan: input.value },
+			});
+		}),
+
 	// 5. [BARU] CREATE TAGIHAN MANUAL
 	// Jika admin perlu membuat tagihan di luar siklus otomatis
 	createManualTagihan: cabangProtectedProcedure
@@ -690,18 +726,21 @@ export const pembayaranRouter = createTRPCRouter({
 					statusBayar: StatusPembayaran;
 					tanggalJatuhTempo: Date;
 					pembayaranKe: number;
+					sudahDiingatkan: boolean;
 				}[];
 				buku: {
 					id: string;
 					label: string;
 					jumlah: number;
 					status: StatusPembayaran;
+					sudahDiingatkan: boolean;
 				}[];
 				registrasi: {
 					id: string;
 					label: string;
 					jumlah: number;
 					status: StatusPembayaran;
+					sudahDiingatkan: boolean;
 				}[];
 			};
 
@@ -736,6 +775,7 @@ export const pembayaranRouter = createTRPCRouter({
 					statusBayar: p.statusBayar,
 					tanggalJatuhTempo: p.tanggalJatuhTempo,
 					pembayaranKe: p.pembayaranKe,
+					sudahDiingatkan: p.sudahDiingatkan,
 				});
 			}
 
@@ -750,6 +790,7 @@ export const pembayaranRouter = createTRPCRouter({
 					label: t.judul,
 					jumlah: t.jumlah,
 					status: t.status,
+					sudahDiingatkan: t.sudahDiingatkan,
 				};
 				if (t.kategori === "BUKU") {
 					entry.buku.push(item);

@@ -135,6 +135,7 @@ describe("calculateSisaPertemuan (Hybrid Billing Logic)", () => {
 					note: null,
 					tanggalBayar: new Date(),
 					imageUrl: null,
+					sudahDiingatkan: false,
 				});
 			}
 

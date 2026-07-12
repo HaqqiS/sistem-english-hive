@@ -668,8 +668,12 @@ export const dashboardRouter = createTRPCRouter({
 				);
 			}
 
-			return Array.from(kelasMap.values()).sort((a, b) =>
-				a.kodeKelas.localeCompare(b.kodeKelas),
-			);
+			// Urutkan kelas berdasarkan tenggat TERDEKAT (paling mendesak di atas,
+			// paling lama/jauh di bawah) — bukan abjad kode kelas.
+			return Array.from(kelasMap.values()).sort((a, b) => {
+				const tenggatA = a.siswa[0]?.tenggatTerdekat.getTime() ?? Infinity;
+				const tenggatB = b.siswa[0]?.tenggatTerdekat.getTime() ?? Infinity;
+				return tenggatA - tenggatB;
+			});
 		}),
 });

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import PembayaranClient from "@/app/_components/views/admin/pembayaran/pembayaran-client";
 import { api, HydrateClient } from "@/trpc/server";
 
@@ -24,7 +25,9 @@ export default async function PembayaranPage() {
 		<div className="flex flex-1 flex-col gap-4 p-4">
 			<main className="flex flex-1 flex-col gap-4 pt-0">
 				<HydrateClient>
-					<PembayaranClient />
+					<Suspense fallback={null}>
+						<PembayaranClient />
+					</Suspense>
 				</HydrateClient>
 			</main>
 		</div>

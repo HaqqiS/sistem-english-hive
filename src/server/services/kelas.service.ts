@@ -39,7 +39,7 @@ export const handleAutoLevelUp = async ({
 		include: { jenisKelasRel: { include: { nextLevel: true } } },
 	});
 
-	if (!currentClass || !currentClass.jenisKelasRel) {
+	if (!currentClass?.jenisKelasRel) {
 		console.error("Data kelas atau Master JenisKelas tidak ditemukan.");
 		return null;
 	}
@@ -170,17 +170,6 @@ export const handleAutoLevelUp = async ({
 	const estimasiMulai = dayjs().add(2, "week").toDate();
 	const estimasiMulaiString = dayjs(estimasiMulai).format("YYYY-MM-DD");
 
-	// Determine next class book price
-	const nextJenisKelasObject =
-		nextJenisKelasId === currentClass.jenisKelasRel.id
-			? currentClass.jenisKelasRel
-			: currentClass.jenisKelasRel.nextLevel;
-
-	// Fallback safely if something is wrong with relations, though logic above handles it
-	const hargaBuku = nextJenisKelasObject
-		? (nextJenisKelasObject.hargaBuku ?? 0)
-		: 0;
-
 	await Promise.all(
 		activeStudents.map(async (student) => {
 			const newReg = await tx.pendaftaranKelas.create({
@@ -204,20 +193,9 @@ export const handleAutoLevelUp = async ({
 				},
 			});
 
-			// 2. Tagihan Buku (Jika ada harganya)
-			if (hargaBuku > 0) {
-				await tx.tagihanLain.create({
-					data: {
-						muridId: student.muridId,
-						kategori: "BUKU",
-						judul: `Buku ${nextJenisKelasNama} Level ${nextLevel}`,
-						jumlah: hargaBuku,
-						status: StatusPembayaran.BELUM_LUNAS,
-						kelasId: newKelas.id,
-						deskripsi: "Belum Order",
-					},
-				});
-			}
+			// 2. Tagihan Buku TIDAK dibuat otomatis lagi.
+			// Admin menambahkan tagihan Buku secara manual lewat halaman
+			// "Pembayaran Kelas" di /admin/pembayaran?kelasId=...
 			// 3. Sync Status Murid
 			await syncMuridStatus(tx, student.muridId);
 		}),

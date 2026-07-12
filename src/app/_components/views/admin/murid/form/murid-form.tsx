@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
 	FormControl,
 	FormField,
@@ -73,8 +72,9 @@ const formTranslations = {
 		masukkanSumber: "Masukkan sumber informasi lain...",
 		catatanAdmin: "Catatan Admin (Internal)",
 		masukkanCatatan: "Catatan khusus mengenai murid ini...",
-		biayaPendaftaran: "Kenakan Biaya Pendaftaran (Rp 50.000)",
-		deskripsiBiaya: "Jika dicentang, tagihan pendaftaran akan otomatis dibuat.",
+		biayaPendaftaran: "Biaya Pendaftaran & Buku",
+		deskripsiBiaya:
+			"Tagihan biaya pendaftaran dan buku kini dikelola manual per kelas di halaman Pembayaran Kelas, tidak lagi dibuat otomatis di sini.",
 		kirim: "Kirim Pendaftaran",
 		mengirim: "Mengirim...",
 	},
@@ -111,8 +111,9 @@ const formTranslations = {
 		masukkanSumber: "Enter other information source...",
 		catatanAdmin: "Admin Notes (Internal)",
 		masukkanCatatan: "Specific notes for this student...",
-		biayaPendaftaran: "Apply Registration Fee (Rp 50,000)",
-		deskripsiBiaya: "If checked, a registration bill will be created.",
+		biayaPendaftaran: "Registration & Book Fee",
+		deskripsiBiaya:
+			"Registration and book bills are now managed manually per class on the Class Payment page, no longer created automatically here.",
 		kirim: "Submit Registration",
 		mengirim: "Submitting...",
 	},
@@ -534,28 +535,12 @@ export default function MuridForm({
 							/>
 
 							{!isEditMode && (
-								<FormField
-									control={form.control}
-									name="withRegistrationFee"
-									render={({ field }) => (
-										<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
-											<FormControl>
-												<Checkbox
-													checked={field.value}
-													onCheckedChange={field.onChange}
-												/>
-											</FormControl>
-											<div className="space-y-1 leading-none">
-												<FormLabel>
-													<span>{t.biayaPendaftaran}</span>
-												</FormLabel>
-												<p className="text-muted-foreground text-sm">
-													<span>{t.deskripsiBiaya}</span>
-												</p>
-											</div>
-										</FormItem>
-									)}
-								/>
+								<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+									<p className="font-medium text-foreground">
+										{t.biayaPendaftaran}
+									</p>
+									<p className="mt-1">{t.deskripsiBiaya}</p>
+								</div>
 							)}
 						</>
 					)}

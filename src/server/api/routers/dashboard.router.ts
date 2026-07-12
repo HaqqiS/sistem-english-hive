@@ -449,4 +449,222 @@ export const dashboardRouter = createTRPCRouter({
 
 			return finalResult;
 		}),
+
+	// KELAS DENGAN TAGIHAN SPP JATUH TEMPO H-14 (dikelompokkan per kelas)
+	getKelasJatuhTempoH14: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId ?? undefined;
+
+			const batasTempo = dayjs().add(14, "day").endOf("day").toDate();
+
+			// 1. Cari trigger: tagihan SPP yang jatuh tempo dalam 14 hari ke depan.
+			// Catatan: Buku & Registrasi (TagihanLain) tidak punya kolom tanggal
+			// jatuh tempo di database, jadi trigger H-14 berbasis tagihan SPP saja.
+			const tagihanSppTrigger = await db.pembayaran.findMany({
+				where: {
+					statusBayar: {
+						in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+					},
+					tanggalJatuhTempo: { lte: batasTempo },
+					pendaftaranKelas: filterCabangId
+						? { Kelas: { cabangId: filterCabangId } }
+						: undefined,
+				},
+				orderBy: { tanggalJatuhTempo: "asc" },
+				include: {
+					pendaftaranKelas: {
+						include: {
+							murid: { select: { id: true, namaLengkap: true, noWA: true } },
+							Kelas: { select: { id: true, kodeKelas: true } },
+						},
+					},
+				},
+			});
+
+			if (tagihanSppTrigger.length === 0) return [];
+
+			// Kumpulkan pasangan unik (kelasId, muridId) yang ter-trigger, plus
+			// tagihan SPP pemicunya (bisa lebih dari satu per siswa).
+			type TriggerItem = {
+				label: string;
+				jumlah: number;
+				tanggalJatuhTempo: Date;
+			};
+			const triggerMap = new Map<
+				string, // `${kelasId}::${muridId}`
+				{
+					kelasId: string;
+					kodeKelas: string;
+					muridId: string;
+					namaLengkap: string;
+					noWA: string;
+					triggers: TriggerItem[];
+				}
+			>();
+
+			for (const t of tagihanSppTrigger) {
+				const kelas = t.pendaftaranKelas.Kelas;
+				const murid = t.pendaftaranKelas.murid;
+				const key = `${kelas.id}::${murid.id}`;
+				const existing = triggerMap.get(key);
+				const triggerItem: TriggerItem = {
+					label: `SPP Ke-${t.pembayaranKe}`,
+					jumlah: t.jumlahBayar,
+					tanggalJatuhTempo: t.tanggalJatuhTempo,
+				};
+				if (existing) {
+					existing.triggers.push(triggerItem);
+				} else {
+					triggerMap.set(key, {
+						kelasId: kelas.id,
+						kodeKelas: kelas.kodeKelas,
+						muridId: murid.id,
+						namaLengkap: murid.namaLengkap,
+						noWA: murid.noWA,
+						triggers: [triggerItem],
+					});
+				}
+			}
+
+			const kelasIds = [
+				...new Set([...triggerMap.values()].map((t) => t.kelasId)),
+			];
+			const muridIds = [
+				...new Set([...triggerMap.values()].map((t) => t.muridId)),
+			];
+
+			// 2. Ambil SEMUA tagihan belum lunas (SPP + Buku + Registrasi) milik
+			// siswa-siswa yang ter-trigger, supaya pesan pengingat mengikuti tenggat
+			// SPP tapi tetap merangkum semua tagihan siswa tsb di kelas itu.
+			const [semuaSpp, semuaTagihanLain] = await Promise.all([
+				db.pembayaran.findMany({
+					where: {
+						statusBayar: {
+							in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+						},
+						pendaftaranKelas: {
+							kelasId: { in: kelasIds },
+							muridId: { in: muridIds },
+						},
+					},
+					select: {
+						id: true,
+						jumlahBayar: true,
+						pembayaranKe: true,
+						pendaftaranKelas: { select: { kelasId: true, muridId: true } },
+					},
+				}),
+				db.tagihanLain.findMany({
+					where: {
+						status: {
+							in: [StatusPembayaran.BELUM_LUNAS, StatusPembayaran.PENDING],
+						},
+						kelasId: { in: kelasIds },
+						muridId: { in: muridIds },
+					},
+					select: {
+						id: true,
+						judul: true,
+						jumlah: true,
+						kelasId: true,
+						muridId: true,
+						kategori: true,
+					},
+				}),
+			]);
+
+			type SemuaTagihanItem = {
+				id: string;
+				jenis: "SPP" | "BUKU" | "REGISTRASI";
+				label: string;
+				jumlah: number;
+			};
+			const semuaTagihanMap = new Map<string, SemuaTagihanItem[]>(); // key: kelasId::muridId
+
+			for (const p of semuaSpp) {
+				const key = `${p.pendaftaranKelas.kelasId}::${p.pendaftaranKelas.muridId}`;
+				const list = semuaTagihanMap.get(key) ?? [];
+				list.push({
+					id: p.id,
+					jenis: "SPP",
+					label: `SPP Ke-${p.pembayaranKe}`,
+					jumlah: p.jumlahBayar,
+				});
+				semuaTagihanMap.set(key, list);
+			}
+			for (const t of semuaTagihanLain) {
+				if (!t.kelasId) continue;
+				const key = `${t.kelasId}::${t.muridId}`;
+				const list = semuaTagihanMap.get(key) ?? [];
+				list.push({
+					id: t.id,
+					jenis: t.kategori === "BUKU" ? "BUKU" : "REGISTRASI",
+					label: t.judul,
+					jumlah: t.jumlah,
+				});
+				semuaTagihanMap.set(key, list);
+			}
+
+			// 3. Susun hasil: per kelas -> per siswa (satu baris per siswa, dengan
+			// rincian tagihan pemicu + total semua tagihan belum lunas).
+			const kelasMap = new Map<
+				string,
+				{
+					kelasId: string;
+					kodeKelas: string;
+					siswa: {
+						muridId: string;
+						namaLengkap: string;
+						noWA: string;
+						triggers: TriggerItem[];
+						tenggatTerdekat: Date;
+						semuaTagihan: SemuaTagihanItem[];
+						totalBelumLunas: number;
+					}[];
+				}
+			>();
+
+			for (const [key, trig] of triggerMap.entries()) {
+				const semuaTagihan = semuaTagihanMap.get(key) ?? [];
+				const totalBelumLunas = semuaTagihan.reduce(
+					(sum, item) => sum + item.jumlah,
+					0,
+				);
+				const tenggatTerdekat = trig.triggers
+					.map((t) => t.tanggalJatuhTempo)
+					.sort((a, b) => a.getTime() - b.getTime())[0] as Date;
+
+				const existing = kelasMap.get(trig.kelasId);
+				const siswaItem = {
+					muridId: trig.muridId,
+					namaLengkap: trig.namaLengkap,
+					noWA: trig.noWA,
+					triggers: trig.triggers,
+					tenggatTerdekat,
+					semuaTagihan,
+					totalBelumLunas,
+				};
+				if (existing) {
+					existing.siswa.push(siswaItem);
+				} else {
+					kelasMap.set(trig.kelasId, {
+						kelasId: trig.kelasId,
+						kodeKelas: trig.kodeKelas,
+						siswa: [siswaItem],
+					});
+				}
+			}
+
+			for (const kelas of kelasMap.values()) {
+				kelas.siswa.sort(
+					(a, b) => a.tenggatTerdekat.getTime() - b.tenggatTerdekat.getTime(),
+				);
+			}
+
+			return Array.from(kelasMap.values()).sort((a, b) =>
+				a.kodeKelas.localeCompare(b.kodeKelas),
+			);
+		}),
 });

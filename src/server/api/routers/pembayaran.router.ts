@@ -624,4 +624,246 @@ export const pembayaranRouter = createTRPCRouter({
 				throw error;
 			}
 		}),
+
+	// GET RINGKASAN TAGIHAN PER KELAS (SPP + Buku + Registrasi digabung per murid)
+	// Dipakai di halaman "Pembayaran Kelas" (/admin/pembayaran?kelasId=...)
+	getRingkasanKelas: cabangProtectedProcedure
+		.input(z.object({ kelasId: z.string() }))
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const kelas = await db.kelas.findUnique({
+				where: { id: input.kelasId },
+				select: {
+					id: true,
+					kodeKelas: true,
+					cabangId: true,
+					cabang: {
+						select: { noRekening: true, bank: true, atasNama: true },
+					},
+				},
+			});
+
+			if (!kelas) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Kelas tidak ditemukan.",
+				});
+			}
+
+			if (allowedCabangId && kelas.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak melihat data kelas dari cabang lain.",
+				});
+			}
+
+			const [pembayarans, tagihanLains] = await Promise.all([
+				db.pembayaran.findMany({
+					where: { pendaftaranKelas: { kelasId: input.kelasId } },
+					orderBy: { pembayaranKe: "asc" },
+					include: {
+						pendaftaranKelas: {
+							include: {
+								murid: { select: { id: true, namaLengkap: true, noWA: true } },
+							},
+						},
+					},
+				}),
+				db.tagihanLain.findMany({
+					where: { kelasId: input.kelasId },
+					orderBy: { createdAt: "asc" },
+					include: {
+						murid: { select: { id: true, namaLengkap: true, noWA: true } },
+					},
+				}),
+			]);
+
+			type RingkasanMurid = {
+				muridId: string;
+				namaLengkap: string;
+				noWA: string;
+				spp: {
+					id: string;
+					label: string;
+					jumlahBayar: number;
+					statusBayar: StatusPembayaran;
+					tanggalJatuhTempo: Date;
+					pembayaranKe: number;
+				}[];
+				buku: {
+					id: string;
+					label: string;
+					jumlah: number;
+					status: StatusPembayaran;
+				}[];
+				registrasi: {
+					id: string;
+					label: string;
+					jumlah: number;
+					status: StatusPembayaran;
+				}[];
+			};
+
+			const muridMap = new Map<string, RingkasanMurid>();
+
+			const getOrCreate = (
+				muridId: string,
+				namaLengkap: string,
+				noWA: string,
+			) => {
+				const existing = muridMap.get(muridId);
+				if (existing) return existing;
+				const created: RingkasanMurid = {
+					muridId,
+					namaLengkap,
+					noWA,
+					spp: [],
+					buku: [],
+					registrasi: [],
+				};
+				muridMap.set(muridId, created);
+				return created;
+			};
+
+			for (const p of pembayarans) {
+				const murid = p.pendaftaranKelas.murid;
+				const entry = getOrCreate(murid.id, murid.namaLengkap, murid.noWA);
+				entry.spp.push({
+					id: p.id,
+					label: `SPP Ke-${p.pembayaranKe}`,
+					jumlahBayar: p.jumlahBayar,
+					statusBayar: p.statusBayar,
+					tanggalJatuhTempo: p.tanggalJatuhTempo,
+					pembayaranKe: p.pembayaranKe,
+				});
+			}
+
+			for (const t of tagihanLains) {
+				const entry = getOrCreate(
+					t.murid.id,
+					t.murid.namaLengkap,
+					t.murid.noWA,
+				);
+				const item = {
+					id: t.id,
+					label: t.judul,
+					jumlah: t.jumlah,
+					status: t.status,
+				};
+				if (t.kategori === "BUKU") {
+					entry.buku.push(item);
+				} else if (t.kategori === "REGISTRASI") {
+					entry.registrasi.push(item);
+				}
+			}
+
+			const data = Array.from(muridMap.values())
+				.map((entry) => {
+					const totalBelumLunas =
+						entry.spp
+							.filter((s) => s.statusBayar !== StatusPembayaran.LUNAS)
+							.reduce((sum, s) => sum + s.jumlahBayar, 0) +
+						entry.buku
+							.filter((b) => b.status !== StatusPembayaran.LUNAS)
+							.reduce((sum, b) => sum + b.jumlah, 0) +
+						entry.registrasi
+							.filter((r) => r.status !== StatusPembayaran.LUNAS)
+							.reduce((sum, r) => sum + r.jumlah, 0);
+
+					// Tenggat hanya tersedia untuk SPP (Buku/Registrasi tidak punya
+					// kolom tanggal jatuh tempo di database).
+					const sppBelumLunas = entry.spp
+						.filter((s) => s.statusBayar !== StatusPembayaran.LUNAS)
+						.map((s) => s.tanggalJatuhTempo);
+					const tenggatTerdekat =
+						sppBelumLunas.length > 0
+							? sppBelumLunas.sort((a, b) => a.getTime() - b.getTime())[0]
+							: null;
+
+					return { ...entry, totalBelumLunas, tenggatTerdekat };
+				})
+				.sort((a, b) => a.namaLengkap.localeCompare(b.namaLengkap));
+
+			return {
+				kelas: {
+					id: kelas.id,
+					kodeKelas: kelas.kodeKelas,
+					noRekening: kelas.cabang.noRekening,
+					bank: kelas.cabang.bank,
+					atasNama: kelas.cabang.atasNama,
+				},
+				data,
+			};
+		}),
+
+	// RINGKASAN SEMUA KELAS (untuk grid pemilihan kelas di tab "Ringkasan & Ingatkan")
+	getRingkasanSemuaKelas: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId ?? undefined;
+
+			const kelasList = await db.kelas.findMany({
+				where: {
+					statusKelas: { not: "COMPLETED" },
+					...(filterCabangId ? { cabangId: filterCabangId } : {}),
+				},
+				orderBy: { createdAt: "desc" },
+				select: {
+					id: true,
+					kodeKelas: true,
+					level: true,
+					statusKelas: true,
+					jenisKelasRel: { select: { nama: true, tipe: true } },
+					pendaftaranKelases: {
+						where: { status: "AKTIF" },
+						select: { id: true },
+					},
+				},
+			});
+
+			const kelasIds = kelasList.map((k) => k.id);
+
+			const [pembayarans, tagihanLains] = await Promise.all([
+				db.pembayaran.findMany({
+					where: {
+						pendaftaranKelas: { kelasId: { in: kelasIds } },
+						statusBayar: { not: StatusPembayaran.LUNAS },
+					},
+					select: {
+						jumlahBayar: true,
+						pendaftaranKelas: { select: { kelasId: true } },
+					},
+				}),
+				db.tagihanLain.findMany({
+					where: {
+						kelasId: { in: kelasIds },
+						status: { not: StatusPembayaran.LUNAS },
+					},
+					select: { jumlah: true, kelasId: true },
+				}),
+			]);
+
+			const totalMap = new Map<string, number>();
+			for (const p of pembayarans) {
+				const kId = p.pendaftaranKelas.kelasId;
+				totalMap.set(kId, (totalMap.get(kId) ?? 0) + p.jumlahBayar);
+			}
+			for (const t of tagihanLains) {
+				if (!t.kelasId) continue;
+				totalMap.set(t.kelasId, (totalMap.get(t.kelasId) ?? 0) + t.jumlah);
+			}
+
+			return kelasList.map((k) => ({
+				id: k.id,
+				kodeKelas: k.kodeKelas,
+				jenisKelasNama: k.jenisKelasRel?.nama ?? "-",
+				tipe: k.jenisKelasRel?.tipe ?? "REGULAR",
+				level: k.level,
+				statusKelas: k.statusKelas ?? "RUNNING",
+				jumlahSiswa: k.pendaftaranKelases.length,
+				totalBelumLunas: totalMap.get(k.id) ?? 0,
+			}));
+		}),
 });

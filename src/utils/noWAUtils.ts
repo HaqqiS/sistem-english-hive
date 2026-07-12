@@ -58,3 +58,79 @@ export const formatWhatsAppReminder = (
 
 	return `https://wa.me/${formatted.replace(/[^0-9]/g, "")}?text=${encodedText}`;
 };
+
+// Item tagihan generik untuk pesan WA gabungan (SPP + Buku + Registrasi)
+export interface WaTagihanItem {
+	label: string; // contoh: "SPP Ke-2", "Buku English Level 3", "Biaya Registrasi"
+	jumlah: number;
+	jatuhTempo?: Date | null;
+}
+
+/**
+ * Membuat teks pesan (plain text) yang merangkum SEMUA tagihan
+ * (SPP + Buku + Registrasi) milik 1 murid di 1 kelas, lengkap dengan total
+ * keseluruhan. Dipakai untuk isi pesan WA maupun tombol "Salin Teks".
+ */
+export const buildTeksReminderGabungan = (
+	namaMurid: string,
+	kodeKelas: string,
+	items: WaTagihanItem[],
+	noRekening?: string | null,
+	bank?: string | null,
+	atasNama?: string | null,
+) => {
+	const total = items.reduce((sum, item) => sum + item.jumlah, 0);
+
+	const nearestJatuhTempo = items
+		.map((item) => item.jatuhTempo)
+		.filter((d): d is Date => !!d)
+		.sort((a, b) => a.getTime() - b.getTime())[0];
+
+	const rincian = items
+		.map((item, index) => {
+			const tempoText = item.jatuhTempo
+				? ` (Jatuh Tempo: ${formatDateWITA(item.jatuhTempo)})`
+				: "";
+			return `${index + 1}. ${item.label}: *${toRupiah(item.jumlah)}*${tempoText}`;
+		})
+		.join("\n");
+
+	return `Kepada Yth. Bapak/Ibu orang tua/wali murid *English Hive*.\n\nKami ingin mengingatkan tagihan untuk:\nNama: *${namaMurid}*\nKelas: *${kodeKelas}*\n\nRincian tagihan:\n${rincian}\n\n*Total Tagihan: ${toRupiah(
+		total,
+	)}*${nearestJatuhTempo ? `\nJatuh Tempo Terdekat: *${formatDateWITA(nearestJatuhTempo)}*` : ""}\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
+};
+
+/**
+ * Membuat 1 pesan WA yang merangkum SEMUA tagihan (SPP + Buku + Registrasi)
+ * milik 1 murid di 1 kelas, lengkap dengan total keseluruhan.
+ */
+export const formatWhatsAppReminderGabungan = (
+	noWA: string,
+	namaMurid: string,
+	kodeKelas: string,
+	items: WaTagihanItem[],
+	noRekening?: string | null,
+	bank?: string | null,
+	atasNama?: string | null,
+) => {
+	if (!noWA) return "#";
+	if (items.length === 0) return "#";
+
+	let formatted = noWA.trim();
+	if (formatted.startsWith("0")) {
+		formatted = `62${formatted.substring(1)}`;
+	}
+
+	const text = buildTeksReminderGabungan(
+		namaMurid,
+		kodeKelas,
+		items,
+		noRekening,
+		bank,
+		atasNama,
+	);
+
+	const encodedText = encodeURIComponent(text);
+
+	return `https://wa.me/${formatted.replace(/[^0-9]/g, "")}?text=${encodedText}`;
+};

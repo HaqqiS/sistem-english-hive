@@ -3,7 +3,14 @@
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
 import { pdf } from "@react-pdf/renderer";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
-import { FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
+import {
+	ArrowLeft,
+	FileSpreadsheet,
+	Filter,
+	RefreshCw,
+	Search,
+} from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table";
@@ -37,7 +44,9 @@ import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "./columns/columns-pembayaran";
 import EditPembayaran from "./drawer/edit-pembayaran";
 import TambahPembayaran from "./drawer/tambah-pembayaran";
+import PilihKelasPembayaran from "./pilih-kelas-pembayaran";
 import { type ReceiptItem, ReceiptPDF } from "./receipt-pdf";
+import RingkasanTagihanKelas from "./ringkasan-tagihan-kelas";
 import TagihanLainTab from "./tabs/tagihan-lain-tab";
 
 interface PembayaranClientProps {
@@ -51,7 +60,11 @@ export default function PembayaranClient({
 	const [statusFilter, setStatusFilter] = useState<StatusPembayaran | "ALL">(
 		"ALL",
 	);
-	const [kelasIdFilter, setKelasIdFilter] = useState<string | "ALL">("ALL");
+	const searchParams = useSearchParams();
+	const [kelasIdFilter, setKelasIdFilter] = useState<string | "ALL">(
+		() => searchParams.get("kelasId") ?? "ALL",
+	);
+	const [activeTab, setActiveTab] = useState("ringkasan-kelas");
 	const [jenisKelasFilter, setJenisKelasFilter] = useState<string | "ALL">(
 		"ALL",
 	);
@@ -209,7 +222,7 @@ export default function PembayaranClient({
 
 			const receiptItem: ReceiptItem = {
 				id: item.id,
-				judul: `SPP Bulan Ke-${item.pembayaranKe}`,
+				judul: `SPP Ke-${item.pembayaranKe}`,
 				kodeKelas: kodeKls,
 				kategori: "SPP",
 				jumlah: item.jumlahBayar,
@@ -263,9 +276,12 @@ export default function PembayaranClient({
 
 	return (
 		<div className="space-y-4">
-			<Tabs defaultValue="list" className="w-full">
+			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 				<div className="flex items-center justify-between">
 					<TabsList>
+						<TabsTrigger value="ringkasan-kelas">
+							Ringkasan &amp; Ingatkan
+						</TabsTrigger>
 						<TabsTrigger value="list">SPP (Tuition)</TabsTrigger>
 						<TabsTrigger value="tagihan-buku">Buku</TabsTrigger>
 						<TabsTrigger value="fee-registration">Registration Fee</TabsTrigger>
@@ -303,42 +319,63 @@ export default function PembayaranClient({
 					</div>
 				</div>
 
-				<div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="relative w-full sm:max-w-xs">
-						<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-						<Input
-							placeholder="Cari nama murid..."
-							className="pl-8"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-						/>
-					</div>
+				{activeTab !== "ringkasan-kelas" && (
+					<div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						<div className="relative w-full sm:max-w-xs">
+							<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+							<Input
+								placeholder="Cari nama murid..."
+								className="pl-8"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+							/>
+						</div>
 
-					<div className="flex flex-wrap gap-2">
-						<Select
-							value={statusFilter}
-							onValueChange={(val) =>
-								setStatusFilter(val as StatusPembayaran | "ALL")
-							}
-						>
-							<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
-								<SelectValue placeholder="Filter Status" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="ALL">Semua Status</SelectItem>
-								<SelectItem value={StatusPembayaran.LUNAS}>
-									{formatStatus(StatusPembayaran.LUNAS)}
-								</SelectItem>
-								<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
-									{formatStatus(StatusPembayaran.BELUM_LUNAS)}
-								</SelectItem>
-								<SelectItem value={StatusPembayaran.PENDING}>
-									{formatStatus(StatusPembayaran.PENDING)}
-								</SelectItem>
-							</SelectContent>
-						</Select>
+						<div className="flex flex-wrap gap-2">
+							<Select
+								value={statusFilter}
+								onValueChange={(val) =>
+									setStatusFilter(val as StatusPembayaran | "ALL")
+								}
+							>
+								<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
+									<SelectValue placeholder="Filter Status" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">Semua Status</SelectItem>
+									<SelectItem value={StatusPembayaran.LUNAS}>
+										{formatStatus(StatusPembayaran.LUNAS)}
+									</SelectItem>
+									<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
+										{formatStatus(StatusPembayaran.BELUM_LUNAS)}
+									</SelectItem>
+									<SelectItem value={StatusPembayaran.PENDING}>
+										{formatStatus(StatusPembayaran.PENDING)}
+									</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
-				</div>
+				)}
+
+				<TabsContent value="ringkasan-kelas" className="space-y-4">
+					{kelasIdFilter === "ALL" ? (
+						<PilihKelasPembayaran onSelect={(id) => setKelasIdFilter(id)} />
+					) : (
+						<div className="space-y-4">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setKelasIdFilter("ALL")}
+								className="gap-1"
+							>
+								<ArrowLeft className="h-4 w-4" />
+								Kembali ke Daftar Kelas
+							</Button>
+							<RingkasanTagihanKelas kelasId={kelasIdFilter} />
+						</div>
+					)}
+				</TabsContent>
 
 				<TabsContent value="list" className="space-y-4">
 					<HeaderActionPortal>

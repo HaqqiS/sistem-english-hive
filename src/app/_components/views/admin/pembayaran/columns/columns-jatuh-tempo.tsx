@@ -99,7 +99,7 @@ export const columnsJatuhTempo = ({
 		cell: ({ row }) => (
 			<div className="flex flex-col text-sm">
 				<span className="text-muted-foreground text-xs">
-					Bulan Ke-{row.original.pembayaranKe}
+					SPP Ke-{row.original.pembayaranKe}
 				</span>
 				<span className="text-foreground font-medium">
 					{toRupiah(row.original.jumlahBayar)}
@@ -227,7 +227,7 @@ export const columnsJatuhTempo = ({
 		cell: ({ row }) => {
 			const noWA = row.original.pendaftaranKelas.murid.noWA;
 			const namaMurid = row.original.pendaftaranKelas.murid.namaLengkap;
-			const tipe = `SPP Bulan Ke-${row.original.pembayaranKe}`;
+			const tipe = `SPP Ke-${row.original.pembayaranKe}`;
 			const kelas = row.original.pendaftaranKelas.Kelas.kodeKelas;
 			const jumlah = row.original.jumlahBayar;
 			const jatuhTempo = row.original.tanggalJatuhTempo;

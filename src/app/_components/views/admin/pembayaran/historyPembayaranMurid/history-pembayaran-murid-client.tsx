@@ -155,7 +155,7 @@ export default function HistoryPembayaranMuridClient() {
 
 			const receiptItem: ReceiptItem = {
 				id: item.id,
-				judul: `SPP Bulan Ke-${item.pembayaranKe}`,
+				judul: `SPP Ke-${item.pembayaranKe}`,
 				kodeKelas: kodeKls,
 				kategori: "SPP",
 				jumlah: item.jumlahBayar,
@@ -584,7 +584,7 @@ export default function HistoryPembayaranMuridClient() {
 
 												const receiptItems = validRows.map((item) => ({
 													id: item.id,
-													judul: `SPP Bulan Ke-${item.pembayaranKe}`,
+													judul: `SPP Ke-${item.pembayaranKe}`,
 													kodeKelas: item.pendaftaranKelas.Kelas.kodeKelas,
 													kategori: "SPP",
 													jumlah: item.jumlahBayar,

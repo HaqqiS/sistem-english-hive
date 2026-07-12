@@ -15,6 +15,7 @@ import {
 	Trash,
 	TrendingUp,
 	User,
+	Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -277,6 +278,17 @@ function KelasCard({
 										<Link href={`/admin/kelas/detail/${kelas.id}`}>
 											Detail Kelas
 											<ArrowRight className="ml-2 h-4 w-4" />
+										</Link>
+									</Button>
+									<Button
+										asChild
+										size="sm"
+										variant="secondary"
+										className="w-full sm:w-auto"
+									>
+										<Link href={`/admin/pembayaran?kelasId=${kelas.id}`}>
+											<Wallet className="mr-2 h-4 w-4" />
+											Pembayaran Kelas
 										</Link>
 									</Button>
 									<DropdownMenu>

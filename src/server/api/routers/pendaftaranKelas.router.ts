@@ -507,42 +507,9 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 							});
 						}
 
-						// Fallback: Check via relation in Kelas, but we already have existingRecord loaded without relation.
-						// Better to fetch fresh if needed, or rely on logic below.
-						// Let's safe fetch logic:
-						const kelasInfo = await tx.kelas.findUnique({
-							where: { id: existingRecord.kelasId },
-							include: { jenisKelasRel: true },
-						});
-
-						const hargaBuku = kelasInfo?.jenisKelasRel?.hargaBuku ?? 0;
-						const namaJenisKelas = kelasInfo?.jenisKelasRel?.nama ?? "";
-						const level = kelasInfo?.level ?? 0;
-
-						if (hargaBuku > 0) {
-							// Check duplicate
-							const existingBookBill = await tx.tagihanLain.findFirst({
-								where: {
-									muridId: existingRecord.muridId,
-									kelasId: existingRecord.kelasId,
-									kategori: "BUKU", // Enum string literal KategoriTagihan.BUKU
-								},
-							});
-
-							if (!existingBookBill) {
-								await tx.tagihanLain.create({
-									data: {
-										muridId: existingRecord.muridId,
-										kelasId: existingRecord.kelasId,
-										kategori: "BUKU",
-										judul: `Buku ${namaJenisKelas} Level ${level}`,
-										deskripsi: `Belum Order`,
-										jumlah: hargaBuku,
-										status: StatusPembayaran.BELUM_LUNAS,
-									},
-								});
-							}
-						}
+						// Tagihan Buku TIDAK dibuat otomatis lagi.
+						// Admin menambahkan tagihan Buku/Registrasi secara manual lewat
+						// halaman "Pembayaran Kelas" di /admin/pembayaran?kelasId=...
 					}
 
 					// C. Tanggal Mulai BERUBAH -> Update Tanggal Jatuh Tempo Tagihan Pertama (jika BELUM LUNAS)
@@ -701,31 +668,7 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 
 							// Update Murid Status (handled below via syncMuridStatus)
 
-							// Generate Tagihan Buku (Logic Update Bulk)
-							const hargaBuku = p.Kelas.jenisKelasRel?.hargaBuku ?? 0;
-							if (hargaBuku > 0) {
-								const existingBookBill = await tx.tagihanLain.findFirst({
-									where: {
-										muridId: p.muridId,
-										kelasId: p.kelasId,
-										kategori: "BUKU",
-									},
-								});
-
-								if (!existingBookBill) {
-									await tx.tagihanLain.create({
-										data: {
-											muridId: p.muridId,
-											kelasId: p.kelasId,
-											kategori: "BUKU",
-											judul: `Buku ${p.Kelas.jenisKelasRel?.nama} Level ${p.Kelas.level}`,
-											deskripsi: "Belum Order",
-											jumlah: hargaBuku,
-											status: StatusPembayaran.BELUM_LUNAS,
-										},
-									});
-								}
-							}
+							// Tagihan Buku TIDAK dibuat otomatis lagi (Bulk Update).
 						} else if (
 							p.status === StatusPendaftaran.AKTIF &&
 							status === StatusPendaftaran.NON_AKTIF

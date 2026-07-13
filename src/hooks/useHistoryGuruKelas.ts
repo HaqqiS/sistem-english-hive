@@ -38,6 +38,8 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
 				await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
 					kelasId: variables.kelasId,
 				});
+				await apiUtils.stokBuku.getPenerimaForGuru.invalidate();
+				await apiUtils.stokBuku.getPenerimaByStokBuku.invalidate();
 				toast.success("History Guru Kelas berhasil ditambahkan");
 				options?.onSuccessCreate?.();
 			},
@@ -54,6 +56,8 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
 					kelasId: variables.kelasId,
 				});
 				await apiUtils.kelas.getKelasAndCount.invalidate();
+				await apiUtils.stokBuku.getPenerimaForGuru.invalidate();
+				await apiUtils.stokBuku.getPenerimaByStokBuku.invalidate();
 				toast.success("History Guru Kelas berhasil diupdate");
 				options?.onSuccessUpdate?.();
 			},
@@ -69,6 +73,8 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
 				await apiUtils.historyGuruKelas.getHistoryGuruByKelasId.invalidate({
 					kelasId: variables.kelasId,
 				});
+				await apiUtils.stokBuku.getPenerimaForGuru.invalidate();
+				await apiUtils.stokBuku.getPenerimaByStokBuku.invalidate();
 				toast.success("History Guru Kelas berhasil dihapus");
 				options?.onSuccessDelete?.();
 			},
@@ -91,6 +97,8 @@ export function UseHistoryGuruKelas(options?: useHistoryGuruKelasOptions) {
 				// Jika opsi global kelasId berbeda/tidak ada, kita tetap aman karena invalidasi menggunakan ID spesifik
 				// Tapi jika kita juga mau invalidate queries lain yang mungkin terkait (misal detail kelas count), bisa ditambahkan:
 				await apiUtils.kelas.getKelasAndCount.invalidate();
+				await apiUtils.stokBuku.getPenerimaForGuru.invalidate();
+				await apiUtils.stokBuku.getPenerimaByStokBuku.invalidate();
 
 				toast.success("Status guru berhasil diperbarui");
 				options?.onSuccessUpdate?.();

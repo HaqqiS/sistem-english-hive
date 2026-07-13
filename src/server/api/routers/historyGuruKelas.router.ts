@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import {
@@ -6,6 +6,51 @@ import {
 	updateHistoryGuruKelasSchema,
 } from "@/types/historyGuruKelas.type";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
+
+/**
+ * Saat sebuah kelas BELUM punya guru, order buku (PenerimaBuku) yang dibuat
+ * untuk siswa di kelas itu tidak akan punya baris PenerimaBukuGuru (karena
+ * memang belum ada guru untuk dikaitkan) — akibatnya buku itu tidak muncul
+ * di dashboard guru manapun.
+ *
+ * Fungsi ini dipanggil setiap kali guru baru ditugaskan/diganti di sebuah
+ * kelas, untuk "menyusulkan" tautan guru ke order buku yang SUDAH ada
+ * sebelumnya tapi masih kosong guru-nya (baik yang di-order langsung ke
+ * kelasId ini, maupun yang di-order untuk siswa yang terdaftar aktif di
+ * kelas ini tanpa kelasId eksplisit).
+ */
+async function backfillGuruPenerimaBuku(
+	db: PrismaClient,
+	kelasId: string,
+	guruId: string,
+) {
+	const penerimaTanpaGuru = await db.penerimaBuku.findMany({
+		where: {
+			guruPenerima: { none: {} },
+			OR: [
+				{ kelasId },
+				{
+					murid: {
+						pendaftaranKelases: {
+							some: { kelasId, status: { not: "NON_AKTIF" } },
+						},
+					},
+				},
+			],
+		},
+		select: { id: true },
+	});
+
+	if (penerimaTanpaGuru.length === 0) return;
+
+	await db.penerimaBukuGuru.createMany({
+		data: penerimaTanpaGuru.map((p) => ({
+			penerimaBukuId: p.id,
+			guruId,
+		})),
+		skipDuplicates: true,
+	});
+}
 
 export const historyGuruKelasRouter = createTRPCRouter({
 	getHistoryGuruByKelasId: cabangProtectedProcedure
@@ -92,6 +137,14 @@ export const historyGuruKelasRouter = createTRPCRouter({
 						selesaiPada: input.selesaiPada,
 					},
 				});
+
+				// Susulkan tautan guru ke order buku lama yang belum punya guru
+				// (mis. buku sudah di-order sebelum kelas ini punya guru).
+				// Hanya untuk guru yang statusnya ACTIVE (bukan histori lama).
+				if (newHistoryGuruKelas.statusGuru === "ACTIVE") {
+					await backfillGuruPenerimaBuku(db, input.kelasId, input.guruId);
+				}
+
 				return newHistoryGuruKelas;
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -144,6 +197,18 @@ export const historyGuruKelasRouter = createTRPCRouter({
 							mulaiPada: input.mulaiPada,
 						},
 					});
+
+					// Jaga-jaga: susulkan tautan guru ke order buku lama yang
+					// belum punya guru untuk kelas ini — hanya kalau record ini
+					// memang guru yang SEDANG aktif di kelas tsb.
+					if (updatedRecord.statusGuru === "ACTIVE") {
+						await backfillGuruPenerimaBuku(
+							db,
+							oldRecord.kelasId,
+							oldRecord.guruId,
+						);
+					}
+
 					return updatedRecord;
 				} else {
 					// Tutup record lama
@@ -163,6 +228,12 @@ export const historyGuruKelasRouter = createTRPCRouter({
 							mulaiPada: input.mulaiPada,
 						},
 					});
+
+					// Susulkan tautan guru (baru) ke order buku lama yang belum
+					// punya guru untuk kelas ini.
+					if (oldRecord?.kelasId) {
+						await backfillGuruPenerimaBuku(db, oldRecord.kelasId, input.guruId);
+					}
 
 					return newRecord;
 				}

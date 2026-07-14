@@ -391,4 +391,12 @@ export const finalReportRouter = createTRPCRouter({
 				where: { id: input.id },
 			});
 		}),
+
+	deleteMany: protectedProcedure
+		.input(z.object({ ids: z.array(z.string()).min(1) }))
+		.mutation(async ({ ctx, input }) => {
+			return ctx.db.finalReport.deleteMany({
+				where: { id: { in: input.ids } },
+			});
+		}),
 });

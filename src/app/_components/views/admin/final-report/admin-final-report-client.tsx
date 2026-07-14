@@ -7,6 +7,7 @@ import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confir
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -122,6 +123,15 @@ export default function AdminFinalReportClient() {
 		onError: () => toast.error("Gagal menghapus"),
 	});
 
+	const deleteManyFR = api.finalReport.deleteMany.useMutation({
+		onSuccess: (_data, variables) => {
+			void utils.finalReport.getAll.invalidate();
+			toast.success(`${variables.ids.length} Final Report berhasil dihapus`);
+			setSelectedIds(new Set());
+		},
+		onError: () => toast.error("Gagal menghapus"),
+	});
+
 	// ── State ─────────────────────────────────────────────────────────────────
 	const [previewFR, setPreviewFR] = useState<FinalReport | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<Pick<
@@ -137,6 +147,11 @@ export default function AdminFinalReportClient() {
 	const [selectedCabangId, setSelectedCabangId] = useState<string>("");
 	// Mode input manual — tersedia untuk semua role
 	const [isManual, setIsManual] = useState(false);
+
+	// ── State seleksi untuk hapus banyak sekaligus ───────────────────────────
+	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+	const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+	const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -195,6 +210,33 @@ export default function AdminFinalReportClient() {
 		}
 	};
 
+	const toggleSelect = (id: string) => {
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	};
+
+	const toggleSelectAll = () => {
+		if (!data) return;
+		setSelectedIds((prev) =>
+			prev.size === data.length ? new Set() : new Set(data.map((fr) => fr.id)),
+		);
+	};
+
+	const handleConfirmBulkDelete = async () => {
+		if (selectedIds.size === 0) return;
+		setIsBulkDeleting(true);
+		try {
+			await deleteManyFR.mutateAsync({ ids: Array.from(selectedIds) });
+		} finally {
+			setIsBulkDeleting(false);
+			setConfirmBulkDelete(false);
+		}
+	};
+
 	// ── Render ────────────────────────────────────────────────────────────────
 
 	if (isLoading) {
@@ -246,7 +288,7 @@ export default function AdminFinalReportClient() {
 				<AdminFinalReportForm />
 			</TabsContent>
 
-			<TabsContent value="approval" className="space-y-4">
+			<TabsContent value="approval" className="space-y-2 max-w-3xl">
 				<h1 className="text-2xl font-bold">Final Report Approval</h1>
 
 				{/* Info filter cabang aktif — mengikuti switcher cabang di sidebar (pojok kiri atas) */}
@@ -266,23 +308,62 @@ export default function AdminFinalReportClient() {
 					</p>
 				)}
 
+				{/* TOOLBAR SELEKSI — hapus banyak sekaligus */}
+				{(data?.length ?? 0) > 0 && (
+					<div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-1.5">
+						<label
+							htmlFor="select-all-final-report"
+							className="flex items-center gap-2 text-sm cursor-pointer select-none"
+						>
+							<Checkbox
+								id="select-all-final-report"
+								checked={
+									data && data.length > 0 && selectedIds.size === data.length
+								}
+								onCheckedChange={toggleSelectAll}
+							/>
+							{selectedIds.size > 0
+								? `${selectedIds.size} dipilih`
+								: "Pilih semua"}
+						</label>
+
+						{selectedIds.size > 0 && (
+							<Button
+								variant="destructive"
+								size="sm"
+								onClick={() => setConfirmBulkDelete(true)}
+							>
+								<Trash2 className="mr-2 h-4 w-4" />
+								Hapus {selectedIds.size} Terpilih
+							</Button>
+						)}
+					</div>
+				)}
+
 				{data?.map((fr) => (
 					<Card key={fr.id}>
-						<CardContent className="space-y-4 p-5">
+						<CardContent className="space-y-1.5 px-5 py-2">
 							{/* ROW UTAMA */}
 							<div className="flex items-center justify-between">
-								<div className="space-y-0.5">
-									<div className="flex items-center gap-2">
-										<p className="font-bold">{fr.studentName}</p>
-										{getStatusBadge(fr.status)}
+								<div className="flex items-center gap-3">
+									<Checkbox
+										checked={selectedIds.has(fr.id)}
+										onCheckedChange={() => toggleSelect(fr.id)}
+										className="shrink-0"
+									/>
+									<div className="space-y-0.5">
+										<div className="flex items-center gap-2">
+											<p className="font-bold">{fr.studentName}</p>
+											{getStatusBadge(fr.status)}
+										</div>
+										<p className="text-sm text-muted-foreground">
+											{fr.level} · {fr.teacherName}
+										</p>
+										<p className="text-sm">
+											Final Score:{" "}
+											<span className="font-semibold">{fr.finalScore}</span>
+										</p>
 									</div>
-									<p className="text-sm text-muted-foreground">
-										{fr.level} · {fr.teacherName}
-									</p>
-									<p className="text-sm">
-										Final Score:{" "}
-										<span className="font-semibold">{fr.finalScore}</span>
-									</p>
 								</div>
 
 								<div className="flex items-center gap-2">
@@ -329,22 +410,6 @@ export default function AdminFinalReportClient() {
 									</Button>
 								</div>
 							</div>
-
-							{/* CABANG INFO — tampil jika sudah approved */}
-							{fr.status === "APPROVED" && fr.cabangNama && (
-								<div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm">
-									<p className="font-semibold text-green-800">
-										{fr.cabangNama}
-									</p>
-									<p className="text-green-700">{fr.cabangAlamat}</p>
-									{fr.cabangNoTelp && (
-										<p className="text-green-700">Telp: {fr.cabangNoTelp}</p>
-									)}
-									{fr.cabangEmail && (
-										<p className="text-green-700">Email: {fr.cabangEmail}</p>
-									)}
-								</div>
-							)}
 
 							{/* PREVIEW DETAIL */}
 							<div
@@ -578,6 +643,26 @@ export default function AdminFinalReportClient() {
 					confirmText="Hapus"
 					cancelText="Batal"
 					isLoading={isDeleting}
+				/>
+
+				{/* ── DIALOG KONFIRMASI HAPUS BANYAK SEKALIGUS ────── */}
+				<DeleteConfirmationDialog
+					isOpen={confirmBulkDelete}
+					onOpenChange={(open) => {
+						if (!open) setConfirmBulkDelete(false);
+					}}
+					title={`Hapus ${selectedIds.size} Final Report?`}
+					description={
+						<span>
+							<span className="font-semibold">{selectedIds.size}</span> Final
+							Report yang dipilih akan dihapus permanen dan tidak bisa
+							dikembalikan.
+						</span>
+					}
+					onConfirm={handleConfirmBulkDelete}
+					confirmText="Hapus Semua"
+					cancelText="Batal"
+					isLoading={isBulkDeleting}
 				/>
 			</TabsContent>
 		</Tabs>

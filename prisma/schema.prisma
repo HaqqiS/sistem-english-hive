@@ -505,6 +505,7 @@ enum StatusPenerimaanBuku {
 enum StatusOrderBuku2 {
   DIORDER
   READY
+  BISA_DIAMBIL
 }
 
 enum EnumStatusGuru {

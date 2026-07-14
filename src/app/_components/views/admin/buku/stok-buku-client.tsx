@@ -224,19 +224,20 @@ export default function StokBukuClient() {
 										.map((stok) => {
 											const total = stok.penerimaBukus.length;
 											const diambil = stok.penerimaBukus.filter(
+												(p) => p.status === "SUDAH_DIAMBIL",
+											).length;
+											const bisaDiambil = stok.penerimaBukus.filter(
 												(p) =>
-													p.statusOrder === "READY" &&
-													p.status === "SUDAH_DIAMBIL",
+													p.statusOrder === "BISA_DIAMBIL" &&
+													p.status !== "SUDAH_DIAMBIL",
 											).length;
 											const ready = stok.penerimaBukus.filter(
-												(p) =>
-													p.statusOrder === "READY" &&
-													p.status !== "SUDAH_DIAMBIL",
+												(p) => p.statusOrder === "READY",
 											).length;
 											const diorder = stok.penerimaBukus.filter(
 												(p) => p.statusOrder === "DIORDER",
 											).length;
-											const dibutuhkan = diorder + ready;
+											const dibutuhkan = diorder + ready + bisaDiambil;
 											const kurang = dibutuhkan > stok.jumlahStok;
 											const isEditing = editingStok?.id === stok.id;
 
@@ -354,11 +355,19 @@ export default function StokBukuClient() {
 																<span className="text-muted-foreground">
 																	Ready
 																</span>
-																<span className="font-bold text-green-600">
+																<span className="font-bold text-blue-600">
 																	{ready}
 																</span>
 															</div>
-															<div className="col-span-2 bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
+																<span className="text-muted-foreground">
+																	Bisa Diambil
+																</span>
+																<span className="font-bold text-green-600">
+																	{bisaDiambil}
+																</span>
+															</div>
+															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
 																<span className="text-muted-foreground flex items-center gap-1.5">
 																	<Users className="h-3.5 w-3.5" /> Diambil
 																</span>
@@ -530,9 +539,9 @@ function PenerimaBukuSheet({
 	const [siswaPopoverOpen, setSiswaPopoverOpen] = useState(false);
 	const [kelasPopoverOpen, setKelasPopoverOpen] = useState(false);
 	const [searchKelas, setSearchKelas] = useState("");
-	const [statusOrder, setStatusOrder] = useState<"DIORDER" | "READY">(
-		"DIORDER",
-	);
+	const [statusOrder, setStatusOrder] = useState<
+		"DIORDER" | "READY" | "BISA_DIAMBIL"
+	>("DIORDER");
 	const [tanggalReady, setTanggalReady] = useState<Date | undefined>();
 	const [tanggalOpen, setTanggalOpen] = useState(false);
 
@@ -794,7 +803,7 @@ function PenerimaBukuSheet({
 											kelasId: selectedKelasId || undefined,
 											statusOrder,
 											tanggalReady:
-												statusOrder === "READY" ? tanggalReady : undefined,
+												statusOrder !== "DIORDER" ? tanggalReady : undefined,
 										});
 									}}
 									disabled={addPenerima.isPending || !selectedMuridId}
@@ -814,28 +823,36 @@ function PenerimaBukuSheet({
 								Status Awal
 							</Label>
 							<div className="flex gap-2">
-								{(["DIORDER", "READY"] as const).map((s) => (
+								{(
+									[
+										{ value: "DIORDER", label: "Diorder" },
+										{ value: "READY", label: "Ready" },
+										{ value: "BISA_DIAMBIL", label: "Bisa Diambil" },
+									] as const
+								).map(({ value, label }) => (
 									<button
-										key={s}
+										key={value}
 										type="button"
-										onClick={() => setStatusOrder(s)}
+										onClick={() => setStatusOrder(value)}
 										className={cn(
 											"rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-											statusOrder === s
-												? s === "READY"
+											statusOrder === value
+												? value === "BISA_DIAMBIL"
 													? "bg-green-600 text-white border-green-600"
-													: "bg-primary text-primary-foreground border-primary"
+													: value === "READY"
+														? "bg-blue-600 text-white border-blue-600"
+														: "bg-primary text-primary-foreground border-primary"
 												: "bg-background text-muted-foreground hover:bg-muted",
 										)}
 									>
-										{s}
+										{label}
 									</button>
 								))}
 							</div>
 						</div>
 
 						{/* Tanggal Ready */}
-						{statusOrder === "READY" && (
+						{statusOrder !== "DIORDER" && (
 							<div className="space-y-1.5">
 								<Label className="text-xs text-muted-foreground">
 									Tanggal Ready
@@ -893,7 +910,7 @@ function PenerimaBukuSheet({
 
 						<div className="space-y-2">
 							{penerimaList?.map((p) => {
-								const isReady = p.statusOrder === "READY";
+								const bisaDiambil = p.statusOrder === "BISA_DIAMBIL";
 								const sudahDiambil = p.status === "SUDAH_DIAMBIL";
 								const guruNama = p.guruPenerima
 									.map((gp) => gp.guru.name)
@@ -935,32 +952,47 @@ function PenerimaBukuSheet({
 										</div>
 
 										<div className="flex items-center gap-2 flex-wrap">
-											<Button
-												size="sm"
-												variant={isReady ? "default" : "outline"}
-												className={cn(
-													"h-7 text-xs",
-													isReady && "bg-green-600 hover:bg-green-700",
-												)}
-												onClick={() =>
-													updateStatusOrder.mutate({
-														penerimaBukuId: p.id,
-														statusOrder: isReady ? "DIORDER" : "READY",
-														tanggalReady: isReady ? null : new Date(),
-													})
-												}
-												disabled={updateStatusOrder.isPending}
-											>
-												{isReady ? "✓ Ready" : "Set Ready"}
-											</Button>
+											{(
+												[
+													{ value: "DIORDER", label: "Diorder" },
+													{ value: "READY", label: "Ready" },
+													{ value: "BISA_DIAMBIL", label: "Bisa Diambil" },
+												] as const
+											).map(({ value, label }) => (
+												<button
+													key={value}
+													type="button"
+													onClick={() =>
+														updateStatusOrder.mutate({
+															penerimaBukuId: p.id,
+															statusOrder: value,
+															tanggalReady:
+																value === "DIORDER" ? null : new Date(),
+														})
+													}
+													disabled={updateStatusOrder.isPending}
+													className={cn(
+														"rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+														p.statusOrder === value
+															? value === "BISA_DIAMBIL"
+																? "bg-green-600 text-white border-green-600"
+																: value === "READY"
+																	? "bg-blue-600 text-white border-blue-600"
+																	: "bg-primary text-primary-foreground border-primary"
+															: "bg-background text-muted-foreground hover:bg-muted",
+													)}
+												>
+													{label}
+												</button>
+											))}
 
-											{isReady && p.tanggalReady && (
+											{p.statusOrder !== "DIORDER" && p.tanggalReady && (
 												<span className="text-xs text-muted-foreground">
 													{formatDate(p.tanggalReady)}
 												</span>
 											)}
 
-											{isReady && (
+											{bisaDiambil && (
 												<Button
 													size="sm"
 													variant={sudahDiambil ? "default" : "outline"}

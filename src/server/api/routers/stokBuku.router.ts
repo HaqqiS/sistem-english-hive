@@ -8,7 +8,11 @@ import {
 } from "@/server/api/trpc";
 
 // Local enums (workaround sampai prisma generate dijalankan)
-const StatusOrderBuku2 = { DIORDER: "DIORDER", READY: "READY" } as const;
+const StatusOrderBuku2 = {
+	DIORDER: "DIORDER",
+	READY: "READY",
+	BISA_DIAMBIL: "BISA_DIAMBIL",
+} as const;
 const StatusPenerimaanBuku = {
 	BELUM_DIAMBIL: "BELUM_DIAMBIL",
 	SUDAH_DIAMBIL: "SUDAH_DIAMBIL",
@@ -235,7 +239,9 @@ export const stokBukuRouter = createTRPCRouter({
 				muridIds: z.array(z.string()).min(1),
 				kelasId: z.string().optional(),
 				guruIds: z.array(z.string()).optional(), // bisa 1 atau lebih guru
-				statusOrder: z.enum(["DIORDER", "READY"]).default("DIORDER"),
+				statusOrder: z
+					.enum(["DIORDER", "READY", "BISA_DIAMBIL"])
+					.default("DIORDER"),
 				tanggalReady: z.date().optional(),
 			}),
 		)
@@ -248,7 +254,9 @@ export const stokBukuRouter = createTRPCRouter({
 					kelasId: input.kelasId ?? null,
 					statusOrder: input.statusOrder,
 					tanggalReady:
-						input.statusOrder === "READY" ? (input.tanggalReady ?? null) : null,
+						input.statusOrder !== "DIORDER"
+							? (input.tanggalReady ?? null)
+							: null,
 				})),
 				skipDuplicates: true,
 			});
@@ -357,7 +365,7 @@ export const stokBukuRouter = createTRPCRouter({
 		.input(
 			z.object({
 				penerimaBukuId: z.string(),
-				statusOrder: z.enum(["DIORDER", "READY"]),
+				statusOrder: z.enum(["DIORDER", "READY", "BISA_DIAMBIL"]),
 				tanggalReady: z.date().optional().nullable(),
 			}),
 		)
@@ -411,11 +419,11 @@ export const stokBukuRouter = createTRPCRouter({
 					message: "Data tidak ditemukan.",
 				});
 
-			// Guru hanya bisa update kalau statusOrder = READY
-			if (isGuru && penerima.statusOrder !== StatusOrderBuku2.READY)
+			// Guru hanya bisa update kalau statusOrder = BISA_DIAMBIL
+			if (isGuru && penerima.statusOrder !== StatusOrderBuku2.BISA_DIAMBIL)
 				throw new TRPCError({
 					code: "FORBIDDEN",
-					message: "Buku belum berstatus READY.",
+					message: "Buku belum berstatus Bisa Diambil.",
 				});
 
 			// Guru tidak bisa mengubah status lagi kalau sudah "Diambil" —

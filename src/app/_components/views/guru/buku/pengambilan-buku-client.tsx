@@ -122,14 +122,17 @@ export function PengambilanBukuSection({
 										<div className="flex items-center justify-between gap-2">
 											<div className="min-w-0">
 												<p className="truncate text-sm font-medium">
-													{p.murid.namaLengkap}
+													{p.murid.namaLengkap}{" "}
+													<span className="text-muted-foreground font-normal text-xs">
+														· {p.stokBuku.jenisKelas.nama} · Level{" "}
+														{p.stokBuku.level}
+													</span>
 												</p>
-												{/* Jenis Buku + Level Buku */}
-												<p className="text-muted-foreground text-xs">
-													{p.stokBuku.jenisKelas.nama} · Level{" "}
-													{p.stokBuku.level}
-													{p.murid.kelasSekolah && ` · ${p.murid.kelasSekolah}`}
-												</p>
+												{p.murid.kelasSekolah && (
+													<p className="text-muted-foreground text-xs">
+														{p.murid.kelasSekolah}
+													</p>
+												)}
 											</div>
 
 											<div className="flex shrink-0 items-center gap-2">

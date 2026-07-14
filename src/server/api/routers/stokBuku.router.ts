@@ -216,6 +216,12 @@ export const stokBukuRouter = createTRPCRouter({
 					guruPenerima: {
 						include: { guru: { select: { id: true, name: true } } },
 					},
+					stokBuku: {
+						select: {
+							level: true,
+							jenisKelas: { select: { nama: true } },
+						},
+					},
 				},
 				orderBy: { createdAt: "desc" },
 			});

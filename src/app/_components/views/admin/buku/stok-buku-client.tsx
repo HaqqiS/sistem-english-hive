@@ -915,12 +915,10 @@ function PenerimaBukuSheet({
 													{p.murid.namaLengkap}
 												</p>
 												<div className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
-													{p.kelas && (
-														<span>
-															{p.kelas.kodeKelas} — Level {p.kelas.level}
-														</span>
+													{guruNama && <span>{guruNama}</span>}
+													{p.statusOrder === "DIORDER" && (
+														<span>{p.stokBuku.jenisKelas.nama} · Level {p.stokBuku.level}</span>
 													)}
-													{guruNama && <span>· {guruNama}</span>}
 												</div>
 											</div>
 											<Button

@@ -52,7 +52,7 @@ export const formatWhatsAppReminder = (
 	// Template Pesan
 	const text = `Kepada Yth. Bapak/Ibu orang tua/wali murid *English Hive*.\n\nKami ingin mengingatkan tagihan ${tipe} untuk:\nNama: *${namaMurid}*\nKelas: *${kelas}*\nNominal: *${toRupiah(
 		jumlah,
-	)}*\nJatuh Tempo: *${jatuhTempo ? formatDateWITA(jatuhTempo) : "-"}*\n\n${infoText ? `${infoText}\n\n` : ""}Berikut detail rekening untuk pembayarannya :\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
+	)}*\nJatuh Tempo: *${jatuhTempo ? formatDateWITA(jatuhTempo) : "-"}*\n\n${infoText ? `${infoText}\n\n` : ""}Berikut detail rekening untuk pembayarannya :\nBank: ${bank || "-"}\nNo. Rekening: ${noRekening || "-"}\nAtas nama: ${atasNama || "-"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
 
 	const encodedText = encodeURIComponent(text);
 
@@ -103,7 +103,7 @@ export const buildTeksReminderGabungan = (
 
 	return `Kepada Yth. Bapak/Ibu orang tua/wali murid *English Hive*.\n\nKami ingin mengingatkan tagihan untuk:\nNama: *${namaMurid}*\nKelas: *${kodeKelas}*\n\nRincian tagihan:\n${rincian}\n\n*Total Tagihan: ${toRupiah(
 		total,
-	)}*${nearestJatuhTempo ? `\nTenggat Pembayaran: *${formatDateWITA(nearestJatuhTempo)}*` : ""}\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "Mandiri"}\nNo. Rekening: ${noRekening || "1750080088080"}\nAtas nama: ${atasNama || "DESAK PUTU EKA PRATI"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
+	)}*${nearestJatuhTempo ? `\nTenggat Pembayaran: *${formatDateWITA(nearestJatuhTempo)}*` : ""}\n\nBerikut detail rekening untuk pembayarannya ya, kak:\nBank: ${bank || "-"}\nNo. Rekening: ${noRekening || "-"}\nAtas nama: ${atasNama || "-"}\n\nMohon segera melakukan dan *mengirimkan Bukti Pembayaran*. Terima kasih`;
 };
 
 /**

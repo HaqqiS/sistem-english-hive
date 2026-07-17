@@ -219,9 +219,9 @@ export default function KelasJatuhTempoH14() {
 																s.namaLengkap,
 																kelas.kodeKelas,
 																waItems,
-																undefined,
-																undefined,
-																undefined,
+																kelas.cabang?.noRekening,
+																kelas.cabang?.bank,
+																kelas.cabang?.atasNama,
 																s.tenggatTerdekat,
 															)
 														: "";
@@ -232,9 +232,9 @@ export default function KelasJatuhTempoH14() {
 																s.namaLengkap,
 																kelas.kodeKelas,
 																waItems,
-																undefined,
-																undefined,
-																undefined,
+																kelas.cabang?.noRekening,
+																kelas.cabang?.bank,
+																kelas.cabang?.atasNama,
 																s.tenggatTerdekat,
 															)
 														: "#";

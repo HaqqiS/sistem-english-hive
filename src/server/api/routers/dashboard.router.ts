@@ -477,7 +477,19 @@ export const dashboardRouter = createTRPCRouter({
 					pendaftaranKelas: {
 						include: {
 							murid: { select: { id: true, namaLengkap: true, noWA: true } },
-							Kelas: { select: { id: true, kodeKelas: true } },
+							Kelas: {
+								select: {
+									id: true,
+									kodeKelas: true,
+									cabang: {
+										select: {
+											noRekening: true,
+											bank: true,
+											atasNama: true,
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -497,6 +509,11 @@ export const dashboardRouter = createTRPCRouter({
 				{
 					kelasId: string;
 					kodeKelas: string;
+					cabang: {
+						noRekening: string | null;
+						bank: string | null;
+						atasNama: string | null;
+					} | null;
 					muridId: string;
 					namaLengkap: string;
 					noWA: string;
@@ -520,6 +537,7 @@ export const dashboardRouter = createTRPCRouter({
 					triggerMap.set(key, {
 						kelasId: kelas.id,
 						kodeKelas: kelas.kodeKelas,
+						cabang: kelas.cabang,
 						muridId: murid.id,
 						namaLengkap: murid.namaLengkap,
 						noWA: murid.noWA,
@@ -619,6 +637,11 @@ export const dashboardRouter = createTRPCRouter({
 				{
 					kelasId: string;
 					kodeKelas: string;
+					cabang: {
+						noRekening: string | null;
+						bank: string | null;
+						atasNama: string | null;
+					} | null;
 					siswa: {
 						muridId: string;
 						namaLengkap: string;
@@ -657,6 +680,7 @@ export const dashboardRouter = createTRPCRouter({
 					kelasMap.set(trig.kelasId, {
 						kelasId: trig.kelasId,
 						kodeKelas: trig.kodeKelas,
+						cabang: trig.cabang,
 						siswa: [siswaItem],
 					});
 				}

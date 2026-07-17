@@ -934,7 +934,10 @@ function PenerimaBukuSheet({
 												<div className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
 													{guruNama && <span>{guruNama}</span>}
 													{p.statusOrder === "DIORDER" && (
-														<span>{p.stokBuku.jenisKelas.nama} · Level {p.stokBuku.level}</span>
+														<span>
+															{p.stokBuku.jenisKelas.nama} · Level{" "}
+															{p.stokBuku.level}
+														</span>
 													)}
 												</div>
 											</div>

@@ -661,6 +661,59 @@ export const pembayaranRouter = createTRPCRouter({
 			}
 		}),
 
+	// 6b. DELETE TAGIHAN SEKALIGUS BANYAK (BULK)
+	// Hati-hati, menghapus tagihan LUNAS akan mengurangi saldo pertemuan siswa!
+	deleteManyPembayaran: cabangProtectedProcedure
+		.input(z.object({ ids: z.array(z.string()).min(1) }))
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
+
+			// 1. Role Check - hanya Admin yang boleh menghapus data pembayaran
+			if (session.user.role !== UserRole.ADMIN) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Hanya Admin yang boleh menghapus data pembayaran.",
+				});
+			}
+
+			// 2. Ambil semua data & cek kepemilikan cabang
+			const existingPayments = await db.pembayaran.findMany({
+				where: { id: { in: input.ids } },
+				include: {
+					pendaftaranKelas: {
+						include: { Kelas: { select: { cabangId: true } } },
+					},
+				},
+			});
+
+			if (existingPayments.length === 0) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Pembayaran tidak ditemukan.",
+				});
+			}
+
+			const hasForeignCabang = existingPayments.some(
+				(p) =>
+					allowedCabangId &&
+					p.pendaftaranKelas.Kelas.cabangId !== allowedCabangId,
+			);
+			if (hasForeignCabang) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak menghapus pembayaran dari cabang lain.",
+				});
+			}
+
+			const validIds = existingPayments.map((p) => p.id);
+
+			const result = await db.pembayaran.deleteMany({
+				where: { id: { in: validIds } },
+			});
+
+			return { count: result.count };
+		}),
+
 	// GET RINGKASAN TAGIHAN PER KELAS (SPP + Buku + Registrasi digabung per murid)
 	// Dipakai di halaman "Pembayaran Kelas" (/admin/pembayaran?kelasId=...)
 	getRingkasanKelas: cabangProtectedProcedure

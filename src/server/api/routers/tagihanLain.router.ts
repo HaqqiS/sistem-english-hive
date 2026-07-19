@@ -335,6 +335,43 @@ export const tagihanLainRouter = createTRPCRouter({
 			});
 		}),
 
+	// 5b. Delete Sekaligus Banyak (BULK)
+	deleteMany: cabangProtectedProcedure
+		.input(z.object({ ids: z.array(z.string()).min(1) }))
+		.mutation(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+
+			const existing = await db.tagihanLain.findMany({
+				where: { id: { in: input.ids } },
+				include: { murid: { select: { cabangId: true } } },
+			});
+
+			if (existing.length === 0) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Tagihan tidak ditemukan",
+				});
+			}
+
+			const hasForeignCabang = existing.some(
+				(t) => allowedCabangId && t.murid.cabangId !== allowedCabangId,
+			);
+			if (hasForeignCabang) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak berhak menghapus data cabang lain",
+				});
+			}
+
+			const validIds = existing.map((t) => t.id);
+
+			const result = await db.tagihanLain.deleteMany({
+				where: { id: { in: validIds } },
+			});
+
+			return { count: result.count };
+		}),
+
 	// 6. Get For Export (No Pagination)
 	getForExport: cabangProtectedProcedure
 		.input(

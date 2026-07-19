@@ -24,6 +24,7 @@ interface UseTagihanLainOptions {
 	onSuccessCreate?: () => void;
 	onSuccessUpdate?: () => void;
 	onSuccessDelete?: () => void;
+	onSuccessDeleteMany?: () => void;
 	onSuccessMarkPaid?: () => void;
 }
 
@@ -175,6 +176,17 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 		},
 	});
 
+	const deleteManyMutation = api.tagihanLain.deleteMany.useMutation({
+		onSuccess: async (data) => {
+			await invalidateTagihan();
+			toast.success(`${data.count} tagihan berhasil dihapus`);
+			options.onSuccessDeleteMany?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal menghapus tagihan: ${error.message}`);
+		},
+	});
+
 	const markAsPaidMutation = api.tagihanLain.markAsPaid.useMutation({
 		onSuccess: async () => {
 			await invalidateTagihan();
@@ -240,6 +252,11 @@ export const useTagihanLain = (options: UseTagihanLainOptions = {}) => {
 				mutate: deleteMutation.mutate,
 				mutateAsync: deleteMutation.mutateAsync,
 				isPending: deleteMutation.isPending,
+			},
+			deleteMany: {
+				mutate: deleteManyMutation.mutate,
+				mutateAsync: deleteManyMutation.mutateAsync,
+				isPending: deleteManyMutation.isPending,
 			},
 			markAsPaid: {
 				mutate: markAsPaidMutation.mutate,

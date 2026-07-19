@@ -29,6 +29,7 @@ interface UsePembayaranOptions {
 	// Mutation callbacks
 	onSuccessUpdate?: () => void;
 	onSuccessDelete?: () => void;
+	onSuccessDeleteMany?: () => void;
 	onSuccessCreateManual?: () => void;
 }
 
@@ -147,6 +148,18 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 		},
 	});
 
+	// 2b. Delete Pembayaran Sekaligus Banyak (BULK)
+	const deleteManyMutation = api.pembayaran.deleteManyPembayaran.useMutation({
+		onSuccess: async (data) => {
+			await invalidatePayments();
+			toast.success(`${data.count} data pembayaran berhasil dihapus`);
+			options?.onSuccessDeleteMany?.();
+		},
+		onError: (error) => {
+			toast.error(`Gagal menghapus: ${error.message}`);
+		},
+	});
+
 	// 3. Create Manual Tagihan
 	const createManualMutation = api.pembayaran.createManualTagihan.useMutation({
 		onSuccess: async () => {
@@ -194,6 +207,11 @@ export function usePembayaran(options?: UsePembayaranOptions) {
 				mutate: deleteMutation.mutate,
 				mutateAsync: deleteMutation.mutateAsync,
 				isPending: deleteMutation.isPending,
+			},
+			deleteMany: {
+				mutate: deleteManyMutation.mutate,
+				mutateAsync: deleteManyMutation.mutateAsync,
+				isPending: deleteManyMutation.isPending,
 			},
 			createManual: {
 				mutate: createManualMutation.mutate,

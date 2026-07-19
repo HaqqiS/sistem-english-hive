@@ -105,6 +105,9 @@ export default function PembayaranClient({
 	// State Delete
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [itemToDelete, setItemToDelete] = useState<TypePembayaran | null>(null);
+	// State Bulk Delete
+	const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+	const [idsToBulkDelete, setIdsToBulkDelete] = useState<string[]>([]);
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
 		pageSize: 50,
@@ -135,6 +138,11 @@ export default function PembayaranClient({
 			setDeleteDialogOpen(false);
 			setItemToDelete(null);
 		},
+		onSuccessDeleteMany: () => {
+			setBulkDeleteDialogOpen(false);
+			setIdsToBulkDelete([]);
+			setRowSelection({});
+		},
 	});
 
 	const { dataKelasAktif: kelasList } = useKelas({
@@ -154,6 +162,17 @@ export default function PembayaranClient({
 	const handleConfirmDelete = () => {
 		if (itemToDelete) {
 			mutations.delete.mutate({ id: itemToDelete.id });
+		}
+	};
+
+	const handleBulkDeleteClick = (ids: string[]) => {
+		setIdsToBulkDelete(ids);
+		setBulkDeleteDialogOpen(true);
+	};
+
+	const handleConfirmBulkDelete = () => {
+		if (idsToBulkDelete.length > 0) {
+			mutations.deleteMany.mutate({ ids: idsToBulkDelete });
 		}
 	};
 
@@ -484,6 +503,25 @@ export default function PembayaranClient({
 						cancelText="Batal"
 					/>
 
+					<DeleteConfirmationDialog
+						isOpen={bulkDeleteDialogOpen}
+						onOpenChange={setBulkDeleteDialogOpen}
+						title={`Hapus ${idsToBulkDelete.length} Tagihan Pembayaran`}
+						description={
+							<>
+								Apakah Anda yakin ingin menghapus{" "}
+								<span className="text-foreground font-bold">
+									{idsToBulkDelete.length} tagihan
+								</span>{" "}
+								yang dipilih sekaligus? Data ini tidak dapat dikembalikan.
+							</>
+						}
+						onConfirm={handleConfirmBulkDelete}
+						isLoading={mutations.deleteMany.isPending}
+						confirmText="Hapus Semua"
+						cancelText="Batal"
+					/>
+
 					<DataTable
 						columns={tableColumns}
 						data={dataPembayaran ?? []}
@@ -496,6 +534,29 @@ export default function PembayaranClient({
 						rowSelection={rowSelection}
 						onRowSelectionChange={setRowSelection}
 						getRowId={(row) => row.id}
+						toolbar={(table) => {
+							const selectedRows = table.getFilteredSelectedRowModel().rows;
+							if (selectedRows.length === 0) return null;
+							const selectedIds = selectedRows.map((row) => row.original.id);
+							return (
+								<div className="flex items-center gap-2">
+									<Button
+										variant="destructive"
+										size="sm"
+										onClick={() => handleBulkDeleteClick(selectedIds)}
+									>
+										Hapus Terpilih ({selectedRows.length})
+									</Button>
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => table.resetRowSelection()}
+									>
+										Batal Pilih
+									</Button>
+								</div>
+							);
+						}}
 					/>
 				</TabsContent>
 

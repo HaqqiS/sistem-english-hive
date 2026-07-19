@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { TypedConfirmationDialog } from "@/app/_components/shared/typed-confirmation-dialog";
 import CardJatuhTempo from "@/app/_components/views/admin/pembayaran/card-jatuh-tempo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -503,7 +504,7 @@ export default function PembayaranClient({
 						cancelText="Batal"
 					/>
 
-					<DeleteConfirmationDialog
+					<TypedConfirmationDialog
 						isOpen={bulkDeleteDialogOpen}
 						onOpenChange={setBulkDeleteDialogOpen}
 						title={`Hapus ${idsToBulkDelete.length} Tagihan Pembayaran`}
@@ -516,6 +517,7 @@ export default function PembayaranClient({
 								yang dipilih sekaligus? Data ini tidak dapat dikembalikan.
 							</>
 						}
+						confirmationValue={`Hapus ${idsToBulkDelete.length} Tagihan SPP`}
 						onConfirm={handleConfirmBulkDelete}
 						isLoading={mutations.deleteMany.isPending}
 						confirmText="Hapus Semua"

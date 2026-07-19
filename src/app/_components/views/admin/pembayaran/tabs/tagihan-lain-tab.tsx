@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
+import { TypedConfirmationDialog } from "@/app/_components/shared/typed-confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { useTagihanLain } from "@/hooks/useTagihanLain";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
@@ -303,7 +304,7 @@ export default function TagihanLainTab({
 				cancelText="Batal"
 			/>
 
-			<DeleteConfirmationDialog
+			<TypedConfirmationDialog
 				isOpen={bulkDeleteDialogOpen}
 				onOpenChange={setBulkDeleteDialogOpen}
 				title={`Hapus ${idsToBulkDelete.length} Data Terpilih`}
@@ -314,6 +315,13 @@ export default function TagihanLainTab({
 						yang dipilih sekaligus? Data ini tidak dapat dikembalikan.
 					</>
 				}
+				confirmationValue={`Hapus ${idsToBulkDelete.length} ${
+					kategori === "BUKU"
+						? "Tagihan Buku"
+						: kategori === "REGISTRASI"
+							? "Biaya Registrasi"
+							: "Tagihan Lain"
+				}`}
 				onConfirm={handleConfirmBulkDelete}
 				isLoading={mutations.deleteMany.isPending}
 				confirmText="Hapus Semua"

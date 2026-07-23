@@ -64,15 +64,15 @@ const scheduleData = {
 		mapLink: "https://maps.app.goo.gl/ixpBYs5gMP2EW5N48",
 		schedules: [
 			{
-				days: "Senin & Kamis",
+				days: "Senin & Rabu",
 				sessions: ["14.30 - 16.00", "16.00 - 17.30", "17.30 - 19.00"],
 			},
 			{
-				days: "Selasa & Jumat",
+				days: "Kamis & Jumat",
 				sessions: ["14.30 - 16.00", "16.00 - 17.30", "17.30 - 19.00"],
 			},
 			{
-				days: "Rabu & Sabtu",
+				days: "Selasa & Sabtu",
 				sessions: ["14.30 - 16.00", "16.00 - 17.30", "17.30 - 19.00"],
 			},
 		],

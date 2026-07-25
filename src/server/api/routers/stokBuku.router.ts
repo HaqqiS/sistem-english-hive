@@ -246,12 +246,41 @@ export const stokBukuRouter = createTRPCRouter({
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
+			// Tentukan kelasId per siswa:
+			// - Kalau admin sudah pilih kelas secara manual, pakai kelas itu untuk semua siswa.
+			// - Kalau tidak, ambil dari kelas aktif masing-masing siswa (pendaftaranKelas
+			//   yang statusnya bukan NON_AKTIF), supaya "Daftar Kelas Penerima" tetap
+			//   terisi meski admin tidak memilih kelas saat menambahkan siswa.
+			const kelasIdByMurid = new Map<string, string | null>();
+
+			if (input.kelasId) {
+				for (const muridId of input.muridIds) {
+					kelasIdByMurid.set(muridId, input.kelasId);
+				}
+			} else {
+				const pendaftaranAktifList = await ctx.db.pendaftaranKelas.findMany({
+					where: {
+						muridId: { in: input.muridIds },
+						status: { not: "NON_AKTIF" },
+					},
+					select: { muridId: true, kelasId: true },
+					orderBy: { createdAt: "desc" },
+				});
+
+				for (const muridId of input.muridIds) {
+					const pendaftaran = pendaftaranAktifList.find(
+						(pk) => pk.muridId === muridId,
+					);
+					kelasIdByMurid.set(muridId, pendaftaran?.kelasId ?? null);
+				}
+			}
+
 			// Buat penerima buku
 			await ctx.db.penerimaBuku.createMany({
 				data: input.muridIds.map((muridId) => ({
 					stokBukuId: input.stokBukuId,
 					muridId,
-					kelasId: input.kelasId ?? null,
+					kelasId: kelasIdByMurid.get(muridId) ?? null,
 					statusOrder: input.statusOrder,
 					tanggalReady:
 						input.statusOrder !== "DIORDER"

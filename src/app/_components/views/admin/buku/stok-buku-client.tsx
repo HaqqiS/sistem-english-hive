@@ -15,7 +15,7 @@ import {
 	UserPlus,
 	Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -544,6 +544,7 @@ function PenerimaBukuSheet({
 	>("DIORDER");
 	const [tanggalReady, setTanggalReady] = useState<Date | undefined>();
 	const [tanggalOpen, setTanggalOpen] = useState(false);
+	const [filterKelasId, setFilterKelasId] = useState<string | null>(null);
 
 	// Daftar kelas aktif untuk filter
 	const { data: kelasAktifList, isLoading: loadingKelasAktif } =
@@ -584,6 +585,44 @@ function PenerimaBukuSheet({
 		await utils.stokBuku.getAllStokBuku.invalidate();
 	};
 
+	// Daftar kelas yang sudah di-order, dihitung dari penerimaList
+	const kelasPenerimaList = useMemo(() => {
+		if (!penerimaList) return [];
+
+		const map = new Map<
+			string,
+			{ id: string; kodeKelas: string; level: number | null; jumlah: number }
+		>();
+
+		for (const p of penerimaList) {
+			const key = p.kelas?.id ?? "tanpa-kelas";
+			const existing = map.get(key);
+			if (existing) {
+				existing.jumlah += 1;
+			} else {
+				map.set(key, {
+					id: key,
+					kodeKelas: p.kelas?.kodeKelas ?? "Tanpa Kelas",
+					level: p.kelas?.level ?? null,
+					jumlah: 1,
+				});
+			}
+		}
+
+		return Array.from(map.values()).sort((a, b) =>
+			a.kodeKelas.localeCompare(b.kodeKelas),
+		);
+	}, [penerimaList]);
+
+	// Daftar penerima yang ditampilkan, difilter berdasarkan kelas yang diklik
+	const filteredPenerimaList = useMemo(() => {
+		if (!penerimaList) return [];
+		if (!filterKelasId) return penerimaList;
+		return penerimaList.filter(
+			(p) => (p.kelas?.id ?? "tanpa-kelas") === filterKelasId,
+		);
+	}, [penerimaList, filterKelasId]);
+
 	const addPenerima = api.stokBuku.addPenerimaBuku.useMutation({
 		onSuccess: async () => {
 			toast.success("Siswa ditambahkan ke list order");
@@ -619,6 +658,7 @@ function PenerimaBukuSheet({
 			setSearchSiswa("");
 			setStatusOrder("DIORDER");
 			setTanggalReady(undefined);
+			setFilterKelasId(null);
 		}
 		onOpenChange(open);
 	};
@@ -888,10 +928,98 @@ function PenerimaBukuSheet({
 
 					<Separator />
 
+					{/* Daftar Kelas Penerima */}
+					<div className="space-y-2">
+						<div className="flex items-center justify-between gap-2">
+							<Label className="text-muted-foreground text-xs uppercase tracking-wider">
+								Daftar Kelas Penerima ({kelasPenerimaList.length})
+							</Label>
+							{filterKelasId && (
+								<button
+									type="button"
+									onClick={() => setFilterKelasId(null)}
+									className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2"
+								>
+									Hapus filter
+								</button>
+							)}
+						</div>
+
+						{loadingPenerima && (
+							<div className="flex flex-wrap gap-2">
+								{Array.from({ length: 3 }, (_, i) => i).map((id) => (
+									<Skeleton key={id} className="h-6 w-20 rounded-full" />
+								))}
+							</div>
+						)}
+
+						{!loadingPenerima && kelasPenerimaList.length === 0 && (
+							<p className="text-muted-foreground py-2 text-center text-sm italic">
+								Belum ada kelas terdaftar.
+							</p>
+						)}
+
+						{!loadingPenerima && kelasPenerimaList.length > 0 && (
+							<div className="flex flex-wrap gap-2">
+								{kelasPenerimaList.map((k) => {
+									const active = filterKelasId === k.id;
+									return (
+										<button
+											key={k.id}
+											type="button"
+											onClick={() =>
+												setFilterKelasId((prev) =>
+													prev === k.id ? null : k.id,
+												)
+											}
+										>
+											<Badge
+												variant={active ? "default" : "secondary"}
+												className={cn(
+													"gap-1 rounded-full px-3 py-1 text-xs font-normal transition-colors",
+													active && "ring-2 ring-primary/40",
+												)}
+											>
+												{k.kodeKelas}
+												{k.level != null && (
+													<span
+														className={cn(
+															active
+																? "text-primary-foreground/80"
+																: "text-muted-foreground",
+														)}
+													>
+														· Level {k.level}
+													</span>
+												)}
+												<span
+													className={cn(
+														active
+															? "text-primary-foreground/80"
+															: "text-muted-foreground",
+													)}
+												>
+													({k.jumlah} siswa)
+												</span>
+											</Badge>
+										</button>
+									);
+								})}
+							</div>
+						)}
+					</div>
+
+					<Separator />
+
 					{/* Daftar Penerima */}
 					<div className="space-y-2">
 						<Label className="text-muted-foreground text-xs uppercase tracking-wider">
-							Daftar Penerima ({penerimaList?.length ?? 0})
+							{filterKelasId
+								? `Daftar Penerima — ${
+										kelasPenerimaList.find((k) => k.id === filterKelasId)
+											?.kodeKelas ?? ""
+									} (${filteredPenerimaList.length})`
+								: `Daftar Penerima (${penerimaList?.length ?? 0})`}
 						</Label>
 
 						{loadingPenerima && (
@@ -902,14 +1030,16 @@ function PenerimaBukuSheet({
 							</div>
 						)}
 
-						{!loadingPenerima && penerimaList?.length === 0 && (
+						{!loadingPenerima && filteredPenerimaList.length === 0 && (
 							<p className="text-muted-foreground py-6 text-center text-sm italic">
-								Belum ada siswa terdaftar.
+								{filterKelasId
+									? "Tidak ada siswa di kelas ini."
+									: "Belum ada siswa terdaftar."}
 							</p>
 						)}
 
 						<div className="space-y-2">
-							{penerimaList?.map((p) => {
+							{filteredPenerimaList.map((p) => {
 								const bisaDiambil = p.statusOrder === "BISA_DIAMBIL";
 								const sudahDiambil = p.status === "SUDAH_DIAMBIL";
 								const guruNama = p.guruPenerima

@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusPembayaran } from "@prisma/client";
+import dayjs from "dayjs";
 import {
 	CalendarClock,
 	CheckCircle2,
@@ -44,7 +45,7 @@ import {
 } from "@/components/ui/table";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { api } from "@/trpc/react";
-import { formatDateWITA } from "@/utils/dateUtils";
+import { formatDateWITA, TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import {
 	buildTeksReminderGabungan,
 	formatWhatsAppReminderGabungan,
@@ -205,8 +206,13 @@ export default function KelasJatuhTempoH14() {
 										</TableHeader>
 										<TableBody>
 											{kelas.siswa.map((s) => {
+												const today = dayjs().tz(TIMEZONE_BISNIS);
+												const tenggat = dayjs(s.tenggatTerdekat).tz(
+													TIMEZONE_BISNIS,
+												);
+												const isToday = tenggat.isSame(today, "day");
 												const isOverdue =
-													new Date(s.tenggatTerdekat) < new Date();
+													!isToday && tenggat.isBefore(today, "day");
 
 												const waItems = s.semuaTagihan.map((item) => ({
 													label: item.label,
@@ -263,7 +269,9 @@ export default function KelasJatuhTempoH14() {
 															className={
 																isOverdue
 																	? "font-semibold text-red-600"
-																	: "text-orange-600"
+																	: isToday
+																		? "text-orange-500"
+																		: "text-foreground"
 															}
 														>
 															{formatDateWITA(s.tenggatTerdekat)}

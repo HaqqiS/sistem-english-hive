@@ -1,13 +1,16 @@
 "use client";
 
+import { pdf } from "@react-pdf/renderer";
 import {
 	AlertCircle,
 	CalendarDays,
 	CalendarIcon,
 	FileSpreadsheet,
+	FileText,
 	Users,
 } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DataTable } from "@/app/_components/shared/data-table-generic";
@@ -39,10 +42,12 @@ import dayjs, { formatToWITA } from "@/utils/dateUtils";
 import { downloadExcel } from "@/utils/exportUtils";
 import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "../columns/columns-detail-absen-guru";
+import { SlipGajiPDF } from "./slip-gaji-pdf";
 
 export default function DetailGuruClient() {
 	const { guruId } = useParams<{ guruId: string }>();
 	const { activeCabangId } = useGlobalCabangStore();
+	const { data: session } = useSession();
 	const [open, setOpen] = useState(false);
 
 	// Rate gaji per kode kelas — input manual oleh admin, default GAJI_PER_SESI
@@ -160,6 +165,48 @@ export default function DetailGuruClient() {
 		}
 	};
 
+	const handleExportPdf = async () => {
+		if (rekapPerKelas.length === 0) {
+			toast.error("Tidak ada data kehadiran untuk bulan ini.");
+			return;
+		}
+
+		const toastId = toast.loading("Membuat Slip Gaji PDF...");
+		try {
+			// Pakai rate yang sudah diubah admin di kalkulator "Rekap Absensi Per Kelas"
+			// (fallback ke default GAJI_PER_SESI kalau belum diubah)
+			const items = rekapPerKelas.map((group) => ({
+				kodeKelas: group.kodeKelas,
+				jumlahSesi: group.count,
+				rate: rateByKelas[group.kodeKelas] ?? GAJI_PER_SESI,
+			}));
+
+			const doc = (
+				<SlipGajiPDF
+					items={items}
+					namaGuru={guruName}
+					cabangName="English Hive"
+					periodeText={periodeText}
+					adminName={session?.user?.name ?? "Admin"}
+				/>
+			);
+
+			const asPdf = pdf(doc);
+			const blob = await asPdf.toBlob();
+			const url = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `SlipGaji-${guruName}-${selectedMonthYYYYMM}.pdf`;
+			link.click();
+			URL.revokeObjectURL(url);
+
+			toast.success("Slip Gaji PDF berhasil diunduh!", { id: toastId });
+		} catch (e) {
+			console.error(e);
+			toast.error("Gagal membuat Slip Gaji PDF.", { id: toastId });
+		}
+	};
+
 	if (isLoadingGuru || isLoadingHistory) {
 		return (
 			<div className="space-y-4">
@@ -185,7 +232,11 @@ export default function DetailGuruClient() {
 				<TambahAbsensiManual defaultGuruId={guruId} />
 				<Button variant="ghost" size="sm" onClick={handleExport}>
 					<FileSpreadsheet className="mr-2 h-4 w-4" />
-					Export Slip Gaji
+					Export Excel
+				</Button>
+				<Button variant="ghost" size="sm" onClick={handleExportPdf}>
+					<FileText className="mr-2 h-4 w-4" />
+					Export Slip Gaji (PDF)
 				</Button>
 			</HeaderActionPortal>
 

@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
+import { useCabang } from "@/hooks/useCabang";
 import { useUser } from "@/hooks/useUser";
 import { GAJI_PER_SESI, getPeriodeGaji } from "@/server/services/gaji.service";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
@@ -48,6 +49,7 @@ export default function DetailGuruClient() {
 	const { guruId } = useParams<{ guruId: string }>();
 	const { activeCabangId } = useGlobalCabangStore();
 	const { data: session } = useSession();
+	const { dataList: dataCabang } = useCabang({ enableQueryList: true });
 	const [open, setOpen] = useState(false);
 
 	// Rate gaji per kode kelas — input manual oleh admin, default GAJI_PER_SESI
@@ -88,6 +90,15 @@ export default function DetailGuruClient() {
 	const guruName = useMemo(() => {
 		return dataGuru?.find((g) => g.id === guruId)?.name ?? "Guru";
 	}, [dataGuru, guruId]);
+
+	// Nama cabang untuk slip gaji — ambil dari cabang admin yang sedang login.
+	// Manager tidak terikat 1 cabang, jadi fallback ke cabang yang sedang aktif dipilih.
+	const cabangName = useMemo(() => {
+		const cabangIdAdmin = session?.user?.cabangId ?? activeCabangId;
+		if (!cabangIdAdmin || cabangIdAdmin === "ALL") return "English Hive";
+		const found = dataCabang?.find((c) => c.id === cabangIdAdmin);
+		return found ? found.namaCabang : "English Hive";
+	}, [session, activeCabangId, dataCabang]);
 
 	// 3. Rekap jumlah kehadiran per kode kelas
 	const rekapPerKelas = useMemo(() => {
@@ -185,9 +196,8 @@ export default function DetailGuruClient() {
 				<SlipGajiPDF
 					items={items}
 					namaGuru={guruName}
-					cabangName="English Hive"
+					cabangName={cabangName}
 					periodeText={periodeText}
-					adminName={session?.user?.name ?? "Admin"}
 				/>
 			);
 

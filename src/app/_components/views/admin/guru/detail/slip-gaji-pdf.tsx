@@ -1,4 +1,11 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import {
+	Document,
+	Image,
+	Page,
+	StyleSheet,
+	Text,
+	View,
+} from "@react-pdf/renderer";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -17,11 +24,10 @@ const styles = StyleSheet.create({
 		borderBottom: "2px solid #009F86",
 		paddingBottom: 15,
 	},
-	brand: {
-		fontSize: 24,
-		fontWeight: "bold",
-		color: "#009F86",
-		letterSpacing: 1,
+	logo: {
+		width: 140,
+		objectFit: "contain",
+		marginBottom: 4,
 	},
 	brandSub: {
 		fontSize: 10,
@@ -102,18 +108,18 @@ const styles = StyleSheet.create({
 		textAlign: "right",
 		paddingRight: 12,
 	},
+	spacer: {
+		flexGrow: 1,
+	},
 	footer: {
-		position: "absolute",
-		bottom: 40,
-		left: 40,
-		right: 40,
+		marginTop: 40,
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "flex-end",
 	},
 	signatures: {
 		alignItems: "center",
-		width: 150,
+		width: 220,
 	},
 	signatureLine: {
 		borderBottom: "1px solid #94a3b8",
@@ -122,6 +128,8 @@ const styles = StyleSheet.create({
 	},
 	signatureName: {
 		fontWeight: "bold",
+		fontSize: 9,
+		textAlign: "center",
 	},
 	footerText: {
 		color: "#94a3b8",
@@ -142,7 +150,6 @@ interface SlipGajiPDFProps {
 	namaGuru: string;
 	cabangName: string;
 	periodeText: string;
-	adminName: string;
 }
 
 function formatRupiah(amount: number) {
@@ -158,7 +165,6 @@ export function SlipGajiPDF({
 	namaGuru,
 	cabangName,
 	periodeText,
-	adminName,
 }: SlipGajiPDFProps) {
 	const totalSesi = items.reduce((sum, item) => sum + item.jumlahSesi, 0);
 	const totalGaji = items.reduce(
@@ -178,7 +184,7 @@ export function SlipGajiPDF({
 				{/* Header */}
 				<View style={styles.header}>
 					<View>
-						<Text style={styles.brand}>ENGLISH HIVE</Text>
+						<Image style={styles.logo} src="/logo_header.png" />
 						<Text style={styles.brandSub}>Cabang: {cabangName}</Text>
 					</View>
 					<View style={styles.slipTitleContainer}>
@@ -234,6 +240,10 @@ export function SlipGajiPDF({
 					</View>
 				</View>
 
+				{/* Spacer: dorong footer ke bawah kalau konten pendek,
+				    tapi tetap ikut alur normal (pindah halaman) kalau konten panjang */}
+				<View style={styles.spacer} />
+
 				{/* Footer / Signatures */}
 				<View style={styles.footer}>
 					<View>
@@ -246,10 +256,12 @@ export function SlipGajiPDF({
 					</View>
 					<View style={styles.signatures}>
 						<Text style={{ marginBottom: 40, fontSize: 10, color: "#64748b" }}>
-							Diketahui oleh (Admin)
+							Diketahui,{"\n"}Direktur English Hive
 						</Text>
 						<View style={styles.signatureLine} />
-						<Text style={styles.signatureName}>{adminName || "Admin"}</Text>
+						<Text style={styles.signatureName}>
+							Prof. Dr. Desak Putu Eka Pratiwi, S.S., M.Hum.
+						</Text>
 					</View>
 				</View>
 			</Page>

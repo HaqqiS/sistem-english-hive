@@ -221,7 +221,15 @@ export default function DetailSesiClient() {
 
 				// Aksen garis kecil di kiri judul
 				doc.setFillColor(...BRAND_COLOR);
-				doc.roundedRect(margin + 4, headerY + 3.5, 1.6, headerH - 7, 0.8, 0.8, "F");
+				doc.roundedRect(
+					margin + 4,
+					headerY + 3.5,
+					1.6,
+					headerH - 7,
+					0.8,
+					0.8,
+					"F",
+				);
 
 				doc.setTextColor(30, 41, 59); // slate-800, bukan hitam pekat
 				doc.setFontSize(13);
@@ -236,7 +244,7 @@ export default function DetailSesiClient() {
 				doc.setFont("helvetica", "normal");
 				doc.setTextColor(100, 116, 139); // slate-500
 				doc.text(
-					`Guru Aktif: ${truncateText(kelasInfo.guruAktif, 20)}`,
+					`Guru Aktif: ${truncateText(kelasInfo.guruAktif, 50)}`,
 					margin + 9,
 					headerY + 12.5,
 				);

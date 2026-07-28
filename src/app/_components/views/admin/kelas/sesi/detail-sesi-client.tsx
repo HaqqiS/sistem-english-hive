@@ -244,7 +244,7 @@ export default function DetailSesiClient() {
 				doc.setFont("helvetica", "normal");
 				doc.setTextColor(100, 116, 139); // slate-500
 				doc.text(
-					`Guru Aktif: ${truncateText(kelasInfo.guruAktif, 50)}`,
+					`Guru Aktif: ${truncateText(kelasInfo.guruAktif, 100)}`,
 					margin + 9,
 					headerY + 12.5,
 				);

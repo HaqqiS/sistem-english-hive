@@ -175,6 +175,12 @@ export default function DetailSesiClient() {
 			const margin = 10;
 			const nameColWidth = 42;
 
+			// Batasi nama guru maksimal 20 karakter di header PDF biar rapi
+			const truncateText = (text: string, maxLength: number) =>
+				text.length > maxLength
+					? `${text.slice(0, maxLength - 1).trimEnd()}…`
+					: text;
+
 			// ── Bagi sesi jadi beberapa "halaman" (chunk) kalau kolomnya
 			// kebanyakan sehingga tidak muat ke samping dalam 1 halaman.
 			// Setiap chunk tetap menampilkan kolom "Nama Siswa" di kiri,
@@ -238,7 +244,7 @@ export default function DetailSesiClient() {
 				doc.setFont("helvetica", "normal");
 				doc.setTextColor(100, 116, 139); // slate-500
 				doc.text(
-					`Guru Aktif: ${kelasInfo.guruAktif}`,
+					`Guru Aktif: ${truncateText(kelasInfo.guruAktif, 20)}`,
 					margin + 9,
 					headerY + 12.5,
 				);

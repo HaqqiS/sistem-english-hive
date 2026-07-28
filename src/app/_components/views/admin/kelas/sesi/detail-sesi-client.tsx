@@ -167,102 +167,222 @@ export default function DetailSesiClient() {
 
 			const doc = new jsPDF({
 				orientation: "landscape",
+				format: "a4",
 			});
 
-			doc.setFontSize(16);
-			doc.text(`Presensi Kelas: ${kelasInfo.kodeKelas}`, 14, 15);
-			doc.setFontSize(11);
-			doc.text(`Guru Aktif: ${kelasInfo.guruAktif}`, 14, 22);
+			const BRAND_COLOR: [number, number, number] = [0, 159, 134]; // #009F86
+			const pageWidth = doc.internal.pageSize.getWidth();
+			const margin = 10;
+			const nameColWidth = 42;
 
-			// Row 1: Hari & Tanggal (RABU 04/02)
-			const headerRow1 = [
-				{
-					content: "Nama Siswa",
-					rowSpan: 3,
-					styles: { halign: "left" as const, valign: "middle" as const },
-				},
-				...columnData.map((col) => {
-					const hari = formatToWITA(col.tanggal, "dddd").toUpperCase();
-					const tgl = formatToWITA(col.tanggal, "DD/MM");
-					return `${hari}\n${tgl}`;
-				}),
-			];
-
-			// Row 2: Pertemuan Ke (Pertemuan 1)
-			const headerRow2 = columnData.map((col) => `${col.pertemuanKe}`);
-
-			// Row 3: Pengajar (Galih)
-			const headerRow3 = columnData.map(
-				(col) => col.pengajar.split(" ")[0] || "",
+			// ── Bagi sesi jadi beberapa "halaman" (chunk) kalau kolomnya
+			// kebanyakan sehingga tidak muat ke samping dalam 1 halaman.
+			// Setiap chunk tetap menampilkan kolom "Nama Siswa" di kiri,
+			// jadi mudah dibaca meski dipisah per halaman.
+			const availableWidth = pageWidth - margin * 2 - nameColWidth;
+			const minColWidth = 15; // mm — batas minimum supaya teks tidak dempet
+			const sessionsPerPage = Math.max(
+				1,
+				Math.floor(availableWidth / minColWidth),
 			);
 
-			const head: RowInput[] = [headerRow1, headerRow2, headerRow3];
+			const chunks: (typeof columnData)[] = [];
+			for (let i = 0; i < columnData.length; i += sessionsPerPage) {
+				chunks.push(columnData.slice(i, i + sessionsPerPage));
+			}
+			const totalPages = chunks.length;
+			const cetakPada = formatToWITA(new Date(), "dddd, D MMMM YYYY HH:mm");
 
-			const body = rowData.map((row) => {
-				const cellData = [row.namaSiswa];
-				columnData.forEach((col) => {
-					const status = row.attendance[col.sesiId];
-					const { text } = getBadgeContent(status ?? null);
-					cellData.push(text);
-				});
-				return cellData;
-			});
+			chunks.forEach((chunkCols, chunkIdx) => {
+				if (chunkIdx > 0) doc.addPage();
 
-			const totalSessions = columnData.length;
-			const dynamicFontSize =
-				totalSessions > 20 ? 6 : totalSessions > 12 ? 7 : 8;
-			const dynamicPadding = totalSessions > 15 ? 1 : 1.5;
+				// ── Header dokumen: kartu ringan, sudut membulat, tidak mentok tepi ──
+				const headerY = 8;
+				const headerH = 16;
 
-			autoTable(doc, {
-				head: head,
-				body: body,
-				startY: 28,
-				theme: "grid",
-				styles: {
-					fontSize: dynamicFontSize,
-					cellPadding: dynamicPadding,
-					overflow: "linebreak",
-					halign: "center",
-					valign: "middle",
-				},
-				headStyles: {
-					fillColor: [15, 23, 42],
-					textColor: 255,
-					halign: "center",
-					valign: "middle",
-					fontSize: dynamicFontSize,
-					cellPadding: dynamicPadding,
-				},
-				columnStyles: {
-					0: {
-						halign: "left",
-						cellWidth: 40,
-						fontStyle: "bold",
-						fontSize: dynamicFontSize + 0.5,
+				doc.setFillColor(236, 253, 249); // tint teal sangat muda
+				doc.setDrawColor(...BRAND_COLOR);
+				doc.setLineWidth(0.4);
+				doc.roundedRect(
+					margin,
+					headerY,
+					pageWidth - margin * 2,
+					headerH,
+					2.5,
+					2.5,
+					"FD",
+				);
+
+				// Aksen garis kecil di kiri judul
+				doc.setFillColor(...BRAND_COLOR);
+				doc.roundedRect(
+					margin + 4,
+					headerY + 3.5,
+					1.6,
+					headerH - 7,
+					0.8,
+					0.8,
+					"F",
+				);
+
+				doc.setTextColor(30, 41, 59); // slate-800, bukan hitam pekat
+				doc.setFontSize(13);
+				doc.setFont("helvetica", "bold");
+				doc.text(
+					`Presensi Kelas: ${kelasInfo.kodeKelas}`,
+					margin + 9,
+					headerY + 7,
+				);
+
+				doc.setFontSize(8.5);
+				doc.setFont("helvetica", "normal");
+				doc.setTextColor(100, 116, 139); // slate-500
+				doc.text(
+					`Guru Aktif: ${kelasInfo.guruAktif}`,
+					margin + 9,
+					headerY + 12.5,
+				);
+
+				doc.setFontSize(8);
+				doc.text(
+					`Halaman ${chunkIdx + 1} dari ${totalPages}  ·  Sesi ${
+						chunkIdx * sessionsPerPage + 1
+					}–${chunkIdx * sessionsPerPage + chunkCols.length} dari ${
+						columnData.length
+					}`,
+					pageWidth - margin - 4,
+					headerY + 9.5,
+					{ align: "right" },
+				);
+
+				doc.setTextColor(0, 0, 0);
+
+				// Row 1: Hari & Tanggal (RABU 04/02)
+				const headerRow1 = [
+					{
+						content: "Nama Siswa",
+						rowSpan: 3,
+						styles: { halign: "left" as const, valign: "middle" as const },
 					},
-				},
-				didParseCell: (data) => {
-					// Apply styling headers manually if needed
-					if (data.section === "head") {
-						if (data.row.index === 0 && data.column.index > 0) {
-							// Top row styling (Hari/Tgl)
-							data.cell.styles.fontStyle = "bold";
-						}
-					}
+					...chunkCols.map((col) => {
+						const hari = formatToWITA(col.tanggal, "dddd").toUpperCase();
+						const tgl = formatToWITA(col.tanggal, "DD/MM");
+						return `${hari}\n${tgl}`;
+					}),
+				];
 
-					if (data.section === "body" && data.column.index > 0) {
-						const text = data.cell.raw as string;
-						if (text === "H") {
-							data.cell.styles.textColor = [22, 163, 74];
-							data.cell.styles.fontStyle = "bold";
-						} else if (text === "A") {
-							data.cell.styles.textColor = [220, 38, 38];
-							data.cell.styles.fontStyle = "bold";
-						} else if (text === "Off") {
-							data.cell.styles.textColor = [107, 114, 128];
+				// Row 2: Pertemuan Ke (Pertemuan 1)
+				const headerRow2 = chunkCols.map((col) => `${col.pertemuanKe}`);
+
+				// Row 3: Pengajar (Galih)
+				const headerRow3 = chunkCols.map(
+					(col) => col.pengajar.split(" ")[0] || "",
+				);
+
+				const head: RowInput[] = [headerRow1, headerRow2, headerRow3];
+
+				const body = rowData.map((row) => {
+					const cellData = [row.namaSiswa];
+					chunkCols.forEach((col) => {
+						const status = row.attendance[col.sesiId];
+						const { text } = getBadgeContent(status ?? null);
+						cellData.push(text);
+					});
+					return cellData;
+				});
+
+				const sessionsInChunk = chunkCols.length;
+				const dynamicFontSize =
+					sessionsInChunk > 12 ? 7 : sessionsInChunk > 8 ? 7.5 : 8.5;
+				const dynamicPadding = sessionsInChunk > 12 ? 1.4 : 2;
+
+				autoTable(doc, {
+					head,
+					body,
+					startY: headerY + headerH + 5,
+					margin: { left: margin, right: margin },
+					theme: "grid",
+					styles: {
+						fontSize: dynamicFontSize,
+						cellPadding: dynamicPadding,
+						overflow: "linebreak",
+						halign: "center",
+						valign: "middle",
+						lineColor: [230, 235, 240],
+						lineWidth: 0.1,
+						textColor: [51, 65, 85], // slate-700, lebih kalem dari hitam
+					},
+					headStyles: {
+						fillColor: [230, 250, 246], // tint teal muda, bukan navy pekat
+						textColor: [15, 90, 79], // teal gelap untuk kontras teks
+						halign: "center",
+						valign: "middle",
+						fontSize: dynamicFontSize,
+						cellPadding: dynamicPadding,
+						fontStyle: "bold",
+						lineColor: [200, 230, 224],
+					},
+					alternateRowStyles: {
+						fillColor: [250, 251, 252],
+					},
+					columnStyles: {
+						0: {
+							halign: "left",
+							cellWidth: nameColWidth,
+							fontStyle: "bold",
+							fontSize: dynamicFontSize + 0.5,
+							fillColor: [255, 255, 255],
+							textColor: [30, 41, 59],
+						},
+					},
+					didParseCell: (data) => {
+						// Apply styling headers manually if needed
+						if (data.section === "head") {
+							if (data.row.index === 0 && data.column.index > 0) {
+								// Top row styling (Hari/Tgl)
+								data.cell.styles.fontStyle = "bold";
+							}
 						}
-					}
-				},
+
+						if (data.section === "body" && data.column.index > 0) {
+							const text = data.cell.raw as string;
+							if (text === "H") {
+								data.cell.styles.textColor = [22, 163, 74];
+								data.cell.styles.fontStyle = "bold";
+							} else if (text === "A") {
+								data.cell.styles.textColor = [220, 38, 38];
+								data.cell.styles.fontStyle = "bold";
+							} else if (text === "Off") {
+								data.cell.styles.textColor = [107, 114, 128];
+							}
+						}
+					},
+					didDrawPage: () => {
+						// ── Footer: legenda status + nomor halaman ────────────
+						const pageH = doc.internal.pageSize.getHeight();
+
+						doc.setDrawColor(226, 232, 240);
+						doc.setLineWidth(0.2);
+						doc.line(margin, pageH - 12, pageWidth - margin, pageH - 12);
+
+						doc.setFontSize(7.5);
+						doc.setTextColor(100, 116, 139);
+						doc.setFont("helvetica", "normal");
+						doc.text(
+							"Keterangan: H = Hadir · A = Alpa · Off = Off Sementara",
+							margin,
+							pageH - 7,
+						);
+						doc.text(`Dicetak: ${cetakPada}`, margin, pageH - 3);
+
+						doc.text(
+							`Halaman ${chunkIdx + 1} / ${totalPages}`,
+							pageWidth - margin,
+							pageH - 5,
+							{ align: "right" },
+						);
+					},
+				});
 			});
 
 			doc.save(`Presensi_${kelasInfo.kodeKelas}.pdf`);
@@ -448,9 +568,16 @@ export default function DetailSesiClient() {
 									{columnData.map((col) => (
 										<TableHead
 											key={col.sesiId}
-											className="text-center text-xs font-medium"
+											className="text-center text-xs font-medium max-w-[90px] overflow-hidden"
 										>
-											{col.pengajar}
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<span className="block max-w-[90px] truncate mx-auto cursor-help">
+														{col.pengajar}
+													</span>
+												</TooltipTrigger>
+												<TooltipContent>{col.pengajar}</TooltipContent>
+											</Tooltip>
 										</TableHead>
 									))}
 								</TableRow>

@@ -15,6 +15,7 @@ import {
 	UserPlus,
 	Users,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
@@ -68,6 +69,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { UserRole } from "@/server/auth/type";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { api } from "@/trpc/react";
 
@@ -84,11 +86,20 @@ function formatDate(date: Date | string | null | undefined) {
 
 export default function StokBukuClient() {
 	const utils = api.useUtils();
+	const { data: session } = useSession();
 	const { activeCabangId } = useGlobalCabangStore();
 	const queryCabangId = activeCabangId === "ALL" ? undefined : activeCabangId;
 
+	const isManager = session?.user?.role === UserRole.MANAGER;
+	// Manager tidak boleh melihat stok buku gabungan semua cabang — wajib
+	// pilih cabang spesifik dulu lewat cabang switcher.
+	const isManagerViewingAllCabang = isManager && activeCabangId === "ALL";
+
 	const { data: stokBukuList, isLoading } =
-		api.stokBuku.getAllStokBuku.useQuery({ cabangId: queryCabangId });
+		api.stokBuku.getAllStokBuku.useQuery(
+			{ cabangId: queryCabangId },
+			{ enabled: !isManagerViewingAllCabang },
+		);
 
 	const { data: jenisKelasList } = api.stokBuku.getJenisKelasUntukStok.useQuery(
 		{ cabangId: queryCabangId },

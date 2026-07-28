@@ -221,15 +221,7 @@ export default function DetailSesiClient() {
 
 				// Aksen garis kecil di kiri judul
 				doc.setFillColor(...BRAND_COLOR);
-				doc.roundedRect(
-					margin + 4,
-					headerY + 3.5,
-					1.6,
-					headerH - 7,
-					0.8,
-					0.8,
-					"F",
-				);
+				doc.roundedRect(margin + 4, headerY + 3.5, 1.6, headerH - 7, 0.8, 0.8, "F");
 
 				doc.setTextColor(30, 41, 59); // slate-800, bukan hitam pekat
 				doc.setFontSize(13);
@@ -280,9 +272,10 @@ export default function DetailSesiClient() {
 				// Row 2: Pertemuan Ke (Pertemuan 1)
 				const headerRow2 = chunkCols.map((col) => `${col.pertemuanKe}`);
 
-				// Row 3: Pengajar (Galih)
-				const headerRow3 = chunkCols.map(
-					(col) => col.pengajar.split(" ")[0] || "",
+				// Row 3: Pengajar (maksimal 20 karakter, bukan cuma kata pertama —
+				// supaya nama dengan gelar seperti "Dr." tidak kepotong jadi "Dr." doang)
+				const headerRow3 = chunkCols.map((col) =>
+					truncateText(col.pengajar, 20),
 				);
 
 				const head: RowInput[] = [headerRow1, headerRow2, headerRow3];

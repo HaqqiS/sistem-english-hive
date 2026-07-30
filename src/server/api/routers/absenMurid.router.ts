@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { handleClassCompletion } from "@/server/services/kelas.service";
 import { processAutoBilling } from "@/server/services/pembayaran.service";
+import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 export const absenMuridRouter = createTRPCRouter({
 	getMuridForAbsensi: cabangProtectedProcedure
@@ -58,19 +59,30 @@ export const absenMuridRouter = createTRPCRouter({
 			);
 			const existingMuridIds = existingAbsensi.map((a) => a.muridId);
 
+			// Tanggal sesi ini (WITA) dalam format "YYYY-MM-DD", dipakai untuk
+			// membandingkan dengan tanggalMulai (tanggal masuk kelas) tiap siswa.
+			const sesiDateStr = formatDateToYYYYMMDD(sesi.tanggalWaktu);
+
 			// 4. Dapatkan semua murid yang terdaftar & aktif di kelas ini (ATAU punya history absensi)
+			//    Siswa yang tanggal masuk kelasnya (tanggalMulai) BELUM TERCAPAI pada
+			//    tanggal sesi ini TIDAK ditampilkan — kecuali dia sudah punya data
+			//    absensi tercatat sebelumnya untuk sesi ini (supaya data lama tidak hilang).
 			const pendaftar = await db.pendaftaranKelas.findMany({
 				where: {
 					kelasId: sesi.kelasId,
 					OR: [
 						{
-							status: StatusPendaftaran.AKTIF,
-						},
-						{
-							status: StatusPendaftaran.TRIAL,
-						},
-						{
-							status: StatusPendaftaran.OFF_SEMENTARA,
+							status: {
+								in: [
+									StatusPendaftaran.AKTIF,
+									StatusPendaftaran.TRIAL,
+									StatusPendaftaran.OFF_SEMENTARA,
+								],
+							},
+							OR: [
+								{ tanggalMulai: null },
+								{ tanggalMulai: { lte: sesiDateStr } },
+							],
 						},
 						{
 							muridId: { in: existingMuridIds },

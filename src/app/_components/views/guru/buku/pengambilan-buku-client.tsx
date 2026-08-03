@@ -123,9 +123,9 @@ export function PengambilanBukuSection({
 											: "",
 								)}
 							>
-								<div className="flex items-center justify-between gap-2">
+								<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 									<div className="min-w-0">
-										<p className="truncate text-sm font-medium">
+										<p className="text-sm font-medium break-words">
 											{p.murid.namaLengkap}{" "}
 											<span className="text-muted-foreground font-normal text-xs">
 												· {p.stokBuku.jenisKelas.nama} · Level{" "}
@@ -134,7 +134,7 @@ export function PengambilanBukuSection({
 										</p>
 									</div>
 
-									<div className="flex shrink-0 items-center gap-2">
+									<div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
 										{/* Badge status order */}
 										<Badge
 											variant={bisaDiambil ? "default" : "secondary"}

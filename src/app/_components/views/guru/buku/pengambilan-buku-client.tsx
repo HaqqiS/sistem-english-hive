@@ -77,33 +77,55 @@ export function PengambilanBukuSection({
 
 	return (
 		<div className="space-y-4">
-			<div className="flex items-center gap-3">
-				<div className="bg-primary/10 rounded-xl p-2.5">
-					<Package className="text-primary h-5 w-5" />
-				</div>
-				<div>
-					<h2 className="text-lg font-bold">Order Buku</h2>
-					<p className="text-muted-foreground text-sm">
-						{guruId ? (
-							`Daftar buku untuk siswa ${guruName ?? "guru ini"}.`
-						) : (
-							<p>
-								-- Jika status Bisa Diambil, silakan tekan tombol "Ambil
-								Sekarang" & ambilkan bukunya.
-								<br />
-								<br />
-								-- Jika siswa tidak hadir, konfirmasi ke admin agar status
-								diubah menjadi "Belum Diambil" dan buku dikembalikan ke tempat
-								semula.
-								<br />
-								<br />
-								-- Jika status "Ready" tetapi tidak bisa diubah, silakan hubungi
-								admin karena kemungkinan pembayaran buku siswa belum lunas.
-							</p>
-						)}
-					</p>
-				</div>
-			</div>
+			<Card className="border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/20">
+				<CardHeader className="pb-3">
+					<div className="flex items-center gap-3">
+						<div className="rounded-xl bg-green-600/10 p-2.5">
+							<Package className="h-5 w-5 text-green-600" />
+						</div>
+						<div>
+							<CardTitle className="text-lg text-green-700 dark:text-green-500">
+								Pengambilan Buku
+							</CardTitle>
+							{guruId && (
+								<p className="text-muted-foreground text-sm">
+									Daftar buku untuk siswa {guruName ?? "guru ini"}.
+									<br />
+									<br />
+									1. Jika status Bisa Diambil, silakan tekan tombol "Ambil
+									Sekarang" & ambilkan bukunya.
+									<br />
+									<br />
+									2. Jika siswa tidak hadir, konfirmasi ke admin agar status
+									diubah menjadi "Belum Diambil" dan buku dikembalikan ke tempat
+									semula.
+									<br />
+									<br />
+									3. Jika status "Ready" tetapi tidak bisa diubah, silakan
+									hubungi admin karena kemungkinan pembayaran buku siswa belum
+									lunas.
+								</p>
+							)}
+						</div>
+					</div>
+				</CardHeader>
+				{!guruId && (
+					<CardContent className="pt-0">
+						<p className="text-muted-foreground text-sm">
+							1. Jika status Bisa Diambil, silakan tekan tombol "Ambil Sekarang"
+							& ambilkan bukunya.
+							<br />
+							<br />
+							2. Jika siswa tidak hadir, konfirmasi ke admin agar status diubah
+							menjadi "Belum Diambil" dan buku dikembalikan ke tempat semula.
+							<br />
+							<br />
+							3. Jika status "Ready" tetapi tidak bisa diubah, silakan hubungi
+							admin karena kemungkinan pembayaran buku siswa belum lunas.
+						</p>
+					</CardContent>
+				)}
+			</Card>
 
 			<Card>
 				<CardHeader className="pb-3">

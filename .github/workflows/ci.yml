@@ -20,9 +20,7 @@ jobs:
 
     - name: Install pnpm
       uses: pnpm/action-setup@v4
-      # Versi pnpm tidak perlu di-set manual di sini.
-      # pnpm/action-setup v4 otomatis membaca field "packageManager"
-      # di package.json (pnpm@9.12.0), jadi tidak akan bentrok lagi.
+      # Versi pnpm otomatis dibaca dari field "packageManager" di package.json.
 
     - name: Get pnpm store directory
       shell: bash
@@ -47,8 +45,12 @@ jobs:
       run: pnpm typecheck
 
     - name: Run Tests
-      # Assuming 'test' script is added to package.json
       run: pnpm test run
 
     - name: Build
       run: pnpm build
+      env:
+        AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        AUTH_URL: ${{ secrets.AUTH_URL }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}

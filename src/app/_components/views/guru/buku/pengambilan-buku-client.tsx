@@ -57,6 +57,24 @@ export function PengambilanBukuSection({
 		(i) => i.status === "SUDAH_DIAMBIL",
 	).length;
 
+	// Kelompokkan daftar per kelas siswa (kodeKelas), lalu urutkan nama kelas A-Z.
+	// Yang tidak punya kelas (null) dikumpulkan di grup "Tanpa Kelas" di akhir.
+	const groupedMap = new Map<string, typeof penerimaList>();
+	for (const p of penerimaList) {
+		const kelasLabel = p.kelas?.kodeKelas ?? "Tanpa Kelas";
+		const existing = groupedMap.get(kelasLabel);
+		if (existing) {
+			existing.push(p);
+		} else {
+			groupedMap.set(kelasLabel, [p]);
+		}
+	}
+	const groupedByKelas = Array.from(groupedMap.entries()).sort(([a], [b]) => {
+		if (a === "Tanpa Kelas") return 1;
+		if (b === "Tanpa Kelas") return -1;
+		return a.localeCompare(b);
+	});
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center gap-3">
@@ -106,106 +124,121 @@ export function PengambilanBukuSection({
 						</Badge>
 					</div>
 				</CardHeader>
-				<CardContent className="space-y-2">
-					{penerimaList.map((p) => {
-						const bisaDiambil = p.statusOrder === "BISA_DIAMBIL";
-						const sudahDiambil = p.status === "SUDAH_DIAMBIL";
+				<CardContent className="space-y-4">
+					{groupedByKelas.map(([kelasLabel, items]) => (
+						<div key={kelasLabel} className="space-y-2">
+							<div className="flex items-center gap-2">
+								<h3 className="text-sm font-semibold text-foreground">
+									{kelasLabel}
+								</h3>
+								<span className="text-muted-foreground text-xs">
+									({items.length} siswa)
+								</span>
+							</div>
 
-						return (
-							<div
-								key={p.id}
-								className={cn(
-									"rounded-md border p-3 space-y-1",
-									sudahDiambil
-										? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/20"
-										: !bisaDiambil
-											? "bg-muted/30"
-											: "",
-								)}
-							>
-								<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-									<div className="min-w-0">
-										<p className="text-sm font-medium break-words">
-											{p.murid.namaLengkap}{" "}
-											<span className="text-muted-foreground font-normal text-xs">
-												· {p.stokBuku.jenisKelas.nama} · Level{" "}
-												{p.stokBuku.level}
-											</span>
-										</p>
-									</div>
+							<div className="space-y-2">
+								{items.map((p) => {
+									const bisaDiambil = p.statusOrder === "BISA_DIAMBIL";
+									const sudahDiambil = p.status === "SUDAH_DIAMBIL";
 
-									<div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
-										{/* Badge status order */}
-										<Badge
-											variant={bisaDiambil ? "default" : "secondary"}
+									return (
+										<div
+											key={p.id}
 											className={cn(
-												"text-xs",
-												bisaDiambil && "bg-green-600",
-												p.statusOrder === "READY" &&
-													"bg-blue-600 text-white hover:bg-blue-600",
+												"rounded-md border p-3 space-y-1",
+												sudahDiambil
+													? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/20"
+													: !bisaDiambil
+														? "bg-muted/30"
+														: "",
 											)}
 										>
-											{p.statusOrder === "DIORDER"
-												? "Diorder"
-												: p.statusOrder === "READY"
-													? "Ready"
-													: "Bisa Diambil"}
-										</Badge>
+											<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+												<div className="min-w-0">
+													<p className="text-sm font-medium break-words">
+														{p.murid.namaLengkap}{" "}
+														<span className="text-muted-foreground font-normal text-xs">
+															· {p.stokBuku.jenisKelas.nama} · Level{" "}
+															{p.stokBuku.level}
+														</span>
+													</p>
+												</div>
 
-										{/* Tombol ubah status ambil — hanya kalau Bisa Diambil */}
-										{bisaDiambil && (
-											<Button
-												size="sm"
-												variant={sudahDiambil ? "default" : "outline"}
-												className={cn(
-													"h-7 text-xs",
-													sudahDiambil && "bg-blue-600 hover:bg-blue-700",
-												)}
-												onClick={() => {
-													if (sudahDiambil) {
-														toast.error(
-															"Status sudah 'Diambil' dan tidak bisa diubah sendiri. Hubungi admin jika ingin merubah status.",
-														);
-														return;
-													}
-													updateStatus.mutate({
-														penerimaBukuId: p.id,
-														status: "SUDAH_DIAMBIL",
-														onBehalfOfGuruId: guruId,
-													});
-												}}
-												disabled={updateStatus.isPending}
-											>
-												{sudahDiambil ? (
-													<>
-														<CheckCircle2 className="mr-1 h-3 w-3" />
-														Diambil
-													</>
-												) : (
-													<>
-														<Clock className="mr-1 h-3 w-3" />
-														Ambil Sekarang?
-													</>
-												)}
-											</Button>
-										)}
-									</div>
-								</div>
+												<div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+													{/* Badge status order */}
+													<Badge
+														variant={bisaDiambil ? "default" : "secondary"}
+														className={cn(
+															"text-xs",
+															bisaDiambil && "bg-green-600",
+															p.statusOrder === "READY" &&
+																"bg-blue-600 text-white hover:bg-blue-600",
+														)}
+													>
+														{p.statusOrder === "DIORDER"
+															? "Diorder"
+															: p.statusOrder === "READY"
+																? "Ready"
+																: "Bisa Diambil"}
+													</Badge>
 
-								{/* Tanggal ready & tanggal diambil */}
-								{p.statusOrder !== "DIORDER" && p.tanggalReady && (
-									<p className="text-xs text-muted-foreground">
-										Update status sejak: {formatDate(p.tanggalReady)}
-									</p>
-								)}
-								{sudahDiambil && p.tanggalAmbil && (
-									<p className="text-xs text-green-700 dark:text-green-500">
-										Diambil pada: {formatDate(p.tanggalAmbil)}
-									</p>
-								)}
+													{/* Tombol ubah status ambil — hanya kalau Bisa Diambil */}
+													{bisaDiambil && (
+														<Button
+															size="sm"
+															variant={sudahDiambil ? "default" : "outline"}
+															className={cn(
+																"h-7 text-xs",
+																sudahDiambil && "bg-blue-600 hover:bg-blue-700",
+															)}
+															onClick={() => {
+																if (sudahDiambil) {
+																	toast.error(
+																		"Status sudah 'Diambil' dan tidak bisa diubah sendiri. Hubungi admin jika ingin merubah status.",
+																	);
+																	return;
+																}
+																updateStatus.mutate({
+																	penerimaBukuId: p.id,
+																	status: "SUDAH_DIAMBIL",
+																	onBehalfOfGuruId: guruId,
+																});
+															}}
+															disabled={updateStatus.isPending}
+														>
+															{sudahDiambil ? (
+																<>
+																	<CheckCircle2 className="mr-1 h-3 w-3" />
+																	Diambil
+																</>
+															) : (
+																<>
+																	<Clock className="mr-1 h-3 w-3" />
+																	Ambil Sekarang?
+																</>
+															)}
+														</Button>
+													)}
+												</div>
+											</div>
+
+											{/* Tanggal ready & tanggal diambil */}
+											{p.statusOrder !== "DIORDER" && p.tanggalReady && (
+												<p className="text-xs text-muted-foreground">
+													Update status sejak: {formatDate(p.tanggalReady)}
+												</p>
+											)}
+											{sudahDiambil && p.tanggalAmbil && (
+												<p className="text-xs text-green-700 dark:text-green-500">
+													Diambil pada: {formatDate(p.tanggalAmbil)}
+												</p>
+											)}
+										</div>
+									);
+								})}
 							</div>
-						);
-					})}
+						</div>
+					))}
 				</CardContent>
 			</Card>
 		</div>

@@ -9,6 +9,7 @@ import {
 	SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import type { NavCollapsibleItem, NavItem } from "@/types/nav.type";
 import { DynamicBreadcrumb } from "../shared/dynamic-breadcrumb";
 import { SidebarMenuSkeleton } from "../shared/sidebar-menu-skeleton";
@@ -17,12 +18,20 @@ interface DashboardLayoutProps {
 	children: React.ReactNode;
 	navItems: NavItem[];
 	navCollapsibleItems?: NavCollapsibleItem[];
+	/**
+	 * Set true kalau layout ini akan ditambahkan mobile bottom navigation
+	 * (mis. dashboard guru). Ini cuma menambah padding-bottom di mobile
+	 * supaya konten paling bawah tidak ketutup bottom nav. Default: false,
+	 * jadi tidak mengubah tampilan dashboard yang belum pakai bottom nav.
+	 */
+	hasBottomNav?: boolean;
 }
 
 export default function DashboardLayout({
 	children,
 	navItems,
 	navCollapsibleItems,
+	hasBottomNav = false,
 }: DashboardLayoutProps) {
 	return (
 		<SidebarProvider>
@@ -65,7 +74,12 @@ export default function DashboardLayout({
 						</div>
 					}
 				>
-					<div className="flex flex-1 flex-col gap-4 p-2 lg:p-4 lg:pt-0">
+					<div
+						className={cn(
+							"flex flex-1 flex-col gap-4 p-2 lg:p-4 lg:pt-0",
+							hasBottomNav && "pb-20 lg:pb-0",
+						)}
+					>
 						<motion.div
 							className="flex flex-1 flex-col gap-4 p-2 lg:p-4 lg:pt-0"
 							initial={{ opacity: 0, y: 10 }}

@@ -1,5 +1,6 @@
 import type { NavItem } from "@/types/nav.type";
 import DashboardLayout from "../_components/layouts/dashboard-layout";
+import { TeacherBottomNav } from "../_components/shared/teacher-bottom-nav";
 
 // Tentukan navigasi khusus untuk Teacher
 const teacherNavItems: NavItem[] = [
@@ -39,6 +40,11 @@ export default async function TeacherLayout({
 	// }
 
 	return (
-		<DashboardLayout navItems={teacherNavItems}> {children} </DashboardLayout>
+		<>
+			<DashboardLayout navItems={teacherNavItems} hasBottomNav>
+				{children}
+			</DashboardLayout>
+			<TeacherBottomNav navItems={teacherNavItems} />
+		</>
 	);
 }

@@ -20,8 +20,9 @@ jobs:
 
     - name: Install pnpm
       uses: pnpm/action-setup@v4
-      with:
-        version: 9
+      # Versi pnpm tidak perlu di-set manual di sini.
+      # pnpm/action-setup v4 otomatis membaca field "packageManager"
+      # di package.json (pnpm@9.12.0), jadi tidak akan bentrok lagi.
 
     - name: Get pnpm store directory
       shell: bash

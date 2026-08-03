@@ -6,8 +6,8 @@ import {
 	FileText,
 	Home,
 	LayoutGrid,
-	Users,
 	type LucideIcon,
+	Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -107,9 +107,7 @@ export function TeacherBottomNav({ navItems }: TeacherBottomNavProps) {
 											<span
 												className={cn(
 													"-mt-3 line-clamp-1 text-[10px] leading-none font-semibold transition-colors",
-													isActive
-														? "text-primary"
-														: "text-muted-foreground",
+													isActive ? "text-primary" : "text-muted-foreground",
 												)}
 											>
 												{item.title}
@@ -121,17 +119,13 @@ export function TeacherBottomNav({ navItems }: TeacherBottomNavProps) {
 											<Icon
 												className={cn(
 													"h-5 w-5 transition-colors",
-													isActive
-														? "text-primary"
-														: "text-muted-foreground",
+													isActive ? "text-primary" : "text-muted-foreground",
 												)}
 											/>
 											<span
 												className={cn(
 													"line-clamp-1 text-[10px] leading-none font-medium transition-colors",
-													isActive
-														? "text-primary"
-														: "text-muted-foreground",
+													isActive ? "text-primary" : "text-muted-foreground",
 												)}
 											>
 												{item.title}

@@ -3,7 +3,6 @@ import {
 	type Kelas,
 	type PendaftaranKelas,
 	type PrismaClient,
-	StatusPembayaran,
 	StatusPendaftaran,
 } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,14 +13,24 @@ import {
 } from "../../server/services/pendaftaran.service";
 
 // Mock Pembayaran Service logic
-vi.mock("../server/services/pembayaran.service", () => ({
+// PENTING: path di vi.mock() harus SAMA PERSIS dengan path di import di atas,
+// kalau tidak, Vitest tidak akan meng-intercept module aslinya.
+//
+// pendaftaran.service.ts sekarang memanggil generateTagihan() (bukan lagi
+// tx.pembayaran.create langsung), jadi generateTagihan juga wajib di-mock,
+// kalau tidak Vitest akan komplain "No export is defined on the mock".
+vi.mock("../../server/services/pembayaran.service", () => ({
 	calculateInitialBill: vi.fn(),
+	generateTagihan: vi.fn(),
 }));
 
 describe("Pendaftaran Service", () => {
 	const mockTx = {
 		pendaftaranKelas: {
 			create: vi.fn(),
+			// Dibutuhkan oleh syncMuridStatus() yang dipanggil di dalam
+			// createPendaftaran/createBulkPendaftaran.
+			findMany: vi.fn().mockResolvedValue([]),
 		},
 		pembayaran: {
 			create: vi.fn(),
@@ -37,6 +46,9 @@ describe("Pendaftaran Service", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// vi.clearAllMocks() mereset implementasi mockResolvedValue juga,
+		// jadi perlu di-set ulang tiap test supaya syncMuridStatus tidak error.
+		vi.mocked(mockTx.pendaftaranKelas.findMany).mockResolvedValue([]);
 	});
 
 	describe("createPendaftaran", () => {
@@ -73,12 +85,15 @@ describe("Pendaftaran Service", () => {
 			const result = await createPendaftaran(params as any);
 
 			expect(mockTx.pendaftaranKelas.create).toHaveBeenCalled();
-			expect(mockTx.pembayaran.create).toHaveBeenCalledWith(
+			// Sekarang tagihan dibuat lewat generateTagihan(), bukan langsung
+			// tx.pembayaran.create.
+			expect(PembayaranService.generateTagihan).toHaveBeenCalledWith(
+				mockTx,
 				expect.objectContaining({
-					data: expect.objectContaining({
-						jumlahBayar: 100000,
-						statusBayar: StatusPembayaran.BELUM_LUNAS,
-					}),
+					pendaftaranId: "reg-1",
+					pembayaranKe: 1,
+					jumlahBayar: 100000,
+					note: "Test Bill",
 				}),
 			);
 			expect(result.pendaftaran.id).toBe("reg-1");
@@ -116,7 +131,7 @@ describe("Pendaftaran Service", () => {
 				}),
 			);
 			// Should NOT create bill
-			expect(mockTx.pembayaran.create).not.toHaveBeenCalled();
+			expect(PembayaranService.generateTagihan).not.toHaveBeenCalled();
 			expect(result.pendaftaran.id).toBe("reg-wl");
 		});
 
@@ -161,6 +176,14 @@ describe("Pendaftaran Service", () => {
 			expect(mockTx.kelas.findFirst).toHaveBeenCalled();
 			// Expect 2 registrations (Current + Next)
 			expect(mockTx.pendaftaranKelas.create).toHaveBeenCalledTimes(2);
+			// Expect 2 tagihan (Current bill + Next level auto-registration bill)
+			expect(PembayaranService.generateTagihan).toHaveBeenCalledTimes(2);
+			expect(PembayaranService.generateTagihan).toHaveBeenLastCalledWith(
+				mockTx,
+				expect.objectContaining({
+					note: expect.stringContaining("Very Late Joiner"),
+				}),
+			);
 		});
 	});
 
@@ -199,6 +222,7 @@ describe("Pendaftaran Service", () => {
 			expect(result.success).toBe(true);
 			expect(result.count).toBe(2);
 			expect(mockTx.pendaftaranKelas.create).toHaveBeenCalledTimes(2);
+			expect(PembayaranService.generateTagihan).toHaveBeenCalledTimes(2);
 		});
 	});
 });

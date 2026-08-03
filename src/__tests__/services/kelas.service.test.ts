@@ -327,9 +327,12 @@ describe("Kelas Service", () => {
 			expect(mockTx.tagihanLain.create).not.toHaveBeenCalled();
 		});
 
-		it("should create book fee if price > 0", async () => {
+		it("should NOT auto-create book fee anymore (manual by admin now)", async () => {
 			resetMocks();
-			// Setup: Level 1 -> 2 with Book Fee
+			// Setup: Level 1 -> 2 dengan hargaBuku > 0 di master data.
+			// Sejak perubahan terbaru, tagihan buku TIDAK lagi dibuat otomatis
+			// saat auto level-up. Admin menambahkannya manual lewat halaman
+			// "Pembayaran Kelas" (lihat komentar di kelas.service.ts).
 			vi.mocked(mockTx.kelas.findUnique).mockResolvedValue({
 				id: "k-1",
 				level: 1,
@@ -340,7 +343,7 @@ describe("Kelas Service", () => {
 					id: "jen-reg",
 					nama: "Regular",
 					harga: 50000,
-					hargaBuku: 25000, // Has book price
+					hargaBuku: 25000, // Ada harga buku, tapi tetap tidak dipakai lagi
 					nextLevel: null,
 				},
 			} as unknown as MockKelasWithRelations);
@@ -363,15 +366,10 @@ describe("Kelas Service", () => {
 				jadwal: { kelasId: "k-1", ruangId: "r-1" },
 			});
 
-			expect(mockTx.tagihanLain.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					data: expect.objectContaining({
-						kategori: "BUKU",
-						jumlah: 25000,
-						muridId: "m-1",
-					}),
-				}),
-			);
+			// Tagihan SPP tetap dibuat seperti biasa...
+			expect(mockTx.pembayaran.create).toHaveBeenCalled();
+			// ...tapi tagihan buku TIDAK dibuat otomatis lagi.
+			expect(mockTx.tagihanLain.create).not.toHaveBeenCalled();
 		});
 
 		it("should migrate students with status OFF_SEMENTARA and keep the status", async () => {

@@ -277,6 +277,15 @@ export const jadwalKelasRouter = createTRPCRouter({
 									},
 								},
 							},
+							historyGuruKelases: {
+								where: { statusGuru: "ACTIVE" },
+								select: {
+									guru: { select: { name: true } },
+								},
+							},
+							_count: {
+								select: { sesiPertemuanKelases: true },
+							},
 						},
 					},
 				},
@@ -324,6 +333,15 @@ export const jadwalKelasRouter = createTRPCRouter({
 										},
 									},
 								},
+							},
+							historyGuruKelases: {
+								where: { statusGuru: "ACTIVE" },
+								select: {
+									guru: { select: { name: true } },
+								},
+							},
+							_count: {
+								select: { sesiPertemuanKelases: true },
 							},
 						},
 					},

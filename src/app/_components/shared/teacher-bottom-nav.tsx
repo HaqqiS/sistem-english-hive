@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
 	CalendarDays,
 	FileText,
@@ -37,106 +37,49 @@ function isItemActive(item: NavItem, pathname: string) {
 export function TeacherBottomNav({ navItems }: TeacherBottomNavProps) {
 	const pathname = usePathname();
 
-	// Cari index item yang lagi aktif (default ke index tengah kalau tidak ketemu)
-	const centerIndex = Math.floor(navItems.length / 2);
-	const activeIndex = navItems.findIndex((item) =>
-		isItemActive(item, pathname),
-	);
-	const resolvedActiveIndex = activeIndex === -1 ? centerIndex : activeIndex;
-
-	// Susun ulang urutan tampilan: item aktif ditukar posisinya ke tengah,
-	// item yang tadinya di tengah pindah ke posisi item aktif.
-	const displayItems = [...navItems];
-	if (resolvedActiveIndex !== centerIndex) {
-		const temp = displayItems[centerIndex];
-		displayItems[centerIndex] = displayItems[resolvedActiveIndex]!;
-		displayItems[resolvedActiveIndex] = temp!;
-	}
-
 	return (
 		<nav
-			className="bg-background/95 fixed inset-x-0 bottom-0 z-50 border-t backdrop-blur-md lg:hidden"
+			className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] lg:hidden"
 			aria-label="Navigasi Dashboard Guru"
 		>
-			<div
-				className="relative grid h-16 w-full items-center pb-[env(safe-area-inset-bottom)]"
-				style={{
-					gridTemplateColumns: `repeat(${displayItems.length}, minmax(0, 1fr))`,
-				}}
-			>
-				<AnimatePresence initial={false}>
-					{displayItems.map((item, index) => {
-						const Icon = iconMap[item.icon] ?? Home;
-						const isActive = isItemActive(item, pathname);
-						const isCenter = index === centerIndex;
+			{/* Kapsul mengambang ala tab bar iOS 26 / WhatsApp terbaru:
+			    glass-blur, rounded-full, item aktif jadi pill yang meluncur (layoutId).
+			    Label tetap tampil di bawah tiap ikon supaya jelas fungsinya. */}
+			<div className="border-border/60 bg-background/70 flex items-center gap-1 rounded-[28px] border p-1.5 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.25)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+				{navItems.map((item) => {
+					const Icon = iconMap[item.icon] ?? Home;
+					const isActive = isItemActive(item, pathname);
 
-						return (
-							<motion.div
-								key={item.url}
-								layout
-								layoutId={item.url}
-								transition={{
-									type: "spring",
-									stiffness: 350,
-									damping: 28,
-								}}
-								className="relative flex h-full items-center justify-center"
+					return (
+						<Link
+							key={item.url}
+							href={item.url}
+							aria-current={isActive ? "page" : undefined}
+							className="relative flex items-center"
+						>
+							{isActive && (
+								<motion.span
+									layoutId="teacher-bottom-nav-pill"
+									transition={{ type: "spring", stiffness: 400, damping: 32 }}
+									className="bg-primary absolute inset-0 rounded-3xl"
+								/>
+							)}
+							<span
+								className={cn(
+									"relative z-10 flex w-16 flex-col items-center justify-center gap-0.5 rounded-3xl px-2 py-1.5 transition-colors",
+									isActive
+										? "text-primary-foreground"
+										: "text-muted-foreground",
+								)}
 							>
-								<Link
-									href={item.url}
-									className="relative flex h-full w-full flex-col items-center justify-center gap-1 px-1 text-center"
-								>
-									{isCenter ? (
-										// Item tengah: bulat, terangkat, lebih besar
-										<motion.div
-											layout
-											className={cn(
-												"flex flex-col items-center justify-center gap-1",
-											)}
-										>
-											<span
-												className={cn(
-													"flex h-12 w-12 -translate-y-4 items-center justify-center rounded-full shadow-lg ring-4 ring-background transition-colors",
-													isActive
-														? "bg-primary text-primary-foreground"
-														: "bg-muted text-muted-foreground",
-												)}
-											>
-												<Icon className="h-6 w-6" />
-											</span>
-											<span
-												className={cn(
-													"-mt-3 line-clamp-1 text-[10px] leading-none font-semibold transition-colors",
-													isActive ? "text-primary" : "text-muted-foreground",
-												)}
-											>
-												{item.title}
-											</span>
-										</motion.div>
-									) : (
-										// Item biasa: ukuran normal
-										<>
-											<Icon
-												className={cn(
-													"h-5 w-5 transition-colors",
-													isActive ? "text-primary" : "text-muted-foreground",
-												)}
-											/>
-											<span
-												className={cn(
-													"line-clamp-1 text-[10px] leading-none font-medium transition-colors",
-													isActive ? "text-primary" : "text-muted-foreground",
-												)}
-											>
-												{item.title}
-											</span>
-										</>
-									)}
-								</Link>
-							</motion.div>
-						);
-					})}
-				</AnimatePresence>
+								<Icon className="h-5 w-5 shrink-0" />
+								<span className="line-clamp-1 text-center text-[10px] leading-none font-medium">
+									{item.title}
+								</span>
+							</span>
+						</Link>
+					);
+				})}
 			</div>
 		</nav>
 	);

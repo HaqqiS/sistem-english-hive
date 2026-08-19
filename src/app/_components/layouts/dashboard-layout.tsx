@@ -77,7 +77,7 @@ export default function DashboardLayout({
 					<div
 						className={cn(
 							"flex flex-1 flex-col gap-4 p-2 lg:p-4 lg:pt-0",
-							hasBottomNav && "pb-20 lg:pb-0",
+							hasBottomNav && "pb-24 lg:pb-0",
 						)}
 					>
 						<motion.div

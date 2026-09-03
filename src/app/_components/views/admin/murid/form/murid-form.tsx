@@ -1,6 +1,6 @@
 "use client";
 
-import { Gender, StatusMurid } from "@prisma/client";
+import { Gender } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -40,10 +40,6 @@ interface MuridFormProps {
 
 const formTranslations = {
 	id: {
-		langsungDaftar: "Langsung Daftar?",
-		pilihOpsi: "Pilih opsi",
-		daftarLangsung: "Daftar Langsung",
-		trial: "Trial",
 		namaLengkap: "Nama Lengkap",
 		masukkanNama: "Masukkan nama lengkap",
 		jenisKelamin: "Jenis Kelamin",
@@ -79,10 +75,6 @@ const formTranslations = {
 		mengirim: "Mengirim...",
 	},
 	en: {
-		langsungDaftar: "Direct Registration?",
-		pilihOpsi: "Choose option",
-		daftarLangsung: "Direct Register",
-		trial: "Trial",
 		namaLengkap: "Full Name",
 		masukkanNama: "Enter full name",
 		jenisKelamin: "Gender",
@@ -183,36 +175,6 @@ export default function MuridForm({
 			{/* Container utama: 2 kolom di desktop untuk layout form besar, 1 kolom jika forceStacked */}
 			<div className={cn("grid gap-4", gridColsClass)}>
 				<div className="col-span-1 space-y-4">
-					{!isEditMode && (
-						<FormField
-							control={form.control}
-							name="statusMurid"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel className="text-sm">
-										<span>{t.langsungDaftar}</span>
-									</FormLabel>
-									<Select onValueChange={field.onChange} value={field.value}>
-										<FormControl>
-											<SelectTrigger className="w-full">
-												<SelectValue placeholder={<span>{t.pilihOpsi}</span>} />
-											</SelectTrigger>
-										</FormControl>
-										<SelectContent>
-											<SelectItem value={StatusMurid.PENDAFTAR_BARU}>
-												<span>{t.daftarLangsung}</span>
-											</SelectItem>
-											<SelectItem value={StatusMurid.TRIAL}>
-												<span>{t.trial}</span>
-											</SelectItem>
-										</SelectContent>
-									</Select>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-					)}
-
 					<FormField
 						control={form.control}
 						name="namaLengkap"

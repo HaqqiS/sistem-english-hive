@@ -2,6 +2,7 @@
 
 import KelasJatuhTempoH14 from "@/app/_components/views/admin/dashboard/kelas-jatuh-tempo-h14";
 import KpiCards from "@/app/_components/views/admin/dashboard/kpi-cards";
+import PrediksiPendapatanCard from "@/app/_components/views/admin/dashboard/prediksi-pendapatan-card";
 import RegistrationChart from "@/app/_components/views/admin/dashboard/registration-chart";
 import RevenueChart from "@/app/_components/views/admin/dashboard/revenue-chart";
 import ScheduleList from "@/app/_components/views/admin/dashboard/schedule-list";
@@ -18,8 +19,12 @@ export default function DashboardClientPage() {
 				<RegistrationChart />
 				<RevenueChart />
 				<SumberInfoChart />
+				{/* Jadwal Hari Ini: ambil 50% (berdampingan dengan Sumber Info) */}
 				<ScheduleList />
 			</div>
+
+			{/* Estimasi Pendapatan Bulan Ini: full width di bawah Jadwal Hari Ini */}
+			<PrediksiPendapatanCard />
 
 			{/* 3. Operational Section */}
 			<div className="grid grid-cols-1 gap-4">

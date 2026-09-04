@@ -4,6 +4,7 @@ import {
 	StatusKelas,
 	StatusMurid,
 	StatusPembayaran,
+	StatusPendaftaran,
 } from "@prisma/client";
 import z from "zod";
 import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
@@ -316,6 +317,146 @@ export const dashboardRouter = createTRPCRouter({
 			return Array.from(grouped.entries()).map(([name, value]) => ({
 				name,
 				...value,
+			}));
+		}),
+
+	// 3b. Estimasi Pendapatan Bulan Depan, dihitung dari JUMLAH SISWA AKTIF
+	// (Reguler & Privat) dikali HARGA KELAS masing-masing — bukan dari
+	// cicilan yang sudah diinput admin di tabel Pembayaran.
+	//
+	// Kenapa headcount x harga, bukan dari jadwal tagihan riil: karena
+	// tagihan yang jatuh tempo akhir bulan sering baru lunas di awal bulan
+	// berikutnya (uangnya cuma geser tanggal), jadi kalau dasarnya jadwal
+	// tagihan, angkanya bisa naik-turun semu dan juga tidak akan muncul kalau
+	// admin belum sempat generate cicilan untuk bulan depan. Dengan basis
+	// jumlah siswa aktif x harga kelas, angkanya stabil & tidak bergantung
+	// pada apakah cicilan bulan depan sudah diinput atau belum — murni
+	// "kalau siswa yang aktif sekarang tetap bayar, segini estimasinya".
+	//
+	// Ini BEDA dengan "Pending Payment" di KPI Card (yang menjumlahkan
+	// tagihan riil yang TELAT/belum lunas, bukan estimasi kapasitas siswa).
+	getPrediksiPendapatanBulanan: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const bulanTarget = dayjs(); // bulan berjalan
+
+			// Ambil semua kelas yang masih berjalan beserta jumlah siswa yang
+			// pendaftarannya masih AKTIF di kelas tsb.
+			const kelasAktif = await db.kelas.findMany({
+				where: {
+					statusKelas: StatusKelas.RUNNING,
+					cabangId: filterCabangId ?? undefined,
+				},
+				select: {
+					hargaKelas: true,
+					jenisKelasRel: { select: { tipe: true } },
+					pendaftaranKelases: {
+						where: { status: StatusPendaftaran.AKTIF },
+						select: { id: true },
+					},
+				},
+			});
+
+			type Kelompok = { nominal: number; jumlahSiswa: number };
+			const buatKelompokKosong = (): Kelompok => ({
+				nominal: 0,
+				jumlahSiswa: 0,
+			});
+
+			const reguler = buatKelompokKosong();
+			const privat = buatKelompokKosong();
+			const lainnya = buatKelompokKosong();
+
+			for (const kelas of kelasAktif) {
+				const jumlahSiswaAktif = kelas.pendaftaranKelases.length;
+				if (jumlahSiswaAktif === 0) continue;
+
+				const nominal = jumlahSiswaAktif * kelas.hargaKelas;
+				const tipe = kelas.jenisKelasRel?.tipe;
+				const kelompok =
+					tipe === "REGULAR" ? reguler : tipe === "PRIVATE" ? privat : lainnya;
+
+				kelompok.nominal += nominal;
+				kelompok.jumlahSiswa += jumlahSiswaAktif;
+			}
+
+			return {
+				bulan: bulanTarget.format("MMMM YYYY"),
+				total: reguler.nominal + privat.nominal + lainnya.nominal,
+				reguler,
+				privat,
+				lainnya,
+			};
+		}),
+
+	// 3c. Akurasi Prediksi Bulan-Bulan Lalu: membandingkan total tagihan yang
+	// terjadwal jatuh tempo di bulan tsb (basis "prediksi" saat itu) dengan
+	// berapa yang benar-benar sudah lunas dari tagihan tsb (realisasi).
+	// Hanya untuk bulan yang SUDAH LEWAT (bulan berjalan belum dihitung
+	// karena belum selesai periodenya).
+	getAkurasiPrediksi: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional().nullable(),
+					jumlahBulan: z.number().min(1).max(12).default(3),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+			const jumlahBulan = input?.jumlahBulan ?? 3;
+
+			const rangeStart = dayjs()
+				.subtract(jumlahBulan, "month")
+				.startOf("month")
+				.toDate();
+			const rangeEnd = dayjs().startOf("month").toDate(); // eksklusif, sebelum bulan berjalan
+
+			const tagihanLalu = await db.pembayaran.findMany({
+				where: {
+					tanggalJatuhTempo: { gte: rangeStart, lt: rangeEnd },
+					pendaftaranKelas: filterCabangId
+						? { Kelas: { cabangId: filterCabangId } }
+						: undefined,
+				},
+				select: {
+					jumlahBayar: true,
+					tanggalJatuhTempo: true,
+					statusBayar: true,
+				},
+			});
+
+			type BulanAgg = { totalTagihan: number; totalTerbayar: number };
+			const grouped = new Map<string, BulanAgg>();
+			for (let i = jumlahBulan; i >= 1; i--) {
+				const key = dayjs().subtract(i, "month").format("MMM YYYY");
+				grouped.set(key, { totalTagihan: 0, totalTerbayar: 0 });
+			}
+
+			for (const t of tagihanLalu) {
+				const key = dayjs(t.tanggalJatuhTempo).format("MMM YYYY");
+				const agg = grouped.get(key);
+				if (!agg) continue;
+
+				agg.totalTagihan += t.jumlahBayar;
+				if (t.statusBayar === StatusPembayaran.LUNAS) {
+					agg.totalTerbayar += t.jumlahBayar;
+				}
+			}
+
+			return Array.from(grouped.entries()).map(([bulan, agg]) => ({
+				bulan,
+				totalTagihan: agg.totalTagihan,
+				totalTerbayar: agg.totalTerbayar,
+				akurasiPersen:
+					agg.totalTagihan > 0
+						? Math.round((agg.totalTerbayar / agg.totalTagihan) * 1000) / 10
+						: null,
 			}));
 		}),
 

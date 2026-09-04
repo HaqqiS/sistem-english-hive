@@ -17,6 +17,14 @@ export const useDashboard = () => {
 	const revenueTrend = api.dashboard.getRevenueTrend.useQuery({
 		cabangId: payloadCabangId,
 	});
+	const prediksiPendapatan =
+		api.dashboard.getPrediksiPendapatanBulanan.useQuery({
+			cabangId: payloadCabangId,
+		});
+	const akurasiPrediksi = api.dashboard.getAkurasiPrediksi.useQuery({
+		cabangId: payloadCabangId,
+		jumlahBulan: 12,
+	});
 	const sumberInfoDistribution =
 		api.dashboard.getSumberInfoDistribution.useQuery({
 			cabangId: payloadCabangId,
@@ -35,6 +43,8 @@ export const useDashboard = () => {
 		kpiStats,
 		registrationTrend,
 		revenueTrend,
+		prediksiPendapatan,
+		akurasiPrediksi,
 		sumberInfoDistribution,
 		todaySchedule,
 		invalidateDashboard,

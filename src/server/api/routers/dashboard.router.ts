@@ -364,15 +364,15 @@ export const dashboardRouter = createTRPCRouter({
 					jenisKelasRel: { select: { tipe: true } },
 					pendaftaranKelases: {
 						where: { status: StatusPendaftaran.AKTIF },
-						select: { id: true },
+						select: { id: true, muridId: true },
 					},
 				},
 			});
 
-			type Kelompok = { nominal: number; jumlahSiswa: number };
+			type Kelompok = { nominal: number; muridIds: Set<string> };
 			const buatKelompokKosong = (): Kelompok => ({
 				nominal: 0,
-				jumlahSiswa: 0,
+				muridIds: new Set(),
 			});
 
 			const reguler = buatKelompokKosong();
@@ -384,21 +384,41 @@ export const dashboardRouter = createTRPCRouter({
 				if (jumlahSiswaAktif === 0) continue;
 
 				const hargaPerBlok = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+				// Nominal tetap dihitung PER PENDAFTARAN/ENROLLMENT (bukan per murid
+				// unik), karena satu murid yang ambil 2 kelas aktif memang ditagih
+				// 2x. Jadi nominalnya benar-benar sesuai jumlah tagihan riil.
 				const nominal = jumlahSiswaAktif * hargaPerBlok;
 				const tipe = kelas.jenisKelasRel?.tipe;
 				const kelompok =
 					tipe === "REGULAR" ? reguler : tipe === "PRIVATE" ? privat : lainnya;
 
 				kelompok.nominal += nominal;
-				kelompok.jumlahSiswa += jumlahSiswaAktif;
+				// jumlahSiswa dihitung dari MURID UNIK (dedupe pakai Set), supaya
+				// murid yang kebetulan aktif di lebih dari 1 kelas RUNNING dengan
+				// tipe yang sama tidak dobel dihitung sebagai 2 "siswa".
+				for (const p of kelas.pendaftaranKelases) {
+					kelompok.muridIds.add(p.muridId);
+				}
 			}
+
+			const ringkas = (k: Kelompok) => ({
+				nominal: k.nominal,
+				jumlahSiswa: k.muridIds.size,
+			});
+
+			const regulerRingkas = ringkas(reguler);
+			const privatRingkas = ringkas(privat);
+			const lainnyaRingkas = ringkas(lainnya);
 
 			return {
 				bulan: bulanTarget.format("MMMM YYYY"),
-				total: reguler.nominal + privat.nominal + lainnya.nominal,
-				reguler,
-				privat,
-				lainnya,
+				total:
+					regulerRingkas.nominal +
+					privatRingkas.nominal +
+					lainnyaRingkas.nominal,
+				reguler: regulerRingkas,
+				privat: privatRingkas,
+				lainnya: lainnyaRingkas,
 			};
 		}),
 

@@ -1,7 +1,14 @@
 "use client";
 
-import { CheckCircle2, TrendingUp, Users, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { TrendingUp, Users } from "lucide-react";
+import {
+	Bar,
+	CartesianGrid,
+	ComposedChart,
+	Line,
+	XAxis,
+	YAxis,
+} from "recharts";
 import {
 	Card,
 	CardContent,
@@ -9,8 +16,15 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	type ChartConfig,
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+} from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
+import { cn } from "@/lib/utils";
 import { toRupiah } from "@/utils/toRupiah";
 
 function warnaAkurasi(persen: number) {
@@ -18,6 +32,21 @@ function warnaAkurasi(persen: number) {
 	if (persen >= 70) return "text-amber-600 bg-amber-100";
 	return "text-red-600 bg-red-100";
 }
+
+const chartConfig = {
+	totalTagihan: {
+		label: "Tagihan Terjadwal",
+		color: "#93c5fd", // Blue muda
+	},
+	totalTerbayar: {
+		label: "Sudah Lunas",
+		color: "#3b82f6", // Blue tua
+	},
+	akurasiPersen: {
+		label: "Akurasi (%)",
+		color: "#f59e0b", // Amber
+	},
+} satisfies ChartConfig;
 
 export default function PrediksiPendapatanCard() {
 	const { prediksiPendapatan, akurasiPrediksi } = useDashboard();
@@ -35,6 +64,13 @@ export default function PrediksiPendapatanCard() {
 			? bulanDenganData.reduce((sum, b) => sum + (b.akurasiPersen ?? 0), 0) /
 				bulanDenganData.length
 			: null;
+
+	// Data untuk chart: pakai label bulan singkat (3 huruf pertama) biar muat
+	const chartData =
+		dataAkurasi?.map((b) => ({
+			...b,
+			bulanSingkat: b.bulan.split(" ")[0],
+		})) ?? [];
 
 	return (
 		<Card>
@@ -110,10 +146,10 @@ export default function PrediksiPendapatanCard() {
 					</div>
 				)}
 
-				{/* Indikator akurasi prediksi bulan-bulan lalu */}
+				{/* Chart akurasi prediksi 12 bulan terakhir */}
 				<div className="border-t pt-4">
 					<div className="mb-2 flex items-center justify-between">
-						<p className="text-sm font-medium">Akurasi Prediksi</p>
+						<p className="text-sm font-medium">Akurasi Prediksi (12 Bulan)</p>
 						{rataRataAkurasi !== null && (
 							<span
 								className={cn(
@@ -127,55 +163,81 @@ export default function PrediksiPendapatanCard() {
 					</div>
 
 					{isLoadingAkurasi ? (
-						<Skeleton className="h-16 w-full" />
+						<Skeleton className="h-[220px] w-full rounded-xl" />
 					) : !dataAkurasi || bulanDenganData.length === 0 ? (
 						<p className="text-muted-foreground text-sm">
 							Belum ada tagihan bulan lalu untuk dibandingkan.
 						</p>
 					) : (
-						<div className="max-h-52 space-y-1.5 overflow-y-auto pr-1">
-							{dataAkurasi.map((b) => (
-								<div
-									key={b.bulan}
-									className="flex items-center justify-between text-sm"
-								>
-									<span className="text-muted-foreground">{b.bulan}</span>
-									{b.akurasiPersen === null ? (
-										<span className="text-muted-foreground text-xs">
-											Tidak ada tagihan
-										</span>
-									) : (
-										<span className="flex items-center gap-1.5">
-											{b.akurasiPersen >= 90 ? (
-												<CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-											) : b.akurasiPersen < 70 ? (
-												<XCircle className="h-3.5 w-3.5 text-red-600" />
-											) : null}
-											<span
-												className={cn(
-													"font-medium",
-													b.akurasiPersen >= 90
-														? "text-emerald-600"
-														: b.akurasiPersen >= 70
-															? "text-amber-600"
-															: "text-red-600",
-												)}
-											>
-												{b.akurasiPersen}%
-											</span>
-											<span className="text-muted-foreground text-[10px]">
-												({toRupiah(b.totalTerbayar)} /{" "}
-												{toRupiah(b.totalTagihan)})
-											</span>
-										</span>
-									)}
-								</div>
-							))}
-						</div>
+						<ChartContainer
+							config={chartConfig}
+							className="aspect-auto h-[220px] w-full"
+						>
+							<ComposedChart data={chartData}>
+								<CartesianGrid vertical={false} />
+								<XAxis
+									dataKey="bulanSingkat"
+									tickLine={false}
+									axisLine={false}
+									tickMargin={8}
+								/>
+								<YAxis
+									yAxisId="rupiah"
+									hide
+									domain={[0, (max: number) => max * 1.1]}
+								/>
+								<YAxis
+									yAxisId="persen"
+									orientation="right"
+									hide
+									domain={[0, 100]}
+								/>
+								<ChartTooltip
+									content={
+										<ChartTooltipContent
+											formatter={(value, name) => {
+												if (name === "akurasiPersen") {
+													return [`${Number(value)}%`, "Akurasi"];
+												}
+												return [
+													toRupiah(Number(value)),
+													name === "totalTagihan"
+														? "Tagihan Terjadwal"
+														: "Sudah Lunas",
+												];
+											}}
+										/>
+									}
+								/>
+								<Bar
+									yAxisId="rupiah"
+									dataKey="totalTagihan"
+									fill="var(--color-totalTagihan)"
+									radius={[4, 4, 0, 0]}
+									barSize={18}
+								/>
+								<Bar
+									yAxisId="rupiah"
+									dataKey="totalTerbayar"
+									fill="var(--color-totalTerbayar)"
+									radius={[4, 4, 0, 0]}
+									barSize={18}
+								/>
+								<Line
+									yAxisId="persen"
+									type="monotone"
+									dataKey="akurasiPersen"
+									stroke="var(--color-akurasiPersen)"
+									strokeWidth={2}
+									dot={{ r: 3 }}
+									connectNulls
+								/>
+							</ComposedChart>
+						</ChartContainer>
 					)}
 					<p className="text-muted-foreground mt-2 text-[10px]">
-						Akurasi = total tagihan bulan tsb yang sudah lunas ÷ total
-						tagihan yang terjadwal di bulan tsb.
+						Batang = tagihan terjadwal vs yang sudah lunas per bulan. Garis =
+						% akurasi (lunas ÷ tagihan).
 					</p>
 				</div>
 			</CardContent>

@@ -352,8 +352,10 @@ export const dashboardRouter = createTRPCRouter({
 
 			const bulanTarget = dayjs(); // bulan berjalan
 
-			// Ambil semua kelas yang masih berjalan beserta jumlah siswa yang
-			// pendaftarannya masih AKTIF di kelas tsb.
+			// Ambil semua kelas yang masih berjalan (RUNNING) beserta pendaftaran
+			// yang statusnya AKTIF di kelas tsb, DAN murid-nya sendiri juga masih
+			// berstatus AKTIF (jaga-jaga kalau ada data PendaftaranKelas yang
+			// belum sempat ditutup padahal muridnya sudah di-nonaktifkan).
 			const kelasAktif = await db.kelas.findMany({
 				where: {
 					statusKelas: StatusKelas.RUNNING,
@@ -363,16 +365,19 @@ export const dashboardRouter = createTRPCRouter({
 					hargaKelas: true,
 					jenisKelasRel: { select: { tipe: true } },
 					pendaftaranKelases: {
-						where: { status: StatusPendaftaran.AKTIF },
+						where: {
+							status: StatusPendaftaran.AKTIF,
+							murid: { statusMurid: StatusMurid.AKTIF },
+						},
 						select: { id: true, muridId: true },
 					},
 				},
 			});
 
-			type Kelompok = { nominal: number; muridIds: Set<string> };
+			type Kelompok = { nominal: number; jumlahSiswa: number };
 			const buatKelompokKosong = (): Kelompok => ({
 				nominal: 0,
-				muridIds: new Set(),
+				jumlahSiswa: 0,
 			});
 
 			const reguler = buatKelompokKosong();
@@ -384,41 +389,25 @@ export const dashboardRouter = createTRPCRouter({
 				if (jumlahSiswaAktif === 0) continue;
 
 				const hargaPerBlok = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
-				// Nominal tetap dihitung PER PENDAFTARAN/ENROLLMENT (bukan per murid
-				// unik), karena satu murid yang ambil 2 kelas aktif memang ditagih
-				// 2x. Jadi nominalnya benar-benar sesuai jumlah tagihan riil.
 				const nominal = jumlahSiswaAktif * hargaPerBlok;
 				const tipe = kelas.jenisKelasRel?.tipe;
 				const kelompok =
 					tipe === "REGULAR" ? reguler : tipe === "PRIVATE" ? privat : lainnya;
 
 				kelompok.nominal += nominal;
-				// jumlahSiswa dihitung dari MURID UNIK (dedupe pakai Set), supaya
-				// murid yang kebetulan aktif di lebih dari 1 kelas RUNNING dengan
-				// tipe yang sama tidak dobel dihitung sebagai 2 "siswa".
-				for (const p of kelas.pendaftaranKelases) {
-					kelompok.muridIds.add(p.muridId);
-				}
+				// jumlahSiswa dihitung PER PENDAFTARAN/ENROLLMENT (bukan murid unik).
+				// Kalau 1 murid aktif di 2 kelas berbeda (mis. 2 kelas Privat, atau
+				// 1 Reguler + 1 Privat), dia dihitung 2 siswa — sesuai jumlah kelas
+				// yang benar-benar dia ikuti & ditagih, bukan sekadar headcount orang.
+				kelompok.jumlahSiswa += jumlahSiswaAktif;
 			}
-
-			const ringkas = (k: Kelompok) => ({
-				nominal: k.nominal,
-				jumlahSiswa: k.muridIds.size,
-			});
-
-			const regulerRingkas = ringkas(reguler);
-			const privatRingkas = ringkas(privat);
-			const lainnyaRingkas = ringkas(lainnya);
 
 			return {
 				bulan: bulanTarget.format("MMMM YYYY"),
-				total:
-					regulerRingkas.nominal +
-					privatRingkas.nominal +
-					lainnyaRingkas.nominal,
-				reguler: regulerRingkas,
-				privat: privatRingkas,
-				lainnya: lainnyaRingkas,
+				total: reguler.nominal + privat.nominal + lainnya.nominal,
+				reguler,
+				privat,
+				lainnya,
 			};
 		}),
 

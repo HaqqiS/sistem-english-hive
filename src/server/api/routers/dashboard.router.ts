@@ -7,6 +7,7 @@ import {
 	StatusPendaftaran,
 } from "@prisma/client";
 import z from "zod";
+import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
 import dayjs from "@/utils/dateUtils";
 
@@ -320,18 +321,26 @@ export const dashboardRouter = createTRPCRouter({
 			}));
 		}),
 
-	// 3b. Estimasi Pendapatan Bulan Depan, dihitung dari JUMLAH SISWA AKTIF
-	// (Reguler & Privat) dikali HARGA KELAS masing-masing — bukan dari
-	// cicilan yang sudah diinput admin di tabel Pembayaran.
+	// 3b. Estimasi Pendapatan Bulan Berjalan, dihitung dari JUMLAH SISWA AKTIF
+	// (Reguler & Privat) dikali HARGA KELAS (per pertemuan) dikali JUMLAH
+	// PERTEMUAN PER BLOK TAGIHAN (8x pertemuan) — bukan dari cicilan yang
+	// sudah diinput admin di tabel Pembayaran.
+	//
+	// hargaKelas di database itu HARGA PER SESI/PERTEMUAN, sedangkan siswa
+	// ditagih per blok 8x pertemuan sekali (lihat JUMLAH_PERTEMUAN_PER_BLOK
+	// di constants/pembayaran.ts, dipakai juga di pendaftaran.service.ts &
+	// kelas.service.ts saat generate tagihan). Jadi estimasi per siswa =
+	// hargaKelas x 8, bukan hargaKelas doang.
 	//
 	// Kenapa headcount x harga, bukan dari jadwal tagihan riil: karena
 	// tagihan yang jatuh tempo akhir bulan sering baru lunas di awal bulan
 	// berikutnya (uangnya cuma geser tanggal), jadi kalau dasarnya jadwal
 	// tagihan, angkanya bisa naik-turun semu dan juga tidak akan muncul kalau
 	// admin belum sempat generate cicilan untuk bulan depan. Dengan basis
-	// jumlah siswa aktif x harga kelas, angkanya stabil & tidak bergantung
+	// jumlah siswa aktif x harga per blok, angkanya stabil & tidak bergantung
 	// pada apakah cicilan bulan depan sudah diinput atau belum — murni
-	// "kalau siswa yang aktif sekarang tetap bayar, segini estimasinya".
+	// "kalau siswa yang aktif sekarang tetap bayar 1 blok (8x pertemuan),
+	// segini estimasinya".
 	//
 	// Ini BEDA dengan "Pending Payment" di KPI Card (yang menjumlahkan
 	// tagihan riil yang TELAT/belum lunas, bukan estimasi kapasitas siswa).
@@ -374,7 +383,8 @@ export const dashboardRouter = createTRPCRouter({
 				const jumlahSiswaAktif = kelas.pendaftaranKelases.length;
 				if (jumlahSiswaAktif === 0) continue;
 
-				const nominal = jumlahSiswaAktif * kelas.hargaKelas;
+				const hargaPerBlok = kelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+				const nominal = jumlahSiswaAktif * hargaPerBlok;
 				const tipe = kelas.jenisKelasRel?.tipe;
 				const kelompok =
 					tipe === "REGULAR" ? reguler : tipe === "PRIVATE" ? privat : lainnya;

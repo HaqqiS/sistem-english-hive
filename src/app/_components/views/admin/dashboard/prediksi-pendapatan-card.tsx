@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, TrendingUp, Users, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
 	Card,
 	CardContent,
@@ -10,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
-import { cn } from "@/lib/utils";
 import { toRupiah } from "@/utils/toRupiah";
 
 function warnaAkurasi(persen: number) {
@@ -97,12 +97,15 @@ export default function PrediksiPendapatanCard() {
 										{data.privat.jumlahSiswa}
 									</span>
 								</div>
-								<p className="font-semibold">{toRupiah(data.privat.nominal)}</p>
+								<p className="font-semibold">
+									{toRupiah(data.privat.nominal)}
+								</p>
 							</div>
 						</div>
 
 						<p className="text-muted-foreground text-[10px]">
-							*Estimasi berdasarkan siswa yang aktif saat ini.
+							*Estimasi 1 blok tagihan (8x pertemuan) per siswa aktif saat
+							ini.
 						</p>
 					</div>
 				)}
@@ -171,8 +174,8 @@ export default function PrediksiPendapatanCard() {
 						</div>
 					)}
 					<p className="text-muted-foreground mt-2 text-[10px]">
-						Akurasi = total tagihan bulan tsb yang sudah lunas ÷ total tagihan
-						yang terjadwal di bulan tsb.
+						Akurasi = total tagihan bulan tsb yang sudah lunas ÷ total
+						tagihan yang terjadwal di bulan tsb.
 					</p>
 				</div>
 			</CardContent>

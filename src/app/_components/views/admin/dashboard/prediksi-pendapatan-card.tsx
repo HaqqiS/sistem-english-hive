@@ -133,15 +133,12 @@ export default function PrediksiPendapatanCard() {
 										{data.privat.jumlahSiswa}
 									</span>
 								</div>
-								<p className="font-semibold">
-									{toRupiah(data.privat.nominal)}
-								</p>
+								<p className="font-semibold">{toRupiah(data.privat.nominal)}</p>
 							</div>
 						</div>
 
 						<p className="text-muted-foreground text-[10px]">
-							*Estimasi 1 blok tagihan (8x pertemuan) per siswa aktif saat
-							ini.
+							*Estimasi 1 blok tagihan (8x pertemuan) per siswa aktif saat ini.
 						</p>
 					</div>
 				)}
@@ -206,6 +203,18 @@ export default function PrediksiPendapatanCard() {
 														: "Sudah Lunas",
 												];
 											}}
+											labelFormatter={(_, payload) => {
+												const item = payload?.[0]?.payload as
+													| {
+															bulan?: string;
+															isBulanBerjalanAtauDepan?: boolean;
+													  }
+													| undefined;
+												if (!item) return "";
+												return item.isBulanBerjalanAtauDepan
+													? `${item.bulan} (belum final)`
+													: item.bulan;
+											}}
 										/>
 									}
 								/>
@@ -236,8 +245,9 @@ export default function PrediksiPendapatanCard() {
 						</ChartContainer>
 					)}
 					<p className="text-muted-foreground mt-2 text-[10px]">
-						Batang = tagihan terjadwal vs yang sudah lunas per bulan. Garis =
-						% akurasi (lunas ÷ tagihan).
+						Batang = tagihan terjadwal vs yang sudah lunas per bulan. Garis = %
+						akurasi (lunas ÷ tagihan). Bulan berjalan & bulan depan masih
+						berjalan periodenya, jadi akurasinya belum final.
 					</p>
 				</div>
 			</CardContent>

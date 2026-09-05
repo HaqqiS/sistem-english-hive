@@ -421,24 +421,32 @@ export const dashboardRouter = createTRPCRouter({
 			z
 				.object({
 					cabangId: z.string().optional().nullable(),
-					jumlahBulan: z.number().min(1).max(12).default(3),
+					// Total slot bulan yang ditampilkan (termasuk bulan berjalan &
+					// bulan depan di 2 slot paling akhir). Window-nya digeser, bukan
+					// ditambah — jadi kalau bulan depan Oktober, slot paling lama
+					// otomatis "didrop" supaya totalnya tetap sejumlah ini.
+					jumlahBulan: z.number().min(3).max(24).default(12),
 				})
 				.optional(),
 		)
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
-			const jumlahBulan = input?.jumlahBulan ?? 3;
+			const jumlahBulan = input?.jumlahBulan ?? 12;
+
+			// 2 slot paling akhir selalu bulan berjalan (offset 0) & bulan depan
+			// (offset -1). Sisanya (jumlahBulan - 2) slot ke belakang.
+			const offsetTertua = jumlahBulan - 2;
 
 			const rangeStart = dayjs()
-				.subtract(jumlahBulan, "month")
+				.subtract(offsetTertua, "month")
 				.startOf("month")
 				.toDate();
-			const rangeEnd = dayjs().startOf("month").toDate(); // eksklusif, sebelum bulan berjalan
+			const rangeEnd = dayjs().add(1, "month").endOf("month").toDate(); // s.d. akhir bulan depan
 
 			const tagihanLalu = await db.pembayaran.findMany({
 				where: {
-					tanggalJatuhTempo: { gte: rangeStart, lt: rangeEnd },
+					tanggalJatuhTempo: { gte: rangeStart, lte: rangeEnd },
 					pendaftaranKelas: filterCabangId
 						? { Kelas: { cabangId: filterCabangId } }
 						: undefined,
@@ -450,11 +458,21 @@ export const dashboardRouter = createTRPCRouter({
 				},
 			});
 
-			type BulanAgg = { totalTagihan: number; totalTerbayar: number };
+			type BulanAgg = {
+				totalTagihan: number;
+				totalTerbayar: number;
+				isBulanBerjalanAtauDepan: boolean;
+			};
 			const grouped = new Map<string, BulanAgg>();
-			for (let i = jumlahBulan; i >= 1; i--) {
+			// i turun dari offsetTertua (paling lama) sampai -1 (bulan depan),
+			// total (offsetTertua - (-1) + 1) = jumlahBulan slot.
+			for (let i = offsetTertua; i >= -1; i--) {
 				const key = dayjs().subtract(i, "month").format("MMM YYYY");
-				grouped.set(key, { totalTagihan: 0, totalTerbayar: 0 });
+				grouped.set(key, {
+					totalTagihan: 0,
+					totalTerbayar: 0,
+					isBulanBerjalanAtauDepan: i <= 0,
+				});
 			}
 
 			for (const t of tagihanLalu) {
@@ -472,6 +490,9 @@ export const dashboardRouter = createTRPCRouter({
 				bulan,
 				totalTagihan: agg.totalTagihan,
 				totalTerbayar: agg.totalTerbayar,
+				// Untuk bulan berjalan/depan, akurasi belum final (periode belum
+				// selesai), jadi ditandai terpisah agar UI bisa membedakan.
+				isBulanBerjalanAtauDepan: agg.isBulanBerjalanAtauDepan,
 				akurasiPersen:
 					agg.totalTagihan > 0
 						? Math.round((agg.totalTerbayar / agg.totalTagihan) * 1000) / 10

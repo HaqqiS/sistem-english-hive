@@ -25,6 +25,10 @@ export const useDashboard = () => {
 		cabangId: payloadCabangId,
 		jumlahBulan: 12,
 	});
+	const akurasiRegistrasi = api.dashboard.getAkurasiRegistrasi.useQuery({
+		cabangId: payloadCabangId,
+		jumlahBulan: 12,
+	});
 	const sumberInfoDistribution =
 		api.dashboard.getSumberInfoDistribution.useQuery({
 			cabangId: payloadCabangId,
@@ -45,6 +49,7 @@ export const useDashboard = () => {
 		revenueTrend,
 		prediksiPendapatan,
 		akurasiPrediksi,
+		akurasiRegistrasi,
 		sumberInfoDistribution,
 		todaySchedule,
 		invalidateDashboard,

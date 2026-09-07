@@ -48,29 +48,156 @@ const chartConfig = {
 	},
 } satisfies ChartConfig;
 
-export default function PrediksiPendapatanCard() {
-	const { prediksiPendapatan, akurasiPrediksi } = useDashboard();
-	const { data, isLoading } = prediksiPendapatan;
-	const { data: dataAkurasi, isLoading: isLoadingAkurasi } = akurasiPrediksi;
+type AkurasiItem = {
+	bulan: string;
+	totalTagihan: number;
+	totalTerbayar: number;
+	isBulanBerjalanAtauDepan: boolean;
+	akurasiPersen: number | null;
+};
 
-	const totalSiswa =
-		(data?.reguler.jumlahSiswa ?? 0) + (data?.privat.jumlahSiswa ?? 0);
-
-	// Rata-rata akurasi dari bulan-bulan yang ada datanya
-	const bulanDenganData =
-		dataAkurasi?.filter((b) => b.akurasiPersen !== null) ?? [];
+function AkurasiChartSection({
+	title,
+	data,
+	isLoading,
+	pesanKosong,
+}: {
+	title: string;
+	data: AkurasiItem[] | undefined;
+	isLoading: boolean;
+	pesanKosong: string;
+}) {
+	const bulanDenganData = data?.filter((b) => b.akurasiPersen !== null) ?? [];
 	const rataRataAkurasi =
 		bulanDenganData.length > 0
 			? bulanDenganData.reduce((sum, b) => sum + (b.akurasiPersen ?? 0), 0) /
 				bulanDenganData.length
 			: null;
 
-	// Data untuk chart: pakai label bulan singkat (3 huruf pertama) biar muat
 	const chartData =
-		dataAkurasi?.map((b) => ({
+		data?.map((b) => ({
 			...b,
 			bulanSingkat: b.bulan.split(" ")[0],
 		})) ?? [];
+
+	return (
+		<div className="border-t pt-4">
+			<div className="mb-2 flex items-center justify-between">
+				<p className="text-sm font-medium">{title}</p>
+				{rataRataAkurasi !== null && (
+					<span
+						className={cn(
+							"rounded px-2 py-0.5 text-xs font-semibold",
+							warnaAkurasi(rataRataAkurasi),
+						)}
+					>
+						Rata-rata {rataRataAkurasi.toFixed(0)}%
+					</span>
+				)}
+			</div>
+
+			{isLoading ? (
+				<Skeleton className="h-[220px] w-full rounded-xl" />
+			) : !data || bulanDenganData.length === 0 ? (
+				<p className="text-muted-foreground text-sm">{pesanKosong}</p>
+			) : (
+				<ChartContainer
+					config={chartConfig}
+					className="aspect-auto h-[220px] w-full"
+				>
+					<ComposedChart data={chartData}>
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="bulanSingkat"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+						/>
+						<YAxis
+							yAxisId="rupiah"
+							hide
+							domain={[0, (max: number) => max * 1.1]}
+						/>
+						<YAxis
+							yAxisId="persen"
+							orientation="right"
+							hide
+							domain={[0, 100]}
+						/>
+						<ChartTooltip
+							content={
+								<ChartTooltipContent
+									formatter={(value, name) => {
+										if (name === "akurasiPersen") {
+											return [`${Number(value)}%`, "Akurasi"];
+										}
+										return [
+											toRupiah(Number(value)),
+											name === "totalTagihan"
+												? "Tagihan Terjadwal"
+												: "Sudah Lunas",
+										];
+									}}
+									labelFormatter={(_, payload) => {
+										const item = payload?.[0]?.payload as
+											| {
+													bulan?: string;
+													isBulanBerjalanAtauDepan?: boolean;
+											  }
+											| undefined;
+										if (!item) return "";
+										return item.isBulanBerjalanAtauDepan
+											? `${item.bulan} (belum final)`
+											: item.bulan;
+									}}
+								/>
+							}
+						/>
+						<Bar
+							yAxisId="rupiah"
+							dataKey="totalTagihan"
+							fill="var(--color-totalTagihan)"
+							radius={[4, 4, 0, 0]}
+							barSize={18}
+						/>
+						<Bar
+							yAxisId="rupiah"
+							dataKey="totalTerbayar"
+							fill="var(--color-totalTerbayar)"
+							radius={[4, 4, 0, 0]}
+							barSize={18}
+						/>
+						<Line
+							yAxisId="persen"
+							type="monotone"
+							dataKey="akurasiPersen"
+							stroke="var(--color-akurasiPersen)"
+							strokeWidth={2}
+							dot={{ r: 3 }}
+							connectNulls
+						/>
+					</ComposedChart>
+				</ChartContainer>
+			)}
+			<p className="text-muted-foreground mt-2 text-[10px]">
+				Batang = tagihan terjadwal vs yang sudah lunas per bulan. Garis = %
+				akurasi (lunas ÷ tagihan). Bulan berjalan & bulan depan masih berjalan
+				periodenya, jadi akurasinya belum final.
+			</p>
+		</div>
+	);
+}
+
+export default function PrediksiPendapatanCard() {
+	const { prediksiPendapatan, akurasiPrediksi, akurasiRegistrasi } =
+		useDashboard();
+	const { data, isLoading } = prediksiPendapatan;
+	const { data: dataAkurasi, isLoading: isLoadingAkurasi } = akurasiPrediksi;
+	const { data: dataRegistrasi, isLoading: isLoadingRegistrasi } =
+		akurasiRegistrasi;
+
+	const totalSiswa =
+		(data?.reguler.jumlahSiswa ?? 0) + (data?.privat.jumlahSiswa ?? 0);
 
 	return (
 		<Card>
@@ -143,113 +270,21 @@ export default function PrediksiPendapatanCard() {
 					</div>
 				)}
 
-				{/* Chart akurasi prediksi 12 bulan terakhir */}
-				<div className="border-t pt-4">
-					<div className="mb-2 flex items-center justify-between">
-						<p className="text-sm font-medium">Akurasi Prediksi (12 Bulan)</p>
-						{rataRataAkurasi !== null && (
-							<span
-								className={cn(
-									"rounded px-2 py-0.5 text-xs font-semibold",
-									warnaAkurasi(rataRataAkurasi),
-								)}
-							>
-								Rata-rata {rataRataAkurasi.toFixed(0)}%
-							</span>
-						)}
-					</div>
+				{/* Chart akurasi prediksi SPP */}
+				<AkurasiChartSection
+					title="Akurasi SPP"
+					data={dataAkurasi}
+					isLoading={isLoadingAkurasi}
+					pesanKosong="Belum ada tagihan SPP untuk dibandingkan."
+				/>
 
-					{isLoadingAkurasi ? (
-						<Skeleton className="h-[220px] w-full rounded-xl" />
-					) : !dataAkurasi || bulanDenganData.length === 0 ? (
-						<p className="text-muted-foreground text-sm">
-							Belum ada tagihan bulan lalu untuk dibandingkan.
-						</p>
-					) : (
-						<ChartContainer
-							config={chartConfig}
-							className="aspect-auto h-[220px] w-full"
-						>
-							<ComposedChart data={chartData}>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="bulanSingkat"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-								/>
-								<YAxis
-									yAxisId="rupiah"
-									hide
-									domain={[0, (max: number) => max * 1.1]}
-								/>
-								<YAxis
-									yAxisId="persen"
-									orientation="right"
-									hide
-									domain={[0, 100]}
-								/>
-								<ChartTooltip
-									content={
-										<ChartTooltipContent
-											formatter={(value, name) => {
-												if (name === "akurasiPersen") {
-													return [`${Number(value)}%`, "Akurasi"];
-												}
-												return [
-													toRupiah(Number(value)),
-													name === "totalTagihan"
-														? "Tagihan Terjadwal"
-														: "Sudah Lunas",
-												];
-											}}
-											labelFormatter={(_, payload) => {
-												const item = payload?.[0]?.payload as
-													| {
-															bulan?: string;
-															isBulanBerjalanAtauDepan?: boolean;
-													  }
-													| undefined;
-												if (!item) return "";
-												return item.isBulanBerjalanAtauDepan
-													? `${item.bulan} (belum final)`
-													: item.bulan;
-											}}
-										/>
-									}
-								/>
-								<Bar
-									yAxisId="rupiah"
-									dataKey="totalTagihan"
-									fill="var(--color-totalTagihan)"
-									radius={[4, 4, 0, 0]}
-									barSize={18}
-								/>
-								<Bar
-									yAxisId="rupiah"
-									dataKey="totalTerbayar"
-									fill="var(--color-totalTerbayar)"
-									radius={[4, 4, 0, 0]}
-									barSize={18}
-								/>
-								<Line
-									yAxisId="persen"
-									type="monotone"
-									dataKey="akurasiPersen"
-									stroke="var(--color-akurasiPersen)"
-									strokeWidth={2}
-									dot={{ r: 3 }}
-									connectNulls
-								/>
-							</ComposedChart>
-						</ChartContainer>
-					)}
-					<p className="text-muted-foreground mt-2 text-[10px]">
-						Batang = tagihan terjadwal vs yang sudah lunas per bulan. Garis = %
-						akurasi (lunas ÷ tagihan). Bulan berjalan & bulan depan masih
-						berjalan periodenya, jadi akurasinya belum final.
-					</p>
-				</div>
+				{/* Chart akurasi Registrasi */}
+				<AkurasiChartSection
+					title="Akurasi Registrasi"
+					data={dataRegistrasi}
+					isLoading={isLoadingRegistrasi}
+					pesanKosong="Belum ada tagihan registrasi untuk dibandingkan."
+				/>
 			</CardContent>
 		</Card>
 	);

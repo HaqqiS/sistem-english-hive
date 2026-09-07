@@ -500,6 +500,85 @@ export const dashboardRouter = createTRPCRouter({
 			}));
 		}),
 
+	// 3d. Akurasi Registrasi (mirip Akurasi Prediksi SPP, tapi untuk tagihan
+	// REGISTRASI di tabel TagihanLain). Bedanya: TagihanLain tidak punya kolom
+	// jatuh tempo, jadi basisnya pakai createdAt (kapan tagihan registrasi
+	// dibuat) dibanding dengan berapa yang statusnya sudah LUNAS.
+	getAkurasiRegistrasi: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional().nullable(),
+					jumlahBulan: z.number().min(3).max(24).default(12),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+			const jumlahBulan = input?.jumlahBulan ?? 12;
+
+			// 2 slot paling akhir selalu bulan berjalan (offset 0) & bulan depan
+			// (offset -1). Sisanya (jumlahBulan - 2) slot ke belakang.
+			const offsetTertua = jumlahBulan - 2;
+
+			const rangeStart = dayjs()
+				.subtract(offsetTertua, "month")
+				.startOf("month")
+				.toDate();
+			const rangeEnd = dayjs().add(1, "month").endOf("month").toDate();
+
+			const tagihanRegistrasi = await db.tagihanLain.findMany({
+				where: {
+					kategori: KategoriTagihan.REGISTRASI,
+					createdAt: { gte: rangeStart, lte: rangeEnd },
+					murid: filterCabangId ? { cabangId: filterCabangId } : undefined,
+				},
+				select: {
+					jumlah: true,
+					createdAt: true,
+					status: true,
+				},
+			});
+
+			type BulanAgg = {
+				totalTagihan: number;
+				totalTerbayar: number;
+				isBulanBerjalanAtauDepan: boolean;
+			};
+			const grouped = new Map<string, BulanAgg>();
+			for (let i = offsetTertua; i >= -1; i--) {
+				const key = dayjs().subtract(i, "month").format("MMM YYYY");
+				grouped.set(key, {
+					totalTagihan: 0,
+					totalTerbayar: 0,
+					isBulanBerjalanAtauDepan: i <= 0,
+				});
+			}
+
+			for (const t of tagihanRegistrasi) {
+				const key = dayjs(t.createdAt).format("MMM YYYY");
+				const agg = grouped.get(key);
+				if (!agg) continue;
+
+				agg.totalTagihan += t.jumlah;
+				if (t.status === StatusPembayaran.LUNAS) {
+					agg.totalTerbayar += t.jumlah;
+				}
+			}
+
+			return Array.from(grouped.entries()).map(([bulan, agg]) => ({
+				bulan,
+				totalTagihan: agg.totalTagihan,
+				totalTerbayar: agg.totalTerbayar,
+				isBulanBerjalanAtauDepan: agg.isBulanBerjalanAtauDepan,
+				akurasiPersen:
+					agg.totalTagihan > 0
+						? Math.round((agg.totalTerbayar / agg.totalTagihan) * 1000) / 10
+						: null,
+			}));
+		}),
+
 	// 4. Jadwal Hari Ini
 	getTodaySchedule: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())

@@ -15,9 +15,11 @@ import {
 	Trash,
 	TrendingUp,
 	User,
+	Users,
 	Wallet,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import {
 	Accordion,
 	AccordionContent,
@@ -45,6 +47,7 @@ import {
 	statusPendaftaranColorMap,
 } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
+import { KelolaKelasSheet } from "../kelola-kelas-sheet";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 interface KelasListViewProps {
@@ -96,12 +99,14 @@ function KelasCard({
 	onEditGuruKelas,
 	onUpLevel,
 	onDelete,
+	onManageKelas,
 }: {
 	kelas: TypeKelasWithSesiPertemuanCount;
 	onEditKelas: (item: TypeKelasWithSesiPertemuanCount) => void;
 	onEditGuruKelas: (item: TypeKelasWithSesiPertemuanCount) => void;
 	onUpLevel: (item: TypeKelasWithSesiPertemuanCount) => void;
 	onDelete: (item: TypeKelasWithSesiPertemuanCount) => void;
+	onManageKelas: (item: TypeKelasWithSesiPertemuanCount) => void;
 }) {
 	const guruAktif =
 		kelas.historyGuruKelases.length > 0
@@ -261,72 +266,89 @@ function KelasCard({
 							</div>
 
 							{/* Actions */}
-							<div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+							<div className="flex flex-wrap items-center justify-end gap-2">
 								<Button
 									asChild
-									size="sm"
-									variant="ghost"
-									className="w-full justify-start sm:w-auto"
+									size="icon"
+									variant="outline"
+									className="h-9 w-9 shrink-0 bg-white"
+									title="Riwayat Absensi"
 								>
 									<Link href={`/admin/kelas/sesi/${kelas.id}`}>
-										<CalendarClock className="mr-2 h-4 w-4" />
-										Riwayat Absensi
+										<CalendarClock className="h-4 w-4" />
+										<span className="sr-only">Riwayat Absensi</span>
 									</Link>
 								</Button>
-								<div className="flex items-center gap-2">
-									<Button asChild size="sm" className="w-full sm:w-auto">
-										<Link href={`/admin/kelas/detail/${kelas.id}`}>
-											Detail Kelas
-											<ArrowRight className="ml-2 h-4 w-4" />
-										</Link>
-									</Button>
-									<Button
-										asChild
-										size="sm"
-										variant="secondary"
-										className="w-full sm:w-auto"
-									>
-										<Link href={`/admin/pembayaran?kelasId=${kelas.id}`}>
-											<Wallet className="mr-2 h-4 w-4" />
-											Pembayaran Kelas
-										</Link>
-									</Button>
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
-												variant="outline"
-												size="icon"
-												className="h-9 w-9 shrink-0"
-											>
-												<EllipsisVertical className="h-4 w-4" />
-												<span className="sr-only">Menu</span>
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end" className="w-48">
-											<DropdownMenuItem onClick={() => onEditKelas(kelas)}>
-												<Edit2 className="mr-2 h-4 w-4" />
-												Edit Data Kelas
-											</DropdownMenuItem>
-											<DropdownMenuItem onClick={() => onEditGuruKelas(kelas)}>
-												<User className="mr-2 h-4 w-4" />
-												Ganti Pengajar
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem onClick={() => onUpLevel(kelas)}>
-												<TrendingUp className="mr-2 h-4 w-4" />
-												Naik Level (Up Level)
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												variant="destructive"
-												onClick={() => onDelete(kelas)}
-											>
-												<Trash className="mr-2 h-4 w-4" />
-												Hapus Kelas
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</div>
+								<Button
+									asChild
+									size="icon"
+									variant="outline"
+									className="h-9 w-9 shrink-0 bg-white"
+									title="Detail Kelas"
+								>
+									<Link href={`/admin/kelas/detail/${kelas.id}`}>
+										<ArrowRight className="h-4 w-4" />
+										<span className="sr-only">Detail Kelas</span>
+									</Link>
+								</Button>
+								<Button
+									size="icon"
+									variant="outline"
+									className="h-9 w-9 shrink-0 bg-white"
+									onClick={() => onManageKelas(kelas)}
+									title="Edit Siswa & Guru"
+								>
+									<Users className="h-4 w-4" />
+									<span className="sr-only">Edit Siswa & Guru</span>
+								</Button>
+								<Button
+									asChild
+									size="icon"
+									variant="outline"
+									className="h-9 w-9 shrink-0 bg-white"
+									title="Pembayaran Kelas"
+								>
+									<Link href={`/admin/pembayaran?kelasId=${kelas.id}`}>
+										<Wallet className="h-4 w-4" />
+										<span className="sr-only">Pembayaran Kelas</span>
+									</Link>
+								</Button>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant="outline"
+											size="icon"
+											className="h-9 w-9 shrink-0 bg-white"
+											title="Menu Lainnya"
+										>
+											<EllipsisVertical className="h-4 w-4" />
+											<span className="sr-only">Menu</span>
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end" className="w-48">
+										<DropdownMenuItem onClick={() => onEditKelas(kelas)}>
+											<Edit2 className="mr-2 h-4 w-4" />
+											Edit Data Kelas (Lengkap)
+										</DropdownMenuItem>
+										<DropdownMenuItem onClick={() => onEditGuruKelas(kelas)}>
+											<User className="mr-2 h-4 w-4" />
+											Ganti Pengajar
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem onClick={() => onUpLevel(kelas)}>
+											<TrendingUp className="mr-2 h-4 w-4" />
+											Naik Level (Up Level)
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											variant="destructive"
+											onClick={() => onDelete(kelas)}
+										>
+											<Trash className="mr-2 h-4 w-4" />
+											Hapus Kelas
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
 							</div>
 						</div>
 					</AccordionContent>
@@ -364,6 +386,9 @@ export function KelasListView({
 	onDelete,
 	emptyMessage = "Belum ada kelas.",
 }: KelasListViewProps) {
+	const [manageKelas, setManageKelas] =
+		useState<TypeKelasWithSesiPertemuanCount | null>(null);
+
 	if (isLoading) {
 		return (
 			<div className="space-y-4 pt-4">
@@ -414,56 +439,71 @@ export function KelasListView({
 	// 3. Sort groups A→Z by jenis nama (abjad murni, tidak berdasarkan level)
 	const groups = [...groupMap.entries()].sort(([a], [b]) => a.localeCompare(b));
 
-	const cardProps = { onEditKelas, onEditGuruKelas, onUpLevel, onDelete };
+	const cardProps = {
+		onEditKelas,
+		onEditGuruKelas,
+		onUpLevel,
+		onDelete,
+		onManageKelas: setManageKelas,
+	};
 
 	return (
-		<div className="space-y-8 pt-2">
-			{groups.map(([jenisNama, { REGULAR, PRIVATE }]) => (
-				<div key={jenisNama}>
-					{/* Jenis header */}
-					<div className="mb-4 flex items-center gap-3">
-						<span className="bg-primary/10 text-primary rounded-md px-3 py-1 text-sm font-bold uppercase tracking-wider">
-							{jenisNama}
-						</span>
-						<span className="text-muted-foreground text-xs">
-							{REGULAR.length + PRIVATE.length} kelas
-						</span>
-						<div className="bg-border h-px flex-1" />
-					</div>
+		<>
+			<div className="space-y-8 pt-2">
+				{groups.map(([jenisNama, { REGULAR, PRIVATE }]) => (
+					<div key={jenisNama}>
+						{/* Jenis header */}
+						<div className="mb-4 flex items-center gap-3">
+							<span className="bg-primary/10 text-primary rounded-md px-3 py-1 text-sm font-bold uppercase tracking-wider">
+								{jenisNama}
+							</span>
+							<span className="text-muted-foreground text-xs">
+								{REGULAR.length + PRIVATE.length} kelas
+							</span>
+							<div className="bg-border h-px flex-1" />
+						</div>
 
-					<div className="space-y-4 pl-1">
-						{/* Reguler */}
-						{REGULAR.length > 0 && (
-							<div className="rounded-xl bg-blue-50/60 p-4 dark:bg-blue-950/20">
-								<SubGroupLabel label="Reguler" count={REGULAR.length} />
-								<Accordion
-									type="multiple"
-									className="flex w-full flex-col gap-3"
-								>
-									{REGULAR.map((kelas) => (
-										<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
-									))}
-								</Accordion>
-							</div>
-						)}
+						<div className="space-y-4 pl-1">
+							{/* Reguler */}
+							{REGULAR.length > 0 && (
+								<div className="rounded-xl bg-blue-50/60 p-4 dark:bg-blue-950/20">
+									<SubGroupLabel label="Reguler" count={REGULAR.length} />
+									<Accordion
+										type="multiple"
+										className="flex w-full flex-col gap-3"
+									>
+										{REGULAR.map((kelas) => (
+											<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
+										))}
+									</Accordion>
+								</div>
+							)}
 
-						{/* Private */}
-						{PRIVATE.length > 0 && (
-							<div className="rounded-xl bg-purple-50/60 p-4 dark:bg-purple-950/20">
-								<SubGroupLabel label="Private" count={PRIVATE.length} />
-								<Accordion
-									type="multiple"
-									className="flex w-full flex-col gap-3"
-								>
-									{PRIVATE.map((kelas) => (
-										<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
-									))}
-								</Accordion>
-							</div>
-						)}
+							{/* Private */}
+							{PRIVATE.length > 0 && (
+								<div className="rounded-xl bg-purple-50/60 p-4 dark:bg-purple-950/20">
+									<SubGroupLabel label="Private" count={PRIVATE.length} />
+									<Accordion
+										type="multiple"
+										className="flex w-full flex-col gap-3"
+									>
+										{PRIVATE.map((kelas) => (
+											<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
+										))}
+									</Accordion>
+								</div>
+							)}
+						</div>
 					</div>
-				</div>
-			))}
-		</div>
+				))}
+			</div>
+
+			<KelolaKelasSheet
+				kelasId={manageKelas?.id ?? null}
+				kodeKelas={manageKelas?.kodeKelas}
+				open={!!manageKelas}
+				onOpenChange={(open) => !open && setManageKelas(null)}
+			/>
+		</>
 	);
 }

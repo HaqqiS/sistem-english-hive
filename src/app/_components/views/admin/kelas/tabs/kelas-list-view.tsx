@@ -15,11 +15,9 @@ import {
 	Trash,
 	TrendingUp,
 	User,
-	Users,
 	Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import {
 	Accordion,
 	AccordionContent,
@@ -47,7 +45,6 @@ import {
 	statusPendaftaranColorMap,
 } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
-import { KelolaKelasSheet } from "../kelola-kelas-sheet";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 interface KelasListViewProps {
@@ -92,6 +89,11 @@ function formatJadwal(jadwalKelas: JadwalEntry[]): string {
 		.join(" | ");
 }
 
+// Simpan posisi scroll sebelum pindah halaman, supaya bisa direstore saat balik
+const saveScrollPosition = () => {
+	sessionStorage.setItem("kelas-list-scroll", String(window.scrollY));
+};
+
 // ── KelasCard (single card render) ───────────────────────────────────────────
 function KelasCard({
 	kelas,
@@ -99,14 +101,12 @@ function KelasCard({
 	onEditGuruKelas,
 	onUpLevel,
 	onDelete,
-	onManageKelas,
 }: {
 	kelas: TypeKelasWithSesiPertemuanCount;
 	onEditKelas: (item: TypeKelasWithSesiPertemuanCount) => void;
 	onEditGuruKelas: (item: TypeKelasWithSesiPertemuanCount) => void;
 	onUpLevel: (item: TypeKelasWithSesiPertemuanCount) => void;
 	onDelete: (item: TypeKelasWithSesiPertemuanCount) => void;
-	onManageKelas: (item: TypeKelasWithSesiPertemuanCount) => void;
 }) {
 	const guruAktif =
 		kelas.historyGuruKelases.length > 0
@@ -274,7 +274,10 @@ function KelasCard({
 									className="h-9 w-9 shrink-0 bg-white"
 									title="Riwayat Absensi"
 								>
-									<Link href={`/admin/kelas/sesi/${kelas.id}`}>
+									<Link
+										href={`/admin/kelas/sesi/${kelas.id}`}
+										onClick={saveScrollPosition}
+									>
 										<CalendarClock className="h-4 w-4" />
 										<span className="sr-only">Riwayat Absensi</span>
 									</Link>
@@ -286,20 +289,13 @@ function KelasCard({
 									className="h-9 w-9 shrink-0 bg-white"
 									title="Detail Kelas"
 								>
-									<Link href={`/admin/kelas/detail/${kelas.id}`}>
+									<Link
+										href={`/admin/kelas/detail/${kelas.id}`}
+										onClick={saveScrollPosition}
+									>
 										<ArrowRight className="h-4 w-4" />
 										<span className="sr-only">Detail Kelas</span>
 									</Link>
-								</Button>
-								<Button
-									size="icon"
-									variant="outline"
-									className="h-9 w-9 shrink-0 bg-white"
-									onClick={() => onManageKelas(kelas)}
-									title="Edit Siswa & Guru"
-								>
-									<Users className="h-4 w-4" />
-									<span className="sr-only">Edit Siswa & Guru</span>
 								</Button>
 								<Button
 									asChild
@@ -308,7 +304,10 @@ function KelasCard({
 									className="h-9 w-9 shrink-0 bg-white"
 									title="Pembayaran Kelas"
 								>
-									<Link href={`/admin/pembayaran?kelasId=${kelas.id}`}>
+									<Link
+										href={`/admin/pembayaran?kelasId=${kelas.id}`}
+										onClick={saveScrollPosition}
+									>
 										<Wallet className="h-4 w-4" />
 										<span className="sr-only">Pembayaran Kelas</span>
 									</Link>
@@ -386,9 +385,6 @@ export function KelasListView({
 	onDelete,
 	emptyMessage = "Belum ada kelas.",
 }: KelasListViewProps) {
-	const [manageKelas, setManageKelas] =
-		useState<TypeKelasWithSesiPertemuanCount | null>(null);
-
 	if (isLoading) {
 		return (
 			<div className="space-y-4 pt-4">
@@ -444,66 +440,56 @@ export function KelasListView({
 		onEditGuruKelas,
 		onUpLevel,
 		onDelete,
-		onManageKelas: setManageKelas,
 	};
 
 	return (
-		<>
-			<div className="space-y-8 pt-2">
-				{groups.map(([jenisNama, { REGULAR, PRIVATE }]) => (
-					<div key={jenisNama}>
-						{/* Jenis header */}
-						<div className="mb-4 flex items-center gap-3">
-							<span className="bg-primary/10 text-primary rounded-md px-3 py-1 text-sm font-bold uppercase tracking-wider">
-								{jenisNama}
-							</span>
-							<span className="text-muted-foreground text-xs">
-								{REGULAR.length + PRIVATE.length} kelas
-							</span>
-							<div className="bg-border h-px flex-1" />
-						</div>
-
-						<div className="space-y-4 pl-1">
-							{/* Reguler */}
-							{REGULAR.length > 0 && (
-								<div className="rounded-xl bg-blue-50/60 p-4 dark:bg-blue-950/20">
-									<SubGroupLabel label="Reguler" count={REGULAR.length} />
-									<Accordion
-										type="multiple"
-										className="flex w-full flex-col gap-3"
-									>
-										{REGULAR.map((kelas) => (
-											<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
-										))}
-									</Accordion>
-								</div>
-							)}
-
-							{/* Private */}
-							{PRIVATE.length > 0 && (
-								<div className="rounded-xl bg-purple-50/60 p-4 dark:bg-purple-950/20">
-									<SubGroupLabel label="Private" count={PRIVATE.length} />
-									<Accordion
-										type="multiple"
-										className="flex w-full flex-col gap-3"
-									>
-										{PRIVATE.map((kelas) => (
-											<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
-										))}
-									</Accordion>
-								</div>
-							)}
-						</div>
+		<div className="space-y-8 pt-2">
+			{groups.map(([jenisNama, { REGULAR, PRIVATE }]) => (
+				<div key={jenisNama}>
+					{/* Jenis header */}
+					<div className="mb-4 flex items-center gap-3">
+						<span className="bg-primary/10 text-primary rounded-md px-3 py-1 text-sm font-bold uppercase tracking-wider">
+							{jenisNama}
+						</span>
+						<span className="text-muted-foreground text-xs">
+							{REGULAR.length + PRIVATE.length} kelas
+						</span>
+						<div className="bg-border h-px flex-1" />
 					</div>
-				))}
-			</div>
 
-			<KelolaKelasSheet
-				kelasId={manageKelas?.id ?? null}
-				kodeKelas={manageKelas?.kodeKelas}
-				open={!!manageKelas}
-				onOpenChange={(open) => !open && setManageKelas(null)}
-			/>
-		</>
+					<div className="space-y-4 pl-1">
+						{/* Reguler */}
+						{REGULAR.length > 0 && (
+							<div className="rounded-xl bg-blue-50/60 p-4 dark:bg-blue-950/20">
+								<SubGroupLabel label="Reguler" count={REGULAR.length} />
+								<Accordion
+									type="multiple"
+									className="flex w-full flex-col gap-3"
+								>
+									{REGULAR.map((kelas) => (
+										<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
+									))}
+								</Accordion>
+							</div>
+						)}
+
+						{/* Private */}
+						{PRIVATE.length > 0 && (
+							<div className="rounded-xl bg-purple-50/60 p-4 dark:bg-purple-950/20">
+								<SubGroupLabel label="Private" count={PRIVATE.length} />
+								<Accordion
+									type="multiple"
+									className="flex w-full flex-col gap-3"
+								>
+									{PRIVATE.map((kelas) => (
+										<KelasCard key={kelas.id} kelas={kelas} {...cardProps} />
+									))}
+								</Accordion>
+							</div>
+						)}
+					</div>
+				</div>
+			))}
+		</div>
 	);
 }

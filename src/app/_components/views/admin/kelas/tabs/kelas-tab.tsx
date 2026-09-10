@@ -2,7 +2,8 @@
 
 import { type JenisKelasModel, TipeKelas } from "@prisma/client";
 import { AlertCircle, FileSpreadsheet, Filter, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
@@ -32,23 +33,119 @@ import { KelasListView } from "./kelas-list-view";
 
 export default function KelasTab() {
 	const { activeCabangId } = useGlobalCabangStore();
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+
+	const FILTER_STORAGE_KEY = "kelas-list-filters";
+
+	// Baca filter tersimpan di sessionStorage (fallback kalau URL bersih, misal
+	// habis klik menu sidebar "Kelas" alih-alih tombol back browser)
+	const getStoredFilters = useCallback((): Record<string, string> => {
+		if (typeof window === "undefined") return {};
+		try {
+			const raw = sessionStorage.getItem(FILTER_STORAGE_KEY);
+			return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+		} catch {
+			return {};
+		}
+	}, []);
+
+	const getInitialParam = useCallback(
+		(key: string) => {
+			return searchParams.get(key) ?? getStoredFilters()[key] ?? null;
+		},
+		[searchParams, getStoredFilters],
+	);
+
+	// Helper: update satu query param + simpan ke sessionStorage, tanpa nambah
+	// history & tanpa scroll ke atas
+	const setParam = useCallback(
+		(key: string, value: string | null) => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (value === null || value === "ALL" || value === "") {
+				params.delete(key);
+			} else {
+				params.set(key, value);
+			}
+			router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+
+			const stored = getStoredFilters();
+			if (value === null || value === "ALL" || value === "") {
+				delete stored[key];
+			} else {
+				stored[key] = value;
+			}
+			sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(stored));
+		},
+		[searchParams, pathname, router, getStoredFilters],
+	);
+
 	// 1. State Lokal untuk Delete Dialog
 	const [deleteKelasDialogOpen, setDeleteKelasDialogOpen] = useState(false);
 	const [selectedKelasToDelete, setSelectedKelasToDelete] =
 		useState<TypeKelasWithSesiPertemuanCount | null>(null);
 
+	// Filter & tab aktif — sumber kebenarannya di URL (dengan fallback ke
+	// sessionStorage), jadi tetap ada saat balik dari halaman lain
 	const [selectedTipeKelas, setSelectedTipeKelas] = useState<TipeKelas | "ALL">(
-		"ALL",
+		(getInitialParam("tipe") as TipeKelas | "ALL") ?? "ALL",
 	);
 	const [selectedJenisKelas, setSelectedJenisKelas] = useState<string | "ALL">(
-		"ALL",
+		getInitialParam("jenis") ?? "ALL",
 	);
 	const [selectedLevelKelas, setSelectedLevelKelas] = useState<number | "ALL">(
-		"ALL",
+		getInitialParam("level") ? Number(getInitialParam("level")) : "ALL",
 	);
 	const [selectedGuruKelas, setSelectedGuruKelas] = useState<string | "ALL">(
-		"ALL",
+		getInitialParam("guru") ?? "ALL",
 	);
+	const [activeTab, setActiveTab] = useState(
+		getInitialParam("tab") ?? "running",
+	);
+
+	// Kalau URL dibuka bersih (tanpa query) tapi ada filter tersimpan di
+	// sessionStorage, sinkronkan balik ke URL sekali di awal.
+	useEffect(() => {
+		if (searchParams.toString() !== "") return;
+		const stored = getStoredFilters();
+		if (Object.keys(stored).length === 0) return;
+
+		const params = new URLSearchParams(stored);
+		router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+	}, [searchParams, getStoredFilters, pathname, router]);
+
+	const handleChangeTipeKelas = (v: TipeKelas | "ALL") => {
+		setSelectedTipeKelas(v);
+		setParam("tipe", v === "ALL" ? null : v);
+	};
+	const handleChangeJenisKelas = (v: string) => {
+		setSelectedJenisKelas(v);
+		setParam("jenis", v === "ALL" ? null : v);
+	};
+	const handleChangeLevelKelas = (v: string) => {
+		const level = v === "ALL" ? "ALL" : Number(v);
+		setSelectedLevelKelas(level);
+		setParam("level", v === "ALL" ? null : v);
+	};
+	const handleChangeGuruKelas = (v: string) => {
+		setSelectedGuruKelas(v);
+		setParam("guru", v === "ALL" ? null : v);
+	};
+	const handleChangeTab = (v: string) => {
+		setActiveTab(v);
+		setParam("tab", v === "running" ? null : v);
+	};
+
+	// Restore posisi scroll terakhir (disimpan sebelum klik Detail Kelas / dsb)
+	useEffect(() => {
+		const saved = sessionStorage.getItem("kelas-list-scroll");
+		if (!saved) return;
+		sessionStorage.removeItem("kelas-list-scroll");
+		requestAnimationFrame(() => {
+			window.scrollTo({ top: Number(saved) });
+		});
+	}, []);
 
 	// 2. Zustand Store Actions
 	const { openDrawer: openKelasDrawer } = useKelasStore();
@@ -281,7 +378,7 @@ export default function KelasTab() {
 
 					<Select
 						value={selectedTipeKelas}
-						onValueChange={(v) => setSelectedTipeKelas(v as TipeKelas | "ALL")}
+						onValueChange={(v) => handleChangeTipeKelas(v as TipeKelas | "ALL")}
 					>
 						<SelectTrigger className="bg-background h-8 shrink-0 text-sm w-auto min-w-[130px]">
 							<SelectValue />
@@ -298,7 +395,7 @@ export default function KelasTab() {
 
 					<Select
 						value={selectedJenisKelas}
-						onValueChange={(v) => setSelectedJenisKelas(v)}
+						onValueChange={(v) => handleChangeJenisKelas(v)}
 					>
 						<SelectTrigger className="bg-background h-8 shrink-0 text-sm w-auto min-w-[130px]">
 							<SelectValue />
@@ -320,9 +417,7 @@ export default function KelasTab() {
 
 					<Select
 						value={selectedLevelKelas.toString()}
-						onValueChange={(v) =>
-							setSelectedLevelKelas(v === "ALL" ? "ALL" : Number(v))
-						}
+						onValueChange={(v) => handleChangeLevelKelas(v)}
 					>
 						<SelectTrigger className="bg-background h-8 shrink-0 text-sm w-auto min-w-[110px]">
 							<SelectValue placeholder="Semua Level" />
@@ -338,7 +433,7 @@ export default function KelasTab() {
 
 					<Select
 						value={selectedGuruKelas}
-						onValueChange={(v) => setSelectedGuruKelas(v === "ALL" ? "ALL" : v)}
+						onValueChange={(v) => handleChangeGuruKelas(v)}
 					>
 						<SelectTrigger className="bg-background h-8 shrink-0 text-sm w-auto min-w-[130px]">
 							<SelectValue placeholder="Semua Guru" />
@@ -355,7 +450,7 @@ export default function KelasTab() {
 				</div>
 			</header>
 
-			<Tabs defaultValue="running" className="w-full">
+			<Tabs value={activeTab} onValueChange={handleChangeTab} className="w-full">
 				<TabsList className="mb-2 flex w-full flex-wrap h-auto">
 					<TabsTrigger value="running" className="flex-1 min-w-[100px]">
 						Running ({dataKelasCount?.length ?? 0})

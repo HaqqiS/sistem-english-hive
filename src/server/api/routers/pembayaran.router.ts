@@ -747,37 +747,46 @@ export const pembayaranRouter = createTRPCRouter({
 				});
 			}
 
-			const [pembayarans, tagihanLains] = await Promise.all([
-				db.pembayaran.findMany({
-					where: { pendaftaranKelas: { kelasId: input.kelasId } },
-					orderBy: { pembayaranKe: "asc" },
-					include: {
-						pendaftaranKelas: {
-							include: {
-								murid: { select: { id: true, namaLengkap: true, noWA: true } },
+			const [pembayarans, tagihanLains, pendaftaranKelasList] =
+				await Promise.all([
+					db.pembayaran.findMany({
+						where: { pendaftaranKelas: { kelasId: input.kelasId } },
+						orderBy: { pembayaranKe: "asc" },
+						include: {
+							pendaftaranKelas: {
+								include: {
+									murid: {
+										select: { id: true, namaLengkap: true, noWA: true },
+									},
+								},
 							},
 						},
-					},
-				}),
-				db.tagihanLain.findMany({
-					where: { kelasId: input.kelasId },
-					orderBy: { createdAt: "asc" },
-					include: {
-						murid: { select: { id: true, namaLengkap: true, noWA: true } },
-					},
-				}),
-			]);
+					}),
+					db.tagihanLain.findMany({
+						where: { kelasId: input.kelasId },
+						orderBy: { createdAt: "asc" },
+						include: {
+							murid: { select: { id: true, namaLengkap: true, noWA: true } },
+						},
+					}),
+					db.pendaftaranKelas.findMany({
+						where: { kelasId: input.kelasId },
+						select: { id: true, muridId: true },
+					}),
+				]);
 
 			type RingkasanMurid = {
 				muridId: string;
 				namaLengkap: string;
 				noWA: string;
+				pendaftaranKelasId: string | null;
 				spp: {
 					id: string;
 					label: string;
 					jumlahBayar: number;
 					statusBayar: StatusPembayaran;
 					tanggalJatuhTempo: Date;
+					tanggalBayar: Date | null;
 					pembayaranKe: number;
 					sudahDiingatkan: boolean;
 				}[];
@@ -786,6 +795,7 @@ export const pembayaranRouter = createTRPCRouter({
 					label: string;
 					jumlah: number;
 					status: StatusPembayaran;
+					tanggalBayar: Date | null;
 					sudahDiingatkan: boolean;
 				}[];
 				registrasi: {
@@ -793,6 +803,7 @@ export const pembayaranRouter = createTRPCRouter({
 					label: string;
 					jumlah: number;
 					status: StatusPembayaran;
+					tanggalBayar: Date | null;
 					sudahDiingatkan: boolean;
 				}[];
 			};
@@ -810,6 +821,7 @@ export const pembayaranRouter = createTRPCRouter({
 					muridId,
 					namaLengkap,
 					noWA,
+					pendaftaranKelasId: null,
 					spp: [],
 					buku: [],
 					registrasi: [],
@@ -821,12 +833,14 @@ export const pembayaranRouter = createTRPCRouter({
 			for (const p of pembayarans) {
 				const murid = p.pendaftaranKelas.murid;
 				const entry = getOrCreate(murid.id, murid.namaLengkap, murid.noWA);
+				entry.pendaftaranKelasId = p.pendaftaranKelasId;
 				entry.spp.push({
 					id: p.id,
 					label: `SPP Ke-${p.pembayaranKe}`,
 					jumlahBayar: p.jumlahBayar,
 					statusBayar: p.statusBayar,
 					tanggalJatuhTempo: p.tanggalJatuhTempo,
+					tanggalBayar: p.tanggalBayar,
 					pembayaranKe: p.pembayaranKe,
 					sudahDiingatkan: p.sudahDiingatkan,
 				});
@@ -843,12 +857,23 @@ export const pembayaranRouter = createTRPCRouter({
 					label: t.judul,
 					jumlah: t.jumlah,
 					status: t.status,
+					tanggalBayar: t.tanggalBayar,
 					sudahDiingatkan: t.sudahDiingatkan,
 				};
 				if (t.kategori === "BUKU") {
 					entry.buku.push(item);
 				} else if (t.kategori === "REGISTRASI") {
 					entry.registrasi.push(item);
+				}
+			}
+
+			const pendaftaranByMurid = new Map(
+				pendaftaranKelasList.map((pk) => [pk.muridId, pk.id]),
+			);
+			for (const entry of muridMap.values()) {
+				if (!entry.pendaftaranKelasId) {
+					entry.pendaftaranKelasId =
+						pendaftaranByMurid.get(entry.muridId) ?? null;
 				}
 			}
 
@@ -875,7 +900,23 @@ export const pembayaranRouter = createTRPCRouter({
 							? sppBelumLunas.sort((a, b) => a.getTime() - b.getTime())[0]
 							: null;
 
-					return { ...entry, totalBelumLunas, tenggatTerdekat };
+					const totalSudahLunas =
+						entry.spp
+							.filter((s) => s.statusBayar === StatusPembayaran.LUNAS)
+							.reduce((sum, s) => sum + s.jumlahBayar, 0) +
+						entry.buku
+							.filter((b) => b.status === StatusPembayaran.LUNAS)
+							.reduce((sum, b) => sum + b.jumlah, 0) +
+						entry.registrasi
+							.filter((r) => r.status === StatusPembayaran.LUNAS)
+							.reduce((sum, r) => sum + r.jumlah, 0);
+
+					return {
+						...entry,
+						totalBelumLunas,
+						totalSudahLunas,
+						tenggatTerdekat,
+					};
 				})
 				.sort((a, b) => a.namaLengkap.localeCompare(b.namaLengkap));
 
@@ -912,7 +953,10 @@ export const pembayaranRouter = createTRPCRouter({
 					jenisKelasRel: { select: { nama: true, tipe: true } },
 					pendaftaranKelases: {
 						where: { status: "AKTIF" },
-						select: { id: true },
+						select: {
+							id: true,
+							murid: { select: { id: true, namaLengkap: true } },
+						},
 					},
 				},
 			});
@@ -958,6 +1002,7 @@ export const pembayaranRouter = createTRPCRouter({
 				statusKelas: k.statusKelas ?? "RUNNING",
 				jumlahSiswa: k.pendaftaranKelases.length,
 				totalBelumLunas: totalMap.get(k.id) ?? 0,
+				siswa: k.pendaftaranKelases.map((pk) => pk.murid.namaLengkap),
 			}));
 		}),
 });

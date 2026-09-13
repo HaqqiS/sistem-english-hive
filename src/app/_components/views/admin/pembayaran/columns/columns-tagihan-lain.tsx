@@ -5,12 +5,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
 	ArrowUpDown,
 	CheckCircle,
-	CheckCircle2,
-	Clock,
 	Edit2,
 	EllipsisVertical,
 	MessageCircle,
-	PackageCheck,
 	Trash,
 	XCircle,
 } from "lucide-react";
@@ -36,13 +33,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA } from "@/utils/dateUtils";
@@ -54,40 +44,11 @@ import { toRupiah } from "@/utils/toRupiah";
 export type TypeTagihanLain =
 	RouterOutputs["tagihanLain"]["getAllByMurid"][number];
 
-export const DESKRIPSI_BUKU_OPTIONS = [
-	{
-		value: "Sudah Diberikan",
-		label: "Sudah Diberikan",
-		Icon: CheckCircle2,
-		colorClass: "text-green-600",
-	},
-	{
-		value: "Ready",
-		label: "Ready",
-		Icon: PackageCheck,
-		colorClass: "text-blue-600",
-	},
-	{
-		value: "Di-order",
-		label: "Di-order",
-		Icon: Clock,
-		colorClass: "text-amber-600",
-	},
-	{
-		value: "Belum Order",
-		label: "Belum Order",
-		Icon: XCircle,
-		colorClass: "text-red-500",
-	},
-] as const;
-
 interface ColumnsConfig {
 	onEditClick: (item: TypeTagihanLain) => void;
 	onDeleteClick: (item: TypeTagihanLain) => void;
 	onVerifyClick: (item: TypeTagihanLain) => void;
 	onDownloadClick: (item: TypeTagihanLain) => void;
-	onUpdateDeskripsi?: (id: string, deskripsi: string | null) => void;
-	isBuku?: boolean;
 }
 
 // Removed local getStatusBadgeVariant as it is now in @/utils/statusUtils
@@ -379,8 +340,6 @@ export const columnsTagihanLainGlobal = ({
 	onDeleteClick,
 	onVerifyClick,
 	onDownloadClick,
-	onUpdateDeskripsi,
-	isBuku,
 }: ColumnsConfig): ColumnDef<TypeTagihanLain>[] => [
 	// Checkbox selection
 	{
@@ -556,112 +515,10 @@ export const columnsTagihanLainGlobal = ({
 
 	{
 		accessorKey: "deskripsi",
-		header: ({ column }) => {
-			if (!isBuku) return "Deskripsi";
-
-			const filterValue = column.getFilterValue() as string;
-
-			return (
-				<div className="flex items-center gap-2">
-					<Select
-						value={filterValue ?? "ALL"}
-						onValueChange={(val) =>
-							column.setFilterValue(val === "ALL" ? undefined : val)
-						}
-					>
-						<SelectTrigger className="h-8 border-dashed bg-transparent w-[140px] text-xs">
-							<div className="flex items-center gap-2">
-								<span className="text-muted-foreground mr-1">Status:</span>
-								<SelectValue placeholder="Semua" />
-							</div>
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="ALL" className="text-xs">
-								Semua Status
-							</SelectItem>
-							{DESKRIPSI_BUKU_OPTIONS.map((opt) => (
-								<SelectItem
-									key={opt.value}
-									value={opt.value}
-									className="text-xs"
-								>
-									<div className="flex items-center gap-2">
-										<opt.Icon className={`h-3.5 w-3.5 ${opt.colorClass}`} />
-										{opt.label}
-									</div>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-			);
-		},
-		cell: ({ row }) => {
-			const isBuku = row.original.kategori === "BUKU";
-			const deskripsi = row.original.deskripsi;
-
-			// Untuk REGISTRASI & LAINNYA: tampilkan teks biasa
-			if (!isBuku) {
-				return <span className="text-sm">{deskripsi ?? "—"}</span>;
-			}
-
-			// Untuk BUKU: cek apakah deskripsi sudah berisi salah satu dari 3 opsi
-			const validOptions = DESKRIPSI_BUKU_OPTIONS.map(
-				(o) => o.value,
-			) as string[];
-			const selectValue =
-				deskripsi && validOptions.includes(deskripsi) ? deskripsi : undefined;
-
-			// Teks asli (auto-generate) hanya ditampilkan kalau bukan salah satu dari 3 opsi
-			const autoText =
-				deskripsi && !validOptions.includes(deskripsi) ? deskripsi : null;
-
-			// Icon untuk trigger (opsi yang sedang dipilih)
-			const activeOpt = DESKRIPSI_BUKU_OPTIONS.find(
-				(o) => o.value === selectValue,
-			);
-
-			return (
-				<div className="flex flex-col gap-1 min-w-[150px]">
-					{autoText && (
-						<span className="text-muted-foreground text-xs">{autoText}</span>
-					)}
-					<Select
-						value={selectValue}
-						onValueChange={(val) => onUpdateDeskripsi?.(row.original.id, val)}
-					>
-						<SelectTrigger className="h-8 text-xs">
-							{activeOpt ? (
-								<div className="flex items-center gap-1.5">
-									<activeOpt.Icon
-										className={`h-3.5 w-3.5 ${activeOpt.colorClass}`}
-									/>
-									<span className={activeOpt.colorClass}>
-										{activeOpt.label}
-									</span>
-								</div>
-							) : (
-								<SelectValue placeholder="Ubah status..." />
-							)}
-						</SelectTrigger>
-						<SelectContent>
-							{DESKRIPSI_BUKU_OPTIONS.map((opt) => (
-								<SelectItem
-									key={opt.value}
-									value={opt.value}
-									className="text-xs"
-								>
-									<div className="flex items-center gap-2">
-										<opt.Icon className={`h-3.5 w-3.5 ${opt.colorClass}`} />
-										{opt.label}
-									</div>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-			);
-		},
+		header: "Deskripsi",
+		cell: ({ row }) => (
+			<span className="text-sm">{row.original.deskripsi ?? "—"}</span>
+		),
 	},
 
 	// Aksi

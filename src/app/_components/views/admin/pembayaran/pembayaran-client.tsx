@@ -4,7 +4,6 @@ import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
 import { pdf } from "@react-pdf/renderer";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import {
-	ArrowLeft,
 	FileSpreadsheet,
 	Filter,
 	RefreshCw,
@@ -47,7 +46,6 @@ import EditPembayaran from "./drawer/edit-pembayaran";
 import TambahPembayaran from "./drawer/tambah-pembayaran";
 import PilihKelasPembayaran from "./pilih-kelas-pembayaran";
 import { type ReceiptItem, ReceiptPDF } from "./receipt-pdf";
-import RingkasanTagihanKelas from "./ringkasan-tagihan-kelas";
 import TagihanLainTab from "./tabs/tagihan-lain-tab";
 
 interface PembayaranClientProps {
@@ -379,22 +377,7 @@ export default function PembayaranClient({
 				)}
 
 				<TabsContent value="ringkasan-kelas" className="space-y-4">
-					{kelasIdFilter === "ALL" ? (
-						<PilihKelasPembayaran onSelect={(id) => setKelasIdFilter(id)} />
-					) : (
-						<div className="space-y-4">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setKelasIdFilter("ALL")}
-								className="gap-1"
-							>
-								<ArrowLeft className="h-4 w-4" />
-								Kembali ke Daftar Kelas
-							</Button>
-							<RingkasanTagihanKelas kelasId={kelasIdFilter} />
-						</div>
-					)}
+					<PilihKelasPembayaran />
 				</TabsContent>
 
 				<TabsContent value="list" className="space-y-4">

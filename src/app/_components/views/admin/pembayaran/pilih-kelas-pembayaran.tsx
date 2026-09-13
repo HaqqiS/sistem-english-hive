@@ -1,8 +1,14 @@
 "use client";
 
 import type { StatusKelas, TipeKelas } from "@prisma/client";
-import { Loader2, Receipt, Search, Users } from "lucide-react";
+import { GraduationCap, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,18 +19,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useJenisKelas } from "@/hooks/useJenisKelas";
+import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { formatStatus, statusKelasColorMap } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
+import RingkasanTagihanKelas from "./ringkasan-tagihan-kelas";
 
-interface PilihKelasPembayaranProps {
-	onSelect: (kelasId: string) => void;
-}
-
-export default function PilihKelasPembayaran({
-	onSelect,
-}: PilihKelasPembayaranProps) {
+export default function PilihKelasPembayaran() {
 	const [search, setSearch] = useState("");
 	const [tipeFilter, setTipeFilter] = useState<TipeKelas | "ALL">("ALL");
 	const [jenisFilter, setJenisFilter] = useState<string | "ALL">("ALL");
@@ -32,6 +35,10 @@ export default function PilihKelasPembayaran({
 	const [statusFilter, setStatusFilter] = useState<StatusKelas | "ALL">(
 		"RUNNING",
 	);
+
+	// Accordion terbuka (bisa lebih dari satu, seperti di tab Kelas).
+	// Detail pembayaran per kelas baru di-fetch saat kartunya dibuka (lazy).
+	const [openItems, setOpenItems] = useState<string[]>([]);
 
 	const { data: jenisKelasList } = useJenisKelas();
 	const { data, isLoading } = api.pembayaran.getRingkasanSemuaKelas.useQuery(
@@ -166,8 +173,10 @@ export default function PilihKelasPembayaran({
 			</div>
 
 			{isLoading ? (
-				<div className="flex items-center justify-center py-12">
-					<Loader2 className="h-6 w-6 animate-spin" />
+				<div className="space-y-4 pt-4">
+					{Array.from({ length: 3 }, (_, i) => i).map((id) => (
+						<Skeleton key={id} className="h-24 w-full rounded-lg" />
+					))}
 				</div>
 			) : groups.length === 0 ? (
 				<p className="text-muted-foreground py-8 text-center text-sm">
@@ -190,35 +199,41 @@ export default function PilihKelasPembayaran({
 							<div className="space-y-4 pl-1">
 								{REGULAR.length > 0 && (
 									<div className="rounded-xl bg-blue-50/60 p-4 dark:bg-blue-950/20">
-										<p className="text-muted-foreground mb-3 text-xs font-semibold uppercase">
-											Reguler ({REGULAR.length})
-										</p>
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+										<SubGroupLabel label="Reguler" count={REGULAR.length} />
+										<Accordion
+											type="multiple"
+											value={openItems}
+											onValueChange={setOpenItems}
+											className="flex w-full flex-col gap-3"
+										>
 											{REGULAR.map((kelas) => (
 												<KelasPembayaranCard
 													key={kelas.id}
 													kelas={kelas}
-													onSelect={onSelect}
+													isOpen={openItems.includes(kelas.id)}
 												/>
 											))}
-										</div>
+										</Accordion>
 									</div>
 								)}
 
 								{PRIVATE.length > 0 && (
 									<div className="rounded-xl bg-purple-50/60 p-4 dark:bg-purple-950/20">
-										<p className="text-muted-foreground mb-3 text-xs font-semibold uppercase">
-											Private ({PRIVATE.length})
-										</p>
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+										<SubGroupLabel label="Private" count={PRIVATE.length} />
+										<Accordion
+											type="multiple"
+											value={openItems}
+											onValueChange={setOpenItems}
+											className="flex w-full flex-col gap-3"
+										>
 											{PRIVATE.map((kelas) => (
 												<KelasPembayaranCard
 													key={kelas.id}
 													kelas={kelas}
-													onSelect={onSelect}
+													isOpen={openItems.includes(kelas.id)}
 												/>
 											))}
-										</div>
+										</Accordion>
 									</div>
 								)}
 							</div>
@@ -230,9 +245,27 @@ export default function PilihKelasPembayaran({
 	);
 }
 
+// ── Sub-group label (Reguler / Private) — sama seperti tab Kelas ────────────
+function SubGroupLabel({ label, count }: { label: string; count: number }) {
+	const isPrivate = label.toLowerCase() === "private";
+	return (
+		<div className="mb-2 flex items-center gap-2">
+			<span
+				className={cn(
+					"rounded-md px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-widest text-white",
+					isPrivate ? "bg-purple-500" : "bg-blue-500",
+				)}
+			>
+				{label}
+			</span>
+			<span className="text-muted-foreground/60 text-[11px]">({count})</span>
+		</div>
+	);
+}
+
 function KelasPembayaranCard({
 	kelas,
-	onSelect,
+	isOpen,
 }: {
 	kelas: {
 		id: string;
@@ -243,51 +276,57 @@ function KelasPembayaranCard({
 		jumlahSiswa: number;
 		totalBelumLunas: number;
 	};
-	onSelect: (kelasId: string) => void;
+	isOpen: boolean;
 }) {
 	return (
-		<button
-			type="button"
-			onClick={() => onSelect(kelas.id)}
-			className="text-left"
-		>
-			<Card className="hover:border-primary/60 h-full cursor-pointer bg-white transition-colors hover:shadow-sm dark:bg-background">
-				<CardContent className="space-y-3 p-4">
-					<div className="flex items-start justify-between gap-2">
-						<div className="flex items-center gap-2">
-							<div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-								<Receipt className="text-primary h-4 w-4" />
+		<Card className="py-0">
+			<CardContent className="p-0">
+				<AccordionItem value={kelas.id} className="border-none">
+					<AccordionTrigger className="hover:bg-muted/30 items-center px-6 py-5 transition-colors hover:no-underline">
+						<div className="flex w-full flex-col gap-4">
+							{/* Header: Kode & Badges */}
+							<div className="flex w-full flex-col justify-between gap-2 sm:flex-row sm:items-center">
+								<span className="text-foreground text-lg font-bold tracking-tight">
+									{kelas.kodeKelas}
+								</span>
+								<div className="flex flex-wrap items-center justify-end gap-2">
+									<Badge
+										variant="secondary"
+										className="flex gap-1.5 px-2.5 py-1"
+									>
+										<GraduationCap className="h-3.5 w-3.5" />
+										<span>{kelas.jumlahSiswa}</span>
+									</Badge>
+									<Badge
+										className={statusKelasColorMap[kelas.statusKelas] ?? ""}
+										variant="outline"
+									>
+										{formatStatus(kelas.statusKelas)}
+									</Badge>
+								</div>
 							</div>
-							<div>
-								<p className="font-semibold leading-tight">{kelas.kodeKelas}</p>
-								<p className="text-muted-foreground text-xs">
-									{kelas.jenisKelasNama} - Level {kelas.level}
-								</p>
-							</div>
-						</div>
-						<Badge
-							className={statusKelasColorMap[kelas.statusKelas] ?? ""}
-							variant="outline"
-						>
-							{formatStatus(kelas.statusKelas)}
-						</Badge>
-					</div>
 
-					<div className="flex items-center justify-between border-t pt-3 text-sm">
-						<div className="text-muted-foreground flex items-center gap-1">
-							<Users className="h-3.5 w-3.5" />
-							{kelas.jumlahSiswa} siswa
+							{/* Metadata */}
+							<div className="text-muted-foreground flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs">
+								<span>
+									{kelas.jenisKelasNama} - Level {kelas.level}
+								</span>
+								{kelas.totalBelumLunas > 0 ? (
+									<span className="text-sm font-semibold text-red-600">
+										{toRupiah(kelas.totalBelumLunas)} belum lunas
+									</span>
+								) : (
+									<span className="text-xs">Semua Lunas</span>
+								)}
+							</div>
 						</div>
-						{kelas.totalBelumLunas > 0 ? (
-							<span className="font-semibold text-red-600">
-								{toRupiah(kelas.totalBelumLunas)}
-							</span>
-						) : (
-							<span className="text-muted-foreground text-xs">Semua Lunas</span>
-						)}
-					</div>
-				</CardContent>
-			</Card>
-		</button>
+					</AccordionTrigger>
+
+					<AccordionContent className="bg-muted/5 border-t px-6 py-5 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+						{isOpen && <RingkasanTagihanKelas kelasId={kelas.id} />}
+					</AccordionContent>
+				</AccordionItem>
+			</CardContent>
+		</Card>
 	);
 }

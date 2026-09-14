@@ -3,12 +3,7 @@
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
 import { pdf } from "@react-pdf/renderer";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
-import {
-	FileSpreadsheet,
-	Filter,
-	RefreshCw,
-	Search,
-} from "lucide-react";
+import { FileSpreadsheet, Filter, RefreshCw, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -296,15 +291,40 @@ export default function PembayaranClient({
 		<div className="space-y-4">
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 				<div className="flex items-center justify-between">
-					<TabsList>
-						<TabsTrigger value="ringkasan-kelas">
+					<TabsList className="w-full justify-start overflow-x-auto sm:w-fit sm:justify-center [&::-webkit-scrollbar]:hidden">
+						<TabsTrigger
+							value="ringkasan-kelas"
+							className="shrink-0 whitespace-nowrap"
+						>
 							Ringkasan &amp; Ingatkan
 						</TabsTrigger>
-						<TabsTrigger value="list">SPP (Tuition)</TabsTrigger>
-						<TabsTrigger value="tagihan-buku">Buku</TabsTrigger>
-						<TabsTrigger value="fee-registration">Registration Fee</TabsTrigger>
-						<TabsTrigger value="tagihan-lain">Tagihan Lainnya</TabsTrigger>
-						<TabsTrigger value="jatuh-tempo">Jatuh Tempo</TabsTrigger>
+						<TabsTrigger value="list" className="shrink-0 whitespace-nowrap">
+							SPP (Tuition)
+						</TabsTrigger>
+						<TabsTrigger
+							value="tagihan-buku"
+							className="shrink-0 whitespace-nowrap"
+						>
+							Buku
+						</TabsTrigger>
+						<TabsTrigger
+							value="fee-registration"
+							className="shrink-0 whitespace-nowrap"
+						>
+							Registration Fee
+						</TabsTrigger>
+						<TabsTrigger
+							value="tagihan-lain"
+							className="shrink-0 whitespace-nowrap"
+						>
+							Tagihan Lainnya
+						</TabsTrigger>
+						<TabsTrigger
+							value="jatuh-tempo"
+							className="shrink-0 whitespace-nowrap"
+						>
+							Jatuh Tempo
+						</TabsTrigger>
 					</TabsList>
 				</div>
 

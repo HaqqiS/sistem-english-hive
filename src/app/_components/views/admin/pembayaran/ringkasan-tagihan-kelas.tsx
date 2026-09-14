@@ -363,32 +363,34 @@ export default function RingkasanTagihanKelas({
 				const renderItemRow = (item: Item) => (
 					<li
 						key={`${item.jenis}-${item.id}`}
-						className="flex items-center justify-between gap-3 rounded-lg bg-background px-3 py-2 shadow-sm"
+						className="flex items-center justify-between gap-2 rounded-lg bg-background px-2.5 py-2 shadow-sm sm:gap-3 sm:px-3"
 					>
-						<div className="flex items-center gap-2.5">
+						<div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
 							<div
-								className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+								className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${
 									item.lunas
 										? "bg-green-100 text-green-700"
 										: "bg-red-100 text-red-600"
 								}`}
 							>
 								{item.lunas ? (
-									<ReceiptText className="h-4 w-4" />
+									<ReceiptText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 								) : (
-									<AlertCircle className="h-4 w-4" />
+									<AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 								)}
 							</div>
-							<div>
-								<p className="text-sm font-medium leading-none">{item.label}</p>
+							<div className="min-w-0">
+								<p className="truncate text-xs font-medium leading-none sm:text-sm">
+									{item.label}
+								</p>
 								{item.tanggal && (
-									<div className="mt-1 flex items-center gap-1 text-muted-foreground text-xs">
+									<div className="mt-1 flex items-center gap-1 text-muted-foreground text-[11px] sm:text-xs">
 										{item.lunas ? (
-											<CalendarCheck2 className="h-3 w-3" />
+											<CalendarCheck2 className="h-3 w-3 shrink-0" />
 										) : (
-											<CalendarClock className="h-3 w-3" />
+											<CalendarClock className="h-3 w-3 shrink-0" />
 										)}
-										<span>
+										<span className="truncate">
 											{item.lunas ? "" : "Jatuh tempo "}
 											{formatDateWITA(new Date(item.tanggal))}
 										</span>
@@ -396,9 +398,9 @@ export default function RingkasanTagihanKelas({
 								)}
 							</div>
 						</div>
-						<div className="flex items-center gap-1">
+						<div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
 							<span
-								className={`text-sm font-semibold ${
+								className={`whitespace-nowrap text-xs font-semibold sm:text-sm ${
 									item.lunas ? "" : "text-red-600"
 								}`}
 							>
@@ -442,60 +444,63 @@ export default function RingkasanTagihanKelas({
 							onClick={() =>
 								setExpandedMuridId(isExpanded ? null : murid.muridId)
 							}
-							className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+							className="flex w-full flex-col gap-2 px-3 py-3 text-left transition-colors hover:bg-muted/50 sm:px-4"
 						>
-							<div className="flex items-center gap-3">
-								<div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+							{/* Baris 1: nama siswa, full width, tidak terpotong */}
+							<div className="flex items-center gap-2 sm:gap-3">
+								<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-9 sm:w-9">
 									<Wallet className="h-4 w-4" />
 								</div>
-								<div>
-									<p className="text-sm font-medium leading-none">
-										{murid.namaLengkap}
-									</p>
-									<p className="mt-1 flex items-center gap-2 text-muted-foreground text-xs">
-										<span>{riwayatLunas.length} lunas</span>
-										{belumLunas.length > 0 && (
-											<span className="text-red-500">
-												· {belumLunas.length} belum lunas
-											</span>
-										)}
-									</p>
-								</div>
+								<p className="text-sm font-medium leading-snug break-words">
+									{murid.namaLengkap}
+								</p>
 							</div>
-							<div className="flex items-center gap-2">
-								{belumLunas.length > 0 ? (
-									<span className="text-sm font-semibold text-red-600">
-										{toRupiah(totalBelumLunas)}
-									</span>
-								) : (
-									<span className="text-sm font-semibold text-green-700">
-										Lunas
-									</span>
-								)}
-								<Button
-									variant="ghost"
-									size="icon"
-									className="h-7 w-7 text-primary"
-									onClick={(e) => {
-										e.stopPropagation();
-										setAddForMurid({
-											muridId: murid.muridId,
-											namaLengkap: murid.namaLengkap,
-											pendaftaranKelasId: murid.pendaftaranKelasId,
-										});
-										setAddJumlah("");
-										setAddTanggal(formatDateToYYYYMMDD(new Date()));
-										setAddJenis("SPP");
-										setAddJudul(JENIS_CONFIG.SPP.judulDefault);
-									}}
-								>
-									<Plus className="h-4 w-4" />
-								</Button>
-								<ChevronDown
-									className={`h-4 w-4 text-muted-foreground transition-transform ${
-										isExpanded ? "rotate-180" : ""
-									}`}
-								/>
+
+							{/* Baris 2: status lunas, total tagihan, dan tombol aksi */}
+							<div className="flex items-center justify-between gap-2 pl-10 sm:pl-12">
+								<p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-muted-foreground text-xs">
+									<span>{riwayatLunas.length} lunas</span>
+									{belumLunas.length > 0 && (
+										<span className="text-red-500">
+											· {belumLunas.length} belum lunas
+										</span>
+									)}
+								</p>
+								<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+									{belumLunas.length > 0 ? (
+										<span className="whitespace-nowrap text-xs font-semibold text-red-600 sm:text-sm">
+											{toRupiah(totalBelumLunas)}
+										</span>
+									) : (
+										<span className="whitespace-nowrap text-xs font-semibold text-green-700 sm:text-sm">
+											Lunas
+										</span>
+									)}
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-7 w-7 shrink-0 text-primary"
+										onClick={(e) => {
+											e.stopPropagation();
+											setAddForMurid({
+												muridId: murid.muridId,
+												namaLengkap: murid.namaLengkap,
+												pendaftaranKelasId: murid.pendaftaranKelasId,
+											});
+											setAddJumlah("");
+											setAddTanggal(formatDateToYYYYMMDD(new Date()));
+											setAddJenis("SPP");
+											setAddJudul(JENIS_CONFIG.SPP.judulDefault);
+										}}
+									>
+										<Plus className="h-4 w-4" />
+									</Button>
+									<ChevronDown
+										className={`h-4 w-4 text-muted-foreground transition-transform ${
+											isExpanded ? "rotate-180" : ""
+										}`}
+									/>
+								</div>
 							</div>
 						</button>
 

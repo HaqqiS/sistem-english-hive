@@ -40,7 +40,7 @@ export const columns = ({
 		cell: ({ row }) => (
 			<Button
 				variant="link"
-				className="text-foreground w-fit px-0 text-left text-base"
+				className="text-foreground h-auto min-w-0 w-fit justify-start whitespace-normal break-words px-0 text-left text-base"
 				onClick={() => onEditClick(row.original)}
 			>
 				{row.original.guru.name}

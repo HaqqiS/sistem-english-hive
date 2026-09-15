@@ -77,7 +77,7 @@ export const columns = ({
 			<Link href={`/admin/pembayaran/${row.original.murid.id}`}>
 				<Button
 					variant="link"
-					className="text-foreground w-fit px-0 text-left text-base"
+					className="text-foreground h-auto min-w-0 w-fit justify-start whitespace-normal break-words px-0 text-left text-base"
 				>
 					{row.original.murid.namaLengkap}
 				</Button>
@@ -90,6 +90,9 @@ export const columns = ({
 		header: "Umur & Kelas Sekolah",
 		cell: ({ row }) => (
 			<div>
+				<div className="text-muted-foreground text-[11px] uppercase tracking-wide md:hidden">
+					Umur &amp; Kelas Sekolah
+				</div>
 				<div>{row.original.murid.umur} Tahun</div>
 				<div className="text-muted-foreground text-xs">
 					{row.original.murid.kelasSekolah}
@@ -112,18 +115,18 @@ export const columns = ({
 		cell: ({ row }) => {
 			const noWA = row.original.murid.noWA;
 			return (
-				<div className="flex items-center gap-2">
+				<div className="flex min-w-0 items-center gap-2">
 					<Link
 						href={formatWhatsAppLink(noWA)}
 						target="_blank"
-						className="flex items-center gap-1 font-medium text-green-600 hover:underline"
+						className="flex min-w-0 items-center gap-1 font-medium text-green-600 hover:underline"
 						title="Chat WhatsApp"
 					>
-						<MessageCircle className="h-4 w-4" />
-						<span className="text-sm text-green-600">{noWA}</span>
+						<MessageCircle className="h-4 w-4 shrink-0" />
+						<span className="truncate text-sm text-green-600">{noWA}</span>
 					</Link>
 					<Copy
-						className="text-muted-foreground hover:text-foreground h-3 w-3 cursor-pointer"
+						className="text-muted-foreground hover:text-foreground h-3 w-3 shrink-0 cursor-pointer"
 						onClick={async () => {
 							await navigator.clipboard.writeText(row.original.murid.noWA);
 							toast.success("Nomor WA disalin");
@@ -150,7 +153,7 @@ export const columns = ({
 			return (
 				<Badge
 					variant="outline"
-					className={cn("font-medium", statusPendaftaranColorMap[status])}
+					className={cn("w-fit font-medium", statusPendaftaranColorMap[status])}
 				>
 					{formatStatus(status)}
 				</Badge>
@@ -167,9 +170,12 @@ export const columns = ({
 	},
 	{
 		accessorKey: "tanggalMulai",
-		header: () => <div className="w-full text-center">Tanggal Masuk Kelas</div>,
+		header: () => <div className="w-full md:text-center">Tanggal Masuk Kelas</div>,
 		cell: ({ row }) => (
-			<div className="text-center">
+			<div className="md:text-center">
+				<div className="text-muted-foreground text-[11px] uppercase tracking-wide md:hidden">
+					Tanggal Masuk Kelas
+				</div>
 				{row.original.tanggalMulai
 					? formatDateWITA(row.original.tanggalMulai)
 					: "-"}

@@ -25,14 +25,6 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 import { useKelas } from "@/hooks/useKelas";
@@ -237,7 +229,7 @@ export default function DetailKelasClient() {
 	});
 
 	return (
-		<div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+		<div className="space-y-8">
 			<HeaderActionPortal>
 				<div className="flex items-center gap-2">
 					<Button variant="outline" size="sm" asChild>
@@ -299,20 +291,22 @@ export default function DetailKelasClient() {
 			</AlertDialog>
 
 			{/* --- KOLOM KIRI (UTAMA): Murid & Guru --- */}
-			<div className="space-y-8 lg:col-span-2">
+			<div className="space-y-8">
 				{/* HEADER & MURID */}
 				<div className="space-y-4">
-					<div className="flex items-center justify-between">
-						<div>
-							<h1 className="text-xl font-semibold">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div className="min-w-0">
+							<h1 className="truncate text-xl font-semibold">
 								Daftar Murid - {dataById?.kodeKelas}
 							</h1>
 							<p className="text-muted-foreground text-sm">
 								Kelola siswa yang terdaftar di kelas ini.
 							</p>
 						</div>
-						<TambahMuridDetailKelas kelasId={kelasId} />
-						<EditMuridDetailKelas />
+						<div className="flex shrink-0 flex-wrap items-center gap-2">
+							<TambahMuridDetailKelas kelasId={kelasId} />
+							<EditMuridDetailKelas />
+						</div>
 						<DeleteConfirmationDialog
 							isOpen={deletePendaftaranKelasDialogOpen}
 							onOpenChange={setDeletePendaftaranKelasDialogOpen}
@@ -362,15 +356,15 @@ export default function DetailKelasClient() {
 
 				{/* GURU */}
 				<div className="space-y-4">
-					<div className="flex items-center justify-between">
-						<div>
-							<h1 className="text-xl font-semibold">Riwayat Guru Pengajar</h1>
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div className="min-w-0">
+							<h1 className="truncate text-xl font-semibold">Riwayat Guru Pengajar</h1>
 							<p className="text-muted-foreground text-sm">
 								Daftar guru yang pernah atau sedang mengajar.
 							</p>
 						</div>
 
-						<div className="flex gap-2">
+						<div className="flex flex-wrap gap-2">
 							<EditGuruKelas />
 							{loadingGuru ? (
 								<Skeleton className="h-9 w-32 rounded-md" />
@@ -410,46 +404,18 @@ export default function DetailKelasClient() {
 					<DataTable data={dataGuruByKelasId ?? []} columns={columnsGuru} />
 				</div>
 			</div>
-			{/* --- KOLOM KANAN (SIDEBAR): Class History & Info --- */}
-			<div className="space-y-6">
-				{/* Mobile Only Trigger for History (Hidden on Desktop) */}
-				<div className="lg:hidden">
-					<Sheet>
-						<SheetTrigger asChild>
-							<Button variant="outline" className="w-full">
-								<History className="mr-2 h-4 w-4" />
-								Lihat Riwayat Perjalanan Kelas
-							</Button>
-						</SheetTrigger>
-						<SheetContent side="bottom" className="h-[80vh]">
-							<SheetHeader className="mb-4">
-								<SheetTitle>Perjalanan Kelas</SheetTitle>
-								<SheetDescription>
-									Riwayat kenaikan tingkat dari kelompok belajar ini.
-								</SheetDescription>
-							</SheetHeader>
-							{dataById?.cohortId && (
-								<ClassHistoryTimeline
-									cohortId={dataById.cohortId}
-									currentKelasId={kelasId}
-								/>
-							)}
-						</SheetContent>
-					</Sheet>
+			{/* --- JADWAL KELAS: sekarang full-width, sejajar dengan Murid & Guru --- */}
+			<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
+				<div className="flex flex-col space-y-1.5 p-6">
+					<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">
+						<CalendarClock className="text-primary h-4 w-4" />
+						Jadwal Kelas
+					</h3>
+					<p className="text-muted-foreground text-sm">
+						Informasi hari, jam, dan ruang.
+					</p>
 				</div>
-
-				{/* Desktop View: Always Visible */}
-				<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
-					<div className="flex flex-col space-y-1.5 p-6">
-						<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">
-							<CalendarClock className="text-primary h-4 w-4" />
-							Jadwal Kelas
-						</h3>
-						<p className="text-muted-foreground text-sm">
-							Informasi hari, jam, dan ruang.
-						</p>
-					</div>
-					<div className="p-6 pt-0">
+				<div className="p-6 pt-0">
 						{dataById?.jadwalKelas && dataById.jadwalKelas.length > 0 ? (
 							<div className="grid gap-3">
 								{dataById.jadwalKelas.map((j) => {
@@ -462,16 +428,16 @@ export default function DetailKelasClient() {
 									return (
 										<div
 											key={j.id}
-											className="border-border/50 flex items-center justify-between rounded-md border p-2 text-sm"
+											className="border-border/50 flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm"
 										>
-											<div className="flex items-center gap-2 font-medium">
-												<CalendarDays className="text-muted-foreground h-4 w-4" />
-												<span>{j.hari}</span>
+											<div className="flex min-w-0 items-center gap-2 font-medium">
+												<CalendarDays className="text-muted-foreground h-4 w-4 shrink-0" />
+												<span className="truncate">{j.hari}</span>
 											</div>
 											<div className="text-right">
-												<div className="font-mono text-xs">{timeRange}</div>
+												<div className="font-mono text-xs whitespace-nowrap">{timeRange}</div>
 												{j.ruang && (
-													<div className="text-muted-foreground text-xs">
+													<div className="text-muted-foreground max-w-[160px] truncate text-xs">
 														{j.ruang.namaRuang}
 													</div>
 												)}
@@ -488,26 +454,25 @@ export default function DetailKelasClient() {
 					</div>
 				</div>
 
-				<div className="bg-card text-card-foreground hidden rounded-xl border shadow-sm lg:block">
-					<div className="flex flex-col space-y-1.5 p-6">
-						<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">
-							<History className="text-primary h-4 w-4" />
-							Perjalanan Kelas
-						</h3>
-						<p className="text-muted-foreground text-sm">
-							Riwayat kenaikan tingkat.
-						</p>
-					</div>
-					<div className="p-6 pt-0">
-						{dataById?.cohortId ? (
-							<ClassHistoryTimeline
-								cohortId={dataById.cohortId}
-								currentKelasId={kelasId}
-							/>
-						) : (
-							<Skeleton className="h-32 w-full" />
-						)}
-					</div>
+			<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
+				<div className="flex flex-col space-y-1.5 p-6">
+					<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">
+						<History className="text-primary h-4 w-4" />
+						Perjalanan Kelas
+					</h3>
+					<p className="text-muted-foreground text-sm">
+						Riwayat kenaikan tingkat.
+					</p>
+				</div>
+				<div className="p-6 pt-0">
+					{dataById?.cohortId ? (
+						<ClassHistoryTimeline
+							cohortId={dataById.cohortId}
+							currentKelasId={kelasId}
+						/>
+					) : (
+						<Skeleton className="h-32 w-full" />
+					)}
 				</div>
 			</div>
 		</div>

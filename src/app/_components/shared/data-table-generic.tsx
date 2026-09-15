@@ -40,14 +40,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 
 // Tipe props yang generik
 interface DataTableProps<TData, TValue> {
@@ -154,7 +146,8 @@ export function DataTable<TData, TValue>({
 				</div>
 			</div>
 
-			<div className="relative overflow-hidden rounded-lg border">
+			{/* ── Daftar baris bergaya CARD (bukan garis pembatas tabel) ───────── */}
+			<div className="relative">
 				{isLoading && (
 					<div className="bg-background/50 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[1px]">
 						<div className="bg-background/80 flex items-center gap-2 rounded-full border px-4 py-2 shadow-sm">
@@ -166,55 +159,68 @@ export function DataTable<TData, TValue>({
 					</div>
 				)}
 
-				<div className="overflow-x-auto rounded-lg border">
-					<Table>
-						<TableHeader className="bg-muted sticky top-0 z-10">
-							{table.getHeaderGroups().map((headerGroup) => (
-								<TableRow key={headerGroup.id}>
-									{headerGroup.headers.map((header) => {
-										return (
-											<TableHead key={header.id} colSpan={header.colSpan}>
-												{header.isPlaceholder
-													? null
-													: flexRender(
-															header.column.columnDef.header,
-															header.getContext(),
-														)}
-											</TableHead>
-										);
-									})}
-								</TableRow>
-							))}
-						</TableHeader>
-						<TableBody className="**:data-[slot=table-cell]:first:w-8">
-							{table.getRowModel().rows?.length ? (
-								table.getRowModel().rows.map((row) => (
-									<TableRow
-										key={row.id}
-										data-state={row.getIsSelected() && "selected"}
+				<div className="flex flex-col gap-3">
+					{/* Header label — hanya tampil di layar lebih lebar (md ke atas),
+					    di HP tiap kartu sudah cukup jelas tanpa header kolom */}
+					{table.getHeaderGroups().map((headerGroup) => (
+						<div
+							key={headerGroup.id}
+							className="text-muted-foreground hidden gap-3 px-4 text-xs font-medium uppercase tracking-wide md:flex"
+						>
+							{headerGroup.headers.map((header) => {
+								const isNarrow = ["select", "number", "actions"].includes(
+									header.column.id,
+								);
+								return (
+									<div
+										key={header.id}
+										className={
+											isNarrow ? "w-10 shrink-0" : "min-w-0 flex-1"
+										}
 									>
-										{row.getVisibleCells().map((cell) => (
-											<TableCell key={cell.id}>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext(),
+										{header.isPlaceholder
+											? null
+											: flexRender(
+													header.column.columnDef.header,
+													header.getContext(),
 												)}
-											</TableCell>
-										))}
-									</TableRow>
-								))
-							) : (
-								<TableRow>
-									<TableCell
-										colSpan={columns.length}
-										className="h-24 text-center"
-									>
-										No results.
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
+									</div>
+								);
+							})}
+						</div>
+					))}
+
+					{table.getRowModel().rows?.length ? (
+						table.getRowModel().rows.map((row) => (
+							<div
+								key={row.id}
+								data-state={row.getIsSelected() && "selected"}
+								className="flex flex-col gap-3 rounded-xl border bg-background p-4 shadow-sm transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted data-[state=selected]:border-primary/50 md:flex-row md:items-center md:gap-3"
+							>
+								{row.getVisibleCells().map((cell) => {
+									const isNarrow = ["select", "number", "actions"].includes(
+										cell.column.id,
+									);
+									return (
+										<div
+											key={cell.id}
+											className={
+												isNarrow
+													? "flex shrink-0 items-center md:w-10"
+													: "min-w-0 flex-1 text-sm [&_button]:h-auto"
+											}
+										>
+											{flexRender(cell.column.columnDef.cell, cell.getContext())}
+										</div>
+									);
+								})}
+							</div>
+						))
+					) : (
+						<div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
+							No results.
+						</div>
+					)}
 				</div>
 			</div>
 

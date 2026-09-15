@@ -174,9 +174,7 @@ export function DataTable<TData, TValue>({
 								return (
 									<div
 										key={header.id}
-										className={
-											isNarrow ? "w-10 shrink-0" : "min-w-0 flex-1"
-										}
+										className={isNarrow ? "w-10 shrink-0" : "min-w-0 flex-1"}
 									>
 										{header.isPlaceholder
 											? null
@@ -195,7 +193,7 @@ export function DataTable<TData, TValue>({
 							<div
 								key={row.id}
 								data-state={row.getIsSelected() && "selected"}
-								className="flex flex-col gap-3 rounded-xl border bg-background p-4 shadow-sm transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted data-[state=selected]:border-primary/50 md:flex-row md:items-center md:gap-3"
+								className="hover:border-l-primary/60 flex min-w-0 max-w-full flex-col gap-3 overflow-hidden rounded-xl border border-l-4 border-l-transparent bg-background p-4 shadow-sm transition-colors hover:bg-muted/40 data-[state=selected]:border-l-primary data-[state=selected]:bg-primary/5 md:flex-row md:items-center md:gap-3"
 							>
 								{row.getVisibleCells().map((cell) => {
 									const isNarrow = ["select", "number", "actions"].includes(
@@ -207,10 +205,13 @@ export function DataTable<TData, TValue>({
 											className={
 												isNarrow
 													? "flex shrink-0 items-center md:w-10"
-													: "min-w-0 flex-1 text-sm [&_button]:h-auto"
+													: "min-w-0 flex-1 overflow-hidden text-sm [&_button]:h-auto [&_button]:max-w-full [&>*]:min-w-0"
 											}
 										>
-											{flexRender(cell.column.columnDef.cell, cell.getContext())}
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext(),
+											)}
 										</div>
 									);
 								})}

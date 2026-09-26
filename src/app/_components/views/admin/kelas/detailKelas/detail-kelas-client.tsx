@@ -7,6 +7,7 @@ import {
 	Edit,
 	FileText,
 	History,
+	School,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -24,11 +25,13 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UseHistoryGuruKelas } from "@/hooks/useHistoryGuruKelas";
 import { useKelas } from "@/hooks/useKelas";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
+import { cn } from "@/lib/utils";
 import {
 	useGuruKelasStore,
 	usePendaftaranKelasStore,
@@ -44,6 +47,23 @@ import TambahGuruKelas from "../drawers/tambah-guru-kelas";
 import TambahMuridDetailKelas from "../drawers/tambah-murid";
 import { BulkActivateDialog } from "./bulk-activate-dialog";
 import { ClassHistoryTimeline } from "./class-history-timeline";
+
+// Label & warna badge untuk status kelas — dipakai di header detail kelas
+const statusKelasLabelMap: Record<string, string> = {
+	RUNNING: "Running",
+	WAITING: "Waiting",
+	TRIAL: "Trial",
+	LEVEL_UP: "Level Up",
+	COMPLETED: "Completed",
+};
+
+const statusKelasColorMap: Record<string, string> = {
+	RUNNING: "bg-green-100 text-green-700 border-green-200",
+	WAITING: "bg-amber-100 text-amber-700 border-amber-200",
+	TRIAL: "bg-blue-100 text-blue-700 border-blue-200",
+	LEVEL_UP: "bg-purple-100 text-purple-700 border-purple-200",
+	COMPLETED: "bg-slate-100 text-slate-600 border-slate-200",
+};
 
 export default function DetailKelasClient() {
 	// STATE
@@ -290,11 +310,67 @@ export default function DetailKelasClient() {
 				</AlertDialogContent>
 			</AlertDialog>
 
-			{/* --- STICKY HEADER: Nama Kelas, nempel di atas saat discroll --- */}
-			<div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-20 -mx-2 -mt-2 border-b px-2 py-3 backdrop-blur lg:-mx-4 lg:-mt-4 lg:px-4">
-				<h1 className="truncate text-xl font-semibold">
-					{dataById?.kodeKelas ?? "Memuat..."}
-				</h1>
+			{/* --- STICKY HEADER: Info Kelas, nempel di atas saat discroll --- */}
+			<div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-20 -mx-2 -mt-2 border-b px-2 py-4 backdrop-blur lg:-mx-4 lg:-mt-4 lg:px-4">
+				<div className="flex flex-wrap items-center justify-between gap-4">
+					<div className="flex min-w-0 items-center gap-3">
+						<div className="text-primary flex h-11 w-11 shrink-0 items-center justify-center">
+							<School className="h-6 w-6" />
+						</div>
+
+						{dataById ? (
+							<div className="min-w-0">
+								<div className="flex flex-wrap items-center gap-2">
+									<h1 className="truncate text-lg font-semibold tracking-tight">
+										{dataById.kodeKelas
+											.split("|")
+											.map((p) => p.trim())
+											.join(" ")}
+									</h1>
+									{dataById.statusKelas && (
+										<Badge
+											variant="outline"
+											className={cn(
+												"shrink-0 font-medium",
+												statusKelasColorMap[dataById.statusKelas],
+											)}
+										>
+											{statusKelasLabelMap[dataById.statusKelas] ??
+												dataById.statusKelas}
+										</Badge>
+									)}
+								</div>
+							</div>
+						) : (
+							<div className="min-w-0 space-y-1.5">
+								<Skeleton className="h-5 w-48" />
+								<Skeleton className="h-3 w-32" />
+							</div>
+						)}
+					</div>
+
+					{/* Ringkasan cepat: jumlah murid & guru aktif */}
+					{dataById && (
+						<div className="flex shrink-0 items-center gap-4 border-l pl-4 text-sm">
+							<div className="text-center">
+								<div className="font-semibold leading-none">
+									{dataByKelasId?.length ?? 0}
+								</div>
+								<div className="text-muted-foreground mt-1 text-[11px] whitespace-nowrap">
+									Murid
+								</div>
+							</div>
+							<div className="text-center">
+								<div className="font-semibold leading-none">
+									{loadingGuru ? "-" : activeGuruHistories.length}
+								</div>
+								<div className="text-muted-foreground mt-1 text-[11px] whitespace-nowrap">
+									Guru Aktif
+								</div>
+							</div>
+						</div>
+					)}
+				</div>
 			</div>
 
 			{/* --- KOLOM KIRI (UTAMA): Murid & Guru --- */}
@@ -333,6 +409,7 @@ export default function DetailKelasClient() {
 					<DataTable
 						data={dataByKelasId ?? []}
 						columns={columnsMurid}
+						variant="card"
 						toolbar={(table) => {
 							const selectedRows = table.getFilteredSelectedRowModel().rows;
 							// Hanya tampil jika ada murid yang dipilih dan statusnya WAITING_LIST (opsional filter)
@@ -407,19 +484,27 @@ export default function DetailKelasClient() {
 							/>
 						</div>
 					</div>
-					<DataTable data={dataGuruByKelasId ?? []} columns={columnsGuru} />
+					<DataTable
+						data={dataGuruByKelasId ?? []}
+						columns={columnsGuru}
+						variant="card"
+					/>
 				</div>
 			</div>
 			{/* --- JADWAL KELAS: sekarang full-width, sejajar dengan Murid & Guru --- */}
 			<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
-				<div className="flex flex-col space-y-1.5 p-6">
-					<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">
-						<CalendarClock className="text-primary h-4 w-4" />
-						Jadwal Kelas
-					</h3>
-					<p className="text-muted-foreground text-sm">
-						Informasi hari, jam, dan ruang.
-					</p>
+				<div className="flex flex-row items-center gap-3 space-y-0 p-6">
+					<div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+						<CalendarClock className="h-4 w-4" />
+					</div>
+					<div>
+						<h3 className="leading-none font-semibold tracking-tight">
+							Jadwal Kelas
+						</h3>
+						<p className="text-muted-foreground mt-1.5 text-sm">
+							Informasi hari, jam, dan ruang.
+						</p>
+					</div>
 				</div>
 				<div className="p-6 pt-0">
 					{dataById?.jadwalKelas && dataById.jadwalKelas.length > 0 ? (
@@ -434,14 +519,14 @@ export default function DetailKelasClient() {
 								return (
 									<div
 										key={j.id}
-										className="border-border/50 flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm"
+										className="bg-muted/30 border-primary/30 flex flex-wrap items-center justify-between gap-2 rounded-md border border-l-4 p-3 text-sm"
 									>
 										<div className="flex min-w-0 items-center gap-2 font-medium">
-											<CalendarDays className="text-muted-foreground h-4 w-4 shrink-0" />
+											<CalendarDays className="text-primary h-4 w-4 shrink-0" />
 											<span className="truncate">{j.hari}</span>
 										</div>
 										<div className="text-right">
-											<div className="font-mono text-xs whitespace-nowrap">
+											<div className="text-foreground font-mono text-xs font-medium whitespace-nowrap">
 												{timeRange}
 											</div>
 											{j.ruang && (
@@ -463,14 +548,18 @@ export default function DetailKelasClient() {
 			</div>
 
 			<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
-				<div className="flex flex-col space-y-1.5 p-6">
-					<h3 className="flex items-center gap-2 leading-none font-semibold tracking-tight">
-						<History className="text-primary h-4 w-4" />
-						Perjalanan Kelas
-					</h3>
-					<p className="text-muted-foreground text-sm">
-						Riwayat kenaikan tingkat.
-					</p>
+				<div className="flex flex-row items-center gap-3 space-y-0 p-6">
+					<div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+						<History className="h-4 w-4" />
+					</div>
+					<div>
+						<h3 className="leading-none font-semibold tracking-tight">
+							Perjalanan Kelas
+						</h3>
+						<p className="text-muted-foreground mt-1.5 text-sm">
+							Riwayat kenaikan tingkat.
+						</p>
+					</div>
 				</div>
 				<div className="p-6 pt-0">
 					{dataById?.cohortId ? (

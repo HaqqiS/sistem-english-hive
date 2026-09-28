@@ -313,19 +313,21 @@ export default function DetailKelasClient() {
 			{/* --- STICKY HEADER: Info Kelas, nempel di atas saat discroll --- */}
 			<div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-20 -mx-2 -mt-2 border-b px-2 py-4 backdrop-blur lg:-mx-4 lg:-mt-4 lg:px-4">
 				<div className="flex flex-wrap items-center justify-between gap-4">
-					<div className="flex min-w-0 items-center gap-3">
+					<div className="flex min-w-0 items-start gap-3 sm:items-center">
 						<div className="text-primary flex h-11 w-11 shrink-0 items-center justify-center">
 							<School className="h-6 w-6" />
 						</div>
 
 						{dataById ? (
 							<div className="min-w-0">
-								<div className="flex flex-wrap items-center gap-2">
-									<h1 className="truncate text-lg font-semibold tracking-tight">
+								<div className="flex flex-col items-start gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+									<h1 className="flex flex-col text-lg font-semibold leading-tight tracking-tight sm:flex-row sm:flex-wrap sm:gap-x-2">
 										{dataById.kodeKelas
 											.split("|")
 											.map((p) => p.trim())
-											.join(" ")}
+											.map((part) => (
+												<span key={part}>{part}</span>
+											))}
 									</h1>
 									{dataById.statusKelas && (
 										<Badge
@@ -351,7 +353,7 @@ export default function DetailKelasClient() {
 
 					{/* Ringkasan cepat: jumlah murid & guru aktif */}
 					{dataById && (
-						<div className="flex shrink-0 items-center gap-4 border-l pl-4 text-sm">
+						<div className="flex shrink-0 items-center gap-4 text-sm sm:border-l sm:pl-4">
 							<div className="text-center">
 								<div className="font-semibold leading-none">
 									{dataByKelasId?.length ?? 0}
@@ -372,6 +374,7 @@ export default function DetailKelasClient() {
 					)}
 				</div>
 			</div>
+
 
 			{/* --- KOLOM KIRI (UTAMA): Murid & Guru --- */}
 			<div className="space-y-8">
@@ -439,9 +442,7 @@ export default function DetailKelasClient() {
 				<div className="space-y-4">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div className="min-w-0">
-							<h1 className="truncate text-xl font-semibold">
-								Riwayat Guru Pengajar
-							</h1>
+							<h1 className="truncate text-xl font-semibold">Riwayat Guru Pengajar</h1>
 							<p className="text-muted-foreground text-sm">
 								Daftar guru yang pernah atau sedang mengajar.
 							</p>
@@ -484,11 +485,7 @@ export default function DetailKelasClient() {
 							/>
 						</div>
 					</div>
-					<DataTable
-						data={dataGuruByKelasId ?? []}
-						columns={columnsGuru}
-						variant="card"
-					/>
+					<DataTable data={dataGuruByKelasId ?? []} columns={columnsGuru} variant="card" />
 				</div>
 			</div>
 			{/* --- JADWAL KELAS: sekarang full-width, sejajar dengan Murid & Guru --- */}
@@ -507,45 +504,45 @@ export default function DetailKelasClient() {
 					</div>
 				</div>
 				<div className="p-6 pt-0">
-					{dataById?.jadwalKelas && dataById.jadwalKelas.length > 0 ? (
-						<div className="grid gap-3">
-							{dataById.jadwalKelas.map((j) => {
-								let timeRange = "-";
-								if (j.jamSlotTetap) {
-									timeRange = `${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai}`;
-								} else if (j.jamSlotCustom) {
-									timeRange = `${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai}`;
-								}
-								return (
-									<div
-										key={j.id}
-										className="bg-muted/30 border-primary/30 flex flex-wrap items-center justify-between gap-2 rounded-md border border-l-4 p-3 text-sm"
-									>
-										<div className="flex min-w-0 items-center gap-2 font-medium">
-											<CalendarDays className="text-primary h-4 w-4 shrink-0" />
-											<span className="truncate">{j.hari}</span>
-										</div>
-										<div className="text-right">
-											<div className="text-foreground font-mono text-xs font-medium whitespace-nowrap">
-												{timeRange}
+						{dataById?.jadwalKelas && dataById.jadwalKelas.length > 0 ? (
+							<div className="grid gap-3">
+								{dataById.jadwalKelas.map((j) => {
+									let timeRange = "-";
+									if (j.jamSlotTetap) {
+										timeRange = `${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai}`;
+									} else if (j.jamSlotCustom) {
+										timeRange = `${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai}`;
+									}
+									return (
+										<div
+											key={j.id}
+											className="bg-muted/30 border-primary/30 flex flex-wrap items-center justify-between gap-2 rounded-md border border-l-4 p-3 text-sm"
+										>
+											<div className="flex min-w-0 items-center gap-2 font-medium">
+												<CalendarDays className="text-primary h-4 w-4 shrink-0" />
+												<span className="truncate">{j.hari}</span>
 											</div>
-											{j.ruang && (
-												<div className="text-muted-foreground max-w-[160px] truncate text-xs">
-													{j.ruang.namaRuang}
+											<div className="text-right">
+												<div className="text-foreground font-mono text-xs font-medium whitespace-nowrap">
+													{timeRange}
 												</div>
-											)}
+												{j.ruang && (
+													<div className="text-muted-foreground max-w-[160px] truncate text-xs">
+														{j.ruang.namaRuang}
+													</div>
+												)}
+											</div>
 										</div>
-									</div>
-								);
-							})}
-						</div>
-					) : (
-						<p className="text-muted-foreground text-sm italic">
-							Belum ada jadwal diatur.
-						</p>
-					)}
+									);
+								})}
+							</div>
+						) : (
+							<p className="text-muted-foreground text-sm italic">
+								Belum ada jadwal diatur.
+							</p>
+						)}
+					</div>
 				</div>
-			</div>
 
 			<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
 				<div className="flex flex-row items-center gap-3 space-y-0 p-6">

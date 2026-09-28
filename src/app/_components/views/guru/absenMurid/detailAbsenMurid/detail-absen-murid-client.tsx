@@ -156,18 +156,20 @@ export default function DetailAbsenMuridClient() {
 		<div>
 			{/* --- STICKY HEADER: Nama Kelas, nempel di atas saat discroll --- */}
 			<div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-20 -mx-4 -mt-4 mb-0 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4 backdrop-blur">
-				<header className="flex min-w-0 items-center gap-3">
+				<header className="flex min-w-0 items-start gap-3 sm:items-center">
 					<div className="text-primary flex h-11 w-11 shrink-0 items-center justify-center">
 						<School className="h-6 w-6" />
 					</div>
 					<div className="min-w-0">
-						<h1 className="truncate text-lg font-semibold tracking-tight">
+						<h1 className="flex flex-col text-lg font-semibold leading-tight tracking-tight sm:flex-row sm:flex-wrap sm:gap-x-2">
 							{(data?.sesiInfo.kodeKelas ?? "")
 								.split("|")
 								.map((p) => p.trim())
-								.join(" ")}
+								.map((part) => (
+									<span key={part}>{part}</span>
+								))}
 						</h1>
-						<p className="text-muted-foreground truncate text-xs">
+						<p className="text-muted-foreground mt-1 text-xs">
 							{formatToWITA(
 								data?.sesiInfo.tanggalWaktu,
 								"dddd, D MMMM YYYY, HH:mm", // Format lengkap

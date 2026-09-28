@@ -1,7 +1,7 @@
 "use client";
 
 import { StatusAbsenMurid } from "@prisma/client";
-import { Loader2, Terminal } from "lucide-react";
+import { Loader2, School, Terminal } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -28,6 +28,9 @@ export default function DetailAbsenMuridClient() {
 	const { sesiId } = useParams<{ sesiId: string }>();
 	const router = useRouter();
 	const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+	const [successState, setSuccessState] = useState<{
+		isFinished: boolean;
+	} | null>(null);
 
 	const { data, isLoading, isError, error, mutations } = useAbsenMurid({
 		sesiId,
@@ -60,6 +63,13 @@ export default function DetailAbsenMuridClient() {
 		};
 	}, [isAllMarked, isLoading]);
 
+	// Setelah animasi sukses tampil sebentar, arahkan kembali ke dashboard guru
+	useEffect(() => {
+		if (!successState) return;
+		const timer = setTimeout(() => router.push("/guru"), 2000);
+		return () => clearTimeout(timer);
+	}, [successState, router]);
+
 	const columns = useMemo(
 		() =>
 			createDetailAbsenMuridColumns({
@@ -82,7 +92,7 @@ export default function DetailAbsenMuridClient() {
 				toast.success("Sesi absensi selesai.");
 			}
 
-			router.push("/guru");
+			setSuccessState({ isFinished: result.isFinished });
 		} catch (e) {
 			console.error(e);
 		}
@@ -144,24 +154,35 @@ export default function DetailAbsenMuridClient() {
 	// 5. Tampilkan data
 	return (
 		<div>
-			<div className="flex items-center justify-between pt-4">
-				<header className="flex flex-col gap-1">
-					<h1 className="text-xl font-semibold">
-						Absensi Kelas: {data?.sesiInfo.kodeKelas}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						Sesi:{" "}
-						{formatToWITA(
-							data?.sesiInfo.tanggalWaktu,
-							"dddd, D MMMM YYYY, HH:mm", // Format lengkap
-						)}
-					</p>
+			{/* --- STICKY HEADER: Nama Kelas, nempel di atas saat discroll --- */}
+			<div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-20 -mx-4 -mt-4 mb-0 flex flex-wrap items-center justify-between gap-3 border-b px-4 py-4 backdrop-blur">
+				<header className="flex min-w-0 items-center gap-3">
+					<div className="text-primary flex h-11 w-11 shrink-0 items-center justify-center">
+						<School className="h-6 w-6" />
+					</div>
+					<div className="min-w-0">
+						<h1 className="truncate text-lg font-semibold tracking-tight">
+							{(data?.sesiInfo.kodeKelas ?? "")
+								.split("|")
+								.map((p) => p.trim())
+								.join(" ")}
+						</h1>
+						<p className="text-muted-foreground truncate text-xs">
+							{formatToWITA(
+								data?.sesiInfo.tanggalWaktu,
+								"dddd, D MMMM YYYY, HH:mm", // Format lengkap
+							)}
+						</p>
+					</div>
 				</header>
 
 				{/* Tombol Selesai dengan Dialog Konfirmasi jika belum lengkap */}
 				<AlertDialog>
 					<AlertDialogTrigger asChild>
-						<Button variant={isAllMarked ? "default" : "destructive"}>
+						<Button
+							variant={isAllMarked ? "default" : "destructive"}
+							className="shrink-0 transition-transform active:scale-95"
+						>
 							{isAllMarked
 								? "Simpan & Selesaikan Absen"
 								: "Selesai (Belum Lengkap)"}
@@ -229,7 +250,9 @@ export default function DetailAbsenMuridClient() {
 								{mutations.selesaikanAbsen.isPending && (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								)}
-								Ya, Selesaikan
+								{mutations.selesaikanAbsen.isPending
+									? "Menyimpan..."
+									: "Ya, Selesaikan"}
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>
@@ -255,6 +278,73 @@ export default function DetailAbsenMuridClient() {
 					isLoading={isLoading || isBulkUpdating}
 				/>
 			</div>
+
+			{/* Animasi sukses setelah absensi disimpan */}
+			{successState && (
+				<div
+					role="status"
+					aria-live="polite"
+					className="absen-success-overlay bg-background/95 fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 backdrop-blur-sm"
+				>
+					<svg
+						className="absen-success-icon text-primary"
+						viewBox="0 0 52 52"
+						width="96"
+						height="96"
+						fill="none"
+						aria-hidden="true"
+					>
+						<circle
+							className="absen-success-ring"
+							cx="26"
+							cy="26"
+							r="24"
+							stroke="currentColor"
+							strokeWidth="2.5"
+						/>
+						<path
+							className="absen-success-check"
+							d="M14 27 l8 8 l16 -17"
+							stroke="currentColor"
+							strokeWidth="3"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+					</svg>
+					<div className="absen-success-text text-center">
+						<p className="text-xl font-semibold">Absensi Tersimpan!</p>
+						<p className="text-muted-foreground mt-1 text-sm">
+							{successState.isFinished
+								? "Seluruh sesi kelas telah selesai."
+								: "Mengalihkan ke dashboard..."}
+						</p>
+					</div>
+				</div>
+			)}
+
+			<style>{`
+				.absen-success-overlay { animation: absen-fade-in 0.25s ease-out both; }
+				.absen-success-icon { animation: absen-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+				.absen-success-ring {
+					stroke-dasharray: 151;
+					stroke-dashoffset: 151;
+					animation: absen-draw 0.6s ease-out 0.1s forwards;
+				}
+				.absen-success-check {
+					stroke-dasharray: 40;
+					stroke-dashoffset: 40;
+					animation: absen-draw 0.4s ease-out 0.55s forwards;
+				}
+				.absen-success-text { animation: absen-rise 0.5s ease-out 0.75s both; }
+				@keyframes absen-fade-in { from { opacity: 0; } to { opacity: 1; } }
+				@keyframes absen-pop { from { transform: scale(0.6); } to { transform: scale(1); } }
+				@keyframes absen-draw { to { stroke-dashoffset: 0; } }
+				@keyframes absen-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+				@media (prefers-reduced-motion: reduce) {
+					.absen-success-overlay, .absen-success-icon, .absen-success-text { animation: none; }
+					.absen-success-ring, .absen-success-check { animation: none; stroke-dashoffset: 0; }
+				}
+			`}</style>
 		</div>
 	);
 }

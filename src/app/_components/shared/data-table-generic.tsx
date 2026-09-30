@@ -63,6 +63,8 @@ interface DataTableProps<TData, TValue> {
 	 * dipakai khusus di halaman Detail Kelas supaya lebih nyaman dibaca & tidak nabrak di HP.
 	 */
 	variant?: "table" | "card";
+	/** Jumlah baris per halaman di awal. Default 50. */
+	defaultPageSize?: number;
 }
 
 export function DataTable<TData, TValue>({
@@ -73,6 +75,7 @@ export function DataTable<TData, TValue>({
 	toolbar,
 	isLoading,
 	variant = "table",
+	defaultPageSize = 50,
 }: DataTableProps<TData, TValue>) {
 	const [rowSelection, setRowSelection] = React.useState({});
 	const [columnVisibility, setColumnVisibility] =
@@ -86,7 +89,7 @@ export function DataTable<TData, TValue>({
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [pagination, setPagination] = React.useState({
 		pageIndex: 0,
-		pageSize: 50,
+		pageSize: defaultPageSize,
 	});
 
 	const table = useReactTable({

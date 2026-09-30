@@ -111,6 +111,8 @@ export default function BookOrderClient() {
 							<DataTable
 								data={dataKelasOrderBuku ?? []}
 								columns={tableColumns}
+								variant="card"
+								defaultPageSize={100}
 								filterColumnPlaceholder="Cari kode kelas..."
 								filterColumnId="kodeKelas"
 							/>

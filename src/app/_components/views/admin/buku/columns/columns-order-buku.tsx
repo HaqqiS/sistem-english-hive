@@ -10,6 +10,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BATAS_SESI } from "@/constants/pembayaran";
 import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatStatus, statusOrderBukuColorMap } from "@/utils/statusUtils";
@@ -27,9 +28,71 @@ export const columnsOrderBuku = ({
 	isMutatingId,
 }: ColumnsOrderBukuProps): ColumnDef<TypeKelasSiapOrderBuku>[] => [
 	{
-		id: "nomer",
-		header: "No",
-		cell: ({ row }) => row.index + 1,
+		accessorKey: "kodeKelas",
+		header: "Kelas",
+		cell: ({ row }) => {
+			const k = row.original;
+			const guru = k.historyGuruKelases?.[0]?.guru?.name;
+			return (
+				<div className="space-y-0.5">
+					<div className="truncate font-medium">{k.kodeKelas}</div>
+					<div className="text-muted-foreground truncate text-xs">
+						{guru ?? "-"}
+					</div>
+				</div>
+			);
+		},
+	},
+	{
+		id: "jumlahSesi",
+		header: "Pertemuan",
+		cell: ({ row }) => {
+			const sesi = row.original._count.sesiPertemuanKelases;
+			const persen = Math.min(100, Math.round((sesi / BATAS_SESI) * 100));
+			return (
+				<div className="w-full max-w-32 space-y-1">
+					<div className="text-sm font-medium">
+						{sesi}
+						<span className="text-muted-foreground font-normal">
+							{" "}
+							/ {BATAS_SESI}
+						</span>
+					</div>
+					<div className="bg-muted h-1.5 overflow-hidden rounded-full">
+						<div
+							className="bg-primary h-full rounded-full"
+							style={{ width: `${persen}%` }}
+						/>
+					</div>
+				</div>
+			);
+		},
+	},
+	{
+		id: "rencanaNaik",
+		header: "Naik ke",
+		cell: ({ row }) => {
+			const r = row.original.rencanaNaik;
+			if (!r.adaTujuan || r.level === null) {
+				return (
+					<span className="text-muted-foreground text-xs">
+						Tidak ada program lanjutan
+					</span>
+				);
+			}
+			return (
+				<div className="space-y-0.5">
+					<div className="truncate font-medium">
+						{r.jenisKelasNama} · Level {r.level}
+					</div>
+					<div className="text-muted-foreground text-xs">
+						{r.kelasSudahAda
+							? `${r.jumlahSiswaAktif} siswa aktif`
+							: "Kelas belum dibuat"}
+					</div>
+				</div>
+			);
+		},
 	},
 	{
 		id: "status",
@@ -136,29 +199,5 @@ export const columnsOrderBuku = ({
 		},
 		enableSorting: false,
 		enableHiding: false,
-	},
-	{
-		accessorKey: "kodeKelas",
-		header: "Kode Kelas",
-	},
-	{
-		id: "jenisKelas",
-		header: "Jenis Kelas",
-		cell: ({ row }) => row.original.jenisKelasRel?.nama ?? "-",
-	},
-	{
-		id: "guru",
-		header: "Guru Aktif",
-		cell: ({ row }) => {
-			const guru = row.original.historyGuruKelases?.[0]?.guru?.name;
-			return <span>{guru ?? "-"}</span>;
-		},
-	},
-	{
-		id: "jumlahSesi",
-		header: "Jumlah Sesi",
-		cell: ({ row }) => {
-			return <span>{row.original._count.sesiPertemuanKelases}</span>;
-		},
 	},
 ];

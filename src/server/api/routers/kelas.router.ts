@@ -310,8 +310,15 @@ export const kelasRouter = createTRPCRouter({
 					id: true,
 					kodeKelas: true,
 					level: true,
+					cohortId: true,
+					jenisKelasId: true,
 					statusOrderBuku: true,
-					jenisKelasRel: { select: { nama: true } },
+					jenisKelasRel: {
+						select: {
+							nama: true,
+							nextLevel: { select: { id: true, nama: true } },
+						},
+					},
 					historyGuruKelases: {
 						where: { statusGuru: "ACTIVE" },
 						select: {
@@ -324,18 +331,75 @@ export const kelasRouter = createTRPCRouter({
 						select: { sesiPertemuanKelases: true },
 					},
 				},
+				// Pertemuan paling banyak di atas
 				orderBy: [
 					{
 						sesiPertemuanKelases: {
-							_count: "asc" as const,
+							_count: "desc" as const,
 						},
 					},
 					{ id: "asc" as const },
 				],
 			});
 
-			// Return all RUNNING classes
-			return kelasRunning;
+			// Kelas lain dalam cohort yang sama (kandidat kelas level berikutnya),
+			// lengkap dengan jumlah siswa aktif.
+			const cohortIds = [...new Set(kelasRunning.map((k) => k.cohortId))];
+			const kelasCohort = await db.kelas.findMany({
+				where: { cohortId: { in: cohortIds } },
+				select: {
+					id: true,
+					cohortId: true,
+					jenisKelasId: true,
+					level: true,
+					_count: {
+						select: {
+							pendaftaranKelases: { where: { status: "AKTIF" } },
+						},
+					},
+				},
+			});
+
+			// Aturan level naik sama dengan handleAutoLevelUp:
+			// level < 4 -> level + 1 (jenis sama); level >= 4 -> level 1 di program lanjutan.
+			return kelasRunning.map((k) => {
+				const naikProgram = k.level >= 4;
+				const nextJenis = naikProgram ? k.jenisKelasRel?.nextLevel : null;
+				const adaTujuan = naikProgram ? !!nextJenis : true;
+
+				const nextLevelNumber = adaTujuan
+					? naikProgram
+						? 1
+						: k.level + 1
+					: null;
+				const nextJenisKelasId = naikProgram
+					? (nextJenis?.id ?? null)
+					: k.jenisKelasId;
+				const nextJenisKelasNama = naikProgram
+					? (nextJenis?.nama ?? null)
+					: (k.jenisKelasRel?.nama ?? null);
+
+				const kelasNext =
+					nextLevelNumber !== null
+						? kelasCohort.find(
+								(c) =>
+									c.cohortId === k.cohortId &&
+									c.jenisKelasId === nextJenisKelasId &&
+									c.level === nextLevelNumber,
+							)
+						: undefined;
+
+				return {
+					...k,
+					rencanaNaik: {
+						adaTujuan,
+						level: nextLevelNumber,
+						jenisKelasNama: nextJenisKelasNama,
+						kelasSudahAda: !!kelasNext,
+						jumlahSiswaAktif: kelasNext?._count.pendaftaranKelases ?? 0,
+					},
+				};
+			});
 		}),
 
 	updateStatusOrderBuku: cabangProtectedProcedure

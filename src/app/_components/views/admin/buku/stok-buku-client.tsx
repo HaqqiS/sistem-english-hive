@@ -521,6 +521,10 @@ export default function StokBukuClient() {
 			{/* Sheet Kelola Siswa */}
 			<PenerimaBukuSheet
 				stokBukuId={siswaSheetId}
+				stokLabel={(() => {
+					const stok = stokBukuList?.find((s) => s.id === siswaSheetId);
+					return stok ? `${stok.jenisKelas.nama} - Level ${stok.level}` : null;
+				})()}
 				open={!!siswaSheetId}
 				onOpenChange={(open) => !open && setSiswaSheetId(null)}
 				queryCabangId={queryCabangId}
@@ -533,11 +537,13 @@ export default function StokBukuClient() {
 
 function PenerimaBukuSheet({
 	stokBukuId,
+	stokLabel,
 	open,
 	onOpenChange,
 	queryCabangId,
 }: {
 	stokBukuId: string | null;
+	stokLabel: string | null;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	queryCabangId: string | undefined;
@@ -678,7 +684,9 @@ function PenerimaBukuSheet({
 		<Sheet open={open} onOpenChange={handleClose}>
 			<SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
 				<SheetHeader>
-					<SheetTitle>Siswa Penerima Buku</SheetTitle>
+					<SheetTitle>
+						Siswa Penerima Buku{stokLabel ? ` - ${stokLabel}` : ""}
+					</SheetTitle>
 					<SheetDescription>
 						Cari dan pilih siswa untuk ditambahkan.
 					</SheetDescription>
@@ -752,7 +760,7 @@ function PenerimaBukuSheet({
 															/>
 															<span>{k.kodeKelas}</span>
 															<span className="text-muted-foreground ml-1.5 text-xs">
-																— Level {k.level}
+																- Level {k.level}
 															</span>
 														</CommandItem>
 													))}
@@ -830,7 +838,7 @@ function PenerimaBukuSheet({
 																<span>{m.namaLengkap}</span>
 																{m.levelKelas != null && (
 																	<span className="text-muted-foreground ml-1 text-xs">
-																		— Level {m.levelKelas}
+																		- Level {m.levelKelas}
 																	</span>
 																)}
 															</CommandItem>
@@ -1026,7 +1034,7 @@ function PenerimaBukuSheet({
 					<div className="space-y-2">
 						<Label className="text-muted-foreground text-xs uppercase tracking-wider">
 							{filterKelasId
-								? `Daftar Penerima — ${
+								? `Daftar Penerima - ${
 										kelasPenerimaList.find((k) => k.id === filterKelasId)
 											?.kodeKelas ?? ""
 									} (${filteredPenerimaList.length})`

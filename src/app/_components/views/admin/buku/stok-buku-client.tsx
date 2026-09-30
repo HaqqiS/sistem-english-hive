@@ -10,6 +10,7 @@ import {
 	Clock,
 	Loader2,
 	Package,
+	Pencil,
 	Plus,
 	Trash2,
 	UserPlus,
@@ -22,13 +23,7 @@ import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confir
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
 	Command,
 	CommandEmpty,
@@ -71,7 +66,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/server/auth/type";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
-import { api } from "@/trpc/react";
+import { api, type RouterOutputs } from "@/trpc/react";
 
 function formatDate(date: Date | string | null | undefined) {
 	if (!date) return null;
@@ -80,6 +75,33 @@ function formatDate(date: Date | string | null | undefined) {
 		month: "long",
 		year: "numeric",
 	});
+}
+
+type TypeStokBuku = RouterOutputs["stokBuku"]["getAllStokBuku"][number];
+
+// Hitung ringkasan penerima per level stok
+function hitungPenerima(stok: TypeStokBuku) {
+	const total = stok.penerimaBukus.length;
+	const diambil = stok.penerimaBukus.filter(
+		(p) => p.status === "SUDAH_DIAMBIL",
+	).length;
+	const bisaDiambil = stok.penerimaBukus.filter(
+		(p) => p.statusOrder === "BISA_DIAMBIL" && p.status !== "SUDAH_DIAMBIL",
+	).length;
+	const ready = stok.penerimaBukus.filter(
+		(p) => p.statusOrder === "READY",
+	).length;
+	const diorder = stok.penerimaBukus.filter(
+		(p) => p.statusOrder === "DIORDER",
+	).length;
+	return {
+		total,
+		diambil,
+		bisaDiambil,
+		ready,
+		diorder,
+		dibutuhkan: diorder + ready + bisaDiambil,
+	};
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -151,6 +173,35 @@ export default function StokBukuClient() {
 		onError: (err) => toast.error(err.message ?? "Gagal"),
 	});
 
+	// Kelompokkan stok per jenis buku
+	const grupStok = useMemo(() => {
+		const groups = new Map<
+			string,
+			{ key: string; nama: string; items: NonNullable<typeof stokBukuList> }
+		>();
+		for (const stok of stokBukuList ?? []) {
+			const key = stok.jenisKelas.nama.trim().toLowerCase();
+			if (!groups.has(key)) {
+				groups.set(key, { key, nama: stok.jenisKelas.nama, items: [] });
+			}
+			groups.get(key)?.items.push(stok);
+		}
+		return Array.from(groups.values());
+	}, [stokBukuList]);
+
+	const ringkasan = useMemo(() => {
+		let totalStok = 0;
+		let totalDibutuhkan = 0;
+		let levelKurang = 0;
+		for (const stok of stokBukuList ?? []) {
+			const d = hitungPenerima(stok);
+			totalStok += stok.jumlahStok;
+			totalDibutuhkan += d.dibutuhkan;
+			if (d.dibutuhkan > stok.jumlahStok) levelKurang += 1;
+		}
+		return { totalStok, totalDibutuhkan, levelKurang };
+	}, [stokBukuList]);
+
 	if (isLoading) {
 		return (
 			<div className="space-y-4">
@@ -185,227 +236,265 @@ export default function StokBukuClient() {
 				</Card>
 			)}
 
-			<div className="space-y-6">
-				{(() => {
-					const palette = [
-						"border-blue-200 bg-blue-50/60 dark:border-blue-900/40 dark:bg-blue-950/20",
-						"border-green-200 bg-green-50/60 dark:border-green-900/40 dark:bg-green-950/20",
-						"border-purple-200 bg-purple-50/60 dark:border-purple-900/40 dark:bg-purple-950/20",
-						"border-amber-200 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/20",
-						"border-pink-200 bg-pink-50/60 dark:border-pink-900/40 dark:bg-pink-950/20",
-						"border-cyan-200 bg-cyan-50/60 dark:border-cyan-900/40 dark:bg-cyan-950/20",
-						"border-orange-200 bg-orange-50/60 dark:border-orange-900/40 dark:bg-orange-950/20",
-						"border-teal-200 bg-teal-50/60 dark:border-teal-900/40 dark:bg-teal-950/20",
-					];
-
-					const groups = new Map<
-						string,
-						{ nama: string; items: NonNullable<typeof stokBukuList> }
-					>();
-					for (const stok of stokBukuList ?? []) {
-						const key = stok.jenisKelas.nama.trim().toLowerCase();
-						if (!groups.has(key)) {
-							groups.set(key, { nama: stok.jenisKelas.nama, items: [] });
-						}
-						groups.get(key)?.items.push(stok);
-					}
-
-					return Array.from(groups.entries()).map(([groupKey], idx) => {
-						const group = groups.get(groupKey);
-						if (!group) return null;
-						const colorClass = palette[idx % palette.length];
-
-						return (
+			{/* Ringkasan */}
+			{stokBukuList && stokBukuList.length > 0 && (
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+					{[
+						{
+							label: "Total Stok",
+							value: ringkasan.totalStok,
+							sub: "buku tersedia",
+							icon: Package,
+							tone: "text-blue-600 bg-blue-100 dark:bg-blue-950/40",
+						},
+						{
+							label: "Dibutuhkan",
+							value: ringkasan.totalDibutuhkan,
+							sub: "order + ready + siap ambil",
+							icon: BookOpen,
+							tone: "text-green-600 bg-green-100 dark:bg-green-950/40",
+						},
+						{
+							label: "Perlu Restock",
+							value: ringkasan.levelKurang,
+							sub: "level stoknya kurang",
+							icon: AlertTriangle,
+							tone:
+								ringkasan.levelKurang > 0
+									? "text-destructive bg-destructive/10"
+									: "text-muted-foreground bg-muted",
+						},
+					].map((item) => (
+						<div
+							key={item.label}
+							className="bg-card flex items-center gap-3 rounded-xl border p-4 shadow-sm"
+						>
 							<div
-								key={groupKey}
-								className={cn("space-y-3 rounded-xl border p-4", colorClass)}
+								className={cn(
+									"flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+									item.tone,
+								)}
 							>
-								<div className="flex items-center gap-2">
-									<BookOpen className="text-primary h-4 w-4 shrink-0" />
-									<h3 className="text-sm font-bold">{group.nama}</h3>
-									<Badge variant="secondary" className="text-xs">
-										{group.items.length} level
-									</Badge>
+								<item.icon className="h-5 w-5" />
+							</div>
+							<div className="min-w-0">
+								<div className="text-2xl font-bold leading-none">
+									{item.value}
 								</div>
-
-								<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-									{group.items
-										.slice()
-										.sort((a, b) => a.level - b.level)
-										.map((stok) => {
-											const total = stok.penerimaBukus.length;
-											const diambil = stok.penerimaBukus.filter(
-												(p) => p.status === "SUDAH_DIAMBIL",
-											).length;
-											const bisaDiambil = stok.penerimaBukus.filter(
-												(p) =>
-													p.statusOrder === "BISA_DIAMBIL" &&
-													p.status !== "SUDAH_DIAMBIL",
-											).length;
-											const ready = stok.penerimaBukus.filter(
-												(p) => p.statusOrder === "READY",
-											).length;
-											const diorder = stok.penerimaBukus.filter(
-												(p) => p.statusOrder === "DIORDER",
-											).length;
-											const dibutuhkan = diorder + ready + bisaDiambil;
-											const kurang = dibutuhkan > stok.jumlahStok;
-											const isEditing = editingStok?.id === stok.id;
-
-											return (
-												<Card key={stok.id} className="bg-background">
-													<CardHeader className="pb-3">
-														<div className="flex items-start justify-between gap-2">
-															<div>
-																<CardTitle className="text-base">
-																	Level {stok.level}
-																</CardTitle>
-																<CardDescription className="text-xs">
-																	{stok.cabang.namaCabang}
-																</CardDescription>
-															</div>
-															<Button
-																variant="ghost"
-																size="icon"
-																className="text-destructive h-7 w-7 shrink-0"
-																onClick={() =>
-																	setDeleteTarget({
-																		id: stok.id,
-																		nama: `${stok.jenisKelas.nama} Lv.${stok.level}`,
-																	})
-																}
-															>
-																<Trash2 className="h-3.5 w-3.5" />
-															</Button>
-														</div>
-													</CardHeader>
-
-													<CardContent className="space-y-3">
-														{/* Jumlah Stok */}
-														<div
-															className={cn(
-																"flex items-center justify-between rounded-md border p-3",
-																kurang &&
-																	"border-destructive/50 bg-destructive/5",
-															)}
-														>
-															<span className="text-muted-foreground text-xs font-medium">
-																Stok Tersedia
-															</span>
-															{isEditing ? (
-																<div className="flex items-center gap-1.5">
-																	<Input
-																		type="number"
-																		min={0}
-																		value={editingStok.jumlah}
-																		onChange={(e) =>
-																			setEditingStok({
-																				id: stok.id,
-																				jumlah: Number(e.target.value) || 0,
-																			})
-																		}
-																		className="h-7 w-20 text-sm"
-																	/>
-																	<Button
-																		size="sm"
-																		className="h-7"
-																		onClick={() =>
-																			updateJumlah.mutate({
-																				stokBukuId: editingStok.id,
-																				jumlahStok: editingStok.jumlah,
-																			})
-																		}
-																		disabled={updateJumlah.isPending}
-																	>
-																		{updateJumlah.isPending ? (
-																			<Loader2 className="h-3 w-3 animate-spin" />
-																		) : (
-																			"Simpan"
-																		)}
-																	</Button>
-																</div>
-															) : (
-																<button
-																	type="button"
-																	onClick={() =>
-																		setEditingStok({
-																			id: stok.id,
-																			jumlah: stok.jumlahStok,
-																		})
-																	}
-																	className={cn(
-																		"text-sm font-bold hover:underline",
-																		kurang && "text-destructive",
-																	)}
-																>
-																	{stok.jumlahStok} buku
-																</button>
-															)}
-														</div>
-
-														{/* Warning kalau stok kurang dari total order + ready */}
-														{kurang && (
-															<div className="border-destructive/40 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border p-2.5 text-xs">
-																<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-																<span>
-																	Stok kurang {dibutuhkan - stok.jumlahStok},
-																	stok cuma {stok.jumlahStok}.
-																</span>
-															</div>
-														)}
-
-														{/* Ringkasan penerima */}
-														<div className="grid grid-cols-2 gap-2 text-xs">
-															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
-																<span className="text-muted-foreground">
-																	Order
-																</span>
-																<span className="font-bold">{diorder}</span>
-															</div>
-															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
-																<span className="text-muted-foreground">
-																	Ready
-																</span>
-																<span className="font-bold text-blue-600">
-																	{ready}
-																</span>
-															</div>
-															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
-																<span className="text-muted-foreground">
-																	Bisa Diambil
-																</span>
-																<span className="font-bold text-green-600">
-																	{bisaDiambil}
-																</span>
-															</div>
-															<div className="bg-muted/50 flex items-center justify-between rounded-md border px-2.5 py-2">
-																<span className="text-muted-foreground flex items-center gap-1.5">
-																	<Users className="h-3.5 w-3.5" /> Diambil
-																</span>
-																<Badge variant="outline" className="text-xs">
-																	{diambil}/{total}
-																</Badge>
-															</div>
-														</div>
-
-														<Button
-															variant="outline"
-															size="sm"
-															className="w-full"
-															onClick={() => setSiswaSheetId(stok.id)}
-														>
-															<UserPlus className="mr-2 h-3.5 w-3.5" />
-															Kelola Siswa Penerima
-														</Button>
-													</CardContent>
-												</Card>
-											);
-										})}
+								<div className="text-muted-foreground mt-1 truncate text-xs">
+									{item.label} · {item.sub}
 								</div>
 							</div>
-						);
-					});
-				})()}
+						</div>
+					))}
+				</div>
+			)}
+
+			<div className="space-y-4">
+				{grupStok.map((group) => {
+					const stokGrup = group.items.reduce((n, i) => n + i.jumlahStok, 0);
+					const levelKurang = group.items.filter((stok) => {
+						const d = hitungPenerima(stok);
+						return d.dibutuhkan > stok.jumlahStok;
+					}).length;
+
+					return (
+						<div
+							key={group.key}
+							className="bg-card overflow-hidden rounded-xl border shadow-sm"
+						>
+							{/* Header jenis buku */}
+							<div className="bg-muted/40 flex items-center gap-3 border-b px-4 py-3">
+								<div className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+									<BookOpen className="h-4 w-4" />
+								</div>
+								<div className="min-w-0 flex-1">
+									<h3 className="truncate text-sm font-bold">{group.nama}</h3>
+									<p className="text-muted-foreground text-xs">
+										{group.items.length} level · {stokGrup} buku tersedia
+									</p>
+								</div>
+								{levelKurang > 0 && (
+									<Badge variant="destructive" className="gap-1 text-xs">
+										<AlertTriangle className="h-3 w-3" />
+										{levelKurang} perlu restock
+									</Badge>
+								)}
+							</div>
+
+							{/* Baris per level */}
+							<div className="divide-y">
+								{group.items
+									.slice()
+									.sort((a, b) => a.level - b.level)
+									.map((stok) => {
+										const d = hitungPenerima(stok);
+										const kurang = d.dibutuhkan > stok.jumlahStok;
+										const isEditing = editingStok?.id === stok.id;
+
+										const chips = [
+											{
+												label: "Order",
+												value: d.diorder,
+												className: "bg-muted text-foreground",
+											},
+											{
+												label: "Ready",
+												value: d.ready,
+												className:
+													"bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+											},
+											{
+												label: "Siap diambil",
+												value: d.bisaDiambil,
+												className:
+													"bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300",
+											},
+										];
+
+										return (
+											<div
+												key={stok.id}
+												className={cn(
+													"flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:gap-4",
+													kurang && "bg-destructive/5",
+												)}
+											>
+												{/* Level */}
+												<div className="flex items-center gap-2 md:w-28 md:shrink-0 md:flex-col md:items-start md:gap-0">
+													<span className="text-sm font-semibold">
+														Level {stok.level}
+													</span>
+													<span className="text-muted-foreground truncate text-xs">
+														{stok.cabang.namaCabang}
+													</span>
+												</div>
+
+												{/* Stok tersedia */}
+												<div className="md:w-44 md:shrink-0">
+													{isEditing ? (
+														<div className="flex items-center gap-1.5">
+															<Input
+																type="number"
+																min={0}
+																value={editingStok.jumlah}
+																onChange={(e) =>
+																	setEditingStok({
+																		id: stok.id,
+																		jumlah: Number(e.target.value) || 0,
+																	})
+																}
+																className="h-8 w-20 text-sm"
+															/>
+															<Button
+																size="sm"
+																className="h-8"
+																onClick={() =>
+																	updateJumlah.mutate({
+																		stokBukuId: editingStok.id,
+																		jumlahStok: editingStok.jumlah,
+																	})
+																}
+																disabled={updateJumlah.isPending}
+															>
+																{updateJumlah.isPending ? (
+																	<Loader2 className="h-3 w-3 animate-spin" />
+																) : (
+																	"Simpan"
+																)}
+															</Button>
+														</div>
+													) : (
+														<button
+															type="button"
+															title="Klik untuk ubah jumlah stok"
+															onClick={() =>
+																setEditingStok({
+																	id: stok.id,
+																	jumlah: stok.jumlahStok,
+																})
+															}
+															className="group flex items-baseline gap-1.5 text-left"
+														>
+															<span
+																className={cn(
+																	"text-xl font-bold leading-none",
+																	kurang && "text-destructive",
+																)}
+															>
+																{stok.jumlahStok}
+															</span>
+															<span className="text-muted-foreground text-xs">
+																buku
+															</span>
+															<Pencil className="text-muted-foreground h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+														</button>
+													)}
+													{kurang && !isEditing && (
+														<p className="text-destructive mt-1 flex items-center gap-1 text-xs">
+															<AlertTriangle className="h-3 w-3 shrink-0" />
+															Kurang {d.dibutuhkan - stok.jumlahStok} buku
+														</p>
+													)}
+												</div>
+
+												{/* Status penerima */}
+												<div className="flex flex-1 flex-wrap items-center gap-1.5">
+													{chips.map((c) => (
+														<span
+															key={c.label}
+															className={cn(
+																"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+																c.className,
+																c.value === 0 && "opacity-40",
+															)}
+														>
+															{c.label}
+															<span className="font-bold">{c.value}</span>
+														</span>
+													))}
+													<span className="text-muted-foreground inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs">
+														<Users className="h-3 w-3" />
+														Diambil
+														<span className="text-foreground font-bold">
+															{d.diambil}/{d.total}
+														</span>
+													</span>
+												</div>
+
+												{/* Aksi */}
+												<div className="flex items-center gap-2 md:shrink-0">
+													<Button
+														variant="outline"
+														size="sm"
+														className="flex-1 md:flex-none"
+														onClick={() => setSiswaSheetId(stok.id)}
+													>
+														<UserPlus className="mr-2 h-3.5 w-3.5" />
+														Kelola Siswa
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="text-destructive h-8 w-8 shrink-0"
+														title="Hapus stok"
+														onClick={() =>
+															setDeleteTarget({
+																id: stok.id,
+																nama: `${stok.jenisKelas.nama} Lv.${stok.level}`,
+															})
+														}
+													>
+														<Trash2 className="h-3.5 w-3.5" />
+													</Button>
+												</div>
+											</div>
+										);
+									})}
+							</div>
+						</div>
+					);
+				})}
 			</div>
 
 			{/* Dialog Tambah Stok */}
@@ -523,7 +612,7 @@ export default function StokBukuClient() {
 				stokBukuId={siswaSheetId}
 				stokLabel={(() => {
 					const stok = stokBukuList?.find((s) => s.id === siswaSheetId);
-					return stok ? `${stok.jenisKelas.nama} - Level ${stok.level}` : null;
+					return stok ? `${stok.jenisKelas.nama} — Level ${stok.level}` : null;
 				})()}
 				open={!!siswaSheetId}
 				onOpenChange={(open) => !open && setSiswaSheetId(null)}
@@ -685,7 +774,7 @@ function PenerimaBukuSheet({
 			<SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
 				<SheetHeader>
 					<SheetTitle>
-						Siswa Penerima Buku{stokLabel ? ` - ${stokLabel}` : ""}
+						Siswa Penerima Buku{stokLabel ? ` — ${stokLabel}` : ""}
 					</SheetTitle>
 					<SheetDescription>
 						Cari dan pilih siswa untuk ditambahkan.
@@ -760,7 +849,7 @@ function PenerimaBukuSheet({
 															/>
 															<span>{k.kodeKelas}</span>
 															<span className="text-muted-foreground ml-1.5 text-xs">
-																- Level {k.level}
+																— Level {k.level}
 															</span>
 														</CommandItem>
 													))}
@@ -838,7 +927,7 @@ function PenerimaBukuSheet({
 																<span>{m.namaLengkap}</span>
 																{m.levelKelas != null && (
 																	<span className="text-muted-foreground ml-1 text-xs">
-																		- Level {m.levelKelas}
+																		— Level {m.levelKelas}
 																	</span>
 																)}
 															</CommandItem>
@@ -1034,7 +1123,7 @@ function PenerimaBukuSheet({
 					<div className="space-y-2">
 						<Label className="text-muted-foreground text-xs uppercase tracking-wider">
 							{filterKelasId
-								? `Daftar Penerima - ${
+								? `Daftar Penerima — ${
 										kelasPenerimaList.find((k) => k.id === filterKelasId)
 											?.kodeKelas ?? ""
 									} (${filteredPenerimaList.length})`

@@ -4,12 +4,16 @@ import { StatusKelas } from "@prisma/client";
 import {
 	Album,
 	Clock,
+	DoorOpen,
+	ExternalLink,
 	MoreHorizontal,
 	Pencil,
 	Trash,
 	User,
+	Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +28,13 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type {
 	TypeJadwalKelas,
@@ -35,219 +46,352 @@ interface ScheduleCardProps {
 	data: TypeScheduleMatrixItem;
 	onDelete: (id: string, kode: string) => void;
 	onEdit?: (item: TypeJadwalKelas) => void;
+	/** "grid" = kartu kecil di matriks (PC), "list" = kartu lebar di timeline (HP) */
+	variant?: "grid" | "list";
+	/** Nama ruangan, ditampilkan di detail dan variant "list" */
+	ruang?: string;
 }
 
-export function ScheduleCard({ data, onDelete, onEdit }: ScheduleCardProps) {
-	const isPrivate = data.tipeKelas === "PRIVATE";
+const borderByStatus: Record<StatusKelas, string> = {
+	RUNNING: "border-l-(--badge-running-bg)",
+	WAITING: "border-l-(--badge-waiting-bg)",
+	TRIAL: "border-l-(--badge-trial-bg)",
+	LEVEL_UP: "border-l-(--badge-level-up-bg)",
+	COMPLETED: "border-l-(--badge-completed-bg)",
+};
 
-	// Logic warna berdasarkan Status Kelas (Request User)
-	const status = (data.statusKelas as StatusKelas) ?? StatusKelas.RUNNING;
-
-	const cardStyles = cn(
-		"border-l-4 shadow-xs transition-colors hover:bg-opacity-20",
-		status === StatusKelas.TRIAL &&
-			"border-l-(--badge-trial-bg) bg-(--badge-trial-bg)/10 hover:bg-(--badge-trial-bg)/20",
-		status === StatusKelas.WAITING &&
-			"border-l-(--badge-waiting-bg) bg-(--badge-waiting-bg)/10 hover:bg-(--badge-waiting-bg)/20",
-		status === StatusKelas.LEVEL_UP &&
-			"border-l-(--badge-level-up-bg) bg-(--badge-level-up-bg)/10 hover:bg-(--badge-level-up-bg)/20",
-		status === StatusKelas.COMPLETED &&
-			"border-l-(--badge-completed-bg) bg-(--badge-completed-bg)/10 hover:bg-(--badge-completed-bg)/20",
-		status === StatusKelas.RUNNING &&
-			"border-l-(--badge-running-bg) bg-(--badge-running-bg)/10 hover:bg-(--badge-running-bg)/20",
+function ActionMenu({
+	data,
+	onDelete,
+	onEdit,
+	className,
+}: Pick<ScheduleCardProps, "data" | "onDelete" | "onEdit"> & {
+	className?: string;
+}) {
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button
+					variant="ghost"
+					size="icon"
+					className={cn(
+						"text-muted-foreground hover:text-foreground size-8 shrink-0",
+						className,
+					)}
+					onClick={(e) => e.stopPropagation()}
+				>
+					<MoreHorizontal className="size-5" />
+					<span className="sr-only">Menu</span>
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent
+				align="end"
+				className="z-50 w-36"
+				side="bottom"
+				alignOffset={-5}
+			>
+				<DropdownMenuItem
+					onClick={(e) => {
+						e.stopPropagation();
+						onEdit?.(data.originalData);
+					}}
+				>
+					<Pencil className="mr-2 h-3 w-3" />
+					Edit
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					variant="destructive"
+					onClick={(e) => {
+						e.stopPropagation();
+						onDelete(data.id, data.kodeKelas);
+					}}
+				>
+					<Trash className="mr-2 h-3 w-3" />
+					Hapus
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
+}
 
-	const headerColorClass = statusKelasColorMap[status];
+function DetailContent({
+	data,
+	ruang,
+}: {
+	data: TypeScheduleMatrixItem;
+	ruang?: string;
+}) {
+	const status = (data.statusKelas as StatusKelas) ?? StatusKelas.RUNNING;
+	const isPrivate = data.tipeKelas === "PRIVATE";
+	const murid = data.originalData.kelas.pendaftaranKelases;
 
 	return (
-		<HoverCard openDelay={200}>
-			<HoverCardTrigger asChild>
-				<div
+		<div className="flex flex-col gap-3">
+			<div className="flex flex-wrap gap-1.5">
+				<Badge
+					variant="secondary"
 					className={cn(
-						"group/card relative flex h-full w-full flex-col justify-between rounded-r-md border border-l-0 p-2.5 text-xs shadow-sm transition-all hover:shadow-md",
-						cardStyles,
+						"h-5 border-0 px-1.5 text-[10px] font-normal",
+						isPrivate
+							? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+							: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
 					)}
 				>
-					{/* Header Card: Kode Kelas & Actions */}
-					<div className="flex items-start justify-between gap-2">
-						<Link
-							href={`/admin/kelas/detail/${data.kelasId}`}
-							className="text-foreground/90 hover:text-primary line-clamp-2 text-base leading-tight font-bold hover:underline"
-							title={data.kodeKelas}
-						>
-							{data.kodeKelas}
-						</Link>
+					{data.tipeKelas}
+				</Badge>
+				<Badge
+					variant="outline"
+					className={cn(
+						"h-5 border-0 px-1.5 text-[10px] font-bold",
+						statusKelasColorMap[status],
+					)}
+				>
+					{formatStatus(status)}
+				</Badge>
+				<Badge
+					variant="outline"
+					className="text-muted-foreground h-5 px-1.5 text-[10px] font-normal"
+				>
+					{data.jumlahMurid} siswa
+				</Badge>
+			</div>
 
-						{/* Action Dropdown */}
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="text-muted-foreground hover:text-foreground size-8 shrink-0 opacity-0 transition-opacity group-hover/card:opacity-100 focus:opacity-100"
-									onClick={(e) => e.stopPropagation()}
-								>
-									<MoreHorizontal className="size-5" />
-									<span className="sr-only">Menu</span>
-								</Button>
-							</DropdownMenuTrigger>
-
-							{/* Portal Dropdown ke Body agar tidak tertutup overflow scroll */}
-							<DropdownMenuContent
-								align="end"
-								className="z-50 w-32"
-								side="bottom"
-								alignOffset={-5}
-							>
-								<DropdownMenuItem
-									onClick={(e) => {
-										e.stopPropagation();
-										onEdit?.(data.originalData);
-									}}
-								>
-									<Pencil className="mr-2 h-3 w-3" />
-									Edit
-								</DropdownMenuItem>
-								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									variant="destructive"
-									onClick={(e) => {
-										e.stopPropagation();
-										onDelete(data.id, data.kodeKelas);
-									}}
-								>
-									<Trash className="mr-2 h-3 w-3" />
-									Hapus
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+			<dl className="bg-muted/40 divide-y rounded-lg border text-sm">
+				<div className="flex items-center justify-between gap-3 px-3 py-2">
+					<dt className="text-muted-foreground flex items-center gap-2">
+						<User className="h-4 w-4" /> Pengajar
+					</dt>
+					<dd className="text-right font-medium">{data.guru}</dd>
+				</div>
+				<div className="flex items-center justify-between gap-3 px-3 py-2">
+					<dt className="text-muted-foreground flex items-center gap-2">
+						<Clock className="h-4 w-4" /> Waktu
+					</dt>
+					<dd className="font-mono font-medium">
+						{data.jamMulai} - {data.jamSelesai}
+					</dd>
+				</div>
+				{ruang && (
+					<div className="flex items-center justify-between gap-3 px-3 py-2">
+						<dt className="text-muted-foreground flex items-center gap-2">
+							<DoorOpen className="h-4 w-4" /> Ruangan
+						</dt>
+						<dd className="font-medium">{ruang}</dd>
 					</div>
+				)}
+				<div className="flex items-center justify-between gap-3 px-3 py-2">
+					<dt className="text-muted-foreground flex items-center gap-2">
+						<Album className="h-4 w-4" /> Deskripsi
+					</dt>
+					<dd className="text-right font-medium">{data.deskripsi ?? "-"}</dd>
+				</div>
+			</dl>
 
-					{/* Body Card */}
-					<div className="text-muted-foreground mt-2 flex flex-col gap-1 text-[10px]">
-						<div className="flex items-center gap-1.5">
-							<User className="h-3 w-3 shrink-0 opacity-70" />
-							<span className="truncate text-sm font-medium">{data.guru}</span>
-						</div>
-						<div className="flex items-center gap-1.5">
-							<Clock className="h-3 w-3 shrink-0 opacity-70" />
-							<span className="font-mono text-sm">
-								{data.jamMulai} - {data.jamSelesai}
+			<div className="bg-muted/40 rounded-lg border p-3">
+				<div className="text-muted-foreground mb-2 flex items-center gap-2 text-sm">
+					<Users className="h-4 w-4" /> Daftar Murid
+				</div>
+				{murid.length > 0 ? (
+					<ul className="grid grid-cols-1 gap-1 text-sm font-medium sm:grid-cols-2">
+						{murid.map((p) => (
+							<li key={p.id} className="truncate">
+								{p.murid.namaLengkap}
+							</li>
+						))}
+					</ul>
+				) : (
+					<p className="text-muted-foreground text-sm italic">
+						Belum ada murid
+					</p>
+				)}
+			</div>
+		</div>
+	);
+}
+
+export function ScheduleCard({
+	data,
+	onDelete,
+	onEdit,
+	variant = "grid",
+	ruang,
+}: ScheduleCardProps) {
+	const [open, setOpen] = useState(false);
+	const status = (data.statusKelas as StatusKelas) ?? StatusKelas.RUNNING;
+
+	// ─── HP: kartu lebar, detail lewat bottom sheet (hover tidak ada di layar sentuh)
+	if (variant === "list") {
+		return (
+			<>
+				<div className="relative">
+					<button
+						type="button"
+						onClick={() => setOpen(true)}
+						className={cn(
+							"bg-card active:bg-muted/50 flex w-full flex-col gap-2 rounded-xl border border-l-4 p-3 pr-11 text-left shadow-sm transition-colors",
+							borderByStatus[status],
+						)}
+					>
+						<span className="text-sm leading-snug font-bold break-words">
+							{data.kodeKelas}
+						</span>
+						<div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+							<span className="flex items-center gap-1">
+								<Clock className="h-3 w-3" />
+								<span className="font-mono">
+									{data.jamMulai} - {data.jamSelesai}
+								</span>
+							</span>
+							{ruang && (
+								<span className="flex items-center gap-1">
+									<DoorOpen className="h-3 w-3" />
+									{ruang}
+								</span>
+							)}
+							<span className="flex items-center gap-1">
+								<Users className="h-3 w-3" />
+								{data.jumlahMurid} siswa
 							</span>
 						</div>
-						<div className="flex items-center gap-1.5">
-							<Album className="h-3 w-3 shrink-0 opacity-70" />
-							<span className="font-mono text-sm">{data.deskripsi ?? "-"}</span>
-						</div>
-					</div>
-				</div>
-			</HoverCardTrigger>
-
-			{/* HOVER CARD DETAIL */}
-			<HoverCardContent
-				className="z-50 w-80 overflow-hidden p-0"
-				align="start"
-				side="right"
-				sideOffset={10}
-			>
-				<div className={cn("h-2 w-full", headerColorClass)} />
-
-				<div className="flex flex-col gap-3 p-4">
-					<div className="space-y-1.5">
-						<h4 className="text-foreground text-base leading-snug font-bold">
-							{data.kodeKelas}
-						</h4>
-						<div className="flex flex-wrap gap-2">
-							<Badge
-								variant="secondary"
-								className={cn(
-									"h-5 border-0 px-1.5 text-[10px] font-normal",
-									isPrivate
-										? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-										: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-								)}
-							>
-								{data.tipeKelas}
-							</Badge>
-							<Badge
-								variant="outline"
-								className="text-muted-foreground h-5 px-1.5 text-[10px] font-normal"
-							>
-								{data.jumlahMurid} Siswa Terdaftar
-							</Badge>
+						<div className="flex items-center justify-between gap-2">
+							<span className="text-muted-foreground flex min-w-0 items-center gap-1 text-xs">
+								<User className="h-3 w-3 shrink-0" />
+								<span className="truncate">{data.guru}</span>
+							</span>
 							<Badge
 								variant="outline"
 								className={cn(
-									"h-5 border-0 px-1.5 text-[10px] font-bold",
-									headerColorClass,
+									"h-5 shrink-0 px-1.5 text-[10px] font-bold",
+									statusKelasColorMap[status],
 								)}
 							>
 								{formatStatus(status)}
 							</Badge>
 						</div>
-					</div>
+					</button>
+					<ActionMenu
+						data={data}
+						onDelete={onDelete}
+						onEdit={onEdit}
+						className="absolute top-1 right-1"
+					/>
+				</div>
 
-					<div className="bg-muted/50 border-border/50 grid grid-cols-1 gap-2 rounded-md border p-3 text-sm">
-						<div className="flex items-center justify-between">
-							<div className="text-muted-foreground flex items-center gap-2">
-								<User className="h-4 w-4" />
-								<span className="text-sm">Pengajar</span>
+				<Sheet open={open} onOpenChange={setOpen}>
+					<SheetContent
+						side="bottom"
+						className="max-h-[85vh] overflow-y-auto rounded-t-2xl"
+					>
+						<SheetHeader className="text-left">
+							<SheetTitle className="break-words">{data.kodeKelas}</SheetTitle>
+							<SheetDescription>Detail jadwal kelas</SheetDescription>
+						</SheetHeader>
+						<div className="flex flex-col gap-3 px-4 pb-6">
+							<DetailContent data={data} ruang={ruang} />
+							<div className="grid grid-cols-3 gap-2">
+								<Button variant="outline" size="sm" asChild>
+									<Link href={`/admin/kelas/detail/${data.kelasId}`}>
+										<ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+										Detail
+									</Link>
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										setOpen(false);
+										onEdit?.(data.originalData);
+									}}
+								>
+									<Pencil className="mr-1.5 h-3.5 w-3.5" />
+									Edit
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									className="text-destructive"
+									onClick={() => {
+										setOpen(false);
+										onDelete(data.id, data.kodeKelas);
+									}}
+								>
+									<Trash className="mr-1.5 h-3.5 w-3.5" />
+									Hapus
+								</Button>
 							</div>
-							<span className="text-foreground text-sm font-medium">
-								{data.guru}
-							</span>
 						</div>
-						<div className="border-border/50 mt-1 flex items-center justify-between border-t pt-2">
-							<div className="text-muted-foreground flex items-center gap-2">
-								<Clock className="h-4 w-4" />
-								<span className="text-sm">Waktu</span>
-							</div>
-							<span className="text-foreground font-mono text-sm font-medium">
+					</SheetContent>
+				</Sheet>
+			</>
+		);
+	}
+
+	// ─── PC: kartu ringkas di matriks, detail lewat hover
+	return (
+		<HoverCard openDelay={200}>
+			<HoverCardTrigger asChild>
+				<div
+					className={cn(
+						"group/card bg-card flex w-max min-w-full flex-col gap-1.5 rounded-lg border border-l-4 p-2.5 shadow-xs transition-all hover:shadow-md",
+						borderByStatus[status],
+					)}
+				>
+					<div className="flex items-start justify-between gap-2">
+						<Link
+							href={`/admin/kelas/detail/${data.kelasId}`}
+							className="hover:text-primary text-sm leading-tight font-bold whitespace-nowrap hover:underline"
+							title={data.kodeKelas}
+						>
+							{data.kodeKelas}
+						</Link>
+						<ActionMenu
+							data={data}
+							onDelete={onDelete}
+							onEdit={onEdit}
+							className="-mt-1.5 -mr-1.5 size-7 opacity-0 transition-opacity group-hover/card:opacity-100 focus:opacity-100 data-[state=open]:opacity-100"
+						/>
+					</div>
+					<div className="text-muted-foreground flex flex-col gap-0.5 text-xs">
+						<span className="flex items-center gap-1.5">
+							<Clock className="h-3 w-3 shrink-0" />
+							<span className="font-mono">
 								{data.jamMulai} - {data.jamSelesai}
 							</span>
-						</div>
-						<div className="border-border/50 mt-1 flex items-center justify-between border-t pt-2">
-							<div className="text-muted-foreground flex items-center gap-2">
-								<Album className="h-4 w-4" />
-								<span className="text-sm">Deskripsi</span>
-							</div>
-							<span className="text-foreground font-mono text-sm font-medium">
-								{data.deskripsi ?? "-"}
-							</span>
-						</div>
+						</span>
+						<span className="flex items-center gap-1.5">
+							<User className="h-3 w-3 shrink-0" />
+							<span>{data.guru}</span>
+						</span>
 					</div>
-
-					<div className="bg-muted/50 border-border/50 grid grid-cols-1 gap-2 rounded-md border p-3 text-sm">
-						<div className="flex flex-col gap-2">
-							<div className="text-muted-foreground flex items-center gap-2">
-								<User className="h-4 w-4" />
-								<span className="text-sm">Daftar Murid</span>
-							</div>
-							<ul className="text-foreground ml-6 list-disc space-y-1 text-xs font-medium">
-								{data.originalData.kelas.pendaftaranKelases.length > 0 ? (
-									data.originalData.kelas.pendaftaranKelases.map(
-										(pendaftaran) => (
-											<li key={pendaftaran.id}>
-												{pendaftaran.murid.namaLengkap}
-											</li>
-										),
-									)
-								) : (
-									<li
-										key="no-murid"
-										className="text-muted-foreground italic list-none"
-									>
-										Belum ada murid
-									</li>
-								)}
-							</ul>
-						</div>
+					<div className="flex items-center justify-between gap-2 pt-0.5">
+						<Badge
+							variant="outline"
+							className={cn(
+								"h-4 px-1.5 text-[10px] font-bold",
+								statusKelasColorMap[status],
+							)}
+						>
+							{formatStatus(status)}
+						</Badge>
+						<span className="text-muted-foreground flex items-center gap-1 text-[11px]">
+							<Users className="h-3 w-3" />
+							{data.jumlahMurid}
+						</span>
 					</div>
-
-					<p className="text-muted-foreground/70 text-center text-[10px] italic">
-						Klik menu titik tiga untuk opsi lainnya
-					</p>
 				</div>
+			</HoverCardTrigger>
+
+			<HoverCardContent
+				className="z-50 w-80 p-4"
+				align="start"
+				side="right"
+				sideOffset={10}
+			>
+				<h4 className="mb-2 text-base leading-snug font-bold">
+					{data.kodeKelas}
+				</h4>
+				<DetailContent data={data} ruang={ruang} />
 			</HoverCardContent>
 		</HoverCard>
 	);

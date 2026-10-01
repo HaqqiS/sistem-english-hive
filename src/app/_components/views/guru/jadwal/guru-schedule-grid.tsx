@@ -19,15 +19,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { cn } from "@/lib/utils";
@@ -182,231 +174,264 @@ export default function GuruScheduleGrid() {
 		}
 	};
 
+	// --- TURUNAN UNTUK TAMPILAN ---
+	const hariIni = (() => {
+		const h = dayjs().format("dddd").toUpperCase();
+		return h in Hari ? (h as Hari) : null;
+	})();
+
+	const namaRuang = useMemo(() => {
+		const map: Record<string, string> = {};
+		for (const r of dataMatrix?.rooms ?? []) map[r.id] = r.namaRuang;
+		return map;
+	}, [dataMatrix]);
+
+	// Ruangan yang benar-benar dipakai di hari terpilih (kolom kosong disembunyikan)
+	const ruangAktif = useMemo(() => {
+		const dipakai = new Set(
+			(dataMatrix?.schedules ?? []).map((x) => x.ruangId),
+		);
+		return (dataMatrix?.rooms ?? []).filter((r) => dipakai.has(r.id));
+	}, [dataMatrix]);
+
+	const totalKelas = dataMatrix?.schedules.length ?? 0;
+
+	const jadwalPerJam = useMemo(
+		() =>
+			timeSlots.map((time) => ({
+				time,
+				items: (dataMatrix?.schedules ?? []).filter((x) => x.jamMulai === time),
+			})),
+		[timeSlots, dataMatrix],
+	);
+
+	const formatHari = (h: string) => h.charAt(0) + h.slice(1).toLowerCase();
+
+	// Tanggal untuk tiap hari pada minggu berjalan (Senin - Minggu)
+	const tanggalHari = (hari: Hari) => {
+		const today = dayjs();
+		const senin = today.subtract((today.day() + 6) % 7, "day");
+		return senin.add(Object.values(Hari).indexOf(hari), "day");
+	};
+
 	// --- RENDER ---
 	return (
 		<div className="flex flex-col gap-4">
-			{/* --- FILTERS --- */}
-			<div className="flex gap-4 lg:flex-row lg:items-center lg:justify-between">
-				{/* 2. REFRESH */}
-				<div className="flex items-center gap-2 lg:w-auto">
-					<Button
-						variant="outline"
-						size="icon"
-						className="h-9 w-9 shrink-0"
-						disabled={isLoading || isRefetching}
-						onClick={() => refetch()}
-						title="Refresh Jadwal"
-					>
-						<RefreshCw
+			<HeaderActionPortal>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" size="sm">
+							<FileText className="mr-2 h-4 w-4" />
+							Export PDF
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						<DropdownMenuItem onClick={handleExportCurrent}>
+							Export Hari Ini ({selectedHari})
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={handleExportAll}>
+							Export Semua Hari (Full Minggu)
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</HeaderActionPortal>
+
+			{/* --- PILIH HARI --- */}
+			<div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+				{Object.values(Hari).map((hari) => {
+					const aktif = hari === selectedHari;
+					return (
+						<button
+							key={hari}
+							type="button"
+							onClick={() => setSelectedHari(hari)}
 							className={cn(
-								"h-4 w-4",
-								(isLoading || isRefetching) && "animate-spin",
+								"relative flex shrink-0 flex-col items-center rounded-xl border px-4 py-2 text-sm font-medium transition-colors md:flex-1 md:shrink",
+								aktif
+									? "bg-primary text-primary-foreground border-primary shadow-sm"
+									: "bg-background text-muted-foreground hover:bg-muted",
 							)}
-						/>
-					</Button>
-
-					<HeaderActionPortal>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="sm">
-									<FileText className="mr-2 h-4 w-4" />
-									Export PDF
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								<DropdownMenuItem onClick={handleExportCurrent}>
-									Export Hari Ini ({selectedHari})
-								</DropdownMenuItem>
-								<DropdownMenuItem onClick={handleExportAll}>
-									Export Semua Hari (Full Minggu)
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</HeaderActionPortal>
-				</div>
-
-				{/* 1. FILTER HARI (Responsive) */}
-				{isMobile ? (
-					// Tampilan Mobile: Dropdown Select
-					<div className="w-full">
-						<Select
-							value={selectedHari}
-							onValueChange={(v) => setSelectedHari(v as Hari)}
 						>
-							<SelectTrigger className="bg-background w-full">
-								<div className="flex items-center gap-2">
-									<CalendarDays className="text-muted-foreground h-4 w-4" />
-									<span className="font-medium">
-										<SelectValue />
-									</span>
-								</div>
-							</SelectTrigger>
-							<SelectContent>
-								{Object.values(Hari).map((hari) => (
-									<SelectItem key={hari} value={hari}>
-										{hari}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				) : (
-					// Tampilan Desktop: Tabs
-					<div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0">
-						<Tabs
-							value={selectedHari}
-							onValueChange={(v) => setSelectedHari(v as Hari)}
-						>
-							<TabsList className="bg-muted/50 h-9">
-								{Object.values(Hari).map((hari) => (
-									<TabsTrigger
-										key={hari}
-										value={hari}
-										className="data-[state=active]:bg-background px-3 text-xs data-[state=active]:shadow-sm lg:text-sm"
-									>
-										{hari}
-									</TabsTrigger>
-								))}
-							</TabsList>
-						</Tabs>
-					</div>
-				)}
+							<span>{formatHari(hari)}</span>
+							<span
+								className={cn(
+									"mt-0.5 text-[11px] leading-none font-normal",
+									aktif ? "opacity-80" : "text-muted-foreground",
+									hari === hariIni && !aktif && "text-primary font-medium",
+								)}
+							>
+								{hari === hariIni
+									? "Hari ini"
+									: tanggalHari(hari).format("D MMM")}
+							</span>
+						</button>
+					);
+				})}
 			</div>
 
-			{/* --- MAIN GRID AREA --- */}
-			<div className="bg-background relative flex flex-1 flex-col overflow-hidden rounded-lg border shadow-sm">
-				{isLoading ? (
-					<div className="space-y-4 p-8">
-						<div className="flex gap-4">
-							<Skeleton className="h-10 w-24" />
-							<Skeleton className="h-10 flex-1" />
-						</div>
-						{Array.from({ length: 5 }, (_, i) => i).map((id) => (
-							<div key={id} className="grid grid-cols-4 gap-4">
-								<Skeleton className="h-32 w-full" />
-								<Skeleton className="h-32 w-full" />
-								<Skeleton className="h-32 w-full" />
-								<Skeleton className="h-32 w-full" />
-							</div>
-						))}
+			{/* --- RINGKASAN + REFRESH --- */}
+			<div className="flex items-center justify-between gap-3">
+				<div className="flex items-center gap-2">
+					<CalendarDays className="text-muted-foreground h-4 w-4" />
+					<h2 className="text-sm font-semibold">
+						{formatHari(selectedHari)},{" "}
+						{tanggalHari(selectedHari).format("D MMMM")}
+					</h2>
+					{!isLoading && dataMatrix && (
+						<span className="text-muted-foreground text-sm">
+							· {totalKelas} kelas
+						</span>
+					)}
+				</div>
+				<Button
+					variant="outline"
+					size="icon"
+					className="h-8 w-8 shrink-0"
+					disabled={isLoading || isRefetching}
+					onClick={() => refetch()}
+					title="Refresh Jadwal"
+				>
+					<RefreshCw
+						className={cn(
+							"h-4 w-4",
+							(isLoading || isRefetching) && "animate-spin",
+						)}
+					/>
+				</Button>
+			</div>
+
+			{/* --- ISI JADWAL --- */}
+			{isLoading ? (
+				<div className="space-y-3">
+					{Array.from({ length: 4 }, (_, i) => i).map((id) => (
+						<Skeleton key={id} className="h-24 w-full rounded-xl" />
+					))}
+				</div>
+			) : isError || !dataMatrix ? (
+				<div className="bg-card flex flex-col items-center justify-center gap-3 rounded-xl border p-8 text-center">
+					<div className="bg-destructive/10 rounded-full p-3">
+						<AlertCircle className="text-destructive h-6 w-6" />
 					</div>
-				) : isError || !dataMatrix ? (
-					<div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-						<div className="rounded-full bg-destructive/10 p-3">
-							<AlertCircle className="text-destructive h-6 w-6" />
-						</div>
-						<div className="space-y-1">
-							<h3 className="text-lg font-semibold">Gagal Memuat Jadwal</h3>
-							<p className="text-muted-foreground mx-auto max-w-sm text-sm">
-								{error?.message ??
-									"Gagal memuat data jadwal. Silakan coba lagi."}
-							</p>
-						</div>
-					</div>
-				) : dataMatrix.rooms.length === 0 ? (
-					<div className="text-muted-foreground bg-muted/5 flex h-[200px] items-center justify-center">
-						Belum ada ruangan di cabang ini.
-					</div>
-				) : timeSlots.length === 0 ? (
-					<div className="text-muted-foreground bg-muted/5 flex h-[200px] flex-col items-center justify-center gap-2 p-4">
-						<Info className="h-10 w-10 opacity-20" />
-						<p>
-							Belum ada jadwal pada hari{" "}
-							<span className="text-foreground font-bold">{selectedHari}</span>{" "}
-							di cabang ini.
+					<div className="space-y-1">
+						<h3 className="text-lg font-semibold">Gagal Memuat Jadwal</h3>
+						<p className="text-muted-foreground mx-auto max-w-sm text-sm">
+							{error?.message ?? "Gagal memuat data jadwal. Silakan coba lagi."}
 						</p>
 					</div>
-				) : (
-					// Area Scroll
-					<ScrollArea className="h-full w-full">
-						<div className="min-w-max">
-							<table className="h-full w-full border-collapse text-sm">
-								{/* --- HEADER --- */}
-								<thead className="sticky top-0 z-40 shadow-sm">
-									<tr>
-										{/* Corner Header (Jam/Ruang) */}
-										<th className="bg-background text-muted-foreground sticky top-0 left-0 z-50 w-20 border-r border-b p-3 text-center text-xs font-medium">
-											<span className="text-[10px] tracking-wider uppercase">
-												Waktu
+				</div>
+			) : dataMatrix.rooms.length === 0 ? (
+				<div className="text-muted-foreground bg-card flex h-48 items-center justify-center rounded-xl border border-dashed">
+					Belum ada ruangan di cabang ini.
+				</div>
+			) : timeSlots.length === 0 ? (
+				<div className="text-muted-foreground bg-card flex h-48 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-4 text-center">
+					<Info className="h-10 w-10 opacity-20" />
+					<p>
+						Tidak ada jadwal pada hari{" "}
+						<span className="text-foreground font-bold">
+							{formatHari(selectedHari)}
+						</span>
+						.
+					</p>
+				</div>
+			) : isMobile ? (
+				// ─── HP: timeline per jam ───
+				<div className="flex flex-col gap-5">
+					{jadwalPerJam.map(({ time, items }) => (
+						<section key={time} className="flex gap-3">
+							<div className="flex w-12 shrink-0 flex-col items-center">
+								<span className="font-mono text-sm font-bold">{time}</span>
+								<span className="bg-border mt-1 w-px flex-1" />
+							</div>
+							<div className="flex min-w-0 flex-1 flex-col gap-2">
+								{items.map((item) => (
+									<GuruScheduleCard
+										key={item.id}
+										data={item}
+										variant="list"
+										ruang={namaRuang[item.ruangId]}
+									/>
+								))}
+								{(() => {
+									const kosong = dataMatrix.rooms.filter(
+										(r) => !(scheduleMap[time]?.[r.id]?.length ?? 0),
+									);
+									if (kosong.length === 0) return null;
+									return (
+										<div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+											<span className="text-muted-foreground text-xs">
+												Ruang kosong:
 											</span>
-										</th>
-										{/* Room Headers */}
-										{dataMatrix.rooms.map((room) => (
-											<th
-												key={room.id}
-												className="bg-background text-foreground min-w-[160px] border-r border-b p-2 text-sm font-semibold"
-											>
-												{room.namaRuang}
-											</th>
-										))}
-									</tr>
-								</thead>
-
-								{/* --- BODY --- */}
-								<tbody className="bg-background">
-									{timeSlots.map((time, idx) => {
-										// Styling zebra striping untuk baris waktu
-										const isEven = idx % 2 === 0;
-										return (
-											<tr
-												key={time}
-												className={cn(
-													"group/row",
-													isEven ? "bg-background" : "bg-muted/5",
-												)}
-											>
-												{/* Sticky Time Column */}
-												<td
-													className={cn(
-														"text-foreground sticky left-0 z-30 border-r border-b p-2 text-center align-top font-mono text-sm font-medium",
-														isEven ? "bg-background" : "bg-background", // Samakan bg agar tidak transparan saat scroll horizontal
-													)}
+											{kosong.map((r) => (
+												<span
+													key={r.id}
+													className="rounded-full border border-dashed px-2 py-0.5 text-xs text-green-700 dark:text-green-400"
 												>
-													<div className="sticky top-12 pt-2">{time}</div>
+													{r.namaRuang}
+												</span>
+											))}
+										</div>
+									);
+								})()}
+							</div>
+						</section>
+					))}
+				</div>
+			) : (
+				// ─── PC: matriks waktu x ruangan ───
+				<div className="bg-card overflow-hidden rounded-xl border shadow-sm">
+					<ScrollArea className="w-full">
+						<table className="w-full border-collapse text-sm">
+							<thead>
+								<tr className="bg-muted/40">
+									<th className="bg-muted/40 text-muted-foreground sticky left-0 z-20 w-20 border-r border-b p-3 text-[10px] font-medium tracking-wider uppercase">
+										Waktu
+									</th>
+									{ruangAktif.map((room) => (
+										<th
+											key={room.id}
+											className="min-w-[220px] border-r border-b p-3 text-left text-sm font-semibold last:border-r-0"
+										>
+											{room.namaRuang}
+										</th>
+									))}
+								</tr>
+							</thead>
+							<tbody>
+								{timeSlots.map((time) => (
+									<tr key={time} className="border-b last:border-b-0">
+										<td className="bg-card sticky left-0 z-10 border-r p-3 text-center align-top font-mono text-sm font-semibold">
+											{time}
+										</td>
+										{ruangAktif.map((room) => {
+											const schedules = scheduleMap[time]?.[room.id] || [];
+											return (
+												<td
+													key={`${time}-${room.id}`}
+													className="border-r p-2 align-top last:border-r-0"
+												>
+													{schedules.length > 0 && (
+														<div className="flex flex-col gap-2">
+															{schedules.map((schedule) => (
+																<GuruScheduleCard
+																	key={schedule.id}
+																	data={schedule}
+																	ruang={room.namaRuang}
+																/>
+															))}
+														</div>
+													)}
 												</td>
-
-												{/* Cells */}
-												{dataMatrix.rooms.map((room) => {
-													const schedules = scheduleMap[time]?.[room.id] || [];
-													return (
-														<td
-															key={`${time}-${room.id}`}
-															className="h-auto min-h-28 w-[160px] max-w-[160px] min-w-[160px] border-r border-b p-1.5 align-top"
-														>
-															{schedules.length > 0 ? (
-																<div className="flex flex-col gap-1.5">
-																	{schedules.map((schedule) => (
-																		<GuruScheduleCard
-																			key={schedule.id}
-																			data={schedule}
-																		/>
-																	))}
-																</div>
-															) : (
-																// Empty Cell
-																<div className="hover:border-muted-foreground/20 h-full w-full min-h-[100px] rounded-md border border-dashed border-transparent transition-colors" />
-															)}
-														</td>
-													);
-												})}
-											</tr>
-										);
-									})}
-									{/* Filler Row removed to avoid empty space */}
-									<tr className="h-full">
-										<td className="bg-background sticky left-0 z-30 border-r"></td>
-										{dataMatrix.rooms.map((r) => (
-											<td key={r.id} className="border-r"></td>
-										))}
+											);
+										})}
 									</tr>
-								</tbody>
-							</table>
-						</div>
+								))}
+							</tbody>
+						</table>
 						<ScrollBar orientation="horizontal" />
-						<ScrollBar orientation="vertical" />
 					</ScrollArea>
-				)}
-			</div>
+				</div>
+			)}
 		</div>
 	);
 }

@@ -12,7 +12,6 @@ import {
 	Clock,
 	Copy,
 	DoorOpen,
-	Ellipsis,
 	GraduationCap,
 	History,
 	KeyRound,
@@ -43,12 +42,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -75,7 +68,6 @@ import { useJadwalKelas } from "@/hooks/useJadwalKelas";
 import { usePenggantiGuru } from "@/hooks/usePenggantiGuru";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
-import { api } from "@/trpc/react";
 import type { TypeBuatTokenPenggantiOutput } from "@/types/absenGuru.type";
 import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
@@ -150,13 +142,6 @@ export default function GuruDashboardClient() {
 	const { data: session } = useSession();
 
 	// --- State  ---
-	const [isGantiRuangOpen, setIsGantiRuangOpen] = useState(false);
-	const [selectedJadwal, setSelectedJadwal] =
-		useState<TypeJadwalHariIniItem | null>(null);
-	const [overrideRuangId, setOverrideRuangId] = useState<string | undefined>(
-		undefined,
-	);
-
 	const [selectedGuruId, setSelectedGuruId] = useState<string | undefined>(
 		undefined,
 	);
@@ -165,10 +150,9 @@ export default function GuruDashboardClient() {
 	const [guruSearch, setGuruSearch] = useState("");
 
 	const [isConfirmStartOpen, setIsConfirmStartOpen] = useState(false);
-	// Kita perlu menyimpan data jadwal & ruang sementara sebelum user klik "Ya/Confirm"
+	// Kita perlu menyimpan data jadwal sementara sebelum user klik "Ya/Confirm"
 	const [pendingStartData, setPendingStartData] = useState<{
 		jadwal: TypeJadwalHariIniItem;
-		ruangId?: string;
 	} | null>(null);
 
 	// --- State: alur kode pengganti ---
@@ -198,12 +182,8 @@ export default function GuruDashboardClient() {
 		guruId: selectedGuruId, // Pass filter ID ke hook
 	});
 
-	const { data: semuaRuangan, isLoading: isLoadingRuangan } =
-		api.ruang.getAll.useQuery({});
-
 	const { mutations } = useAbsenGuru({
 		onSuccessStartSesi: (newSesiId) => {
-			setIsGantiRuangOpen(false);
 			setIsConfirmStartOpen(false);
 			setKodePengganti("");
 			router.push(`/guru/absen/${newSesiId}`);
@@ -247,12 +227,9 @@ export default function GuruDashboardClient() {
 		jadwalHariIni?.filter((j) => j.isAbsenSelesai).length ?? 0;
 
 	// --- Handlers ---
-	const handleMulaiSesiClick = (
-		jadwal: TypeJadwalHariIniItem,
-		ruangId: string | undefined,
-	) => {
+	const handleMulaiSesiClick = (jadwal: TypeJadwalHariIniItem) => {
 		if (isStartingSesi) return;
-		setPendingStartData({ jadwal, ruangId });
+		setPendingStartData({ jadwal });
 		setIsConfirmStartOpen(true);
 	};
 	const handleConfirmStartSesi = () => {
@@ -261,7 +238,6 @@ export default function GuruDashboardClient() {
 		mulaiSesi({
 			jadwalKelasId: pendingStartData.jadwal.jadwalId,
 			status: StatusAbsenGuru.HADIR,
-			overrideRuangId: pendingStartData.ruangId,
 			// Di Mode Guru Pengganti, sesi hanya bisa dimulai dengan kode dari guru asli
 			tokenPengganti: selectedGuruId ? kodePengganti : undefined,
 		});
@@ -332,21 +308,8 @@ export default function GuruDashboardClient() {
 		}
 	};
 
-	const openGantiRuangDialog = (jadwal: TypeJadwalHariIniItem) => {
-		setSelectedJadwal(jadwal);
-		setOverrideRuangId(jadwal.ruangId);
-		setIsGantiRuangOpen(true);
-	};
-
-	const handleGantiRuangSubmit = () => {
-		if (selectedJadwal) {
-			setIsGantiRuangOpen(false);
-			handleMulaiSesiClick(selectedJadwal, overrideRuangId);
-		}
-	};
-
 	// --- Render States ---
-	if (isLoading || isLoadingRuangan) {
+	if (isLoading) {
 		return (
 			<div className="space-y-6">
 				<div className="space-y-2">
@@ -784,7 +747,7 @@ export default function GuruDashboardClient() {
 										<Button
 											variant="outline"
 											className="border-primary/50 text-primary hover:bg-primary/10 bg-background h-11 w-full text-base"
-											onClick={() => handleMulaiSesiClick(jadwal, undefined)}
+											onClick={() => handleMulaiSesiClick(jadwal)}
 											disabled={isStartingSesi}
 										>
 											{isThisItemLoading ? (
@@ -797,10 +760,10 @@ export default function GuruDashboardClient() {
 												: "Gabung Sesi (Asisting)"}
 										</Button>
 									) : (
-										<div className="flex w-full items-center gap-2">
+										<div className="flex w-full flex-col gap-2">
 											<Button
-												className="h-11 flex-1 text-base"
-												onClick={() => handleMulaiSesiClick(jadwal, undefined)}
+												className="h-11 w-full text-base"
+												onClick={() => handleMulaiSesiClick(jadwal)}
 												disabled={isStartingSesi}
 											>
 												{isThisItemLoading ? (
@@ -810,37 +773,17 @@ export default function GuruDashboardClient() {
 												)}
 												Mulai Sesi
 											</Button>
-
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button
-														variant="outline"
-														size="icon"
-														className="bg-background size-11 shrink-0"
-														disabled={isStartingSesi}
-													>
-														<Ellipsis className="h-5 w-5" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end">
-													<DropdownMenuItem
-														className="py-2.5"
-														onClick={() => openGantiRuangDialog(jadwal)}
-													>
-														<Replace className="mr-2 h-4 w-4" />
-														Ganti Ruang & Mulai
-													</DropdownMenuItem>
-													{!selectedGuruId && (
-														<DropdownMenuItem
-															className="py-2.5"
-															onClick={() => openBuatKodeDialog(jadwal)}
-														>
-															<KeyRound className="mr-2 h-4 w-4" />
-															Buat Kode Pengganti
-														</DropdownMenuItem>
-													)}
-												</DropdownMenuContent>
-											</DropdownMenu>
+											{!selectedGuruId && (
+												<Button
+													variant="outline"
+													className="h-10 w-full text-sm"
+													onClick={() => openBuatKodeDialog(jadwal)}
+													disabled={isStartingSesi}
+												>
+													<KeyRound className="mr-2 h-4 w-4" />
+													Buat Kode Pengganti
+												</Button>
+											)}
 										</div>
 									)}
 								</div>
@@ -855,58 +798,6 @@ export default function GuruDashboardClient() {
 				guruId={selectedGuruId}
 				guruName={activeGuruName}
 			/>
-
-			{/* --- Dialog untuk Ganti Ruang --- */}
-			<Dialog open={isGantiRuangOpen} onOpenChange={setIsGantiRuangOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Ganti Ruang Sesi</DialogTitle>
-						<DialogDescription>
-							Pilih ruang baru untuk sesi{" "}
-							<span className="font-bold">{selectedJadwal?.kodeKelas}</span>{" "}
-							pada jam {selectedJadwal?.jamMulai}.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-							<Label htmlFor="ruang-select" className="sm:text-right">
-								Ruang Baru
-							</Label>
-							<div className="sm:col-span-3">
-								<Select
-									value={overrideRuangId}
-									onValueChange={setOverrideRuangId}
-								>
-									<SelectTrigger id="ruang-select">
-										<SelectValue placeholder="Pilih ruang baru..." />
-									</SelectTrigger>
-									<SelectContent>
-										{semuaRuangan?.map((ruang) => (
-											<SelectItem key={ruang.id} value={ruang.id}>
-												{ruang.namaRuang} (Cabang: {ruang.cabang.namaCabang})
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							onClick={handleGantiRuangSubmit}
-							disabled={!overrideRuangId || isStartingSesi}
-						>
-							{isStartingSesi ? (
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-							) : (
-								<Play className="mr-2 h-4 w-4" />
-							)}
-							Mulai Sesi di Ruang Baru
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
 
 			<DeleteConfirmationDialog
 				isOpen={isConfirmStartOpen && !selectedGuruId}
@@ -928,11 +819,7 @@ export default function GuruDashboardClient() {
 						<br />
 						<span className="text-muted-foreground mt-2 block text-xs">
 							Pastikan Anda berada di ruangan yang benar (
-							{pendingStartData?.ruangId
-								? semuaRuangan?.find((r) => r.id === pendingStartData.ruangId)
-										?.namaRuang
-								: pendingStartData?.jadwal.namaRuang}
-							)
+							{pendingStartData?.jadwal.namaRuang})
 						</span>
 					</>
 				}
@@ -985,13 +872,8 @@ export default function GuruDashboardClient() {
 						/>
 						<p className="text-muted-foreground text-xs">
 							Belum punya kode? Minta {activeGuruName} membuka dashboard-nya,
-							tekan tombol ⋯ pada kelas ini, lalu pilih "Buat Kode Pengganti".
-							Ruang:{" "}
-							{pendingStartData?.ruangId
-								? semuaRuangan?.find((r) => r.id === pendingStartData.ruangId)
-										?.namaRuang
-								: pendingStartData?.jadwal.namaRuang}
-							.
+							tekan tombol "Buat Kode Pengganti" di bawah tombol Mulai Sesi pada
+							kelas ini. Ruang: {pendingStartData?.jadwal.namaRuang}.
 						</p>
 					</div>
 					<DialogFooter>

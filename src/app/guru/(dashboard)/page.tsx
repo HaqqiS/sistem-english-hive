@@ -12,10 +12,7 @@ export const revalidate = 0;
 
 export default async function GuruDashboard() {
 	// 1. Prefetch data yang dibutuhkan di server
-	await Promise.all([
-		api.jadwalKelas.getJadwalHariIniForGuru.prefetch({}),
-		api.ruang.getAll.prefetch({}), // Dibutuhkan untuk dialog "Ganti Ruang"
-	]);
+	await api.jadwalKelas.getJadwalHariIniForGuru.prefetch({});
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4 pt-0">

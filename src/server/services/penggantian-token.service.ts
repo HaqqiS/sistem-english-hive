@@ -5,27 +5,22 @@ import { env } from "@/env";
 import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 
 /**
- * Kode (token) guru pengganti — stateless, tanpa tabel database.
+ * Kode guru pengganti — 8 digit angka, stateless (tanpa tabel database).
  *
- * Format: EHP1.<payload base64url>.<tanda tangan HMAC-SHA256 base64url>
+ * Kode TIDAK menyimpan data apa pun. Kode adalah hasil HMAC-SHA256 (dipotong
+ * jadi 8 digit, seperti TOTP) dari:
+ *   jadwal kelas + guru asli + guru pengganti + tanggal (WITA)
  *
- * Token terikat ke: satu jadwal kelas, satu guru asli, satu guru pengganti,
- * dan satu tanggal (WITA). Kedaluwarsa otomatis di akhir tanggal tersebut.
+ * Saat diverifikasi, server menghitung ulang kode untuk setiap guru yang
+ * bertugas di kelas itu (kandidat guru asli) dan mencari yang cocok. Karena
+ * jadwal, guru pengganti (dari sesi login), dan tanggal (hari ini) sudah
+ * diketahui server, kode tidak perlu membawa informasi tersebut.
  */
 
-const VERSI = "EHP1";
+const VERSI = "EHP2";
+export const PANJANG_KODE_PENGGANTI = 8;
 const MAKS_HARI_KE_DEPAN = 7;
 const FORMAT_TANGGAL = "YYYY-MM-DD";
-
-export type PayloadPenggantian = {
-	jadwalKelasId: string;
-	guruAsliId: string;
-	guruPenggantiId: string;
-	/** Tanggal berlaku, format YYYY-MM-DD (WITA) */
-	tanggal: string;
-	/** Waktu kedaluwarsa (epoch ms) */
-	exp: number;
-};
 
 const getSecret = (): string => {
 	if (env.AUTH_SECRET) return env.AUTH_SECRET;
@@ -39,25 +34,44 @@ const getSecret = (): string => {
 	return "dev-only-secret-penggantian-guru";
 };
 
-const tandatangani = (body: string): string =>
-	createHmac("sha256", getSecret())
-		.update(`${VERSI}.${body}`)
-		.digest("base64url");
-
 const tanggalHariIni = (): string =>
 	dayjs().tz(TIMEZONE_BISNIS).format(FORMAT_TANGGAL);
 
-/**
- * Membuat token pengganti. `tanggal` harus hari ini sampai
- * MAKS_HARI_KE_DEPAN hari ke depan (WITA).
- */
-export const buatTokenPenggantian = (input: {
+type DataKode = {
 	jadwalKelasId: string;
 	guruAsliId: string;
 	guruPenggantiId: string;
+	/** YYYY-MM-DD (WITA) */
 	tanggal: string;
-}): { token: string; kedaluwarsa: Date } => {
-	const { jadwalKelasId, guruAsliId, guruPenggantiId, tanggal } = input;
+};
+
+/** Menghitung kode 8 digit untuk kombinasi data tertentu. */
+const hitungKode = (d: DataKode): string => {
+	const mac = createHmac("sha256", getSecret())
+		.update(
+			[VERSI, d.jadwalKelasId, d.guruAsliId, d.guruPenggantiId, d.tanggal].join(
+				"|",
+			),
+		)
+		.digest();
+
+	// 6 byte pertama → angka 48-bit, dipotong ke 8 digit (bias modulo diabaikan)
+	const angka = mac.readUIntBE(0, 6) % 10 ** PANJANG_KODE_PENGGANTI;
+	return angka.toString().padStart(PANJANG_KODE_PENGGANTI, "0");
+};
+
+/** "12345678" → "1234 5678" (untuk ditampilkan / dikirim lewat chat). */
+export const formatKodePenggantian = (kode: string): string =>
+	`${kode.slice(0, 4)} ${kode.slice(4)}`;
+
+/**
+ * Membuat kode pengganti. `tanggal` harus hari ini sampai
+ * MAKS_HARI_KE_DEPAN hari ke depan (WITA).
+ */
+export const buatKodePenggantian = (
+	input: DataKode,
+): { kode: string; kodeFormat: string; kedaluwarsa: Date } => {
+	const { tanggal } = input;
 
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) {
 		throw new TRPCError({
@@ -84,110 +98,87 @@ export const buatTokenPenggantian = (input: {
 		});
 	}
 
-	const exp = dayjs.tz(tanggal, TIMEZONE_BISNIS).endOf("day").valueOf();
-
-	// Key dipendekkan supaya token tidak terlalu panjang saat dikirim lewat chat
-	const body = Buffer.from(
-		JSON.stringify({
-			j: jadwalKelasId,
-			a: guruAsliId,
-			p: guruPenggantiId,
-			t: tanggal,
-			e: exp,
-		}),
-	).toString("base64url");
+	const kode = hitungKode(input);
 
 	return {
-		token: `${VERSI}.${body}.${tandatangani(body)}`,
-		kedaluwarsa: new Date(exp),
+		kode,
+		kodeFormat: formatKodePenggantian(kode),
+		kedaluwarsa: dayjs.tz(tanggal, TIMEZONE_BISNIS).endOf("day").toDate(),
 	};
 };
 
+const samaPersis = (a: string, b: string): boolean => {
+	const ba = Buffer.from(a);
+	const bb = Buffer.from(b);
+	return ba.length === bb.length && timingSafeEqual(ba, bb);
+};
+
 /**
- * Memverifikasi token. Melempar TRPCError jika tidak valid, bukan milik
- * `guruPenggantiId`, sudah kedaluwarsa, atau bukan untuk tanggal hari ini.
+ * Memverifikasi kode yang dimasukkan guru pengganti.
+ *
+ * @param kodeMentah          input guru (spasi/strip diabaikan)
+ * @param jadwalKelasId       jadwal yang akan dimulai
+ * @param guruPenggantiId     user yang sedang login
+ * @param kandidatGuruAsliIds guru yang sedang bertugas (ACTIVE) di kelas itu
+ * @returns guru asli yang menerbitkan kode + tanggal berlaku (hari ini)
+ *
+ * Melempar TRPCError jika format salah, kode tidak cocok, atau kode
+ * ternyata untuk tanggal lain.
  */
-export const verifikasiTokenPenggantian = (
-	tokenMentah: string,
-	guruPenggantiId: string,
-): PayloadPenggantian => {
-	// Token sering ikut membawa spasi/baris baru saat di-copy dari chat
-	const token = tokenMentah.replace(/\s+/g, "");
-	const bagian = token.split(".");
+export const verifikasiKodePenggantian = (
+	kodeMentah: string,
+	input: {
+		jadwalKelasId: string;
+		guruPenggantiId: string;
+		kandidatGuruAsliIds: string[];
+	},
+): { guruAsliId: string; tanggal: string } => {
+	const kode = kodeMentah.replace(/[\s-]/g, "");
 
-	if (bagian.length !== 3 || bagian[0] !== VERSI) {
+	if (!new RegExp(`^\\d{${PANJANG_KODE_PENGGANTI}}$`).test(kode)) {
 		throw new TRPCError({
 			code: "BAD_REQUEST",
-			message: "Format kode pengganti tidak valid.",
+			message: `Kode pengganti harus ${PANJANG_KODE_PENGGANTI} digit angka.`,
 		});
 	}
 
-	const body = bagian[1] as string;
-	const tandaTangan = Buffer.from(bagian[2] as string);
-	const diharapkan = Buffer.from(tandatangani(body));
+	const hariIni = tanggalHariIni();
 
-	if (
-		tandaTangan.length !== diharapkan.length ||
-		!timingSafeEqual(tandaTangan, diharapkan)
-	) {
-		throw new TRPCError({
-			code: "FORBIDDEN",
-			message: "Kode pengganti tidak valid.",
-		});
-	}
-
-	let mentah: unknown;
-	try {
-		mentah = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-	} catch {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Isi kode pengganti rusak.",
-		});
-	}
-
-	const p = mentah as Record<string, unknown>;
-	if (
-		typeof p.j !== "string" ||
-		typeof p.a !== "string" ||
-		typeof p.p !== "string" ||
-		typeof p.t !== "string" ||
-		typeof p.e !== "number"
-	) {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Isi kode pengganti rusak.",
-		});
-	}
-
-	const payload: PayloadPenggantian = {
-		jadwalKelasId: p.j,
-		guruAsliId: p.a,
-		guruPenggantiId: p.p,
-		tanggal: p.t,
-		exp: p.e,
+	const cari = (tanggal: string): string | null => {
+		let ditemukan: string | null = null;
+		// Tidak berhenti di kecocokan pertama supaya waktu proses tetap konstan
+		for (const guruAsliId of input.kandidatGuruAsliIds) {
+			const harapan = hitungKode({
+				jadwalKelasId: input.jadwalKelasId,
+				guruAsliId,
+				guruPenggantiId: input.guruPenggantiId,
+				tanggal,
+			});
+			if (samaPersis(kode, harapan)) ditemukan = guruAsliId;
+		}
+		return ditemukan;
 	};
 
-	if (payload.guruPenggantiId !== guruPenggantiId) {
-		throw new TRPCError({
-			code: "FORBIDDEN",
-			message: "Kode ini diterbitkan untuk guru lain.",
-		});
+	const guruAsliId = cari(hariIni);
+	if (guruAsliId) return { guruAsliId, tanggal: hariIni };
+
+	// Bantu pengguna: apakah kode ini ternyata untuk hari lain (maks. 7 hari ke depan)?
+	for (let i = 1; i <= MAKS_HARI_KE_DEPAN; i++) {
+		const tanggal = dayjs()
+			.tz(TIMEZONE_BISNIS)
+			.add(i, "day")
+			.format(FORMAT_TANGGAL);
+		if (cari(tanggal)) {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: `Kode ini hanya berlaku pada tanggal ${tanggal}.`,
+			});
+		}
 	}
 
-	if (Date.now() > payload.exp) {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: "Kode pengganti sudah kedaluwarsa.",
-		});
-	}
-
-	if (payload.tanggal !== tanggalHariIni()) {
-		throw new TRPCError({
-			code: "BAD_REQUEST",
-			message: `Kode ini hanya berlaku pada tanggal ${payload.tanggal}.`,
-		});
-	}
-
-	return payload;
+	throw new TRPCError({
+		code: "FORBIDDEN",
+		message:
+			"Kode pengganti salah, bukan untuk akun/jadwal ini, atau sudah tidak berlaku.",
+	});
 };

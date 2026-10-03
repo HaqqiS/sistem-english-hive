@@ -138,13 +138,11 @@ function getEventUjian(pertemuanKe: number): EventUjian | null {
 	return null;
 }
 
-/**
- * Mengambil kode pengganti dari teks yang ditempel. Guru pengganti boleh
- * menempel seluruh pesan WhatsApp — kodenya (EHP1.xxx.yyy) diambil otomatis.
- */
-function ekstrakKodePengganti(teks: string): string {
-	const cocok = teks.match(/EHP1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
-	return cocok ? cocok[0] : teks.trim();
+/** "48210937" → "4821 0937" (tampilan input kode pengganti). */
+function formatKodeTampil(digits: string): string {
+	return digits.length > 4
+		? `${digits.slice(0, 4)} ${digits.slice(4)}`
+		: digits;
 }
 
 export default function GuruDashboardClient() {
@@ -265,9 +263,7 @@ export default function GuruDashboardClient() {
 			status: StatusAbsenGuru.HADIR,
 			overrideRuangId: pendingStartData.ruangId,
 			// Di Mode Guru Pengganti, sesi hanya bisa dimulai dengan kode dari guru asli
-			tokenPengganti: selectedGuruId
-				? ekstrakKodePengganti(kodePengganti)
-				: undefined,
+			tokenPengganti: selectedGuruId ? kodePengganti : undefined,
 		});
 	};
 
@@ -300,9 +296,9 @@ export default function GuruDashboardClient() {
 				`Kode pengganti kelas ${hasilKode.kodeKelas}`,
 				`Tanggal: ${dayjs(hasilKode.tanggal).format("dddd, D MMMM YYYY")}`,
 				"",
-				hasilKode.token,
+				`KODE: ${hasilKode.kodeFormat}`,
 				"",
-				`Cara pakai: buka portal guru → "Guru Pengganti" → pilih ${session?.user.name ?? "nama saya"} → Mulai Sesi → tempel kode ini.`,
+				`Cara pakai: buka portal guru → "Guru Pengganti" → pilih ${session?.user.name ?? "nama saya"} → Mulai Sesi → ketik kode 8 digit di atas.`,
 				`Kode hanya berlaku untuk akun ${hasilKode.namaGuruPengganti ?? "guru pengganti"} pada tanggal tersebut.`,
 			].join("\n")
 		: "";
@@ -310,10 +306,10 @@ export default function GuruDashboardClient() {
 	const handleSalinKode = async () => {
 		if (!hasilKode) return;
 		try {
-			await navigator.clipboard.writeText(hasilKode.token);
+			await navigator.clipboard.writeText(hasilKode.kodeFormat);
 			toast.success("Kode disalin");
 		} catch {
-			toast.error("Gagal menyalin. Salin manual dari kolom kode.");
+			toast.error("Gagal menyalin. Catat kode yang tampil di layar.");
 		}
 	};
 
@@ -775,18 +771,12 @@ export default function GuruDashboardClient() {
 											variant="outline"
 											className="h-11 w-full border-yellow-500 bg-background text-base text-yellow-700 hover:bg-yellow-50 hover:text-yellow-700 dark:border-yellow-700 dark:text-yellow-500 dark:hover:bg-yellow-950"
 											onClick={() =>
-												selectedGuruId
-													? handleMulaiSesiClick(jadwal, undefined)
-													: router.push(
-															`/guru/absen/${jadwal.sesiIdSudahDibuat}`,
-														)
+												router.push(`/guru/absen/${jadwal.sesiIdSudahDibuat}`)
 											}
 											disabled={isStartingSesi}
 										>
 											<Play className="mr-2 h-5 w-5" />
-											{selectedGuruId
-												? "Lanjutkan sebagai Pengganti"
-												: "Lanjutkan Absensi"}
+											Lanjutkan Absensi
 										</Button>
 									) : state === "gabung" ? (
 										// Sesi sudah dibuat guru lain — guru ini (mis. asisting)
@@ -977,18 +967,21 @@ export default function GuruDashboardClient() {
 								{pendingStartData?.jadwal.kodeKelas}
 							</span>{" "}
 							milik <span className="font-bold">{activeGuruName}</span>.
-							Masukkan kode pengganti yang diberikan oleh {activeGuruName}.
+							Masukkan kode 8 digit yang diberikan oleh {activeGuruName}.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="grid gap-2 py-2">
-						<Label htmlFor="kode-pengganti">Kode pengganti</Label>
+						<Label htmlFor="kode-pengganti">Kode pengganti (8 digit)</Label>
 						<Input
 							id="kode-pengganti"
-							value={kodePengganti}
-							onChange={(e) => setKodePengganti(e.target.value)}
-							placeholder="Tempel kode (atau seluruh pesannya) di sini"
-							autoComplete="off"
-							className="font-mono text-xs"
+							inputMode="numeric"
+							autoComplete="one-time-code"
+							value={formatKodeTampil(kodePengganti)}
+							onChange={(e) =>
+								setKodePengganti(e.target.value.replace(/\D/g, "").slice(0, 8))
+							}
+							placeholder="0000 0000"
+							className="text-center font-mono text-2xl tracking-widest"
 						/>
 						<p className="text-muted-foreground text-xs">
 							Belum punya kode? Minta {activeGuruName} membuka dashboard-nya,
@@ -1016,7 +1009,7 @@ export default function GuruDashboardClient() {
 						<Button
 							type="button"
 							onClick={handleConfirmStartSesi}
-							disabled={isStartingSesi || !kodePengganti.trim()}
+							disabled={isStartingSesi || kodePengganti.length !== 8}
 						>
 							{isStartingSesi ? (
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1057,12 +1050,9 @@ export default function GuruDashboardClient() {
 								, berlaku {dayjs(hasilKode.tanggal).format("dddd, D MMMM YYYY")}{" "}
 								(sampai pukul 23.59 WITA).
 							</p>
-							<Input
-								readOnly
-								value={hasilKode.token}
-								onFocus={(e) => e.currentTarget.select()}
-								className="font-mono text-xs"
-							/>
+							<p className="bg-muted rounded-xl py-4 text-center font-mono text-4xl font-bold tracking-widest">
+								{hasilKode.kodeFormat}
+							</p>
 							<div className="grid grid-cols-2 gap-2">
 								<Button
 									type="button"

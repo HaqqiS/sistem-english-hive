@@ -7,8 +7,9 @@ vi.mock("@/env", () => ({
 }));
 
 import {
-	buatTokenPenggantian,
-	verifikasiTokenPenggantian,
+	buatKodePenggantian,
+	formatKodePenggantian,
+	verifikasiKodePenggantian,
 } from "../../server/services/penggantian-token.service";
 
 const hariIni = () => dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM-DD");
@@ -21,77 +22,129 @@ const dasar = {
 	guruPenggantiId: "guru-pengganti",
 };
 
-describe("Penggantian Token Service", () => {
+const konteks = {
+	jadwalKelasId: "jadwal-1",
+	guruPenggantiId: "guru-pengganti",
+	kandidatGuruAsliIds: ["guru-lain-di-kelas", "guru-asli"],
+};
+
+describe("Penggantian Kode Service (kode 8 digit)", () => {
 	afterEach(() => {
 		vi.useRealTimers();
 	});
 
-	it("token valid untuk guru pengganti yang tepat di hari yang tepat", () => {
-		const { token } = buatTokenPenggantian({ ...dasar, tanggal: hariIni() });
-		const payload = verifikasiTokenPenggantian(token, "guru-pengganti");
+	it("menghasilkan kode 8 digit angka dan deterministik", () => {
+		const a = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
+		const b = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
 
-		expect(payload.jadwalKelasId).toBe("jadwal-1");
-		expect(payload.guruAsliId).toBe("guru-asli");
-		expect(payload.tanggal).toBe(hariIni());
+		expect(a.kode).toMatch(/^\d{8}$/);
+		expect(a.kode).toBe(b.kode);
+		expect(a.kodeFormat).toBe(formatKodePenggantian(a.kode));
+		expect(a.kodeFormat).toMatch(/^\d{4} \d{4}$/);
 	});
 
-	it("menerima token yang terbawa spasi/baris baru dari chat", () => {
-		const { token } = buatTokenPenggantian({ ...dasar, tanggal: hariIni() });
-		const kotor = ` ${token.slice(0, 20)}\n${token.slice(20)} `;
-		expect(() =>
-			verifikasiTokenPenggantian(kotor, "guru-pengganti"),
-		).not.toThrow();
+	it("kode valid dan mengenali guru asli yang benar dari beberapa kandidat", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
+		const hasil = verifikasiKodePenggantian(kode, konteks);
+
+		expect(hasil.guruAsliId).toBe("guru-asli");
+		expect(hasil.tanggal).toBe(hariIni());
 	});
 
-	it("menolak guru lain yang memakai token", () => {
-		const { token } = buatTokenPenggantian({ ...dasar, tanggal: hariIni() });
-		expect(() => verifikasiTokenPenggantian(token, "guru-lain")).toThrow(
-			/guru lain/,
+	it("spasi dan tanda strip pada input diabaikan", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
+		const spasi = `${kode.slice(0, 4)} ${kode.slice(4)}`;
+		const strip = ` ${kode.slice(0, 4)}-${kode.slice(4)} `;
+
+		expect(verifikasiKodePenggantian(spasi, konteks).guruAsliId).toBe(
+			"guru-asli",
+		);
+		expect(verifikasiKodePenggantian(strip, konteks).guruAsliId).toBe(
+			"guru-asli",
 		);
 	});
 
-	it("menolak token yang payload-nya diubah (tanda tangan tidak cocok)", () => {
-		const { token } = buatTokenPenggantian({ ...dasar, tanggal: hariIni() });
-		const [versi, body, sig] = token.split(".") as [string, string, string];
-		const rusak = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-		rusak.p = "guru-lain";
-		const bodyBaru = Buffer.from(JSON.stringify(rusak)).toString("base64url");
-
+	it("menolak guru lain yang memakai kode", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
 		expect(() =>
-			verifikasiTokenPenggantian(`${versi}.${bodyBaru}.${sig}`, "guru-lain"),
-		).toThrow(/tidak valid/);
+			verifikasiKodePenggantian(kode, {
+				...konteks,
+				guruPenggantiId: "guru-lain",
+			}),
+		).toThrow(/salah/);
 	});
 
-	it("menolak format sembarang", () => {
-		expect(() => verifikasiTokenPenggantian("abc", "x")).toThrow(/Format/);
-		expect(() => verifikasiTokenPenggantian("EHP1.a.b", "x")).toThrow();
+	it("menolak kode untuk jadwal yang berbeda", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
+		expect(() =>
+			verifikasiKodePenggantian(kode, {
+				...konteks,
+				jadwalKelasId: "jadwal-2",
+			}),
+		).toThrow(/salah/);
 	});
 
-	it("token untuk tanggal besok belum bisa dipakai hari ini", () => {
-		const { token } = buatTokenPenggantian({ ...dasar, tanggal: hariKe(1) });
-		expect(() => verifikasiTokenPenggantian(token, "guru-pengganti")).toThrow(
-			/hanya berlaku pada tanggal/,
+	it("menolak jika guru penerbit bukan kandidat (tidak lagi bertugas di kelas)", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
+		expect(() =>
+			verifikasiKodePenggantian(kode, {
+				...konteks,
+				kandidatGuruAsliIds: ["guru-lain-di-kelas"],
+			}),
+		).toThrow(/salah/);
+	});
+
+	it("menolak kode yang salah angka", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
+		const salah = String((Number(kode) + 1) % 1e8).padStart(8, "0");
+		expect(() => verifikasiKodePenggantian(salah, konteks)).toThrow(/salah/);
+	});
+
+	it("menolak format yang bukan 8 digit angka", () => {
+		expect(() => verifikasiKodePenggantian("1234", konteks)).toThrow(/8 digit/);
+		expect(() => verifikasiKodePenggantian("abcd efgh", konteks)).toThrow(
+			/8 digit/,
+		);
+		expect(() => verifikasiKodePenggantian("123456789", konteks)).toThrow(
+			/8 digit/,
 		);
 	});
 
-	it("token kedaluwarsa setelah tanggalnya lewat", () => {
-		const { token } = buatTokenPenggantian({ ...dasar, tanggal: hariIni() });
+	it("kode untuk besok belum bisa dipakai hari ini dan memberi tahu tanggalnya", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariKe(1) });
+		expect(() => verifikasiKodePenggantian(kode, konteks)).toThrow(
+			new RegExp(`hanya berlaku pada tanggal ${hariKe(1)}`),
+		);
+	});
+
+	it("kode hari ini tidak berlaku lagi setelah tanggalnya lewat", () => {
+		const { kode } = buatKodePenggantian({ ...dasar, tanggal: hariIni() });
 		vi.useFakeTimers();
 		vi.setSystemTime(dayjs().add(2, "day").toDate());
-		expect(() => verifikasiTokenPenggantian(token, "guru-pengganti")).toThrow(
-			/kedaluwarsa/,
-		);
+		expect(() => verifikasiKodePenggantian(kode, konteks)).toThrow(/salah/);
 	});
 
-	it("menolak membuat token untuk tanggal lampau atau terlalu jauh", () => {
+	it("kedaluwarsa = akhir hari tanggal berlaku (WITA)", () => {
+		const { kedaluwarsa } = buatKodePenggantian({
+			...dasar,
+			tanggal: hariKe(1),
+		});
+		const akhirHari = dayjs
+			.tz(hariKe(1), TIMEZONE_BISNIS)
+			.endOf("day")
+			.valueOf();
+		expect(kedaluwarsa.getTime()).toBe(akhirHari);
+	});
+
+	it("menolak membuat kode untuk tanggal lampau, terlalu jauh, atau format salah", () => {
 		expect(() =>
-			buatTokenPenggantian({ ...dasar, tanggal: hariKe(-1) }),
+			buatKodePenggantian({ ...dasar, tanggal: hariKe(-1) }),
 		).toThrow(/masa lalu/);
+		expect(() => buatKodePenggantian({ ...dasar, tanggal: hariKe(8) })).toThrow(
+			/maksimal/,
+		);
 		expect(() =>
-			buatTokenPenggantian({ ...dasar, tanggal: hariKe(8) }),
-		).toThrow(/maksimal/);
-		expect(() =>
-			buatTokenPenggantian({ ...dasar, tanggal: "05-10-2026" }),
+			buatKodePenggantian({ ...dasar, tanggal: "05-10-2026" }),
 		).toThrow(/Format tanggal/);
 	});
 });

@@ -33,7 +33,7 @@ export const serverStartSesiSchema = z.object({
 	/** ID Ruang override (opsional, jika pindah ruang) */
 	overrideRuangId: z.string().cuid("ID Ruang tidak valid").optional(),
 	/**
-	 * Kode pengganti dari guru asli (opsional). Hanya dipakai jika guru yang
+	 * Kode pengganti 8 digit dari guru asli (opsional). Hanya dipakai jika guru yang
 	 * menekan "Mulai Sesi" tidak ditugaskan di kelas ini.
 	 */
 	tokenPengganti: z.string().min(1, "Kode pengganti kosong").optional(),
@@ -59,10 +59,6 @@ export type TypeBuatTokenPenggantiSchema = z.infer<
 /** Tipe hasil penerbitan kode pengganti */
 export type TypeBuatTokenPenggantiOutput =
 	RouterOutputs["absenGuru"]["buatTokenPengganti"];
-
-/** Tipe hasil pengecekan kode pengganti oleh guru pengganti */
-export type TypeCekTokenPenggantiOutput =
-	RouterOutputs["absenGuru"]["cekTokenPengganti"];
 
 /**
  * SCHEMA: UPDATE (Edit Absensi Lengkap)

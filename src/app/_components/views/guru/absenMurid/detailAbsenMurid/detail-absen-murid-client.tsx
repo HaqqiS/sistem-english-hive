@@ -1,14 +1,7 @@
 "use client";
 
 import { StatusAbsenMurid } from "@prisma/client";
-import {
-	CalendarDays,
-	GraduationCap,
-	Loader2,
-	School,
-	Terminal,
-	User,
-} from "lucide-react";
+import { Loader2, School, Terminal } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -25,29 +18,11 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BATAS_SESI } from "@/constants/pembayaran";
-import { PERTEMUAN_FINAL_TEST } from "@/constants/sesi-event";
 import { useAbsenMurid } from "@/hooks/useAbsenMurid";
 import { formatToWITA } from "@/utils/dateUtils";
 import { createDetailAbsenMuridColumns } from "./columns-detail-absen";
-
-const CONFETTI = [
-	{ id: "c1", left: 6, delay: 0, color: "#f59e0b" },
-	{ id: "c2", left: 14, delay: 0.5, color: "#ef4444" },
-	{ id: "c3", left: 22, delay: 0.2, color: "#8b5cf6" },
-	{ id: "c4", left: 30, delay: 0.9, color: "#10b981" },
-	{ id: "c5", left: 38, delay: 0.3, color: "#3b82f6" },
-	{ id: "c6", left: 46, delay: 1.1, color: "#f59e0b" },
-	{ id: "c7", left: 54, delay: 0.6, color: "#ec4899" },
-	{ id: "c8", left: 62, delay: 0.1, color: "#10b981" },
-	{ id: "c9", left: 70, delay: 0.8, color: "#8b5cf6" },
-	{ id: "c10", left: 78, delay: 0.4, color: "#ef4444" },
-	{ id: "c11", left: 86, delay: 1, color: "#3b82f6" },
-	{ id: "c12", left: 94, delay: 0.7, color: "#f59e0b" },
-];
 
 export default function DetailAbsenMuridClient() {
 	const { sesiId } = useParams<{ sesiId: string }>();
@@ -55,19 +30,7 @@ export default function DetailAbsenMuridClient() {
 	const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 	const [successState, setSuccessState] = useState<{
 		isFinished: boolean;
-		totalSesi: number;
-		nextKelas: {
-			kodeKelas: string;
-			level: number;
-			jenisKelasNama: string;
-			mulaiPada: string | null;
-			gurus: { id: string; name: string; peran: string }[];
-		} | null;
 	} | null>(null);
-
-	// Pertemuan 23 & 24: tampilkan info kelas level berikutnya, jangan auto-redirect
-	const showLevelInfo =
-		!!successState && successState.totalSesi >= PERTEMUAN_FINAL_TEST;
 
 	const { data, isLoading, isError, error, mutations } = useAbsenMurid({
 		sesiId,
@@ -102,10 +65,10 @@ export default function DetailAbsenMuridClient() {
 
 	// Setelah animasi sukses tampil sebentar, arahkan kembali ke dashboard guru
 	useEffect(() => {
-		if (!successState || showLevelInfo) return;
+		if (!successState) return;
 		const timer = setTimeout(() => router.push("/guru"), 2000);
 		return () => clearTimeout(timer);
-	}, [successState, showLevelInfo, router]);
+	}, [successState, router]);
 
 	const columns = useMemo(
 		() =>
@@ -129,11 +92,7 @@ export default function DetailAbsenMuridClient() {
 				toast.success("Sesi absensi selesai.");
 			}
 
-			setSuccessState({
-				isFinished: result.isFinished,
-				totalSesi: result.totalSesi,
-				nextKelas: result.nextKelas,
-			});
+			setSuccessState({ isFinished: result.isFinished });
 		} catch (e) {
 			console.error(e);
 		}
@@ -344,22 +303,8 @@ export default function DetailAbsenMuridClient() {
 				<div
 					role="status"
 					aria-live="polite"
-					className="absen-success-overlay bg-background/95 fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 overflow-y-auto px-6 py-8 backdrop-blur-sm"
+					className="absen-success-overlay bg-background/95 fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 backdrop-blur-sm"
 				>
-					{showLevelInfo &&
-						CONFETTI.map((c) => (
-							<span
-								key={c.id}
-								aria-hidden="true"
-								className="absen-confetti pointer-events-none fixed top-0 h-2.5 w-1.5 rounded-sm"
-								style={{
-									left: `${c.left}%`,
-									backgroundColor: c.color,
-									animationDelay: `${c.delay}s`,
-								}}
-							/>
-						))}
-
 					<svg
 						className="absen-success-icon text-primary"
 						viewBox="0 0 52 52"
@@ -385,106 +330,14 @@ export default function DetailAbsenMuridClient() {
 							strokeLinejoin="round"
 						/>
 					</svg>
-
 					<div className="absen-success-text text-center">
-						<p className="text-xl font-semibold">
-							{showLevelInfo ? "Absensi Selesai!" : "Absensi Tersimpan!"}
-						</p>
-						<p className="text-muted-foreground mx-auto mt-1 max-w-xs text-sm">
-							{showLevelInfo
-								? successState.nextKelas
-									? successState.isFinished
-										? "Seluruh sesi kelas ini telah selesai. Kelas level baru akan segera dimulai."
-										: `Pertemuan ke-${successState.totalSesi} selesai. Kelas level baru akan segera dimulai setelah pertemuan ke-${BATAS_SESI}.`
-									: "Seluruh sesi kelas ini telah selesai."
-								: successState.isFinished
-									? "Seluruh sesi kelas telah selesai."
-									: "Mengalihkan ke dashboard..."}
+						<p className="text-xl font-semibold">Absensi Tersimpan!</p>
+						<p className="text-muted-foreground mt-1 text-sm">
+							{successState.isFinished
+								? "Seluruh sesi kelas telah selesai."
+								: "Mengalihkan ke dashboard..."}
 						</p>
 					</div>
-
-					{showLevelInfo && (
-						<div className="absen-success-card w-full max-w-sm space-y-4">
-							{successState.nextKelas && (
-								<div className="bg-card space-y-3 rounded-2xl border p-4 text-left shadow-sm">
-									<div className="flex items-start gap-3">
-										<div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-											<GraduationCap className="h-4 w-4" />
-										</div>
-										<div className="min-w-0">
-											<p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-												Kelas Baru
-											</p>
-											<p className="text-sm leading-snug font-semibold break-words">
-												{successState.nextKelas.kodeKelas}
-											</p>
-										</div>
-									</div>
-
-									<div className="flex items-start gap-3">
-										<div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-											<CalendarDays className="h-4 w-4" />
-										</div>
-										<div className="min-w-0">
-											<p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-												Tanggal Penugasan Guru
-											</p>
-											<p className="text-sm font-semibold">
-												{successState.nextKelas.mulaiPada
-													? formatToWITA(
-															successState.nextKelas.mulaiPada,
-															"dddd, D MMMM YYYY",
-														)
-													: `Setelah pertemuan ke-${BATAS_SESI} selesai`}
-											</p>
-										</div>
-									</div>
-
-									<div className="flex items-start gap-3">
-										<div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-											<User className="h-4 w-4" />
-										</div>
-										<div className="min-w-0">
-											<p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-												Guru Selanjutnya
-											</p>
-											{successState.nextKelas.gurus.length > 0 ? (
-												<ul className="space-y-1">
-													{successState.nextKelas.gurus.map((g) => (
-														<li
-															key={g.id}
-															className="flex flex-wrap items-center gap-1.5 text-sm font-semibold"
-														>
-															{g.name}
-															{g.peran === "ASISTING" && (
-																<Badge
-																	variant="secondary"
-																	className="h-4 px-1.5 text-[10px]"
-																>
-																	Asisting
-																</Badge>
-															)}
-														</li>
-													))}
-												</ul>
-											) : (
-												<p className="text-sm font-semibold">
-													Belum ditentukan
-												</p>
-											)}
-										</div>
-									</div>
-								</div>
-							)}
-
-							<Button
-								className="h-12 w-full text-base"
-								onClick={() => router.push("/guru")}
-							>
-								Oke
-							</Button>
-						</div>
-					)}
 				</div>
 			)}
 
@@ -502,16 +355,12 @@ export default function DetailAbsenMuridClient() {
 					animation: absen-draw 0.4s ease-out 0.55s forwards;
 				}
 				.absen-success-text { animation: absen-rise 0.5s ease-out 0.75s both; }
-				.absen-success-card { animation: absen-rise 0.5s ease-out 1s both; }
-				.absen-confetti { animation: absen-fall 2.6s ease-in infinite; }
-				@keyframes absen-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(105vh) rotate(540deg); opacity: 0.9; } }
 				@keyframes absen-fade-in { from { opacity: 0; } to { opacity: 1; } }
 				@keyframes absen-pop { from { transform: scale(0.6); } to { transform: scale(1); } }
 				@keyframes absen-draw { to { stroke-dashoffset: 0; } }
 				@keyframes absen-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 				@media (prefers-reduced-motion: reduce) {
-					.absen-success-overlay, .absen-success-icon, .absen-success-text, .absen-success-card { animation: none; }
-					.absen-confetti { display: none; }
+					.absen-success-overlay, .absen-success-icon, .absen-success-text { animation: none; }
 					.absen-success-ring, .absen-success-check { animation: none; stroke-dashoffset: 0; }
 				}
 			`}</style>

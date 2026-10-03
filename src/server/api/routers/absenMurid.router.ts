@@ -322,76 +322,7 @@ export const absenMuridRouter = createTRPCRouter({
 					totalSesi,
 				);
 
-				// 4. Info kelas level berikutnya + guru penugasannya
-				// (ditampilkan di layar sukses pada pertemuan akhir).
-				// Aturan level sama dengan handleAutoLevelUp.
-				const kelasSaatIni = await tx.kelas.findUnique({
-					where: { id: sesi.kelasId },
-					select: {
-						cohortId: true,
-						level: true,
-						jenisKelasId: true,
-						jenisKelasRel: {
-							select: { nextLevel: { select: { id: true } } },
-						},
-					},
-				});
-
-				let nextKelas: {
-					kodeKelas: string;
-					level: number;
-					jenisKelasNama: string;
-					mulaiPada: string | null;
-					gurus: { id: string; name: string; peran: string }[];
-				} | null = null;
-
-				if (kelasSaatIni) {
-					const naikProgram = kelasSaatIni.level >= 4;
-					const nextJenisId = naikProgram
-						? kelasSaatIni.jenisKelasRel?.nextLevel?.id
-						: kelasSaatIni.jenisKelasId;
-					const nextLevel = naikProgram ? 1 : kelasSaatIni.level + 1;
-
-					if (nextJenisId) {
-						const k = await tx.kelas.findFirst({
-							where: {
-								cohortId: kelasSaatIni.cohortId,
-								jenisKelasId: nextJenisId,
-								level: nextLevel,
-							},
-							select: {
-								kodeKelas: true,
-								level: true,
-								jenisKelasRel: { select: { nama: true } },
-								historyGuruKelases: {
-									where: { statusGuru: "ACTIVE" },
-									select: {
-										peran: true,
-										mulaiPada: true,
-										guru: { select: { id: true, name: true } },
-									},
-								},
-							},
-						});
-
-						if (k) {
-							const mulai = k.historyGuruKelases.find((h) => h.mulaiPada);
-							nextKelas = {
-								kodeKelas: k.kodeKelas,
-								level: k.level,
-								jenisKelasNama: k.jenisKelasRel?.nama ?? "",
-								mulaiPada: mulai?.mulaiPada ? String(mulai.mulaiPada) : null,
-								gurus: k.historyGuruKelases.map((h) => ({
-									id: h.guru.id,
-									name: h.guru.name ?? "-",
-									peran: h.peran,
-								})),
-							};
-						}
-					}
-				}
-
-				return { success: true, isFinished, totalSesi, nextKelas };
+				return { success: true, isFinished };
 			});
 		}),
 });

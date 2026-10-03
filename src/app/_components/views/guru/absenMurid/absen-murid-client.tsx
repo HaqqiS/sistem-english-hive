@@ -3,29 +3,23 @@
 import {
 	CalendarDays,
 	ChevronRight,
-	Clock,
-	FileText,
+	GraduationCap,
 	School,
+	Search,
 	Users,
 } from "lucide-react";
 import Link from "next/link";
-import React from "react";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useKelas } from "@/hooks/useKelas";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { formatToWITA } from "@/utils/dateUtils";
 
 export default function AbsenMuridClient() {
+	const [search, setSearch] = useState("");
 	const { activeCabangId } = useGlobalCabangStore();
 	const { dataWithSesi: dataKelas, isLoadingWithSesi } = useKelas({
 		enableQueryGetKelasWithSesi: true,
@@ -76,119 +70,91 @@ export default function AbsenMuridClient() {
 			</Card>
 		);
 	}
+	const kelasTampil = dataKelas.filter((k) =>
+		k.kodeKelas.toLowerCase().includes(search.trim().toLowerCase()),
+	);
+
 	return (
-		<div className="space-y-6">
-			<Accordion type="multiple" className="w-full space-y-4">
-				{dataKelas.map((kelas) => {
-					const totalSesi = kelas.sesiPertemuanKelases.length;
+		<div className="space-y-3">
+			{dataKelas.length > 4 && (
+				<div className="relative">
+					<Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+					<Input
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						placeholder="Cari kelas..."
+						className="h-11 pl-9"
+					/>
+				</div>
+			)}
 
-					return (
-						<Card
-							className="overflow-hidden py-0 transition-all hover:shadow-sm"
-							key={kelas.id}
-						>
-							<CardContent className="p-0">
-								<AccordionItem
-									value={`item-${kelas.id}`}
-									className="border-none"
-								>
-									<AccordionTrigger className="hover:bg-muted/50 items-center px-6 py-4 transition-colors hover:no-underline">
-										<div className="flex flex-1 items-center justify-between pr-4">
-											<div className="flex items-center gap-3">
-												<div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
-													<Users className="h-5 w-5" />
-												</div>
-												<div className="text-left">
-													<p className="text-base font-semibold">
-														{kelas.kodeKelas}
-													</p>
-													<p className="text-muted-foreground text-xs">
-														Guru:{" "}
-														{kelas.historyGuruKelases[0]?.guru.name ??
-															"Belum Ditugaskan"}
-													</p>
-												</div>
-											</div>
-											<Badge variant="secondary" className="ml-auto sm:ml-0">
-												{totalSesi} Sesi
-											</Badge>
-										</div>
-									</AccordionTrigger>
+			{kelasTampil.length === 0 ? (
+				<p className="text-muted-foreground py-10 text-center text-sm">
+					Kelas tidak ditemukan.
+				</p>
+			) : (
+				<div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+					{kelasTampil.map((kelas) => {
+						const totalSesi = kelas.sesiPertemuanKelases.length;
+						const sesiTerakhir = kelas.sesiPertemuanKelases[0];
 
-									<AccordionContent className="pb-0">
-										<div className="bg-muted/10 flex flex-col border-t">
-											<div className="flex items-center justify-between border-b bg-muted/30 px-6 py-2">
-												<span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
-													Riwayat Sesi
-												</span>
-												<Button
-													variant="link"
-													size="sm"
-													asChild
-													className="h-auto p-0 text-xs"
-												>
-													<Link href={`/guru/absen/rekap/${kelas.id}`}>
-														<FileText className="mr-1 h-3 w-3" />
-														Lihat Rekap Presensi
-													</Link>
-												</Button>
-											</div>
-											{kelas.sesiPertemuanKelases.map((sesi, sesiIndex) => {
-												// Hitung pertemuan ke berapa (karena sort desc, index 0 adalah pertemuan terakhir)
-												const pertemuanKe = totalSesi - sesiIndex;
+						return (
+							<Link
+								key={kelas.id}
+								href={`/guru/absen/rekap/${kelas.id}`}
+								className="bg-card active:bg-muted/60 hover:bg-muted/30 flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition-colors"
+							>
+								<div className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-xl">
+									<Users className="h-5 w-5" />
+								</div>
 
-												return (
-													<React.Fragment key={sesi.id}>
-														<Link
-															href={`/guru/absen/${sesi.id}`}
-															className="group hover:bg-muted/50 block transition-all"
+								<div className="min-w-0 flex-1 space-y-1.5">
+									<p className="text-sm leading-snug font-semibold break-words">
+										{kelas.kodeKelas}
+									</p>
+									<div className="text-muted-foreground flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+										<GraduationCap className="h-3.5 w-3.5 shrink-0" />
+										{kelas.historyGuruKelases.length > 0 ? (
+											kelas.historyGuruKelases.map((h) => (
+												<span key={h.id} className="flex items-center gap-1">
+													{h.guru.name}
+													{h.peran === "ASISTING" && (
+														<Badge
+															variant="secondary"
+															className="h-4 px-1.5 text-[10px]"
 														>
-															<div className="flex w-full items-center justify-between px-6 py-4">
-																<div className="flex flex-col gap-1">
-																	<span className="text-primary flex items-center gap-2 text-sm font-medium">
-																		Pertemuan {pertemuanKe}
-																	</span>
-																	<div className="text-muted-foreground flex items-center gap-3 text-xs sm:text-sm">
-																		<span className="flex items-center gap-1">
-																			<CalendarDays className="h-3.5 w-3.5" />
-																			{formatToWITA(
-																				sesi.tanggalWaktu,
-																				"dddd, D MMMM YYYY",
-																			)}
-																		</span>
-																		<span className="hidden sm:inline">•</span>
-																		<span className="flex items-center gap-1">
-																			<Clock className="h-3.5 w-3.5" />
-																			{formatToWITA(sesi.tanggalWaktu, "HH:mm")}{" "}
-																			WITA
-																		</span>
-																	</div>
-																</div>
+															Asisting
+														</Badge>
+													)}
+												</span>
+											))
+										) : (
+											<span>Belum Ditugaskan</span>
+										)}
+									</div>
+									<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+										<Badge
+											variant="secondary"
+											className="h-6 rounded-full px-2.5 text-[11px] font-semibold"
+										>
+											{totalSesi} Pertemuan
+										</Badge>
+										{sesiTerakhir && (
+											<span className="text-muted-foreground flex items-center gap-1 text-[11px]">
+												<CalendarDays className="h-3 w-3" />
+												Terakhir{" "}
+												{formatToWITA(sesiTerakhir.tanggalWaktu, "D MMM YYYY")}
+											</span>
+										)}
+									</div>
+								</div>
 
-																<Button
-																	size="icon"
-																	variant="ghost"
-																	className="h-8 w-8 opacity-50 transition-opacity group-hover:opacity-100"
-																>
-																	<ChevronRight className="h-4 w-4" />
-																</Button>
-															</div>
-														</Link>
-														{/* Separator antar item, kecuali item terakhir */}
-														{sesiIndex < totalSesi - 1 && (
-															<Separator className="mx-6 w-auto opacity-50" />
-														)}
-													</React.Fragment>
-												);
-											})}
-										</div>
-									</AccordionContent>
-								</AccordionItem>
-							</CardContent>
-						</Card>
-					);
-				})}
-			</Accordion>
+								<ChevronRight className="text-muted-foreground h-5 w-5 shrink-0" />
+							</Link>
+						);
+					})}
+				</div>
+			)}
 		</div>
 	);
 }

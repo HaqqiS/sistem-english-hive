@@ -263,6 +263,8 @@ export const kelasRouter = createTRPCRouter({
 							statusGuru: "ACTIVE",
 						},
 						select: {
+							id: true,
+							peran: true,
 							guru: {
 								select: {
 									name: true,

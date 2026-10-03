@@ -14,7 +14,7 @@ export default async function AbsensiMuridPage() {
 				<div>
 					<h1 className="text-xl">Daftar Kelas Aktif</h1>
 					<p className="text-muted-foreground text-sm">
-						Pilih kelas untuk melakukan absensi
+						Pilih kelas untuk melihat rekap absensi
 					</p>
 				</div>
 			</header>

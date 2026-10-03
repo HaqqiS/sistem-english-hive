@@ -375,7 +375,6 @@ export default function DetailKelasClient() {
 				</div>
 			</div>
 
-
 			{/* --- KOLOM KIRI (UTAMA): Murid & Guru --- */}
 			<div className="space-y-8">
 				{/* HEADER & MURID */}
@@ -442,7 +441,9 @@ export default function DetailKelasClient() {
 				<div className="space-y-4">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div className="min-w-0">
-							<h1 className="truncate text-xl font-semibold">Riwayat Guru Pengajar</h1>
+							<h1 className="truncate text-xl font-semibold">
+								Riwayat Guru Pengajar
+							</h1>
 							<p className="text-muted-foreground text-sm">
 								Daftar guru yang pernah atau sedang mengajar.
 							</p>
@@ -485,7 +486,11 @@ export default function DetailKelasClient() {
 							/>
 						</div>
 					</div>
-					<DataTable data={dataGuruByKelasId ?? []} columns={columnsGuru} variant="card" />
+					<DataTable
+						data={dataGuruByKelasId ?? []}
+						columns={columnsGuru}
+						variant="card"
+					/>
 				</div>
 			</div>
 			{/* --- JADWAL KELAS: sekarang full-width, sejajar dengan Murid & Guru --- */}
@@ -504,45 +509,45 @@ export default function DetailKelasClient() {
 					</div>
 				</div>
 				<div className="p-6 pt-0">
-						{dataById?.jadwalKelas && dataById.jadwalKelas.length > 0 ? (
-							<div className="grid gap-3">
-								{dataById.jadwalKelas.map((j) => {
-									let timeRange = "-";
-									if (j.jamSlotTetap) {
-										timeRange = `${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai}`;
-									} else if (j.jamSlotCustom) {
-										timeRange = `${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai}`;
-									}
-									return (
-										<div
-											key={j.id}
-											className="bg-muted/30 border-primary/30 flex flex-wrap items-center justify-between gap-2 rounded-md border border-l-4 p-3 text-sm"
-										>
-											<div className="flex min-w-0 items-center gap-2 font-medium">
-												<CalendarDays className="text-primary h-4 w-4 shrink-0" />
-												<span className="truncate">{j.hari}</span>
-											</div>
-											<div className="text-right">
-												<div className="text-foreground font-mono text-xs font-medium whitespace-nowrap">
-													{timeRange}
-												</div>
-												{j.ruang && (
-													<div className="text-muted-foreground max-w-[160px] truncate text-xs">
-														{j.ruang.namaRuang}
-													</div>
-												)}
-											</div>
+					{dataById?.jadwalKelas && dataById.jadwalKelas.length > 0 ? (
+						<div className="grid gap-3">
+							{dataById.jadwalKelas.map((j) => {
+								let timeRange = "-";
+								if (j.jamSlotTetap) {
+									timeRange = `${j.jamSlotTetap.jamMulai} - ${j.jamSlotTetap.jamSelesai}`;
+								} else if (j.jamSlotCustom) {
+									timeRange = `${j.jamSlotCustom.jamMulai} - ${j.jamSlotCustom.jamSelesai}`;
+								}
+								return (
+									<div
+										key={j.id}
+										className="bg-muted/30 border-primary/30 flex flex-wrap items-center justify-between gap-2 rounded-md border border-l-4 p-3 text-sm"
+									>
+										<div className="flex min-w-0 items-center gap-2 font-medium">
+											<CalendarDays className="text-primary h-4 w-4 shrink-0" />
+											<span className="truncate">{j.hari}</span>
 										</div>
-									);
-								})}
-							</div>
-						) : (
-							<p className="text-muted-foreground text-sm italic">
-								Belum ada jadwal diatur.
-							</p>
-						)}
-					</div>
+										<div className="text-right">
+											<div className="text-foreground font-mono text-xs font-medium whitespace-nowrap">
+												{timeRange}
+											</div>
+											{j.ruang && (
+												<div className="text-muted-foreground max-w-[160px] truncate text-xs">
+													{j.ruang.namaRuang}
+												</div>
+											)}
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					) : (
+						<p className="text-muted-foreground text-sm italic">
+							Belum ada jadwal diatur.
+						</p>
+					)}
 				</div>
+			</div>
 
 			<div className="bg-card text-card-foreground rounded-xl border shadow-sm">
 				<div className="flex flex-row items-center gap-3 space-y-0 p-6">

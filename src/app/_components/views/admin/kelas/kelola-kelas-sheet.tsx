@@ -81,15 +81,18 @@ export function KelolaKelasSheet({
 	const { openDrawer: openPendaftaranDrawer } = usePendaftaranKelasStore();
 
 	// HOOKS/QUERIES & MUTATIONS — hanya jalan kalau kelasId ada & sheet terbuka
-	const { dataByKelasId, isLoadingByKelasId, mutations: pendaftaranKelasMutations } =
-		usePendaftaranKelas({
-			enableQuery: open && !!kelasId,
-			kelasId: kelasId ?? undefined,
-			onSuccessDelete() {
-				setDeletePendaftaranKelasDialogOpen(false);
-				setSelectedPendaftaranKelasToDelete(null);
-			},
-		});
+	const {
+		dataByKelasId,
+		isLoadingByKelasId,
+		mutations: pendaftaranKelasMutations,
+	} = usePendaftaranKelas({
+		enableQuery: open && !!kelasId,
+		kelasId: kelasId ?? undefined,
+		onSuccessDelete() {
+			setDeletePendaftaranKelasDialogOpen(false);
+			setSelectedPendaftaranKelasToDelete(null);
+		},
+	});
 
 	const {
 		dataById: dataGuruByKelasId,
@@ -181,7 +184,9 @@ export function KelolaKelasSheet({
 					className="w-full overflow-y-auto sm:max-w-2xl"
 				>
 					<SheetHeader>
-						<SheetTitle>Kelola Kelas {kodeKelas ? `· ${kodeKelas}` : ""}</SheetTitle>
+						<SheetTitle>
+							Kelola Kelas {kodeKelas ? `· ${kodeKelas}` : ""}
+						</SheetTitle>
 						<SheetDescription>
 							Tambah, edit, atau hapus murid & guru tanpa pindah halaman.
 						</SheetDescription>

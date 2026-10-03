@@ -50,6 +50,13 @@ import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "../columns/columns-detail-absen-guru";
 import { SlipGajiPDF } from "./slip-gaji-pdf";
 
+// Helper murni (tidak bergantung state/props) — didefinisikan di luar komponen
+// supaya referensinya stabil dan tidak perlu masuk dependency useMemo.
+const groupKey = (kodeKelas: string, peran: string) => `${kodeKelas}::${peran}`;
+
+const defaultRateFor = (peran: string) =>
+	peran === "ASISTING" ? GAJI_PER_SESI_ASISTING : GAJI_PER_SESI;
+
 export default function DetailGuruClient() {
 	const { guruId } = useParams<{ guruId: string }>();
 	const { activeCabangId } = useGlobalCabangStore();
@@ -60,12 +67,6 @@ export default function DetailGuruClient() {
 	// Rate gaji per (kode kelas + peran) — input manual oleh admin.
 	// Key: "KODEKELAS::PERAN", contoh "REGULAR ELEMENTARY 3-B::UTAMA"
 	const [rateByGroup, setRateByGroup] = useState<Record<string, number>>({});
-
-	const groupKey = (kodeKelas: string, peran: string) =>
-		`${kodeKelas}::${peran}`;
-
-	const defaultRateFor = (peran: string) =>
-		peran === "ASISTING" ? GAJI_PER_SESI_ASISTING : GAJI_PER_SESI;
 
 	// State untuk menyimpan bulan gaji yang dipilih (misal: November 2025)
 	const [month, setMonth] = useState<Date | undefined>(new Date());
@@ -142,15 +143,18 @@ export default function DetailGuruClient() {
 
 		const totalGaji = rekapPerKelas.reduce((sum, g) => {
 			const rate =
-				rateByGroup[groupKey(g.kodeKelas, g.peran)] ??
-				defaultRateFor(g.peran);
+				rateByGroup[groupKey(g.kodeKelas, g.peran)] ?? defaultRateFor(g.peran);
 			return sum + g.count * rate;
 		}, 0);
 
 		return { totalAbsen: totalHadir, totalGaji };
 	}, [rekapPerKelas, rateByGroup]);
 
-	const handleRateChange = (kodeKelas: string, peran: string, value: string) => {
+	const handleRateChange = (
+		kodeKelas: string,
+		peran: string,
+		value: string,
+	) => {
 		const num = Number(value.replace(/\D/g, "")) || 0;
 		setRateByGroup((prev) => ({
 			...prev,
@@ -253,16 +257,6 @@ export default function DetailGuruClient() {
 			</div>
 		);
 	}
-
-	// if (isErrorHistory) {
-	// 	return (
-	// 		<Alert variant="destructive">
-	// 			<AlertCircle className="h-4 w-4" />
-	// 			<AlertTitle>Gagal Memuat Data</AlertTitle>
-	// 			<AlertDescription>{errorHistory?.message}</AlertDescription>
-	// 		</Alert>
-	// 	);
-	// }
 
 	return (
 		<div className="space-y-4">

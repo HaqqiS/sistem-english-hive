@@ -450,7 +450,11 @@ export default function KelasTab() {
 				</div>
 			</header>
 
-			<Tabs value={activeTab} onValueChange={handleChangeTab} className="w-full">
+			<Tabs
+				value={activeTab}
+				onValueChange={handleChangeTab}
+				className="w-full"
+			>
 				<TabsList className="mb-2 flex w-full flex-wrap h-auto">
 					<TabsTrigger value="running" className="flex-1 min-w-[100px]">
 						Running ({dataKelasCount?.length ?? 0})

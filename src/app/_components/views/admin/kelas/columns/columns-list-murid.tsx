@@ -170,7 +170,9 @@ export const columns = ({
 	},
 	{
 		accessorKey: "tanggalMulai",
-		header: () => <div className="w-full md:text-center">Tanggal Masuk Kelas</div>,
+		header: () => (
+			<div className="w-full md:text-center">Tanggal Masuk Kelas</div>
+		),
 		cell: ({ row }) => (
 			<div className="md:text-center">
 				<div className="text-muted-foreground text-[11px] uppercase tracking-wide md:hidden">

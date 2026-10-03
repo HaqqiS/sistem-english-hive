@@ -190,15 +190,14 @@ export const historyGuruKelasRouter = createTRPCRouter({
 					return updatedRecord;
 				} else {
 					// Guru pengganti tidak boleh sudah aktif di kelas yang sama.
-					const existingActiveForNewGuru =
-						await db.historyGuruKelas.findFirst({
-							where: {
-								kelasId: oldRecord?.kelasId,
-								guruId: input.guruId,
-								statusGuru: "ACTIVE",
-								selesaiPada: null,
-							},
-						});
+					const existingActiveForNewGuru = await db.historyGuruKelas.findFirst({
+						where: {
+							kelasId: oldRecord?.kelasId,
+							guruId: input.guruId,
+							statusGuru: "ACTIVE",
+							selesaiPada: null,
+						},
+					});
 
 					if (existingActiveForNewGuru) {
 						throw new TRPCError({

@@ -78,34 +78,62 @@ export const authConfig: NextAuthConfig = {
 				password: { label: "Password", type: "password" },
 			},
 			async authorize(credentials): Promise<User | null> {
-				const headersList = await headers();
-				const ip = headersList.get("x-forwarded-for") ?? "127.0.0.1";
-
-				try {
-					await loginRateLimiter.consume(ip);
-				} catch {
-					throw new Error(
-						"Terlalu banyak percobaan login. Silakan coba lagi nanti.",
-					);
-				}
-
-				const { db } = await import("@/server/db");
-				const email = credentials?.email as string;
-				const password = credentials?.password as string;
+				const email = (credentials?.email as string | undefined)?.trim();
+				const password = credentials?.password as string | undefined;
 
 				if (!email || !password) {
 					throw new Error("Email dan password harus diisi");
 				}
 
-				const user = await db.user.findUnique({
-					where: { email },
-				});
+				// Ambil IP pertama saja (x-forwarded-for bisa berisi "client, proxy1, proxy2").
+				const headersList = await headers();
+				const ip =
+					headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+					"127.0.0.1";
 
-				if (!user) throw new Error("Email atau password salah");
-				if (!user.password) throw new Error("Email atau password salah");
+				// Key per IP + email, supaya satu kantor/sekolah (IP sama) tidak saling
+				// memblokir login guru lain.
+				const limiterKey = `${ip}:${email.toLowerCase()}`;
+
+				try {
+					await loginRateLimiter.consume(limiterKey);
+				} catch {
+					console.error("[auth] login diblokir rate limiter:", limiterKey);
+					throw new Error(
+						"Terlalu banyak percobaan login. Silakan coba lagi nanti.",
+					);
+				}
+
+				let user: Awaited<
+					ReturnType<typeof import("@/server/db")["db"]["user"]["findUnique"]>
+				>;
+				try {
+					const { db } = await import("@/server/db");
+					user = await db.user.findUnique({ where: { email } });
+				} catch (error) {
+					// Error database/env (mis. DATABASE_URL salah) — jangan sampai terlihat
+					// seperti "salah password". Cek log Railway untuk pesan ini.
+					console.error("[auth] gagal query database:", error);
+					throw new Error("Terjadi kesalahan server");
+				}
+
+				if (!user) {
+					console.error("[auth] user tidak ditemukan:", email);
+					throw new Error("Email atau password salah");
+				}
+				if (!user.password) {
+					console.error("[auth] user tidak punya password:", email);
+					throw new Error("Email atau password salah");
+				}
 
 				const valid = await compare(password, user.password);
-				if (!valid) throw new Error("Email atau password salah");
+				if (!valid) {
+					console.error("[auth] password tidak cocok:", email);
+					throw new Error("Email atau password salah");
+				}
+
+				// Login berhasil → reset hitungan percobaan untuk key ini.
+				await loginRateLimiter.delete(limiterKey);
 
 				// Return sesuai tipe User NextAuth (harus lengkap)
 				return {

@@ -51,6 +51,7 @@ export default function TambahKelas() {
 			guruId: "",
 			mulaiPada: "",
 			statusGuru: "ACTIVE",
+			peran: "UTAMA",
 			kelasId: "",
 		},
 	});

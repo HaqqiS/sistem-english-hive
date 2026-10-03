@@ -50,6 +50,26 @@ export const columns = ({
 	},
 
 	{
+		accessorKey: "peran",
+		header: "Peran",
+		cell: ({ row }) => {
+			const peran = row.original.peran;
+			return (
+				<Badge
+					variant="outline"
+					className={
+						peran === "UTAMA"
+							? "border-primary/30 bg-primary/10 text-primary font-medium"
+							: "border-amber-200 bg-amber-100 font-medium text-amber-700"
+					}
+				>
+					{peran === "UTAMA" ? "Guru" : "Guru Asisting"}
+				</Badge>
+			);
+		},
+	},
+
+	{
 		accessorKey: "mulaiPada",
 		header: () => (
 			<div className="w-full text-center">Tanggal Mulai Penugasan</div>

@@ -62,9 +62,9 @@ export const sesiPertemuanRouter = createTRPCRouter({
 					historyGuruKelases: {
 						where: { statusGuru: "ACTIVE" },
 						select: {
+							peran: true,
 							guru: { select: { name: true } },
 						},
-						take: 1,
 					},
 				},
 			});
@@ -106,9 +106,9 @@ export const sesiPertemuanRouter = createTRPCRouter({
 					tanggalWaktu: true,
 					absensiGurus: {
 						select: {
+							peran: true,
 							guru: { select: { name: true } },
 						},
-						take: 1,
 					},
 				},
 				orderBy: { tanggalWaktu: "asc" },
@@ -140,12 +140,25 @@ export const sesiPertemuanRouter = createTRPCRouter({
 					?.set(absen.sesiPertemuanKelasId, absen.status);
 			}
 
+			// Gabungkan nama-nama guru jadi satu string, tandai yang asisting
+			const formatGuruNames = (
+				gurus: { peran: string; guru: { name: string | null } }[],
+			) =>
+				gurus
+					.map((g) =>
+						g.peran === "ASISTING" ? `${g.guru.name} (Asisting)` : g.guru.name,
+					)
+					.join(" & ");
+
 			// Siapkan data kolom
 			const columnData = sessions.map((sesi, index) => ({
 				sesiId: sesi.id,
 				tanggal: sesi.tanggalWaktu,
 				pertemuanKe: `Pertemuan ${index + 1}`,
-				pengajar: sesi.absensiGurus[0]?.guru.name ?? "N/A",
+				pengajar:
+					sesi.absensiGurus.length > 0
+						? formatGuruNames(sesi.absensiGurus)
+						: "N/A",
 			}));
 
 			// Siapkan data baris
@@ -174,7 +187,10 @@ export const sesiPertemuanRouter = createTRPCRouter({
 				kelasInfo: {
 					kodeKelas: kelasInfo.kodeKelas,
 					cabangId: kelasInfo.cabangId,
-					guruAktif: kelasInfo.historyGuruKelases[0]?.guru.name ?? "Belum ada",
+					guruAktif:
+						kelasInfo.historyGuruKelases.length > 0
+							? formatGuruNames(kelasInfo.historyGuruKelases)
+							: "Belum ada",
 				},
 				columnData, // Daftar kolom (sesi)
 				rowData, // Daftar baris (siswa)

@@ -133,6 +133,7 @@ export const handleAutoLevelUp = async ({
 				kelasId: newKelas.id,
 				guruId: pg.guruId,
 				statusGuru: "ACTIVE",
+				peran: pg.peran,
 				// mulaiPada will be set on handleClassCompletion
 			})),
 		});

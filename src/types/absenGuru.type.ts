@@ -1,4 +1,4 @@
-import { StatusAbsenGuru } from "@prisma/client";
+import { PeranGuru, StatusAbsenGuru } from "@prisma/client";
 import z from "zod";
 import type { RouterOutputs } from "@/trpc/react";
 
@@ -52,20 +52,14 @@ export const updateAbsensiGuruSchema = z.object({
 	 * (Misal: Admin salah input nama guru)
 	 */
 	guruId: z.string().cuid("ID Guru tidak valid").optional(),
+
+	/** Opsional: koreksi peran (Guru / Guru Asisting) untuk absensi ini. */
+	peran: z.nativeEnum(PeranGuru).optional(),
 });
 
 export type TypeUpdateAbsensiGuruSchema = z.infer<
 	typeof updateAbsensiGuruSchema
 >;
-
-/**
- * SCHEMA: VERIFY (Verifikasi Admin)
- * Digunakan di halaman verifikasi.
- */
-export const verifyAbsensiSchema = z.object({
-	absensiId: z.string().cuid(),
-	isVerified: z.boolean(),
-});
 
 export const clientCreateManualAbsensiSchema = z.object({
 	guruId: z.string().cuid("Guru harus dipilih"),
@@ -89,6 +83,11 @@ export const clientCreateManualAbsensiSchema = z.object({
 	 * Hanya untuk UI logic agar bisa memfilter kelas milik guru asli tsb.
 	 */
 	guruAsliId: z.string().cuid().optional(),
+	/**
+	 * Opsional: Guru / Guru Asisting. Jika kosong, server akan menebak dari
+	 * penugasan aktif guru tsb di kelas ini (fallback: Guru/UTAMA).
+	 */
+	peran: z.nativeEnum(PeranGuru).optional(),
 });
 
 export type TypeClientCreateManualAbsensiSchema = z.infer<

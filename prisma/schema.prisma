@@ -286,6 +286,7 @@ model HistoryGuruKelas {
   mulaiPada   String?        @db.VarChar(10)
   selesaiPada String?        @db.VarChar(10)
   statusGuru  EnumStatusGuru
+  peran       PeranGuru      @default(UTAMA)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   guru        User           @relation(fields: [guruId], references: [id])
@@ -334,6 +335,7 @@ model AbsensiGuru {
   guruId               String
   sesiPertemuanKelasId String
   status               StatusAbsenGuru
+  peran                PeranGuru          @default(UTAMA)
   isVerified           Boolean            @default(false)
   verifiedById         String?
   createdAt            DateTime           @default(now())
@@ -511,6 +513,11 @@ enum StatusOrderBuku2 {
 enum EnumStatusGuru {
   ACTIVE
   INACTIVE
+}
+
+enum PeranGuru {
+  UTAMA
+  ASISTING
 }
 
 enum StatusAbsenMurid {

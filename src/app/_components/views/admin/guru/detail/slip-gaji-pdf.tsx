@@ -141,6 +141,8 @@ const styles = StyleSheet.create({
 
 export interface SlipGajiItem {
 	kodeKelas: string;
+	/** "UTAMA" (Guru) atau "ASISTING" (Guru Asisting) */
+	peran: string;
 	jumlahSesi: number;
 	rate: number;
 }
@@ -222,9 +224,17 @@ export function SlipGajiPDF({
 					</View>
 
 					{items.map((item, index) => (
-						<View style={styles.tableRow} key={item.kodeKelas}>
+						<View
+							style={styles.tableRow}
+							key={`${item.kodeKelas}-${item.peran}`}
+						>
 							<Text style={styles.colNo}>{index + 1}</Text>
-							<Text style={styles.colClass}>{item.kodeKelas}</Text>
+							<View style={styles.colClass}>
+								<Text>{item.kodeKelas}</Text>
+								<Text style={{ fontSize: 8, color: "#64748b", marginTop: 2 }}>
+									{item.peran === "ASISTING" ? "Guru Asisting" : "Guru"}
+								</Text>
+							</View>
 							<Text style={styles.colSesi}>{item.jumlahSesi}x</Text>
 							<Text style={styles.colRate}>{formatRupiah(item.rate)}</Text>
 							<Text style={styles.colAmount}>

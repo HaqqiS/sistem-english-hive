@@ -11,6 +11,7 @@ import {
 	Replace,
 	User,
 	UserCheck,
+	UserPlus,
 	Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -268,6 +269,7 @@ export default function GuruDashboardClient() {
 				{jadwalHariIni?.map((jadwal) => {
 					// Cek apakah sesi untuk jadwal ini sudah dibuat
 					const sudahDimulai = !!jadwal.sesiIdSudahDibuat;
+					const sudahGabung = jadwal.sudahBergabungSesiIni;
 					const isThisItemLoading =
 						isStartingSesi && startingVars?.jadwalKelasId === jadwal.jadwalId;
 
@@ -295,11 +297,18 @@ export default function GuruDashboardClient() {
 										Pengajar:{" "}
 										<span className="text-foreground font-medium">
 											{jadwal.gurus && jadwal.gurus.length > 0
-												? jadwal.gurus.map((g) => g.name).join(" & ")
+												? jadwal.gurus
+														.map((g) =>
+															g.peran === "ASISTING"
+																? `${g.name} (Asisting)`
+																: g.name,
+														)
+														.join(" & ")
 												: jadwal.guru.name}
 										</span>
 									</p>
 								)}
+
 							</CardHeader>
 							<CardContent className="space-y-3">
 								<p className="flex items-center gap-2 text-sm">
@@ -313,7 +322,7 @@ export default function GuruDashboardClient() {
 									jumlahMurid={jadwal.jumlahMurid ?? 0}
 									className="w-full"
 								/>
-								{sudahDimulai ? (
+								{sudahDimulai && sudahGabung ? (
 									jadwal.isAbsenSelesai ? (
 										<Button
 											variant="default"
@@ -339,6 +348,22 @@ export default function GuruDashboardClient() {
 											Lanjutkan Absensi
 										</Button>
 									)
+								) : sudahDimulai && !sudahGabung ? (
+									// Sesi sudah dibuat guru lain — guru ini (mis. asisting)
+									// belum tercatat kehadirannya di sesi tsb.
+									<Button
+										variant="outline"
+										className="border-primary/50 text-primary hover:bg-primary/10 w-full"
+										onClick={() => handleMulaiSesiClick(jadwal, undefined)}
+										disabled={isStartingSesi}
+									>
+										{isThisItemLoading ? (
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										) : (
+											<UserPlus className="mr-2 h-4 w-4" />
+										)}
+										Gabung Sesi (Asisting)
+									</Button>
 								) : (
 									<div className="flex w-full items-center gap-2">
 										<Button
@@ -443,10 +468,16 @@ export default function GuruDashboardClient() {
 			<DeleteConfirmationDialog
 				isOpen={isConfirmStartOpen}
 				onOpenChange={setIsConfirmStartOpen}
-				title="Mulai Sesi Kelas"
+				title={
+					pendingStartData?.jadwal.sesiIdSudahDibuat
+						? "Gabung Sesi Kelas"
+						: "Mulai Sesi Kelas"
+				}
 				description={
 					<>
-						Apakah Anda yakin ingin memulai sesi untuk kelas{" "}
+						{pendingStartData?.jadwal.sesiIdSudahDibuat
+							? "Apakah Anda yakin ingin bergabung sebagai guru asisting pada sesi kelas"
+							: "Apakah Anda yakin ingin memulai sesi untuk kelas"}{" "}
 						<span className="text-accent font-bold">
 							{pendingStartData?.jadwal.kodeKelas}
 						</span>
@@ -464,7 +495,11 @@ export default function GuruDashboardClient() {
 				}
 				onConfirm={handleConfirmStartSesi}
 				isLoading={isStartingSesi}
-				confirmText="Mulai Sesi"
+				confirmText={
+					pendingStartData?.jadwal.sesiIdSudahDibuat
+						? "Gabung Sesi"
+						: "Mulai Sesi"
+				}
 				cancelText="Batal"
 			/>
 		</div>

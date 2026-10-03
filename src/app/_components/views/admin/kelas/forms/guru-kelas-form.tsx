@@ -79,6 +79,30 @@ export default function GuruKelasForm({
 					label="Tanggal Mulai"
 					disabled={isDisabled}
 				/>
+
+				<FormField
+					control={form.control}
+					name="peran"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Peran</FormLabel>
+							<FormControl>
+								<Select onValueChange={field.onChange} value={field.value}>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Pilih Peran" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectGroup>
+											<SelectItem value="UTAMA">Guru</SelectItem>
+											<SelectItem value="ASISTING">Guru Asisting</SelectItem>
+										</SelectGroup>
+									</SelectContent>
+								</Select>
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
 			</div>
 		</div>
 	);

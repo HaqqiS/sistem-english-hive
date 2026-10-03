@@ -1,4 +1,5 @@
 import {
+	PeranGuru,
 	Prisma,
 	StatusAbsenGuru,
 	StatusAbsenMurid,
@@ -134,6 +135,7 @@ export const absenGuruRouter = createTRPCRouter({
 								name: true,
 							},
 						},
+						peran: true,
 						sesiPertemuanKelasId: true,
 						sesiPertemuanKelas: {
 							select: {
@@ -246,6 +248,7 @@ export const absenGuruRouter = createTRPCRouter({
 					id: true,
 					status: true,
 					isVerified: true,
+					peran: true,
 					sesiPertemuanKelas: {
 						select: {
 							tanggalWaktu: true,
@@ -322,6 +325,7 @@ export const absenGuruRouter = createTRPCRouter({
 					guru: { select: { name: true } },
 					status: true,
 					isVerified: true,
+					peran: true,
 					sesiPertemuanKelas: {
 						select: {
 							tanggalWaktu: true,
@@ -386,6 +390,22 @@ export const absenGuruRouter = createTRPCRouter({
 							"Anda tidak berhak memulai sesi untuk kelas di cabang lain.",
 					});
 				}
+
+				// Guru harus punya penugasan aktif di kelas ini (guru utama ATAU
+				// asisting) sebelum bisa memulai/bergabung ke sebuah sesi.
+				const guruAssignment = await db.historyGuruKelas.findFirst({
+					where: { kelasId: jadwal.kelasId, guruId, statusGuru: "ACTIVE" },
+					select: { peran: true },
+				});
+
+				if (!guruAssignment) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Anda tidak (lagi) ditugaskan pada kelas ini.",
+					});
+				}
+
+				const peranGuruIni = guruAssignment.peran;
 				// 2. Tentukan ruangId yang akan dipakai
 				// Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
 				const finalRuangId = overrideRuangId ?? jadwal.ruangId;
@@ -409,6 +429,27 @@ export const absenGuruRouter = createTRPCRouter({
 						);
 
 						if (isExisting) {
+							// Sesi sudah dibuat (oleh guru lain, atau oleh guru ini di tab
+							// lain). Guru ini tetap perlu tercatat kehadirannya sendiri —
+							// penting untuk guru asisting yang menekan "Mulai Sesi" belakangan.
+							// @@unique([guruId, sesiPertemuanKelasId]) menjaga ini idempotent.
+							await tx.absensiGuru.upsert({
+								where: {
+									guruId_sesiPertemuanKelasId: {
+										guruId,
+										sesiPertemuanKelasId: newSesi.id,
+									},
+								},
+								update: {},
+								create: {
+									guruId,
+									sesiPertemuanKelasId: newSesi.id,
+									status,
+									peran: peranGuruIni,
+									isVerified: false,
+								},
+							});
+
 							return {
 								newSesiId: newSesi.id,
 								absensiId: null,
@@ -422,6 +463,7 @@ export const absenGuruRouter = createTRPCRouter({
 								guruId,
 								sesiPertemuanKelasId: newSesi.id,
 								status,
+								peran: peranGuruIni,
 								isVerified: false,
 							},
 						});
@@ -582,7 +624,7 @@ export const absenGuruRouter = createTRPCRouter({
 		)
 		.mutation(async ({ ctx, input }) => {
 			const { db, session, allowedCabangId } = ctx;
-			const { status, isVerified, guruId, absensiId } = input;
+			const { status, isVerified, guruId, absensiId, peran } = input;
 
 			if (
 				isVerified &&
@@ -629,6 +671,7 @@ export const absenGuruRouter = createTRPCRouter({
 						status: status,
 						isVerified: isVerified,
 						guruId: guruId,
+						peran: peran,
 						verifiedById: isVerified ? session.user.id : null,
 					},
 				});
@@ -713,76 +756,6 @@ export const absenGuruRouter = createTRPCRouter({
 			}
 		}),
 
-	getSesiTanpaGuru: cabangProtectedProcedure
-		.input(
-			z.object({
-				kelasId: z.string().cuid(),
-				cabangId: z.string().optional(),
-			}),
-		)
-		.query(async ({ ctx, input }) => {
-			const { db, allowedCabangId } = ctx;
-			const { kelasId, cabangId } = input;
-			const filterCabangId = allowedCabangId ?? cabangId;
-
-			// Security: Pastikan kelas milik cabang yang diizinkan
-			if (filterCabangId) {
-				const kelas = await db.kelas.findUnique({
-					where: { id: kelasId },
-					select: { cabangId: true },
-				});
-
-				if (!kelas) {
-					throw new TRPCError({
-						code: "NOT_FOUND",
-						message: "Kelas tidak ditemukan.",
-					});
-				}
-
-				if (kelas.cabangId !== filterCabangId) {
-					throw new TRPCError({
-						code: "FORBIDDEN",
-						message: "Anda tidak berhak mengakses kelas dari cabang ini.",
-					});
-				}
-			}
-
-			// Logic: Ambil sesi yang belum punya AbsensiGuru
-			const sesiList = await db.sesiPertemuanKelas.findMany({
-				where: {
-					kelasId: kelasId,
-					absensiGurus: {
-						none: {}, // <--- Filter: Tidak ada record AbsensiGuru
-					},
-				},
-				select: {
-					id: true,
-					tanggalWaktu: true,
-					ruang: {
-						select: {
-							namaRuang: true,
-						},
-					},
-					jadwalKelas: {
-						select: {
-							hari: true,
-							jamSlotTetap: {
-								select: {
-									jamMulai: true,
-									jamSelesai: true,
-								},
-							},
-						},
-					},
-				},
-				orderBy: {
-					tanggalWaktu: "desc",
-				},
-			});
-
-			return sesiList;
-		}),
-
 	createManualAbsensi: cabangProtectedProcedure
 		.input(
 			z.object({
@@ -792,6 +765,8 @@ export const absenGuruRouter = createTRPCRouter({
 				tanggalWaktu: z.date().optional(), // Wajib jika sesiPertemuanKelasId kosong
 				status: z.nativeEnum(StatusAbsenGuru),
 				isVerified: z.boolean(),
+				/** Opsional: Guru/Guru Asisting. Default: ikut penugasan aktif guru di kelas ini, fallback UTAMA. */
+				peran: z.nativeEnum(PeranGuru).optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -803,6 +778,7 @@ export const absenGuruRouter = createTRPCRouter({
 				tanggalWaktu,
 				status,
 				isVerified,
+				peran,
 			} = input;
 
 			// 1. Permission Check
@@ -842,6 +818,23 @@ export const absenGuruRouter = createTRPCRouter({
 					});
 				}
 
+				// Tentukan peran: pakai input jika ada, kalau tidak ikut penugasan
+				// aktif guru ini di kelas tsb, fallback UTAMA (mis. pengganti dadakan
+				// tanpa penugasan formal).
+				const resolvedPeran =
+					peran ??
+					(
+						await db.historyGuruKelas.findFirst({
+							where: {
+								kelasId: sesi.kelasId,
+								guruId,
+								statusGuru: "ACTIVE",
+							},
+							select: { peran: true },
+						})
+					)?.peran ??
+					"UTAMA";
+
 				// 3a. Create AbsensiGuru
 				try {
 					return await db.absensiGuru.create({
@@ -849,6 +842,7 @@ export const absenGuruRouter = createTRPCRouter({
 							guruId,
 							sesiPertemuanKelasId,
 							status,
+							peran: resolvedPeran,
 							isVerified: isVerified,
 							verifiedById: isVerified ? session.user.id : null,
 							createdAt: sesi.tanggalWaktu, // Follow session date
@@ -906,6 +900,16 @@ export const absenGuruRouter = createTRPCRouter({
 			}
 
 			// 3b. Transaction: Create Session -> Create Attendance -> Handle Hooks
+			const resolvedPeranBaru =
+				peran ??
+				(
+					await db.historyGuruKelas.findFirst({
+						where: { kelasId, guruId, statusGuru: "ACTIVE" },
+						select: { peran: true },
+					})
+				)?.peran ??
+				"UTAMA";
+
 			const result = await db.$transaction(async (tx) => {
 				// Create Session
 				const newSesi = await tx.sesiPertemuanKelas.create({
@@ -923,6 +927,7 @@ export const absenGuruRouter = createTRPCRouter({
 						guruId: guruId,
 						sesiPertemuanKelasId: newSesi.id,
 						status: status,
+						peran: resolvedPeranBaru,
 						isVerified: isVerified,
 						verifiedById: isVerified ? session.user.id : null,
 						createdAt: tanggalWaktu,

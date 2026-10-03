@@ -76,6 +76,27 @@ export const columns: ColumnDef<TypeAbsensiGuruHistoryItem>[] = [
 		),
 	},
 
+	// Peran (Guru / Guru Asisting)
+	{
+		accessorKey: "peran",
+		header: "Peran",
+		cell: ({ row }) => {
+			const peran = row.original.peran;
+			return (
+				<Badge
+					variant="outline"
+					className={
+						peran === "ASISTING"
+							? "border-amber-200 bg-amber-100 font-medium text-amber-700"
+							: "border-primary/30 bg-primary/10 text-primary font-medium"
+					}
+				>
+					{peran === "ASISTING" ? "Guru Asisting" : "Guru"}
+				</Badge>
+			);
+		},
+	},
+
 	// Status Absensi
 	{
 		accessorKey: "status",

@@ -17,6 +17,7 @@ import { DataTable } from "@/app/_components/shared/data-table-generic";
 import { HeaderActionPortal } from "@/app/_components/shared/header-action-portal";
 import TambahAbsensiManual from "@/app/_components/views/admin/guru/drawer/tambah-absensi-manual";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -37,7 +38,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import { useCabang } from "@/hooks/useCabang";
 import { useUser } from "@/hooks/useUser";
-import { GAJI_PER_SESI, getPeriodeGaji } from "@/server/services/gaji.service";
+import {
+	GAJI_PER_SESI,
+	GAJI_PER_SESI_ASISTING,
+	getPeriodeGaji,
+} from "@/server/services/gaji.service";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import dayjs, { formatToWITA } from "@/utils/dateUtils";
 import { downloadExcel } from "@/utils/exportUtils";
@@ -52,8 +57,15 @@ export default function DetailGuruClient() {
 	const { dataList: dataCabang } = useCabang({ enableQueryList: true });
 	const [open, setOpen] = useState(false);
 
-	// Rate gaji per kode kelas — input manual oleh admin, default GAJI_PER_SESI
-	const [rateByKelas, setRateByKelas] = useState<Record<string, number>>({});
+	// Rate gaji per (kode kelas + peran) — input manual oleh admin.
+	// Key: "KODEKELAS::PERAN", contoh "REGULAR ELEMENTARY 3-B::UTAMA"
+	const [rateByGroup, setRateByGroup] = useState<Record<string, number>>({});
+
+	const groupKey = (kodeKelas: string, peran: string) =>
+		`${kodeKelas}::${peran}`;
+
+	const defaultRateFor = (peran: string) =>
+		peran === "ASISTING" ? GAJI_PER_SESI_ASISTING : GAJI_PER_SESI;
 
 	// State untuk menyimpan bulan gaji yang dipilih (misal: November 2025)
 	const [month, setMonth] = useState<Date | undefined>(new Date());
@@ -100,40 +112,50 @@ export default function DetailGuruClient() {
 		return found ? found.namaCabang : "English Hive";
 	}, [session, activeCabangId, dataCabang]);
 
-	// 3. Rekap jumlah kehadiran per kode kelas
+	// 3. Rekap jumlah kehadiran per (kode kelas + peran)
 	const rekapPerKelas = useMemo(() => {
 		if (!dataHistory) return [];
 
-		const groups: Record<string, { kodeKelas: string; count: number }> = {};
+		const groups: Record<
+			string,
+			{ kodeKelas: string; peran: string; count: number }
+		> = {};
 
 		dataHistory.forEach((item) => {
 			if (item.status !== "HADIR") return;
 
 			const kode = item.sesiPertemuanKelas.kelas.kodeKelas;
-			if (!groups[kode]) {
-				groups[kode] = { kodeKelas: kode, count: 0 };
+			const peran = item.peran;
+			const key = groupKey(kode, peran);
+			if (!groups[key]) {
+				groups[key] = { kodeKelas: kode, peran, count: 0 };
 			}
-			groups[kode].count++;
+			groups[key].count++;
 		});
 
 		return Object.values(groups);
 	}, [dataHistory]);
 
-	// 4. Hitung total gaji = Σ (jumlah hadir per kelas × rate kelas tersebut)
+	// 4. Hitung total gaji = Σ (jumlah hadir per grup × rate grup tersebut)
 	const { totalAbsen, totalGaji } = useMemo(() => {
 		const totalHadir = rekapPerKelas.reduce((sum, g) => sum + g.count, 0);
 
 		const totalGaji = rekapPerKelas.reduce((sum, g) => {
-			const rate = rateByKelas[g.kodeKelas] ?? GAJI_PER_SESI;
+			const rate =
+				rateByGroup[groupKey(g.kodeKelas, g.peran)] ??
+				defaultRateFor(g.peran);
 			return sum + g.count * rate;
 		}, 0);
 
 		return { totalAbsen: totalHadir, totalGaji };
-	}, [rekapPerKelas, rateByKelas]);
+	}, [rekapPerKelas, rateByGroup]);
 
-	const handleRateChange = (kodeKelas: string, value: string) => {
+	const handleRateChange = (kodeKelas: string, peran: string, value: string) => {
 		const num = Number(value.replace(/\D/g, "")) || 0;
-		setRateByKelas((prev) => ({ ...prev, [kodeKelas]: num }));
+		setRateByGroup((prev) => ({
+			...prev,
+			[groupKey(kodeKelas, peran)]: num,
+		}));
 	};
 
 	const handleExport = async () => {
@@ -151,7 +173,9 @@ export default function DetailGuruClient() {
 			// Format Data untuk CSV (Slip Gaji)
 			const csvData = data.map((item) => {
 				const kode = item.sesiPertemuanKelas.kelas.kodeKelas;
-				const rate = rateByKelas[kode] ?? GAJI_PER_SESI;
+				const peran = item.peran;
+				const rate =
+					rateByGroup[groupKey(kode, peran)] ?? defaultRateFor(peran);
 				return {
 					Tanggal: formatToWITA(
 						item.sesiPertemuanKelas.tanggalWaktu,
@@ -159,9 +183,10 @@ export default function DetailGuruClient() {
 					),
 					Jam: formatToWITA(item.sesiPertemuanKelas.tanggalWaktu, "HH:mm"),
 					Kelas: kode,
+					Peran: peran === "ASISTING" ? "Guru Asisting" : "Guru",
 					Ruang: item.sesiPertemuanKelas.ruang.namaRuang,
 					Status: item.status, // HADIR/SAKIT/IJIN
-					"Rate (Rp)": item.status === "HADIR" ? rate : 0, // Honor per sesi (sesuai rate kelas)
+					"Rate (Rp)": item.status === "HADIR" ? rate : 0, // Honor per sesi (sesuai rate kelas & peran)
 					Verifikasi: item.isVerified ? "Terverifikasi" : "Pending",
 				};
 			});
@@ -185,11 +210,14 @@ export default function DetailGuruClient() {
 		const toastId = toast.loading("Membuat Slip Gaji PDF...");
 		try {
 			// Pakai rate yang sudah diubah admin di kalkulator "Rekap Absensi Per Kelas"
-			// (fallback ke default GAJI_PER_SESI kalau belum diubah)
+			// (fallback ke default rate sesuai peran kalau belum diubah)
 			const items = rekapPerKelas.map((group) => ({
 				kodeKelas: group.kodeKelas,
+				peran: group.peran,
 				jumlahSesi: group.count,
-				rate: rateByKelas[group.kodeKelas] ?? GAJI_PER_SESI,
+				rate:
+					rateByGroup[groupKey(group.kodeKelas, group.peran)] ??
+					defaultRateFor(group.peran),
 			}));
 
 			const doc = (
@@ -282,7 +310,7 @@ export default function DetailGuruClient() {
 								onMonthChange={(newMonth) => {
 									if (newMonth) {
 										setMonth(newMonth);
-										setRateByKelas({});
+										setRateByGroup({});
 										setOpen(false);
 									}
 								}}
@@ -365,26 +393,41 @@ export default function DetailGuruClient() {
 							Rekap Absensi Per Kelas
 						</CardTitle>
 						<CardDescription className="text-xs">
-							Atur rate gaji per kelas untuk menghitung Total Gaji Diterima.
-							Default {toRupiah(GAJI_PER_SESI)} / sesi jika tidak diubah.
+							Atur rate gaji per kelas &amp; peran untuk menghitung Total Gaji
+							Diterima. Default {toRupiah(GAJI_PER_SESI)} / sesi (Guru), dan{" "}
+							{toRupiah(GAJI_PER_SESI_ASISTING)} / sesi (Guru Asisting) jika
+							tidak diubah.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 							{rekapPerKelas.map((group) => {
-								const rate = rateByKelas[group.kodeKelas] ?? GAJI_PER_SESI;
+								const key = groupKey(group.kodeKelas, group.peran);
+								const rate = rateByGroup[key] ?? defaultRateFor(group.peran);
 								const subtotal = group.count * rate;
 								return (
 									<div
-										key={group.kodeKelas}
+										key={key}
 										className="bg-muted/50 space-y-2 rounded-md border p-3"
 									>
-										<div className="flex items-center justify-between text-xs font-medium">
-											<span className="font-semibold">{group.kodeKelas}</span>
+										<div className="flex items-center justify-between gap-2 text-xs font-medium">
+											<span className="min-w-0 truncate font-semibold">
+												{group.kodeKelas}
+											</span>
 											<span className="font-bold text-blue-600">
 												{group.count}x
 											</span>
 										</div>
+										<Badge
+											variant="outline"
+											className={
+												group.peran === "ASISTING"
+													? "border-amber-200 bg-amber-100 text-[10px] font-medium text-amber-700"
+													: "border-primary/30 bg-primary/10 text-primary text-[10px] font-medium"
+											}
+										>
+											{group.peran === "ASISTING" ? "Guru Asisting" : "Guru"}
+										</Badge>
 										<div className="flex items-center gap-1.5">
 											<span className="text-muted-foreground text-xs">Rp</span>
 											<Input
@@ -392,7 +435,11 @@ export default function DetailGuruClient() {
 												inputMode="numeric"
 												value={rate.toLocaleString("id-ID")}
 												onChange={(e) =>
-													handleRateChange(group.kodeKelas, e.target.value)
+													handleRateChange(
+														group.kodeKelas,
+														group.peran,
+														e.target.value,
+													)
 												}
 												className="h-8 text-xs"
 												placeholder="50.000"

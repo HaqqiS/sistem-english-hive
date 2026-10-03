@@ -24,6 +24,15 @@ export const absenMuridRouter = createTRPCRouter({
 							cabangId: true, // Ambil cabangId
 						},
 					},
+					// Daftar guru yang tercatat hadir di sesi ini (guru utama & asisting)
+					absensiGurus: {
+						select: {
+							id: true,
+							status: true,
+							peran: true,
+							guru: { select: { id: true, name: true } },
+						},
+					},
 				},
 			});
 
@@ -121,6 +130,13 @@ export const absenMuridRouter = createTRPCRouter({
 				sesiInfo: {
 					kodeKelas: sesi.kelas.kodeKelas,
 					tanggalWaktu: sesi.tanggalWaktu,
+					gurus: sesi.absensiGurus.map((a) => ({
+						id: a.id,
+						guruId: a.guru.id,
+						name: a.guru.name,
+						peran: a.peran,
+						status: a.status,
+					})),
 				},
 				muridList: muridList,
 			};

@@ -1,10 +1,5 @@
-import { StatusAbsenGuru } from "@prisma/client";
 import { describe, expect, it } from "vitest";
-import {
-	calculateTotalGaji,
-	GAJI_PER_SESI,
-	getPeriodeGaji,
-} from "../../server/services/gaji.service";
+import { getPeriodeGaji } from "../../server/services/gaji.service";
 
 describe("Gaji Service", () => {
 	describe("getPeriodeGaji", () => {
@@ -34,31 +29,6 @@ describe("Gaji Service", () => {
 			expect(endDate.getDate()).toBe(25);
 			expect(endDate.getMonth()).toBe(0); // Jan is 0
 			expect(endDate.getFullYear()).toBe(2024);
-		});
-	});
-
-	describe("calculateTotalGaji", () => {
-		it("should calculate correct salary based on attendance", () => {
-			const mockHistory = [
-				{ status: StatusAbsenGuru.HADIR },
-				{ status: StatusAbsenGuru.HADIR },
-				{ status: StatusAbsenGuru.IJIN }, // Should not be counted
-				{ status: StatusAbsenGuru.ALPA }, // Should not be counted
-				{ status: StatusAbsenGuru.HADIR },
-			];
-
-			const result = calculateTotalGaji(mockHistory);
-
-			expect(result.totalHadir).toBe(3);
-			expect(result.totalGaji).toBe(3 * GAJI_PER_SESI);
-		});
-
-		it("should return 0 if no attendance", () => {
-			const mockHistory: { status: StatusAbsenGuru }[] = [];
-			const result = calculateTotalGaji(mockHistory);
-
-			expect(result.totalHadir).toBe(0);
-			expect(result.totalGaji).toBe(0);
 		});
 	});
 });

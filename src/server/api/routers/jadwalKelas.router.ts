@@ -412,6 +412,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 									statusGuru: "ACTIVE",
 								},
 								select: {
+									peran: true,
 									guru: {
 										select: {
 											id: true,
@@ -471,11 +472,35 @@ export const jadwalKelasRouter = createTRPCRouter({
 
 			const sesiMap = new Map(sesiSudahDibuat.map((s) => [s.jadwalKelasId, s]));
 
+			// Guru ini sendiri sudah punya AbsensiGuru di sesi mana saja hari ini?
+			// Penting untuk asisten: sesi bisa sudah dibuat oleh guru lain, tapi
+			// guru ini sendiri belum "bergabung" ke sesi tsb.
+			const sesiIds = sesiSudahDibuat.map((s) => s.id);
+			const absensiGuruIni =
+				sesiIds.length > 0
+					? await db.absensiGuru.findMany({
+							where: {
+								sesiPertemuanKelasId: { in: sesiIds },
+								guruId: targetGuruId,
+							},
+							select: { sesiPertemuanKelasId: true },
+						})
+					: [];
+			const sesiSudahDiisiGuruIniSet = new Set(
+				absensiGuruIni.map((a) => a.sesiPertemuanKelasId),
+			);
+
 			// 4. Proses data agar rapi untuk UI
 			const hasil = jadwalHariIni.map((jadwal) => {
 				const jam = jadwal.jamSlotTetap ?? jadwal.jamSlotCustom;
 				const sesiRecord = sesiMap.get(jadwal.id);
-				const guruList = jadwal.kelas.historyGuruKelases.map((h) => h.guru);
+				const guruList = jadwal.kelas.historyGuruKelases.map((h) => ({
+					...h.guru,
+					peran: h.peran,
+				}));
+				const sudahBergabungSesiIni = sesiRecord
+					? sesiSudahDiisiGuruIniSet.has(sesiRecord.id)
+					: false;
 
 				return {
 					jadwalId: jadwal.id,
@@ -487,13 +512,20 @@ export const jadwalKelasRouter = createTRPCRouter({
 					jamSelesai: jam?.jamSelesai ?? "N/A",
 					jumlahMurid: jadwal.kelas._count.pendaftaranKelases,
 					jumlahSesi: jadwal.kelas._count.sesiPertemuanKelases,
-					gurus: guruList.map((g) => ({ id: g.id, name: g.name })),
+					gurus: guruList.map((g) => ({
+						id: g.id,
+						name: g.name,
+						peran: g.peran,
+					})),
 					// Backwards compatibility for UI (optional, or remove if updated everywhere)
 					guru: guruList[0]
 						? { id: guruList[0].id, name: guruList[0].name }
 						: null,
 					sesiIdSudahDibuat: sesiRecord?.id ?? null,
 					isAbsenSelesai: sesiRecord?.isSelesaiAbsen ?? false,
+					// true jika: sesi belum ada SAMA SEKALI (guru ini akan jadi pembuat sesi),
+					// ATAU sesi sudah ada tapi guru ini belum bikin AbsensiGuru sendiri (baru "gabung").
+					sudahBergabungSesiIni,
 					isJadwalPengganti: targetGuruId !== session.user.id,
 				};
 			});

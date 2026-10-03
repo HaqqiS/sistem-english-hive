@@ -175,6 +175,23 @@ export default function DetailAbsenMuridClient() {
 								"dddd, D MMMM YYYY, HH:mm", // Format lengkap
 							)}
 						</p>
+						{data?.sesiInfo.gurus && data.sesiInfo.gurus.length > 0 && (
+							<div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+								{data.sesiInfo.gurus.map((g) => (
+									<span
+										key={g.id}
+										className={
+											g.peran === "ASISTING"
+												? "rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+												: "border-primary/30 bg-primary/10 text-primary rounded-full border px-2 py-0.5 text-[11px] font-medium"
+										}
+									>
+										{g.name}
+										{g.peran === "ASISTING" ? " · Asisting" : ""}
+									</span>
+								))}
+							</div>
+						)}
 					</div>
 				</header>
 

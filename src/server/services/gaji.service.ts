@@ -1,8 +1,9 @@
-import { StatusAbsenGuru } from "@prisma/client";
 import dayjs from "@/utils/dateUtils";
 
 // Konstanta gaji per sesi
 export const GAJI_PER_SESI = 50000;
+/** Default rate untuk Guru Asisting — bisa diubah manual per kelas di halaman Gaji Guru. */
+export const GAJI_PER_SESI_ASISTING = 30000;
 
 /**
  * Menghitung range tanggal untuk periode gaji (Tgl 26 Bulan Lalu - Tgl 25 Bulan Ini)
@@ -23,19 +24,4 @@ export const getPeriodeGaji = (monthStr: string) => {
 	const endDate = targetMonth.date(25).endOf("day").toDate();
 
 	return { startDate, endDate };
-};
-
-/**
- * Menghitung total gaji berdasarkan data absensi
- */
-export const calculateTotalGaji = (
-	dataHistory: { status: StatusAbsenGuru }[],
-) => {
-	const totalHadir = dataHistory.filter(
-		(absen) => absen.status === StatusAbsenGuru.HADIR,
-	).length;
-
-	const totalGaji = totalHadir * GAJI_PER_SESI;
-
-	return { totalHadir, totalGaji };
 };

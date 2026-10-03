@@ -22,12 +22,14 @@ export default function EditGuruKelas() {
 					guruId: selectedHistoryGuruKelas.guruId ?? "",
 					mulaiPada: selectedHistoryGuruKelas.mulaiPada ?? "",
 					kelasId: selectedHistoryGuruKelas.kelasId ?? "",
+					peran: selectedHistoryGuruKelas.peran ?? "UTAMA",
 				}
 			: undefined,
 		defaultValues: {
 			guruId: selectedHistoryGuruKelas?.guruId ?? "",
 			mulaiPada: selectedHistoryGuruKelas?.mulaiPada ?? "",
 			kelasId: selectedHistoryGuruKelas?.kelasId ?? "",
+			peran: selectedHistoryGuruKelas?.peran ?? "UTAMA",
 		},
 	});
 

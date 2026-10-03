@@ -71,24 +71,30 @@ export const historyGuruKelasRouter = createTRPCRouter({
 			}
 
 			try {
-				// DISABLED: Allow double active teacher
-				// const existingGuruRecord = await db.historyGuruKelas.findFirst({
-				// 	where: {
-				// 		kelasId: input.kelasId,
-				// 		statusGuru: "ACTIVE",
-				// 	},
-				// });
+				// Satu guru tidak boleh punya 2 penugasan aktif sekaligus di kelas yang
+				// sama (guru utama + asisting di kelas lain tetap boleh).
+				const existingActiveForGuru = await db.historyGuruKelas.findFirst({
+					where: {
+						kelasId: input.kelasId,
+						guruId: input.guruId,
+						statusGuru: "ACTIVE",
+						selesaiPada: null,
+					},
+				});
 
-				// if (existingGuruRecord) {
-				// 	throw new Error(
-				// 		"Sudah ada guru yang ditugaskan pada kelas ini dan masih aktif.",
-				// 	);
-				// }
+				if (existingActiveForGuru) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "Guru ini sudah aktif ditugaskan pada kelas ini.",
+					});
+				}
+
 				const newHistoryGuruKelas = await db.historyGuruKelas.create({
 					data: {
 						kelasId: input.kelasId,
 						guruId: input.guruId,
 						statusGuru: input.statusGuru,
+						peran: input.peran,
 						mulaiPada: input.mulaiPada,
 						selesaiPada: input.selesaiPada,
 					},
@@ -161,6 +167,7 @@ export const historyGuruKelasRouter = createTRPCRouter({
 						data: {
 							// Hanya update fields selain guruId
 							mulaiPada: input.mulaiPada,
+							peran: input.peran,
 						},
 					});
 
@@ -182,6 +189,24 @@ export const historyGuruKelasRouter = createTRPCRouter({
 
 					return updatedRecord;
 				} else {
+					// Guru pengganti tidak boleh sudah aktif di kelas yang sama.
+					const existingActiveForNewGuru =
+						await db.historyGuruKelas.findFirst({
+							where: {
+								kelasId: oldRecord?.kelasId,
+								guruId: input.guruId,
+								statusGuru: "ACTIVE",
+								selesaiPada: null,
+							},
+						});
+
+					if (existingActiveForNewGuru) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "Guru pengganti sudah aktif ditugaskan pada kelas ini.",
+						});
+					}
+
 					// Tutup record lama
 					await db.historyGuruKelas.update({
 						where: { id: input.id },
@@ -190,12 +215,13 @@ export const historyGuruKelasRouter = createTRPCRouter({
 							statusGuru: "INACTIVE",
 						},
 					});
-					// Buat record baru
+					// Buat record baru — peran mengikuti input (default: peran guru yang digantikan)
 					const newRecord = await db.historyGuruKelas.create({
 						data: {
 							kelasId: oldRecord?.kelasId ?? "",
 							guruId: input.guruId,
 							statusGuru: "ACTIVE",
+							peran: input.peran ?? oldRecord?.peran ?? "UTAMA",
 							mulaiPada: input.mulaiPada,
 						},
 					});

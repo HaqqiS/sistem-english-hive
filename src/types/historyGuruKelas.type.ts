@@ -1,4 +1,4 @@
-import { EnumStatusGuru } from "@prisma/client";
+import { EnumStatusGuru, PeranGuru } from "@prisma/client";
 import z from "zod";
 import type { RouterOutputs } from "@/trpc/react";
 
@@ -9,6 +9,7 @@ const baseHistoryGuruKelas = z.object({
 	kelasId: z.string().min(1, "Kelas harus dipilih"),
 	guruId: z.string().min(1, "Guru harus dipilih"),
 	statusGuru: z.nativeEnum(EnumStatusGuru),
+	peran: z.nativeEnum(PeranGuru),
 	mulaiPada: z
 		.string()
 		.regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),

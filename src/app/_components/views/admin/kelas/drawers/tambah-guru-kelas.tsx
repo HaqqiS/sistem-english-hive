@@ -26,6 +26,7 @@ export default function TambahGuruKelas({ kelasId }: TambahGuruKelasProps) {
 			guruId: "",
 			mulaiPada: "",
 			statusGuru: "ACTIVE",
+			peran: "UTAMA",
 			kelasId: kelasId,
 		},
 	});

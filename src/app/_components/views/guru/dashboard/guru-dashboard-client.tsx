@@ -9,13 +9,17 @@ import {
 	CheckCircle2,
 	ClipboardCheck,
 	Clock,
+	Copy,
 	DoorOpen,
 	Ellipsis,
 	GraduationCap,
+	KeyRound,
 	Loader2,
+	MessageCircle,
 	Play,
 	Replace,
 	Search,
+	Share2,
 	User,
 	UserCheck,
 	UserPlus,
@@ -24,6 +28,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { DeleteConfirmationDialog } from "@/app/_components/shared/delete-confirmation-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -65,11 +70,13 @@ import {
 } from "@/constants/sesi-event";
 import { useAbsenGuru } from "@/hooks/useAbsenGuru";
 import { useJadwalKelas } from "@/hooks/useJadwalKelas";
+import { usePenggantiGuru } from "@/hooks/usePenggantiGuru";
 import { useUser } from "@/hooks/useUser";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
+import type { TypeBuatTokenPenggantiOutput } from "@/types/absenGuru.type";
 import type { TypeJadwalHariIniItem } from "@/types/jadwalKelas.type";
-import dayjs from "@/utils/dateUtils";
+import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { PengambilanBukuSection } from "../buku/pengambilan-buku-client";
 import { MuridPopover } from "./murid-popover";
 
@@ -129,6 +136,15 @@ function getEventUjian(pertemuanKe: number): EventUjian | null {
 	return null;
 }
 
+/**
+ * Mengambil kode pengganti dari teks yang ditempel. Guru pengganti boleh
+ * menempel seluruh pesan WhatsApp — kodenya (EHP1.xxx.yyy) diambil otomatis.
+ */
+function ekstrakKodePengganti(teks: string): string {
+	const cocok = teks.match(/EHP1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+	return cocok ? cocok[0] : teks.trim();
+}
+
 export default function GuruDashboardClient() {
 	const router = useRouter();
 	const { data: session } = useSession();
@@ -155,6 +171,19 @@ export default function GuruDashboardClient() {
 		ruangId?: string;
 	} | null>(null);
 
+	// --- State: alur kode pengganti ---
+	// Guru pengganti: kode yang ditempel saat memulai sesi di Mode Guru Pengganti
+	const [kodePengganti, setKodePengganti] = useState("");
+	// Guru asli: dialog untuk menerbitkan kode pengganti
+	const [isBuatKodeOpen, setIsBuatKodeOpen] = useState(false);
+	const [jadwalKode, setJadwalKode] = useState<TypeJadwalHariIniItem | null>(
+		null,
+	);
+	const [penggantiId, setPenggantiId] = useState<string | undefined>(undefined);
+	const [tanggalKode, setTanggalKode] = useState("");
+	const [hasilKode, setHasilKode] =
+		useState<TypeBuatTokenPenggantiOutput | null>(null);
+
 	// --- Hooks & Mutations ---
 	const { dataGuruList: listGuru, isLoadingGuruList: isLoadingGuru } =
 		useUser();
@@ -176,8 +205,18 @@ export default function GuruDashboardClient() {
 		onSuccessStartSesi: (newSesiId) => {
 			setIsGantiRuangOpen(false);
 			setIsConfirmStartOpen(false);
+			setKodePengganti("");
 			router.push(`/guru/absen/${newSesiId}`);
 		},
+	});
+
+	const {
+		daftarGuru: daftarGuruPengganti,
+		isLoadingDaftarGuru,
+		mutations: { buatToken },
+	} = usePenggantiGuru({
+		enableDaftarGuru: isBuatKodeOpen,
+		onSuccessBuatToken: setHasilKode,
 	});
 
 	const {
@@ -223,7 +262,76 @@ export default function GuruDashboardClient() {
 			jadwalKelasId: pendingStartData.jadwal.jadwalId,
 			status: StatusAbsenGuru.HADIR,
 			overrideRuangId: pendingStartData.ruangId,
+			// Di Mode Guru Pengganti, sesi hanya bisa dimulai dengan kode dari guru asli
+			tokenPengganti: selectedGuruId
+				? ekstrakKodePengganti(kodePengganti)
+				: undefined,
 		});
+	};
+
+	// --- Handlers: kode pengganti (sisi guru asli) ---
+	const hariIniWita = dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM-DD");
+	const batasTanggalKode = dayjs()
+		.tz(TIMEZONE_BISNIS)
+		.add(7, "day")
+		.format("YYYY-MM-DD");
+
+	const openBuatKodeDialog = (jadwal: TypeJadwalHariIniItem) => {
+		setJadwalKode(jadwal);
+		setPenggantiId(undefined);
+		setTanggalKode(hariIniWita);
+		setHasilKode(null);
+		setIsBuatKodeOpen(true);
+	};
+
+	const handleBuatKode = () => {
+		if (!jadwalKode || !penggantiId) return;
+		buatToken.mutate({
+			jadwalKelasId: jadwalKode.jadwalId,
+			guruPenggantiId: penggantiId,
+			tanggal: tanggalKode || undefined,
+		});
+	};
+
+	const pesanKode = hasilKode
+		? [
+				`Kode pengganti kelas ${hasilKode.kodeKelas}`,
+				`Tanggal: ${dayjs(hasilKode.tanggal).format("dddd, D MMMM YYYY")}`,
+				"",
+				hasilKode.token,
+				"",
+				`Cara pakai: buka portal guru → "Guru Pengganti" → pilih ${session?.user.name ?? "nama saya"} → Mulai Sesi → tempel kode ini.`,
+				`Kode hanya berlaku untuk akun ${hasilKode.namaGuruPengganti ?? "guru pengganti"} pada tanggal tersebut.`,
+			].join("\n")
+		: "";
+
+	const handleSalinKode = async () => {
+		if (!hasilKode) return;
+		try {
+			await navigator.clipboard.writeText(hasilKode.token);
+			toast.success("Kode disalin");
+		} catch {
+			toast.error("Gagal menyalin. Salin manual dari kolom kode.");
+		}
+	};
+
+	const handleKirimWhatsApp = () => {
+		window.open(
+			`https://wa.me/?text=${encodeURIComponent(pesanKode)}`,
+			"_blank",
+			"noopener,noreferrer",
+		);
+	};
+
+	const bisaBagikan =
+		typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+	const handleBagikan = async () => {
+		try {
+			await navigator.share({ text: pesanKode });
+		} catch {
+			// Dibatalkan oleh pengguna — tidak perlu ditangani
+		}
 	};
 
 	const openGantiRuangDialog = (jadwal: TypeJadwalHariIniItem) => {
@@ -596,12 +704,18 @@ export default function GuruDashboardClient() {
 											variant="outline"
 											className="h-11 w-full border-yellow-500 bg-background text-base text-yellow-700 hover:bg-yellow-50 hover:text-yellow-700 dark:border-yellow-700 dark:text-yellow-500 dark:hover:bg-yellow-950"
 											onClick={() =>
-												router.push(`/guru/absen/${jadwal.sesiIdSudahDibuat}`)
+												selectedGuruId
+													? handleMulaiSesiClick(jadwal, undefined)
+													: router.push(
+															`/guru/absen/${jadwal.sesiIdSudahDibuat}`,
+														)
 											}
 											disabled={isStartingSesi}
 										>
 											<Play className="mr-2 h-5 w-5" />
-											Lanjutkan Absensi
+											{selectedGuruId
+												? "Lanjutkan sebagai Pengganti"
+												: "Lanjutkan Absensi"}
 										</Button>
 									) : state === "gabung" ? (
 										// Sesi sudah dibuat guru lain — guru ini (mis. asisting)
@@ -617,7 +731,9 @@ export default function GuruDashboardClient() {
 											) : (
 												<UserPlus className="mr-2 h-5 w-5" />
 											)}
-											Gabung Sesi (Asisting)
+											{selectedGuruId
+												? "Gabung sebagai Pengganti"
+												: "Gabung Sesi (Asisting)"}
 										</Button>
 									) : (
 										<div className="flex w-full items-center gap-2">
@@ -653,6 +769,15 @@ export default function GuruDashboardClient() {
 														<Replace className="mr-2 h-4 w-4" />
 														Ganti Ruang & Mulai
 													</DropdownMenuItem>
+													{!selectedGuruId && (
+														<DropdownMenuItem
+															className="py-2.5"
+															onClick={() => openBuatKodeDialog(jadwal)}
+														>
+															<KeyRound className="mr-2 h-4 w-4" />
+															Buat Kode Pengganti
+														</DropdownMenuItem>
+													)}
 												</DropdownMenuContent>
 											</DropdownMenu>
 										</div>
@@ -723,7 +848,7 @@ export default function GuruDashboardClient() {
 			</Dialog>
 
 			<DeleteConfirmationDialog
-				isOpen={isConfirmStartOpen}
+				isOpen={isConfirmStartOpen && !selectedGuruId}
 				onOpenChange={setIsConfirmStartOpen}
 				title={
 					pendingStartData?.jadwal.sesiIdSudahDibuat
@@ -759,6 +884,209 @@ export default function GuruDashboardClient() {
 				}
 				cancelText="Batal"
 			/>
+
+			{/* --- Dialog Mulai/Gabung Sesi sebagai Guru Pengganti (wajib kode) --- */}
+			<Dialog
+				open={isConfirmStartOpen && !!selectedGuruId}
+				onOpenChange={(open) => {
+					setIsConfirmStartOpen(open);
+					if (!open) setKodePengganti("");
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							{pendingStartData?.jadwal.sesiIdSudahDibuat
+								? "Gabung Sesi sebagai Pengganti"
+								: "Mulai Sesi sebagai Pengganti"}
+						</DialogTitle>
+						<DialogDescription>
+							Kelas{" "}
+							<span className="font-bold">
+								{pendingStartData?.jadwal.kodeKelas}
+							</span>{" "}
+							milik <span className="font-bold">{activeGuruName}</span>.
+							Masukkan kode pengganti yang diberikan oleh {activeGuruName}.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="grid gap-2 py-2">
+						<Label htmlFor="kode-pengganti">Kode pengganti</Label>
+						<Input
+							id="kode-pengganti"
+							value={kodePengganti}
+							onChange={(e) => setKodePengganti(e.target.value)}
+							placeholder="Tempel kode (atau seluruh pesannya) di sini"
+							autoComplete="off"
+							className="font-mono text-xs"
+						/>
+						<p className="text-muted-foreground text-xs">
+							Belum punya kode? Minta {activeGuruName} membuka dashboard-nya,
+							tekan tombol ⋯ pada kelas ini, lalu pilih "Buat Kode Pengganti".
+							Ruang:{" "}
+							{pendingStartData?.ruangId
+								? semuaRuangan?.find((r) => r.id === pendingStartData.ruangId)
+										?.namaRuang
+								: pendingStartData?.jadwal.namaRuang}
+							.
+						</p>
+					</div>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setIsConfirmStartOpen(false);
+								setKodePengganti("");
+							}}
+							disabled={isStartingSesi}
+						>
+							Batal
+						</Button>
+						<Button
+							type="button"
+							onClick={handleConfirmStartSesi}
+							disabled={isStartingSesi || !kodePengganti.trim()}
+						>
+							{isStartingSesi ? (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							) : (
+								<Play className="mr-2 h-4 w-4" />
+							)}
+							{pendingStartData?.jadwal.sesiIdSudahDibuat
+								? "Gabung Sesi"
+								: "Mulai Sesi"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* --- Dialog Buat Kode Pengganti (sisi guru asli) --- */}
+			<Dialog
+				open={isBuatKodeOpen}
+				onOpenChange={(open) => {
+					setIsBuatKodeOpen(open);
+					if (!open) setHasilKode(null);
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Buat Kode Pengganti</DialogTitle>
+						<DialogDescription>
+							Kelas <span className="font-bold">{jadwalKode?.kodeKelas}</span>{" "}
+							pukul {jadwalKode?.jamMulai}. Kode hanya berlaku untuk guru
+							pengganti yang Anda pilih, pada tanggal yang dipilih.
+						</DialogDescription>
+					</DialogHeader>
+
+					{hasilKode ? (
+						<div className="grid gap-3 py-2">
+							<p className="text-sm">
+								Kode untuk{" "}
+								<span className="font-bold">{hasilKode.namaGuruPengganti}</span>
+								, berlaku {dayjs(hasilKode.tanggal).format("dddd, D MMMM YYYY")}{" "}
+								(sampai pukul 23.59 WITA).
+							</p>
+							<Input
+								readOnly
+								value={hasilKode.token}
+								onFocus={(e) => e.currentTarget.select()}
+								className="font-mono text-xs"
+							/>
+							<div className="grid grid-cols-2 gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={handleSalinKode}
+								>
+									<Copy className="mr-2 h-4 w-4" />
+									Salin Kode
+								</Button>
+								<Button
+									type="button"
+									className="bg-green-600 text-white hover:bg-green-700"
+									onClick={handleKirimWhatsApp}
+								>
+									<MessageCircle className="mr-2 h-4 w-4" />
+									Kirim via WhatsApp
+								</Button>
+								{bisaBagikan && (
+									<Button
+										type="button"
+										variant="outline"
+										className="col-span-2"
+										onClick={handleBagikan}
+									>
+										<Share2 className="mr-2 h-4 w-4" />
+										Bagikan ke aplikasi lain
+									</Button>
+								)}
+							</div>
+							<p className="text-muted-foreground text-xs">
+								Jangan bagikan kode ini ke orang lain selain guru pengganti.
+							</p>
+						</div>
+					) : (
+						<div className="grid gap-4 py-2">
+							<div className="grid gap-2">
+								<Label htmlFor="guru-pengganti-select">Guru pengganti</Label>
+								<Select value={penggantiId} onValueChange={setPenggantiId}>
+									<SelectTrigger id="guru-pengganti-select">
+										<SelectValue
+											placeholder={
+												isLoadingDaftarGuru
+													? "Memuat daftar guru..."
+													: "Pilih guru pengganti..."
+											}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										{daftarGuruPengganti.map((guru) => (
+											<SelectItem key={guru.id} value={guru.id}>
+												{guru.name ?? "Tanpa nama"}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="tanggal-kode">Tanggal berlaku</Label>
+								<Input
+									id="tanggal-kode"
+									type="date"
+									min={hariIniWita}
+									max={batasTanggalKode}
+									value={tanggalKode}
+									onChange={(e) => setTanggalKode(e.target.value)}
+								/>
+								<p className="text-muted-foreground text-xs">
+									Hari ini sampai 7 hari ke depan.
+								</p>
+							</div>
+						</div>
+					)}
+
+					<DialogFooter>
+						{hasilKode ? (
+							<Button type="button" onClick={() => setIsBuatKodeOpen(false)}>
+								Selesai
+							</Button>
+						) : (
+							<Button
+								type="button"
+								onClick={handleBuatKode}
+								disabled={!penggantiId || !tanggalKode || buatToken.isPending}
+							>
+								{buatToken.isPending ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : (
+									<KeyRound className="mr-2 h-4 w-4" />
+								)}
+								Buat Kode
+							</Button>
+						)}
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

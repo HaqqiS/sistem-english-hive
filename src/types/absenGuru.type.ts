@@ -32,7 +32,37 @@ export const serverStartSesiSchema = z.object({
 	}),
 	/** ID Ruang override (opsional, jika pindah ruang) */
 	overrideRuangId: z.string().cuid("ID Ruang tidak valid").optional(),
+	/**
+	 * Kode pengganti dari guru asli (opsional). Hanya dipakai jika guru yang
+	 * menekan "Mulai Sesi" tidak ditugaskan di kelas ini.
+	 */
+	tokenPengganti: z.string().min(1, "Kode pengganti kosong").optional(),
 });
+
+/**
+ * SCHEMA: Guru asli menerbitkan kode pengganti.
+ * `tanggal` opsional (default: hari ini, WITA), format YYYY-MM-DD.
+ */
+export const buatTokenPenggantiSchema = z.object({
+	jadwalKelasId: z.string().cuid("ID Jadwal tidak valid"),
+	guruPenggantiId: z.string().cuid("Guru pengganti harus dipilih"),
+	tanggal: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
+		.optional(),
+});
+
+export type TypeBuatTokenPenggantiSchema = z.infer<
+	typeof buatTokenPenggantiSchema
+>;
+
+/** Tipe hasil penerbitan kode pengganti */
+export type TypeBuatTokenPenggantiOutput =
+	RouterOutputs["absenGuru"]["buatTokenPengganti"];
+
+/** Tipe hasil pengecekan kode pengganti oleh guru pengganti */
+export type TypeCekTokenPenggantiOutput =
+	RouterOutputs["absenGuru"]["cekTokenPengganti"];
 
 /**
  * SCHEMA: UPDATE (Edit Absensi Lengkap)

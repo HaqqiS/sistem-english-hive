@@ -16,6 +16,11 @@ import {
 } from "@/server/services/kelas.service";
 import { processAutoBilling } from "@/server/services/pembayaran.service";
 import {
+	buatTokenPenggantian,
+	verifikasiTokenPenggantian,
+} from "@/server/services/penggantian-token.service";
+import {
+	buatTokenPenggantiSchema,
 	serverStartSesiSchema,
 	updateAbsensiGuruSchema,
 } from "@/types/absenGuru.type";
@@ -352,7 +357,7 @@ export const absenGuruRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			const { db, session, allowedCabangId } = ctx;
 			const guruId = session.user.id;
-			const { jadwalKelasId, status, overrideRuangId } = input;
+			const { jadwalKelasId, status, overrideRuangId, tokenPengganti } = input;
 
 			try {
 				// 1. Dapatkan data jadwal & kelas
@@ -393,19 +398,60 @@ export const absenGuruRouter = createTRPCRouter({
 
 				// Guru harus punya penugasan aktif di kelas ini (guru utama ATAU
 				// asisting) sebelum bisa memulai/bergabung ke sebuah sesi.
+				// Jalur kedua: guru pengganti yang membawa kode dari guru asli.
 				const guruAssignment = await db.historyGuruKelas.findFirst({
 					where: { kelasId: jadwal.kelasId, guruId, statusGuru: "ACTIVE" },
 					select: { peran: true },
 				});
 
+				let peranGuruIni = guruAssignment?.peran;
+
 				if (!guruAssignment) {
+					if (!tokenPengganti) {
+						throw new TRPCError({
+							code: "FORBIDDEN",
+							message:
+								"Anda tidak (lagi) ditugaskan pada kelas ini. Jika Anda menggantikan guru lain, minta kode pengganti dari guru tersebut.",
+						});
+					}
+
+					const payload = verifikasiTokenPenggantian(tokenPengganti, guruId);
+
+					if (payload.jadwalKelasId !== jadwalKelasId) {
+						throw new TRPCError({
+							code: "FORBIDDEN",
+							message: "Kode pengganti tidak berlaku untuk jadwal ini.",
+						});
+					}
+
+					// Guru yang menerbitkan kode harus masih bertugas di kelas ini
+					const penugasanGuruAsli = await db.historyGuruKelas.findFirst({
+						where: {
+							kelasId: jadwal.kelasId,
+							guruId: payload.guruAsliId,
+							statusGuru: "ACTIVE",
+						},
+						select: { peran: true },
+					});
+
+					if (!penugasanGuruAsli) {
+						throw new TRPCError({
+							code: "FORBIDDEN",
+							message:
+								"Guru yang menerbitkan kode ini tidak lagi ditugaskan pada kelas ini.",
+						});
+					}
+
+					// Pengganti mengikuti peran guru yang digantikan
+					peranGuruIni = penugasanGuruAsli.peran;
+				}
+
+				if (!peranGuruIni) {
 					throw new TRPCError({
 						code: "FORBIDDEN",
 						message: "Anda tidak (lagi) ditugaskan pada kelas ini.",
 					});
 				}
-
-				const peranGuruIni = guruAssignment.peran;
 				// 2. Tentukan ruangId yang akan dipakai
 				// Prioritaskan override, jika tidak ada, pakai ruang dari jadwal
 				const finalRuangId = overrideRuangId ?? jadwal.ruangId;
@@ -544,6 +590,225 @@ export const absenGuruRouter = createTRPCRouter({
 				}
 				throw error;
 			}
+		}),
+
+	/**
+	 * Daftar guru lain di cabang yang sama.
+	 * Dipakai guru asli untuk memilih guru pengganti saat menerbitkan kode.
+	 */
+	getDaftarGuruPengganti: cabangProtectedProcedure.query(async ({ ctx }) => {
+		const { db, session, allowedCabangId } = ctx;
+
+		if (session.user.role !== UserRole.GURU) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Hanya guru yang dapat melihat daftar guru pengganti.",
+			});
+		}
+
+		return db.user.findMany({
+			where: {
+				role: "GURU",
+				cabangId: allowedCabangId,
+				id: { not: session.user.id },
+			},
+			select: { id: true, name: true },
+			orderBy: { name: "asc" },
+		});
+	}),
+
+	/**
+	 * Guru asli menerbitkan kode pengganti untuk satu jadwal kelas pada satu
+	 * tanggal. Kode dikirim ke guru pengganti (mis. lewat WhatsApp).
+	 * Stateless: tidak ada data yang disimpan di database.
+	 */
+	buatTokenPengganti: cabangProtectedProcedure
+		.input(buatTokenPenggantiSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
+			const guruAsliId = session.user.id;
+
+			if (session.user.role !== UserRole.GURU) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Hanya guru yang bertugas di kelas yang dapat menerbitkan kode.",
+				});
+			}
+
+			if (input.guruPenggantiId === guruAsliId) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Guru pengganti tidak boleh diri sendiri.",
+				});
+			}
+
+			const jadwal = await db.jadwalKelas.findUnique({
+				where: { id: input.jadwalKelasId },
+				select: {
+					id: true,
+					kelasId: true,
+					kelas: { select: { kodeKelas: true, cabangId: true } },
+				},
+			});
+
+			if (!jadwal) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Jadwal tidak ditemukan.",
+				});
+			}
+
+			if (allowedCabangId && jadwal.kelas.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Anda tidak berhak menerbitkan kode untuk kelas di cabang lain.",
+				});
+			}
+
+			// Hanya guru yang benar-benar bertugas di kelas ini yang boleh memberi kode
+			const penugasan = await db.historyGuruKelas.findFirst({
+				where: {
+					kelasId: jadwal.kelasId,
+					guruId: guruAsliId,
+					statusGuru: "ACTIVE",
+				},
+				select: { id: true },
+			});
+
+			if (!penugasan) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Anda tidak (lagi) ditugaskan pada kelas ini.",
+				});
+			}
+
+			const pengganti = await db.user.findUnique({
+				where: { id: input.guruPenggantiId },
+				select: { id: true, name: true, role: true, cabangId: true },
+			});
+
+			if (!pengganti || pengganti.role !== "GURU") {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Guru pengganti tidak ditemukan.",
+				});
+			}
+
+			if (pengganti.cabangId !== jadwal.kelas.cabangId) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"Guru pengganti harus berada di cabang yang sama dengan kelas.",
+				});
+			}
+
+			const tanggal =
+				input.tanggal ?? dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM-DD");
+
+			const { token, kedaluwarsa } = buatTokenPenggantian({
+				jadwalKelasId: jadwal.id,
+				guruAsliId,
+				guruPenggantiId: pengganti.id,
+				tanggal,
+			});
+
+			return {
+				token,
+				tanggal,
+				kedaluwarsa,
+				kodeKelas: jadwal.kelas.kodeKelas,
+				namaGuruPengganti: pengganti.name,
+			};
+		}),
+
+	/**
+	 * Guru pengganti memeriksa kode sebelum memulai sesi.
+	 * Mengembalikan info jadwal agar UI bisa memanggil createSesiAndAbsensi
+	 * (dengan tokenPengganti), atau langsung mengarahkan ke sesi jika kode
+	 * sudah pernah dipakai hari ini (sudahDipakai = true).
+	 */
+	cekTokenPengganti: cabangProtectedProcedure
+		.input(z.object({ token: z.string().min(1, "Kode wajib diisi") }))
+		.query(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
+
+			const payload = verifikasiTokenPenggantian(input.token, session.user.id);
+
+			const jadwal = await db.jadwalKelas.findUnique({
+				where: { id: payload.jadwalKelasId },
+				select: {
+					id: true,
+					kelasId: true,
+					ruangId: true,
+					ruang: { select: { namaRuang: true } },
+					kelas: { select: { kodeKelas: true, cabangId: true } },
+				},
+			});
+
+			if (!jadwal) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Jadwal untuk kode ini sudah tidak ada.",
+				});
+			}
+
+			if (allowedCabangId && jadwal.kelas.cabangId !== allowedCabangId) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Kode ini bukan untuk kelas di cabang Anda.",
+				});
+			}
+
+			const [guruAsli, penugasanGuruAsli] = await Promise.all([
+				db.user.findUnique({
+					where: { id: payload.guruAsliId },
+					select: { name: true },
+				}),
+				db.historyGuruKelas.findFirst({
+					where: {
+						kelasId: jadwal.kelasId,
+						guruId: payload.guruAsliId,
+						statusGuru: "ACTIVE",
+					},
+					select: { peran: true },
+				}),
+			]);
+
+			if (!penugasanGuruAsli) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Guru yang menerbitkan kode ini tidak lagi ditugaskan pada kelas ini.",
+				});
+			}
+
+			// Sudah dipakai? = guru ini sudah tercatat di sesi jadwal ini hari ini
+			const awalHari = dayjs().tz(TIMEZONE_BISNIS).startOf("day").toDate();
+			const akhirHari = dayjs().tz(TIMEZONE_BISNIS).endOf("day").toDate();
+
+			const sesiSaya = await db.sesiPertemuanKelas.findFirst({
+				where: {
+					jadwalKelasId: jadwal.id,
+					tanggalWaktu: { gte: awalHari, lte: akhirHari },
+					absensiGurus: { some: { guruId: session.user.id } },
+				},
+				select: { id: true },
+			});
+
+			return {
+				jadwalKelasId: jadwal.id,
+				kelasId: jadwal.kelasId,
+				kodeKelas: jadwal.kelas.kodeKelas,
+				ruangId: jadwal.ruangId,
+				namaRuang: jadwal.ruang.namaRuang,
+				tanggal: payload.tanggal,
+				namaGuruAsli: guruAsli?.name ?? null,
+				peran: penugasanGuruAsli.peran,
+				sudahDipakai: sesiSaya !== null,
+				sesiId: sesiSaya?.id ?? null,
+			};
 		}),
 
 	verifyAbsensi: cabangProtectedProcedure

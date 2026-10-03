@@ -467,12 +467,23 @@ export const jadwalKelasRouter = createTRPCRouter({
 					id: true, // ID SesiPertemuanKelas
 					jadwalKelasId: true,
 					isSelesaiAbsen: true,
+					updatedAt: true,
+					// Untuk log aktivitas guru: siapa saja yang tercatat & kapan
+					absensiGurus: {
+						select: {
+							id: true,
+							createdAt: true,
+							peran: true,
+							guru: { select: { id: true, name: true } },
+						},
+						orderBy: { createdAt: "asc" },
+					},
 				},
 			});
 
 			const sesiMap = new Map(sesiSudahDibuat.map((s) => [s.jadwalKelasId, s]));
 
-			// Guru ini sendiri sudah punya AbsensiGuru di sesi mana saja hari ini?
+			// Akun yang login sudah punya AbsensiGuru di sesi mana saja hari ini?
 			// Penting untuk asisten: sesi bisa sudah dibuat oleh guru lain, tapi
 			// guru ini sendiri belum "bergabung" ke sesi tsb.
 			const sesiIds = sesiSudahDibuat.map((s) => s.id);
@@ -481,7 +492,11 @@ export const jadwalKelasRouter = createTRPCRouter({
 					? await db.absensiGuru.findMany({
 							where: {
 								sesiPertemuanKelasId: { in: sesiIds },
-								guruId: targetGuruId,
+								// Akun yang LOGIN (bukan guru yang jadwalnya ditampilkan):
+								// di Mode Guru Pengganti, pengganti melihat jadwal guru asli,
+								// tapi yang tercatat di sesi adalah akun pengganti itu sendiri.
+								// Untuk jadwal sendiri hasilnya sama seperti sebelumnya.
+								guruId: session.user.id,
 							},
 							select: { sesiPertemuanKelasId: true },
 						})
@@ -501,6 +516,42 @@ export const jadwalKelasRouter = createTRPCRouter({
 				const sudahBergabungSesiIni = sesiRecord
 					? sesiSudahDiisiGuruIniSet.has(sesiRecord.id)
 					: false;
+
+				// Log aktivitas guru pada sesi hari ini (diturunkan dari catatan yang ada).
+				// Guru yang tercatat tapi tidak punya penugasan ACTIVE di kelas = pengganti.
+				const idGuruBertugas = new Set(guruList.map((g) => g.id));
+				type LogAktivitas = {
+					id: string;
+					waktu: Date;
+					tipe: "MULAI" | "GABUNG" | "SELESAI";
+					namaGuru: string | null;
+					peran: "UTAMA" | "ASISTING" | null;
+					isPengganti: boolean;
+				};
+				const logAktivitas: LogAktivitas[] = [];
+				if (sesiRecord) {
+					sesiRecord.absensiGurus.forEach((a, idx) => {
+						logAktivitas.push({
+							id: a.id,
+							waktu: a.createdAt,
+							tipe: idx === 0 ? "MULAI" : "GABUNG",
+							namaGuru: a.guru.name,
+							peran: a.peran,
+							isPengganti: !idGuruBertugas.has(a.guru.id),
+						});
+					});
+					if (sesiRecord.isSelesaiAbsen) {
+						logAktivitas.push({
+							id: `selesai-${sesiRecord.id}`,
+							waktu: sesiRecord.updatedAt,
+							tipe: "SELESAI",
+							namaGuru: null,
+							peran: null,
+							isPengganti: false,
+						});
+					}
+					logAktivitas.sort((x, y) => x.waktu.getTime() - y.waktu.getTime());
+				}
 
 				return {
 					jadwalId: jadwal.id,
@@ -527,6 +578,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 					// ATAU sesi sudah ada tapi guru ini belum bikin AbsensiGuru sendiri (baru "gabung").
 					sudahBergabungSesiIni,
 					isJadwalPengganti: targetGuruId !== session.user.id,
+					logAktivitas,
 				};
 			});
 

@@ -7,12 +7,14 @@ import {
 	CalendarClock,
 	Check,
 	CheckCircle2,
+	ChevronDown,
 	ClipboardCheck,
 	Clock,
 	Copy,
 	DoorOpen,
 	Ellipsis,
 	GraduationCap,
+	History,
 	KeyRound,
 	Loader2,
 	MessageCircle,
@@ -684,6 +686,75 @@ export default function GuruDashboardClient() {
 											className="h-8 rounded-full px-3 text-xs"
 										/>
 									</div>
+
+									{/* Log aktivitas guru pada sesi hari ini */}
+									{jadwal.logAktivitas.length > 0 && (
+										<details className="group bg-muted/30 rounded-xl border">
+											<summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-xs font-semibold [&::-webkit-details-marker]:hidden">
+												<span className="flex items-center gap-1.5">
+													<History className="h-3.5 w-3.5" />
+													Log Aktivitas ({jadwal.logAktivitas.length})
+												</span>
+												<ChevronDown className="text-muted-foreground h-4 w-4 transition-transform group-open:rotate-180" />
+											</summary>
+											<ol className="space-y-2.5 border-t px-3 py-3">
+												{jadwal.logAktivitas.map((log) => (
+													<li
+														key={log.id}
+														className="flex items-start gap-2.5 text-xs"
+													>
+														<span className="text-muted-foreground w-10 shrink-0 pt-0.5 font-mono">
+															{dayjs(log.waktu)
+																.tz(TIMEZONE_BISNIS)
+																.format("HH:mm")}
+														</span>
+														<span
+															className={cn(
+																"mt-1 size-2 shrink-0 rounded-full",
+																log.tipe === "SELESAI"
+																	? "bg-green-600"
+																	: log.tipe === "MULAI"
+																		? "bg-primary"
+																		: "bg-blue-500",
+															)}
+														/>
+														<div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1">
+															{log.tipe === "SELESAI" ? (
+																<span className="font-medium text-green-700 dark:text-green-400">
+																	Absensi murid diselesaikan
+																</span>
+															) : (
+																<>
+																	<span className="font-medium break-words">
+																		{log.namaGuru}
+																	</span>
+																	{log.isPengganti ? (
+																		<Badge className="h-4 border-0 bg-orange-100 px-1.5 text-[10px] text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+																			Pengganti
+																		</Badge>
+																	) : (
+																		log.peran === "ASISTING" && (
+																			<Badge
+																				variant="secondary"
+																				className="h-4 px-1.5 text-[10px]"
+																			>
+																				Asisting
+																			</Badge>
+																		)
+																	)}
+																	<span className="text-muted-foreground">
+																		{log.tipe === "MULAI"
+																			? "memulai sesi"
+																			: "bergabung ke sesi"}
+																	</span>
+																</>
+															)}
+														</div>
+													</li>
+												))}
+											</ol>
+										</details>
+									)}
 								</div>
 
 								{/* Aksi utama */}

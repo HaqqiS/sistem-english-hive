@@ -1,50 +1,10 @@
-import {
-	Prisma,
-	type PrismaClient,
-	StatusAbsenMurid,
-	StatusPendaftaran,
-} from "@prisma/client";
+import { Prisma, StatusAbsenMurid, StatusPendaftaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
-import { UserRole } from "@/server/auth/type";
 import { handleClassCompletion } from "@/server/services/kelas.service";
 import { processAutoBilling } from "@/server/services/pembayaran.service";
 import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
-
-/**
- * Guard: guru hanya boleh mengubah absensi murid / menyelesaikan sesi jika
- * (a) tercatat mengajar di sesi ini (AbsensiGuru — termasuk guru pengganti
- * yang sudah memulai sesi), atau (b) punya penugasan ACTIVE di kelas ini.
- * Admin & Manager tidak dibatasi.
- */
-async function pastikanGuruBerhakAtasSesi(
-	db: Pick<PrismaClient, "absensiGuru" | "historyGuruKelas">,
-	user: { id: string; role: string },
-	sesi: { id: string; kelasId: string },
-) {
-	if (user.role !== UserRole.GURU) return;
-
-	const [absensiGuru, penugasan] = await Promise.all([
-		db.absensiGuru.findFirst({
-			where: { guruId: user.id, sesiPertemuanKelasId: sesi.id },
-			select: { id: true },
-		}),
-		db.historyGuruKelas.findFirst({
-			where: { kelasId: sesi.kelasId, guruId: user.id, statusGuru: "ACTIVE" },
-			select: { id: true },
-		}),
-	]);
-
-	if (!absensiGuru && !penugasan) {
-		throw new TRPCError({
-			code: "FORBIDDEN",
-			message:
-				"Anda tidak ditugaskan pada kelas ini dan belum tercatat mengajar di sesi ini.",
-		});
-	}
-}
-
 export const absenMuridRouter = createTRPCRouter({
 	getMuridForAbsensi: cabangProtectedProcedure
 		.input(z.object({ sesiId: z.string() }))
@@ -216,11 +176,6 @@ export const absenMuridRouter = createTRPCRouter({
 				});
 			}
 
-			await pastikanGuruBerhakAtasSesi(db, ctx.session.user, {
-				id: sesiId,
-				kelasId: sesiCheck.kelasId,
-			});
-
 			// VALIDASI: Pastikan Murid Aktif/Trial ATAU Sudah Punya History Absensi
 			const pendaftaran = await db.pendaftaranKelas.findFirst({
 				where: {
@@ -347,11 +302,6 @@ export const absenMuridRouter = createTRPCRouter({
 				});
 			}
 
-			await pastikanGuruBerhakAtasSesi(db, ctx.session.user, {
-				id: sesi.id,
-				kelasId: sesi.kelasId,
-			});
-
 			// Melakukan update dan pengecekan kelulusan dalam satu transaksi
 			return await db.$transaction(async (tx) => {
 				// 1. Update status sesi
@@ -372,7 +322,76 @@ export const absenMuridRouter = createTRPCRouter({
 					totalSesi,
 				);
 
-				return { success: true, isFinished };
+				// 4. Info kelas level berikutnya + guru penugasannya
+				// (ditampilkan di layar sukses pada pertemuan akhir).
+				// Aturan level sama dengan handleAutoLevelUp.
+				const kelasSaatIni = await tx.kelas.findUnique({
+					where: { id: sesi.kelasId },
+					select: {
+						cohortId: true,
+						level: true,
+						jenisKelasId: true,
+						jenisKelasRel: {
+							select: { nextLevel: { select: { id: true } } },
+						},
+					},
+				});
+
+				let nextKelas: {
+					kodeKelas: string;
+					level: number;
+					jenisKelasNama: string;
+					mulaiPada: string | null;
+					gurus: { id: string; name: string; peran: string }[];
+				} | null = null;
+
+				if (kelasSaatIni) {
+					const naikProgram = kelasSaatIni.level >= 4;
+					const nextJenisId = naikProgram
+						? kelasSaatIni.jenisKelasRel?.nextLevel?.id
+						: kelasSaatIni.jenisKelasId;
+					const nextLevel = naikProgram ? 1 : kelasSaatIni.level + 1;
+
+					if (nextJenisId) {
+						const k = await tx.kelas.findFirst({
+							where: {
+								cohortId: kelasSaatIni.cohortId,
+								jenisKelasId: nextJenisId,
+								level: nextLevel,
+							},
+							select: {
+								kodeKelas: true,
+								level: true,
+								jenisKelasRel: { select: { nama: true } },
+								historyGuruKelases: {
+									where: { statusGuru: "ACTIVE" },
+									select: {
+										peran: true,
+										mulaiPada: true,
+										guru: { select: { id: true, name: true } },
+									},
+								},
+							},
+						});
+
+						if (k) {
+							const mulai = k.historyGuruKelases.find((h) => h.mulaiPada);
+							nextKelas = {
+								kodeKelas: k.kodeKelas,
+								level: k.level,
+								jenisKelasNama: k.jenisKelasRel?.nama ?? "",
+								mulaiPada: mulai?.mulaiPada ? String(mulai.mulaiPada) : null,
+								gurus: k.historyGuruKelases.map((h) => ({
+									id: h.guru.id,
+									name: h.guru.name ?? "-",
+									peran: h.peran,
+								})),
+							};
+						}
+					}
+				}
+
+				return { success: true, isFinished, totalSesi, nextKelas };
 			});
 		}),
 });

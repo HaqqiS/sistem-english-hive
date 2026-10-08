@@ -12,6 +12,7 @@ import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import { UserRole } from "@/server/auth/type";
+import { syncStatusMuridBanyak } from "@/lib/sync-status-murid";
 import { serverKelasSchema, upLevelKelasSchema } from "@/types/kelas.type";
 import dayjs from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
@@ -675,23 +676,34 @@ export const kelasRouter = createTRPCRouter({
 						message: "Anda tidak berhak menghapus kelas dari cabang lain.",
 					});
 				}
-				const existingMuridKelas = await db.pendaftaranKelas.findFirst({
+
+				// Ambil SEMUA murid yang terdaftar di kelas ini (sebelumnya hanya satu murid
+				// yang di-update, sehingga murid lain tertinggal dengan status lama).
+				const muridTerdampak = await db.pendaftaranKelas.findMany({
 					where: { kelasId: input.id },
 					select: { muridId: true },
 				});
 
-				if (existingMuridKelas) {
-					await db.$transaction(async (tx) => {
-						// update status murid yang terkait menjadi 'NON-AKTIF'
-						await tx.murid.update({
-							where: { id: existingMuridKelas.muridId },
-							data: { statusMurid: StatusMurid.NON_AKTIF },
+				const kelas = await db.$transaction(
+					async (tx) => {
+						// Pendaftaran ikut terhapus (cascade)
+						const deleted = await tx.kelas.delete({
+							where: { id: input.id },
 						});
-					});
-				}
-				const kelas = await db.kelas.delete({
-					where: { id: input.id },
-				});
+
+						// Status murid mengikuti status di kelas yang tersisa.
+						// Jika murid tidak punya kelas lagi dan statusnya masih terikat kelas,
+						// jadikan NON_AKTIF.
+						await syncStatusMuridBanyak(
+							tx,
+							muridTerdampak.map((m) => m.muridId),
+							{ statusJikaTanpaKelas: StatusMurid.NON_AKTIF },
+						);
+
+						return deleted;
+					},
+					{ timeout: 20000 },
+				);
 				return kelas;
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -757,88 +769,98 @@ export const kelasRouter = createTRPCRouter({
 				}
 
 				// 3. Jalankan Transaksi
-				return await db.$transaction(async (tx) => {
-					// A. Buat Kelas Baru (Salin data lama, override level & bulan)
-					// Status LEVEL_UP: kelas baru menunggu kelas lama selesai 24 sesi
-					const newKelas = await tx.kelas.create({
-						data: {
-							jenisKelasId: oldKelas.jenisKelasId,
-							// tipe: oldKelas.tipe, // Removed
-							grup: oldKelas.grup,
-							deskripsi: oldKelas.deskripsi,
-							cohortId: oldKelas.cohortId,
-							cabangId: oldKelas.cabangId,
-							// Override dengan input baru
-							hargaKelas: hargaKelas,
-							level: newLevel,
-							bulanTahunAjar: newBulanTahunAjar,
-							kodeKelas: newKodeKelas,
-							statusKelas: "LEVEL_UP",
-						},
-					});
-
-					// B. Non-aktifkan Pendaftaran di Kelas Lama
-					await tx.pendaftaranKelas.updateMany({
-						where: {
-							kelasId: oldKelasId,
-							status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated
-						},
-						data: {
-							status: StatusPendaftaran.NON_AKTIF, // UPDATED: isAktif is deprecated
-						},
-					});
-
-					// C. Buat Pendaftaran Baru & Tagihan Awal untuk setiap siswa
-					const totalTagihan = newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
-					const jatuhTempo = dayjs(newTanggalMulai).toDate();
-
-					// Kita harus loop karena createMany tidak mengembalikan ID yang dibutuhkan untuk relasi Pembayaran
-					for (const student of activeStudents) {
-						// C.1 Buat Pendaftaran Baru
-						const newPendaftaran = await tx.pendaftaranKelas.create({
+				return await db.$transaction(
+					async (tx) => {
+						// A. Buat Kelas Baru (Salin data lama, override level & bulan)
+						// Status LEVEL_UP: kelas baru menunggu kelas lama selesai 24 sesi
+						const newKelas = await tx.kelas.create({
 							data: {
-								muridId: student.muridId,
-								kelasId: newKelas.id,
-								tanggalMulai: newTanggalMulai,
-								status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated. Using Enum.
+								jenisKelasId: oldKelas.jenisKelasId,
+								// tipe: oldKelas.tipe, // Removed
+								grup: oldKelas.grup,
+								deskripsi: oldKelas.deskripsi,
+								cohortId: oldKelas.cohortId,
+								cabangId: oldKelas.cabangId,
+								// Override dengan input baru
+								hargaKelas: hargaKelas,
+								level: newLevel,
+								bulanTahunAjar: newBulanTahunAjar,
+								kodeKelas: newKodeKelas,
+								statusKelas: "LEVEL_UP",
 							},
 						});
 
-						// C.2 Buat Tagihan Awal (8 Pertemuan)
-						await tx.pembayaran.create({
+						// B. Non-aktifkan Pendaftaran di Kelas Lama
+						await tx.pendaftaranKelas.updateMany({
+							where: {
+								kelasId: oldKelasId,
+								status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated
+							},
 							data: {
-								pendaftaranKelasId: newPendaftaran.id,
-								pembayaranKe: 1,
-								jumlahBayar: totalTagihan,
-								tanggalJatuhTempo: jatuhTempo,
-								statusBayar: StatusPembayaran.BELUM_LUNAS,
-								note: `Tagihan Kenaikan Kelas (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
+								status: StatusPendaftaran.NON_AKTIF, // UPDATED: isAktif is deprecated
 							},
 						});
 
-						// C.3 Buat Tagihan Buku (Jika setup harga > 0 di Master Jenis Kelas)
-						// Kita ambil harga buku dari jenis kelas yang sedang berjalan
-						const hargaBuku = oldKelas.jenisKelasRel?.hargaBuku ?? 0;
-						if (hargaBuku > 0) {
-							await tx.tagihanLain.create({
+						// C. Buat Pendaftaran Baru & Tagihan Awal untuk setiap siswa
+						const totalTagihan =
+							newKelas.hargaKelas * JUMLAH_PERTEMUAN_PER_BLOK;
+						const jatuhTempo = dayjs(newTanggalMulai).toDate();
+
+						// Kita harus loop karena createMany tidak mengembalikan ID yang dibutuhkan untuk relasi Pembayaran
+						for (const student of activeStudents) {
+							// C.1 Buat Pendaftaran Baru
+							const newPendaftaran = await tx.pendaftaranKelas.create({
 								data: {
 									muridId: student.muridId,
-									kategori: "BUKU",
-									judul: `Buku ${oldKelas.jenisKelasRel?.nama} Level ${newLevel}`,
-									jumlah: hargaBuku,
-									status: StatusPembayaran.BELUM_LUNAS,
 									kelasId: newKelas.id,
-									deskripsi: "Belum Order",
+									tanggalMulai: newTanggalMulai,
+									status: StatusPendaftaran.AKTIF, // UPDATED: isAktif is deprecated. Using Enum.
 								},
 							});
-						}
-					}
 
-					return {
-						newKelasId: newKelas.id,
-						movedStudentCount: activeStudents.length,
-					};
-				});
+							// C.2 Buat Tagihan Awal (8 Pertemuan)
+							await tx.pembayaran.create({
+								data: {
+									pendaftaranKelasId: newPendaftaran.id,
+									pembayaranKe: 1,
+									jumlahBayar: totalTagihan,
+									tanggalJatuhTempo: jatuhTempo,
+									statusBayar: StatusPembayaran.BELUM_LUNAS,
+									note: `Tagihan Kenaikan Kelas (${JUMLAH_PERTEMUAN_PER_BLOK} Pertemuan)`,
+								},
+							});
+
+							// C.3 Buat Tagihan Buku (Jika setup harga > 0 di Master Jenis Kelas)
+							// Kita ambil harga buku dari jenis kelas yang sedang berjalan
+							const hargaBuku = oldKelas.jenisKelasRel?.hargaBuku ?? 0;
+							if (hargaBuku > 0) {
+								await tx.tagihanLain.create({
+									data: {
+										muridId: student.muridId,
+										kategori: "BUKU",
+										judul: `Buku ${oldKelas.jenisKelasRel?.nama} Level ${newLevel}`,
+										jumlah: hargaBuku,
+										status: StatusPembayaran.BELUM_LUNAS,
+										kelasId: newKelas.id,
+										deskripsi: "Belum Order",
+									},
+								});
+							}
+						}
+
+						// D. Samakan status murid (list murid) dengan status di kelas
+						await syncStatusMuridBanyak(
+							tx,
+							activeStudents.map((s) => s.muridId),
+						);
+
+						return {
+							newKelasId: newKelas.id,
+							movedStudentCount: activeStudents.length,
+						};
+					},
+					{ timeout: 30000 },
+				);
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError) {
 					// P2002: Kode Kelas Baru bentrok

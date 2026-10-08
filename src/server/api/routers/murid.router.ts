@@ -604,7 +604,17 @@ export const muridRouter = createTRPCRouter({
 
 			const existingMurid = await db.murid.findUnique({
 				where: { id: input.id },
-				select: { cabangId: true },
+				select: {
+					cabangId: true,
+					// Jumlah pendaftaran kelas yang masih berjalan (bukan NON_AKTIF)
+					_count: {
+						select: {
+							pendaftaranKelases: {
+								where: { status: { not: "NON_AKTIF" } },
+							},
+						},
+					},
+				},
 			});
 
 			if (!existingMurid) {
@@ -620,6 +630,28 @@ export const muridRouter = createTRPCRouter({
 					message: "Anda tidak berhak mengubah murid dari cabang lain.",
 				});
 			}
+
+			// Status di kelas adalah sumber kebenaran. Selama murid masih terdaftar
+			// di kelas, status di list murid mengikuti status di kelas dan tidak
+			// boleh diubah manual.
+			if (existingMurid._count.pendaftaranKelases > 0) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"Murid ini masih terdaftar di kelas. Ubah statusnya lewat status murid di kelas.",
+				});
+			}
+
+			// Murid tidak sedang di kelas manapun: boleh diedit manual, kecuali jadi
+			// AKTIF. Status AKTIF hanya datang dari kelas.
+			if (input.statusMurid === StatusMurid.AKTIF) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"Status AKTIF hanya bisa didapat dari kelas. Daftarkan murid ke kelas terlebih dahulu.",
+				});
+			}
+
 			try {
 				const updatedMurid = await db.murid.update({
 					where: { id: input.id },

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { useKelas } from "@/hooks/useKelas";
 import { useMurid } from "@/hooks/useMurid";
+import { hitungUmur, labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { TypeClientBulkPendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
@@ -70,7 +71,8 @@ export default function PendaftaranKelasForm({
 
 	const filteredMurid = dataMuridNotRegistered
 		?.filter((murid) => {
-			const age = murid.umur ?? 0;
+			const age =
+				hitungUmur(murid.tanggalLahir, murid.umur, murid.createdAt).umur ?? 0;
 			const min = ageFilter.min ? Number(ageFilter.min) : 0;
 			const max = ageFilter.max ? Number(ageFilter.max) : Infinity;
 
@@ -199,7 +201,13 @@ export default function PendaftaranKelasForm({
 													<div className="flex flex-col">
 														<span>{murid.namaLengkap}</span>
 														<span className="text-xs opacity-80">
-															{murid.umur} tahun - Kelas: {murid.kelasSekolah}
+															{labelUmurTahun(
+																murid.tanggalLahir,
+																murid.umur,
+																murid.createdAt,
+																"tahun",
+															)}{" "}
+															- Kelas: {murid.kelasSekolah}
 														</span>
 													</div>
 												</CommandItem>

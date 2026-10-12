@@ -32,6 +32,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import type { TypeAllMurid } from "@/types/murid.type";
 import { formatDateWITA } from "@/utils/dateUtils";
@@ -203,7 +204,11 @@ export const columns = ({
 					{row.original.gender === "LAKI_LAKI" ? "Laki-laki" : "Perempuan"}
 				</span>
 				<span className="text-muted-foreground text-xs">
-					{row.original.umur} Tahun
+					{labelUmurTahun(
+						row.original.tanggalLahir,
+						row.original.umur,
+						row.original.createdAt,
+					)}
 				</span>
 			</div>
 		),

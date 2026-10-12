@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useMurid } from "@/hooks/useMurid";
+import { formatTanggalLahirInput, hitungUmur } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { useMuridStore } from "@/store/useMuridStore";
@@ -172,7 +173,10 @@ export default function MuridClient() {
 					"Nama Lengkap": m.namaLengkap,
 					Cabang: m.cabang.namaCabang,
 					"Jenis Kelamin": m.gender,
-					Umur: m.umur,
+					"Tanggal Lahir": m.tanggalLahir
+						? formatTanggalLahirInput(m.tanggalLahir)
+						: "-",
+					Umur: hitungUmur(m.tanggalLahir, m.umur, m.createdAt).umur ?? "-",
 					"No. WA": m.noWA ? `'${m.noWA}` : "-", // Tambah kutip agar excel baca text (bukan angka ilmiah)
 					Instagram: m.instagram ?? "-", // [NEW]
 					// Email: m.email,

@@ -150,7 +150,10 @@ model Murid {
   id                 String             @id @default(cuid())
   namaLengkap        String
   gender             Gender
-  umur               Int
+  // Data lama: umur saat pendaftaran. Dibiarkan sebagai arsip/fallback.
+  umur               Int?
+  // Data baru: umur dihitung dari tanggal lahir (lihat src/lib/hitung-umur.ts)
+  tanggalLahir       DateTime?          @db.Date
   asalSekolah        String
   kelasSekolah       String
   noWA               String

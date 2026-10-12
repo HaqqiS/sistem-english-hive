@@ -317,7 +317,7 @@ export const userRouter = createTRPCRouter({
 				where: { id: userId },
 			});
 
-			if (!user || !user.password) {
+			if (!user || !user?.password) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
 					message: "User tidak valid atau belum memiliki password.",

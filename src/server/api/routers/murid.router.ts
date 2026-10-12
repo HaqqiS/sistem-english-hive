@@ -21,6 +21,7 @@ export const muridRouter = createTRPCRouter({
 				cabangId: z.string().optional(),
 				tipeProgram: z.enum(["REGULER", "PRIVAT", "ALL"]).optional(),
 				filterNoWA: z.string().optional(),
+				belumAdaTanggalLahir: z.boolean().optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
@@ -73,6 +74,9 @@ export const muridRouter = createTRPCRouter({
 			if (filterNoWA) {
 				whereClause.noWA = filterNoWA;
 			}
+			if (input.belumAdaTanggalLahir) {
+				whereClause.tanggalLahir = null;
+			}
 
 			// Dynamic Sorting
 			let orderBy: Prisma.MuridOrderByWithRelationInput[] = [
@@ -81,9 +85,20 @@ export const muridRouter = createTRPCRouter({
 			];
 
 			if (input.sorting && input.sorting.length > 0) {
-				orderBy = input.sorting.map((sort) => ({
-					[sort.id]: sort.desc ? "desc" : "asc",
-				}));
+				orderBy = input.sorting.map(
+					(sort): Prisma.MuridOrderByWithRelationInput => {
+						// Umur dihitung dari tanggal lahir: umur terbesar = tanggal lahir terkecil
+						if (sort.id === "umur") {
+							return {
+								tanggalLahir: {
+									sort: sort.desc ? "asc" : "desc",
+									nulls: "last",
+								},
+							};
+						}
+						return { [sort.id]: sort.desc ? "desc" : "asc" };
+					},
+				);
 			}
 
 			// Gunakan transaction untuk performa (count + findMany paralel)
@@ -102,6 +117,7 @@ export const muridRouter = createTRPCRouter({
 								// email: true,
 								gender: true,
 								umur: true,
+								tanggalLahir: true,
 								asalSekolah: true,
 								kelasSekolah: true,
 								instagram: true, // [NEW]
@@ -209,6 +225,7 @@ export const muridRouter = createTRPCRouter({
 					kelasSekolah: true,
 					instagram: true, // [NEW]
 					umur: true,
+					tanggalLahir: true,
 					namaLengkap: true,
 					pilihanProgram: true,
 					statusMurid: true,
@@ -259,6 +276,8 @@ export const muridRouter = createTRPCRouter({
 					id: true,
 					namaLengkap: true,
 					umur: true,
+					tanggalLahir: true,
+					createdAt: true,
 					kelasSekolah: true,
 					statusMurid: true,
 					pendaftaranKelases: {
@@ -299,6 +318,7 @@ export const muridRouter = createTRPCRouter({
 				status: z.nativeEnum(StatusMurid).optional(),
 				tipeProgram: z.enum(["REGULER", "PRIVAT", "ALL"]).optional(),
 				filterNoWA: z.string().optional(),
+				belumAdaTanggalLahir: z.boolean().optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
@@ -359,6 +379,9 @@ export const muridRouter = createTRPCRouter({
 			if (filterNoWA) {
 				whereClause.noWA = filterNoWA;
 			}
+			if (input.belumAdaTanggalLahir) {
+				whereClause.tanggalLahir = null;
+			}
 
 			// Dynamic Sorting
 			let orderBy: Prisma.MuridOrderByWithRelationInput[] = [
@@ -367,9 +390,20 @@ export const muridRouter = createTRPCRouter({
 			];
 
 			if (input.sorting && input.sorting.length > 0) {
-				orderBy = input.sorting.map((sort) => ({
-					[sort.id]: sort.desc ? "desc" : "asc",
-				}));
+				orderBy = input.sorting.map(
+					(sort): Prisma.MuridOrderByWithRelationInput => {
+						// Umur dihitung dari tanggal lahir: umur terbesar = tanggal lahir terkecil
+						if (sort.id === "umur") {
+							return {
+								tanggalLahir: {
+									sort: sort.desc ? "asc" : "desc",
+									nulls: "last",
+								},
+							};
+						}
+						return { [sort.id]: sort.desc ? "desc" : "asc" };
+					},
+				);
 			}
 
 			// Transaction untuk performa (count + query data paralel)
@@ -384,6 +418,7 @@ export const muridRouter = createTRPCRouter({
 						id: true,
 						kelasSekolah: true,
 						umur: true,
+						tanggalLahir: true,
 						namaLengkap: true,
 						pilihanProgram: true,
 						statusMurid: true,
@@ -477,6 +512,8 @@ export const muridRouter = createTRPCRouter({
 									id: true,
 									namaLengkap: true,
 									umur: true,
+									tanggalLahir: true,
+									createdAt: true,
 									kelasSekolah: true,
 									noWA: true,
 								},

@@ -4,6 +4,7 @@ import { Gender } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
 import { Button } from "@/components/ui/button";
 import {
 	FormControl,
@@ -46,7 +47,8 @@ const formTranslations = {
 		pilihGender: "Pilih jenis kelamin",
 		lakiLaki: "Laki-laki",
 		perempuan: "Perempuan",
-		umur: "Umur",
+		tanggalLahir: "Tanggal Lahir",
+		pilihTanggalLahir: "Pilih tanggal lahir",
 		noWA: "No. WA",
 		instagram: "Instagram",
 		pilihanProgram: "Pilihan Program",
@@ -81,7 +83,8 @@ const formTranslations = {
 		pilihGender: "Choose gender",
 		lakiLaki: "Male",
 		perempuan: "Female",
-		umur: "Age",
+		tanggalLahir: "Date of Birth",
+		pilihTanggalLahir: "Select date of birth",
 		noWA: "WA Number",
 		instagram: "Instagram",
 		pilihanProgram: "Program Selection",
@@ -223,28 +226,16 @@ export default function MuridForm({
 						)}
 					/>
 
-					{/* Inner Grid: Umur & WA & Instagram */}
+					{/* Inner Grid: Tanggal Lahir & WA & Instagram */}
 					<div className={cn("grid gap-2", gridColsClass)}>
-						<FormField
+						<FormStringDatePicker
 							control={form.control}
-							name="umur"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel className="text-sm">
-										<span>{t.umur}</span>
-									</FormLabel>
-									<FormControl>
-										<Input
-											type="number"
-											placeholder={t.umur}
-											{...field}
-											value={field.value ?? ""}
-											onChange={(e) => field.onChange(e.target.valueAsNumber)}
-										/>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
+							name="tanggalLahir"
+							label={t.tanggalLahir}
+							placeholder={t.pilihTanggalLahir}
+							showYearDropdown
+							disableFuture
+							defaultMonth={new Date(new Date().getFullYear() - 10, 0)}
 						/>
 
 						<FormField

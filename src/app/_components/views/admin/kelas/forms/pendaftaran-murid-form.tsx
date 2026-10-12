@@ -37,6 +37,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useMurid } from "@/hooks/useMurid";
+import { hitungUmur, labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { TypeClientTambahMuridSchema } from "@/types/pendaftaranKelas.type";
@@ -72,7 +73,8 @@ export default function PendaftaranMuridForm({
 		if (!dataMuridForEnrollment) return { free: [], enrolled: [] };
 
 		const filtered = dataMuridForEnrollment.filter((murid) => {
-			const age = murid.umur ?? 0;
+			const age =
+				hitungUmur(murid.tanggalLahir, murid.umur, murid.createdAt).umur ?? 0;
 			const min = ageFilter.min ? Number(ageFilter.min) : 0;
 			const max = ageFilter.max ? Number(ageFilter.max) : Infinity;
 			if (age < min || age > max) return false;
@@ -192,7 +194,13 @@ export default function PendaftaranMuridForm({
 														<div className="flex flex-col">
 															<span>{murid.namaLengkap}</span>
 															<span className="text-xs opacity-70">
-																{murid.umur} tahun · {murid.kelasSekolah}
+																{labelUmurTahun(
+																	murid.tanggalLahir,
+																	murid.umur,
+																	murid.createdAt,
+																	"tahun",
+																)}{" "}
+																· {murid.kelasSekolah}
 															</span>
 														</div>
 													</CommandItem>

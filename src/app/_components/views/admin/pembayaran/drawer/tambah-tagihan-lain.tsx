@@ -41,6 +41,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useMurid } from "@/hooks/useMurid";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { useTagihanLain } from "@/hooks/useTagihanLain";
+import { labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import {
@@ -238,7 +239,12 @@ export default function TambahTagihanLain({
 														</Badge>
 													</div>
 													<span className="text-muted-foreground text-xs">
-														{murid.umur} Tahun - {murid.kelasSekolah}
+														{labelUmurTahun(
+															murid.tanggalLahir,
+															murid.umur,
+															murid.createdAt,
+														)}{" "}
+														- {murid.kelasSekolah}
 													</span>
 												</div>
 											</CommandItem>

@@ -16,7 +16,13 @@ export const RegisterMuridSchema = z.object({
 	gender: z.enum([Gender.LAKI_LAKI, Gender.PEREMPUAN], {
 		required_error: "Jenis kelamin harus dipilih.", // Pesan jika 'undefined'
 	}),
-	umur: z.coerce.number().min(3, "Umur minimal 3 tahun").max(100),
+	tanggalLahir: z.coerce
+		.date({
+			required_error: "Tanggal lahir harus diisi",
+			invalid_type_error: "Tanggal lahir harus diisi",
+		})
+		.min(new Date("1920-01-01"), "Tanggal lahir tidak valid")
+		.refine((d) => d <= new Date(), "Tanggal lahir tidak boleh di masa depan"),
 	asalSekolah: z.string().trim().min(1, "Asal sekolah harus diisi").max(200),
 	kelasSekolah: z.string().trim().min(1, "Kelas harus diisi").max(20),
 	// jamPulang: z.string().trim().min(1, "Jam pulang harus diisi").max(225),

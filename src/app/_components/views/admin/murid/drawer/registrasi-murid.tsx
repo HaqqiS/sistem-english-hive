@@ -27,7 +27,7 @@ export default function RegistrasiMurid() {
 			namaLengkap: "",
 			// email, alamat, kelasSekolah removed
 			gender: undefined as unknown as "LAKI_LAKI" | "PEREMPUAN",
-			umur: undefined as unknown as number,
+			tanggalLahir: undefined as unknown as Date,
 			asalSekolah: "",
 			kelasSekolah: "",
 			instagram: "", // [NEW]

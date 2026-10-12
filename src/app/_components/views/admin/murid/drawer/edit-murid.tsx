@@ -26,7 +26,8 @@ export default function EditMurid() {
 					// email: selectedMurid.email,
 					// alamat: selectedMurid.alamat,
 					gender: selectedMurid.gender,
-					umur: selectedMurid.umur,
+					tanggalLahir:
+						selectedMurid.tanggalLahir ?? (undefined as unknown as Date),
 					asalSekolah: selectedMurid.asalSekolah,
 					kelasSekolah: selectedMurid.kelasSekolah,
 					instagram: selectedMurid.instagram ?? "", // [NEW]
@@ -45,7 +46,7 @@ export default function EditMurid() {
 			// email: "",
 			// alamat: "",
 			gender: undefined as unknown as "LAKI_LAKI" | "PEREMPUAN",
-			umur: undefined as unknown as number,
+			tanggalLahir: undefined as unknown as Date,
 			asalSekolah: "",
 			kelasSekolah: "",
 			instagram: "", // [NEW]

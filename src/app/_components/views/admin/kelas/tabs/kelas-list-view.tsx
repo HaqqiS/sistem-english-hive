@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { labelUmur } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
 import { formatToWITA } from "@/utils/dateUtils";
@@ -239,7 +240,14 @@ function KelasCard({
 														</span>
 														<span className="text-sm">
 															{p.murid?.namaLengkap ?? "Unknown"} |{" "}
-															{p.murid?.umur} | {p.murid?.kelasSekolah}
+															{p.murid
+																? labelUmur(
+																		p.murid.tanggalLahir,
+																		p.murid.umur,
+																		p.murid.createdAt,
+																	)
+																: "-"}{" "}
+															| {p.murid?.kelasSekolah}
 														</span>
 													</div>
 													<Badge

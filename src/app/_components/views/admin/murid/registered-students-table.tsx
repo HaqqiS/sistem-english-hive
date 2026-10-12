@@ -10,6 +10,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { labelUmurTahun } from "@/lib/hitung-umur";
 import type { RouterOutputs } from "@/trpc/react";
 
 type KelasWithActiveStudents =
@@ -134,7 +135,12 @@ export function RegisteredStudentsTable({
 												className="h-[50px] flex items-center px-4 gap-3"
 											>
 												<Badge variant="outline" className="bg-background">
-													{student.umur} Thn
+													{labelUmurTahun(
+														student.tanggalLahir,
+														student.umur,
+														student.createdAt,
+														"Thn",
+													)}
 												</Badge>
 												<span className="text-muted-foreground">
 													{student.kelasSekolah || "-"}

@@ -36,6 +36,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useMurid } from "@/hooks/useMurid"; // Hook baru untuk search murid
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
+import { labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { TypeClientCreatePembayaranSchema } from "@/types/pembayaran.type";
@@ -164,7 +165,12 @@ export default function PembayaranForm({ onSubmit }: PembayaranFormProps) {
 										<div className="flex flex-col">
 											<span>{murid.namaLengkap}</span>
 											<span className="text-muted-foreground text-xs">
-												{murid.umur} Tahun - {murid.kelasSekolah}
+												{labelUmurTahun(
+													murid.tanggalLahir,
+													murid.umur,
+													murid.createdAt,
+												)}{" "}
+												- {murid.kelasSekolah}
 											</span>
 										</div>
 									</CommandItem>

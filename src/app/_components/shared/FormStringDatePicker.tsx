@@ -1,5 +1,6 @@
 "use client";
 
+import { id as localeId } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import type { Control, FieldValues, Path } from "react-hook-form";
@@ -27,6 +28,14 @@ interface FormStringDatePickerProps<TFieldValues extends FieldValues> {
 	label: string; // Label untuk FormLabel
 	placeholder?: string;
 	disabled?: boolean;
+	/** Tampilkan dropdown bulan & tahun (cocok untuk tanggal lahir). Default: false. */
+	showYearDropdown?: boolean;
+	/** Tahun paling awal di dropdown tahun (dipakai jika showYearDropdown). */
+	startYear?: number;
+	/** Nonaktifkan tanggal setelah hari ini. Default: false. */
+	disableFuture?: boolean;
+	/** Bulan yang tampil saat belum ada tanggal terpilih. */
+	defaultMonth?: Date;
 }
 
 export function FormStringDatePicker<TFieldValues extends FieldValues>({
@@ -35,6 +44,10 @@ export function FormStringDatePicker<TFieldValues extends FieldValues>({
 	label,
 	placeholder = "Pilih tanggal",
 	disabled,
+	showYearDropdown = false,
+	startYear = 1940,
+	disableFuture = false,
+	defaultMonth,
 }: FormStringDatePickerProps<TFieldValues>) {
 	const [open, setOpen] = useState(false);
 
@@ -76,6 +89,15 @@ export function FormStringDatePicker<TFieldValues extends FieldValues>({
 						<PopoverContent className="w-auto p-0" align="start">
 							<Calendar
 								mode="single"
+								// Opsi tambahan (hanya aktif jika diminta, pemakai lama tidak berubah)
+								captionLayout={showYearDropdown ? "dropdown" : "label"}
+								locale={showYearDropdown ? localeId : undefined}
+								startMonth={
+									showYearDropdown ? new Date(startYear, 0) : undefined
+								}
+								endMonth={showYearDropdown ? new Date() : undefined}
+								disabled={disableFuture ? { after: new Date() } : undefined}
+								defaultMonth={defaultMonth}
 								// 'selected' butuh Date, jadi kita konversi string "YYYY-MM-DD"
 								selected={
 									field.value

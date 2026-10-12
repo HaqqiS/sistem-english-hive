@@ -61,7 +61,7 @@ async function main() {
 				updatedAt: row.updatedAt ? new Date(row.updatedAt) : new Date(),
 			};
 		})
-		.filter((item: Murid | null) => item !== null); // Hapus data null/invalid
+		.filter((item): item is NonNullable<typeof item> => item !== null); // Hapus data null/invalid
 
 	// 4. Eksekusi Insert ke Database
 	if (dataToInsert.length > 0) {

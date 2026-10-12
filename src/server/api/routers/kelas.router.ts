@@ -11,8 +11,8 @@ import {
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
-import { UserRole } from "@/server/auth/type";
 import { syncStatusMuridBanyak } from "@/lib/sync-status-murid";
+import { UserRole } from "@/server/auth/type";
 import { serverKelasSchema, upLevelKelasSchema } from "@/types/kelas.type";
 import dayjs from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
@@ -979,6 +979,8 @@ async function getKelasByStatus(
 							namaLengkap: true,
 							statusMurid: true,
 							umur: true,
+							tanggalLahir: true,
+							createdAt: true,
 							kelasSekolah: true,
 						},
 					},

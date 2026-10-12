@@ -19,6 +19,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA } from "@/utils/dateUtils";
@@ -93,7 +94,13 @@ export const columns = ({
 				<div className="text-muted-foreground text-[11px] uppercase tracking-wide md:hidden">
 					Umur &amp; Kelas Sekolah
 				</div>
-				<div>{row.original.murid.umur} Tahun</div>
+				<div>
+					{labelUmurTahun(
+						row.original.murid.tanggalLahir,
+						row.original.murid.umur,
+						row.original.murid.createdAt,
+					)}
+				</div>
 				<div className="text-muted-foreground text-xs">
 					{row.original.murid.kelasSekolah}
 				</div>

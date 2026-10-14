@@ -1,19 +1,8 @@
 "use client";
 
 import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
-import {
-	AlertCircle,
-	CalendarCheck2,
-	CalendarClock,
-	ChevronDown,
-	Loader2,
-	Pencil,
-	Plus,
-	ReceiptText,
-	Trash2,
-	Wallet,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -42,9 +31,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { formatDateToYYYYMMDD, formatDateWITA } from "@/utils/dateUtils";
 import { toRupiah } from "@/utils/toRupiah";
+import {
+	type JenisRincian,
+	PembayaranGridKelas,
+} from "./pembayaran-grid-kelas";
 
 interface RingkasanTagihanKelasProps {
 	kelasId: string;
@@ -73,7 +67,11 @@ export default function RingkasanTagihanKelas({
 	highlightMurid,
 }: RingkasanTagihanKelasProps) {
 	const utils = api.useUtils();
-	const [expandedMuridId, setExpandedMuridId] = useState<string | null>(null);
+	// Rincian tagihan Buku/Registrasi satu siswa (dibuka dari sel tabel)
+	const [rincian, setRincian] = useState<{
+		muridId: string;
+		jenis: JenisRincian;
+	} | null>(null);
 
 	// --- Dialog state: Tambah Pembayaran ---
 	const [addForMurid, setAddForMurid] = useState<{
@@ -100,17 +98,6 @@ export default function RingkasanTagihanKelas({
 		{ kelasId },
 		{ enabled: !!kelasId },
 	);
-
-	// Otomatis buka card siswa yang namanya cocok dengan pencarian, supaya
-	// hasil pencarian langsung terlihat begitu kelasnya dibuka.
-	useEffect(() => {
-		const term = highlightMurid?.trim().toLowerCase();
-		if (!term || !data) return;
-		const matched = data.data.find((m) =>
-			m.namaLengkap.toLowerCase().includes(term),
-		);
-		if (matched) setExpandedMuridId(matched.muridId);
-	}, [highlightMurid, data]);
 
 	const invalidateAll = async () => {
 		await utils.pembayaran.getRingkasanKelas.invalidate({ kelasId });
@@ -271,279 +258,142 @@ export default function RingkasanTagihanKelas({
 	if (!data || data.data.length === 0) {
 		return (
 			<p className="text-muted-foreground py-8 text-center text-sm">
-				Belum ada tagihan (SPP/Buku/Registrasi) untuk kelas ini.
+				Belum ada siswa di kelas ini.
 			</p>
 		);
 	}
 
+	// Rincian Buku/Registrasi siswa yang sedang dibuka (selalu dari data terbaru)
+	const rincianMurid = rincian
+		? data.data.find((m) => m.muridId === rincian.muridId)
+		: undefined;
+	const rincianItems =
+		rincian && rincianMurid
+			? (rincian.jenis === "BUKU"
+					? rincianMurid.buku
+					: rincianMurid.registrasi
+				).map((t) => ({
+					status: t.status,
+					item: {
+						id: t.id,
+						jenis: rincian.jenis,
+						label: t.label,
+						jumlah: t.jumlah,
+						tanggal:
+							t.status === StatusPembayaran.LUNAS ? t.tanggalBayar : null,
+						lunas: t.status === StatusPembayaran.LUNAS,
+					} satisfies Item,
+				}))
+			: [];
+
 	return (
 		<div className="space-y-2">
-			{data.data.map((murid) => {
-				const riwayatLunas: Item[] = [
-					...murid.spp
-						.filter((s) => s.statusBayar === StatusPembayaran.LUNAS)
-						.map((s) => ({
-							id: s.id,
-							jenis: "SPP" as const,
-							label: s.label,
-							jumlah: s.jumlahBayar,
-							tanggal: s.tanggalBayar,
-							lunas: true,
-						})),
-					...murid.buku
-						.filter((b) => b.status === StatusPembayaran.LUNAS)
-						.map((b) => ({
-							id: b.id,
-							jenis: "BUKU" as const,
-							label: b.label,
-							jumlah: b.jumlah,
-							tanggal: b.tanggalBayar,
-							lunas: true,
-						})),
-					...murid.registrasi
-						.filter((r) => r.status === StatusPembayaran.LUNAS)
-						.map((r) => ({
-							id: r.id,
-							jenis: "REGISTRASI" as const,
-							label: r.label,
-							jumlah: r.jumlah,
-							tanggal: r.tanggalBayar,
-							lunas: true,
-						})),
-				].sort((a, b) => {
-					const ta = a.tanggal ? new Date(a.tanggal).getTime() : 0;
-					const tb = b.tanggal ? new Date(b.tanggal).getTime() : 0;
-					return tb - ta;
-				});
+			<PembayaranGridKelas
+				data={data.data}
+				highlightMurid={highlightMurid}
+				onEditSpp={(spp) => {
+					const lunas = spp.statusBayar === StatusPembayaran.LUNAS;
+					openEditDialog({
+						id: spp.id,
+						jenis: "SPP",
+						label: spp.label,
+						jumlah: spp.jumlahBayar,
+						tanggal: lunas ? spp.tanggalBayar : spp.tanggalJatuhTempo,
+						lunas,
+					});
+				}}
+				onTambah={(murid) => {
+					setAddForMurid({
+						muridId: murid.muridId,
+						namaLengkap: murid.namaLengkap,
+						pendaftaranKelasId: murid.pendaftaranKelasId,
+					});
+					setAddJumlah("");
+					setAddTanggal(formatDateToYYYYMMDD(new Date()));
+					setAddJenis("SPP");
+					setAddJudul(JENIS_CONFIG.SPP.judulDefault);
+				}}
+				onBukaRincian={(muridId, jenis) => setRincian({ muridId, jenis })}
+			/>
 
-				const belumLunas: Item[] = [
-					...murid.spp
-						.filter((s) => s.statusBayar !== StatusPembayaran.LUNAS)
-						.map((s) => ({
-							id: s.id,
-							jenis: "SPP" as const,
-							label: s.label,
-							jumlah: s.jumlahBayar,
-							tanggal: s.tanggalJatuhTempo,
-							lunas: false,
-						})),
-					...murid.buku
-						.filter((b) => b.status !== StatusPembayaran.LUNAS)
-						.map((b) => ({
-							id: b.id,
-							jenis: "BUKU" as const,
-							label: b.label,
-							jumlah: b.jumlah,
-							tanggal: null,
-							lunas: false,
-						})),
-					...murid.registrasi
-						.filter((r) => r.status !== StatusPembayaran.LUNAS)
-						.map((r) => ({
-							id: r.id,
-							jenis: "REGISTRASI" as const,
-							label: r.label,
-							jumlah: r.jumlah,
-							tanggal: null,
-							lunas: false,
-						})),
-				].sort((a, b) => {
-					const ta = a.tanggal ? new Date(a.tanggal).getTime() : Infinity;
-					const tb = b.tanggal ? new Date(b.tanggal).getTime() : Infinity;
-					return ta - tb;
-				});
-
-				const totalBelumLunas = belumLunas.reduce(
-					(sum, item) => sum + item.jumlah,
-					0,
-				);
-
-				const isExpanded = expandedMuridId === murid.muridId;
-
-				const renderItemRow = (item: Item) => (
-					<li
-						key={`${item.jenis}-${item.id}`}
-						className="flex items-center justify-between gap-2 rounded-lg bg-background px-2.5 py-2 shadow-sm sm:gap-3 sm:px-3"
-					>
-						<div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-							<div
-								className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${
-									item.lunas
-										? "bg-green-100 text-green-700"
-										: "bg-red-100 text-red-600"
-								}`}
-							>
-								{item.lunas ? (
-									<ReceiptText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-								) : (
-									<AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-								)}
-							</div>
-							<div className="min-w-0">
-								<p className="truncate text-xs font-medium leading-none sm:text-sm">
-									{item.label}
-								</p>
-								{item.tanggal && (
-									<div className="mt-1 flex items-center gap-1 text-muted-foreground text-[11px] sm:text-xs">
-										{item.lunas ? (
-											<CalendarCheck2 className="h-3 w-3 shrink-0" />
-										) : (
-											<CalendarClock className="h-3 w-3 shrink-0" />
-										)}
-										<span className="truncate">
-											{item.lunas ? "" : "Jatuh tempo "}
-											{formatDateWITA(new Date(item.tanggal))}
-										</span>
+			{/* Dialog: Rincian Buku / Registrasi */}
+			<Dialog
+				open={!!rincian}
+				onOpenChange={(open) => !open && setRincian(null)}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							{rincian?.jenis === "BUKU"
+								? "Tagihan Buku"
+								: "Tagihan Registrasi"}
+							{rincianMurid ? ` — ${rincianMurid.namaLengkap}` : ""}
+						</DialogTitle>
+					</DialogHeader>
+					{rincianItems.length === 0 ? (
+						<p className="text-muted-foreground text-sm">Belum ada tagihan.</p>
+					) : (
+						<ul className="space-y-2">
+							{rincianItems.map(({ item, status }) => (
+								<li
+									key={item.id}
+									className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2"
+								>
+									<div className="min-w-0">
+										<p className="truncate text-sm font-medium">{item.label}</p>
+										<p
+											className={cn(
+												"text-xs font-medium",
+												status === StatusPembayaran.LUNAS && "text-green-700",
+												status === StatusPembayaran.BELUM_LUNAS &&
+													"text-red-600",
+												status === StatusPembayaran.PENDING &&
+													"text-orange-600",
+											)}
+										>
+											{status === StatusPembayaran.LUNAS
+												? "Lunas"
+												: status === StatusPembayaran.PENDING
+													? "Pending"
+													: "Belum lunas"}
+											{item.tanggal
+												? ` · ${formatDateWITA(new Date(item.tanggal))}`
+												: ""}
+										</p>
 									</div>
-								)}
-							</div>
-						</div>
-						<div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-							<span
-								className={`whitespace-nowrap text-xs font-semibold sm:text-sm ${
-									item.lunas ? "" : "text-red-600"
-								}`}
-							>
-								{toRupiah(item.jumlah)}
-							</span>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="h-7 w-7 text-muted-foreground"
-								onClick={() => openEditDialog(item)}
-							>
-								<Pencil className="h-3.5 w-3.5" />
-							</Button>
-							<Button
-								variant="ghost"
-								size="icon"
-								className="h-7 w-7 text-red-500 hover:text-red-600"
-								onClick={() => setDeleteItem(item)}
-							>
-								<Trash2 className="h-3.5 w-3.5" />
-							</Button>
-						</div>
-					</li>
-				);
-
-				const isHighlighted =
-					!!highlightMurid?.trim() &&
-					murid.namaLengkap
-						.toLowerCase()
-						.includes(highlightMurid.trim().toLowerCase());
-
-				return (
-					<div
-						key={murid.muridId}
-						className={`overflow-hidden rounded-xl border bg-background ${
-							isHighlighted ? "ring-2 ring-primary" : ""
-						}`}
-					>
-						<button
-							type="button"
-							onClick={() =>
-								setExpandedMuridId(isExpanded ? null : murid.muridId)
-							}
-							className="flex w-full flex-col gap-2 px-3 py-3 text-left transition-colors hover:bg-muted/50 sm:px-4"
-						>
-							{/* Baris 1: nama siswa, full width, tidak terpotong */}
-							<div className="flex items-center gap-2 sm:gap-3">
-								<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-9 sm:w-9">
-									<Wallet className="h-4 w-4" />
-								</div>
-								<p className="text-sm font-medium leading-snug break-words">
-									{murid.namaLengkap}
-								</p>
-							</div>
-
-							{/* Baris 2: status lunas, total tagihan, dan tombol aksi */}
-							<div className="flex items-center justify-between gap-2 pl-10 sm:pl-12">
-								<p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-muted-foreground text-xs">
-									<span>{riwayatLunas.length} lunas</span>
-									{belumLunas.length > 0 && (
-										<span className="text-red-500">
-											· {belumLunas.length} belum lunas
+									<div className="flex shrink-0 items-center gap-1">
+										<span className="text-sm font-semibold whitespace-nowrap">
+											{toRupiah(item.jumlah)}
 										</span>
-									)}
-								</p>
-								<div className="flex shrink-0 items-center gap-1 sm:gap-2">
-									{belumLunas.length > 0 ? (
-										<span className="whitespace-nowrap text-xs font-semibold text-red-600 sm:text-sm">
-											{toRupiah(totalBelumLunas)}
-										</span>
-									) : (
-										<span className="whitespace-nowrap text-xs font-semibold text-green-700 sm:text-sm">
-											Lunas
-										</span>
-									)}
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-7 w-7 shrink-0 text-primary"
-										onClick={(e) => {
-											e.stopPropagation();
-											setAddForMurid({
-												muridId: murid.muridId,
-												namaLengkap: murid.namaLengkap,
-												pendaftaranKelasId: murid.pendaftaranKelasId,
-											});
-											setAddJumlah("");
-											setAddTanggal(formatDateToYYYYMMDD(new Date()));
-											setAddJenis("SPP");
-											setAddJudul(JENIS_CONFIG.SPP.judulDefault);
-										}}
-									>
-										<Plus className="h-4 w-4" />
-									</Button>
-									<ChevronDown
-										className={`h-4 w-4 text-muted-foreground transition-transform ${
-											isExpanded ? "rotate-180" : ""
-										}`}
-									/>
-								</div>
-							</div>
-						</button>
-
-						{isExpanded && (
-							<div className="space-y-4 border-t bg-muted/20 px-4 py-3">
-								{/* Belum Lunas */}
-								<div>
-									<p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-red-600 uppercase tracking-wide">
-										<AlertCircle className="h-3.5 w-3.5" />
-										Belum Lunas
-									</p>
-									{belumLunas.length === 0 ? (
-										<p className="text-muted-foreground text-sm">
-											Semua tagihan sudah lunas.
-										</p>
-									) : (
-										<ul className="space-y-2">
-											{belumLunas.map(renderItemRow)}
-										</ul>
-									)}
-								</div>
-
-								{/* Riwayat Lunas */}
-								<div>
-									<p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-green-700 uppercase tracking-wide">
-										<ReceiptText className="h-3.5 w-3.5" />
-										Riwayat Lunas
-									</p>
-									{riwayatLunas.length === 0 ? (
-										<p className="text-muted-foreground text-sm">
-											Belum ada pembayaran yang dilunaskan di kelas ini.
-										</p>
-									) : (
-										<ul className="space-y-2">
-											{riwayatLunas.map(renderItemRow)}
-										</ul>
-									)}
-								</div>
-							</div>
-						)}
-					</div>
-				);
-			})}
+										<Button
+											variant="ghost"
+											size="icon"
+											className="text-muted-foreground h-7 w-7"
+											onClick={() => {
+												setRincian(null);
+												openEditDialog(item);
+											}}
+										>
+											<Pencil className="h-3.5 w-3.5" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-7 w-7 text-red-500 hover:text-red-600"
+											onClick={() => {
+												setRincian(null);
+												setDeleteItem(item);
+											}}
+										>
+											<Trash2 className="h-3.5 w-3.5" />
+										</Button>
+									</div>
+								</li>
+							))}
+						</ul>
+					)}
+				</DialogContent>
+			</Dialog>
 
 			{/* Dialog: Tambah Pembayaran */}
 			<Dialog
@@ -661,6 +511,17 @@ export default function RingkasanTagihanKelas({
 						)}
 					</div>
 					<DialogFooter>
+						<Button
+							variant="ghost"
+							className="text-red-600 hover:text-red-700 sm:mr-auto"
+							onClick={() => {
+								if (editItem) setDeleteItem(editItem);
+								setEditItem(null);
+							}}
+						>
+							<Trash2 className="mr-1.5 h-4 w-4" />
+							Hapus
+						</Button>
 						<Button variant="outline" onClick={() => setEditItem(null)}>
 							Batal
 						</Button>

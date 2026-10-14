@@ -771,7 +771,12 @@ export const pembayaranRouter = createTRPCRouter({
 					}),
 					db.pendaftaranKelas.findMany({
 						where: { kelasId: input.kelasId },
-						select: { id: true, muridId: true },
+						select: {
+							id: true,
+							muridId: true,
+							status: true,
+							murid: { select: { id: true, namaLengkap: true, noWA: true } },
+						},
 					}),
 				]);
 
@@ -867,9 +872,21 @@ export const pembayaranRouter = createTRPCRouter({
 				}
 			}
 
-			const pendaftaranByMurid = new Map(
-				pendaftaranKelasList.map((pk) => [pk.muridId, pk.id]),
-			);
+			// Semua siswa yang masih terdaftar di kelas (bukan NON_AKTIF) harus muncul,
+			// termasuk yang belum punya tagihan/pembayaran sama sekali. Siswa NON_AKTIF
+			// hanya muncul jika masih punya riwayat tagihan di kelas ini.
+			for (const pk of pendaftaranKelasList) {
+				if (pk.status === "NON_AKTIF") continue;
+				getOrCreate(pk.murid.id, pk.murid.namaLengkap, pk.murid.noWA);
+			}
+
+			// Utamakan pendaftaran yang masih berjalan jika siswa punya lebih dari satu
+			const pendaftaranByMurid = new Map<string, string>();
+			for (const pk of pendaftaranKelasList) {
+				if (!pendaftaranByMurid.has(pk.muridId) || pk.status !== "NON_AKTIF") {
+					pendaftaranByMurid.set(pk.muridId, pk.id);
+				}
+			}
 			for (const entry of muridMap.values()) {
 				if (!entry.pendaftaranKelasId) {
 					entry.pendaftaranKelasId =

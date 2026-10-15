@@ -39,7 +39,6 @@ import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "./columns/columns-pembayaran";
 import EditPembayaran from "./drawer/edit-pembayaran";
 import TambahPembayaran from "./drawer/tambah-pembayaran";
-import PilihKelasPembayaran from "./pilih-kelas-pembayaran";
 import { type ReceiptItem, ReceiptPDF } from "./receipt-pdf";
 import TagihanLainTab from "./tabs/tagihan-lain-tab";
 
@@ -58,7 +57,7 @@ export default function PembayaranClient({
 	const [kelasIdFilter, setKelasIdFilter] = useState<string | "ALL">(
 		() => searchParams.get("kelasId") ?? "ALL",
 	);
-	const [activeTab, setActiveTab] = useState("ringkasan-kelas");
+	const [activeTab, setActiveTab] = useState("list");
 	const [jenisKelasFilter, setJenisKelasFilter] = useState<string | "ALL">(
 		"ALL",
 	);
@@ -292,12 +291,6 @@ export default function PembayaranClient({
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 				<div className="flex items-center justify-between">
 					<TabsList className="w-full justify-start overflow-x-auto sm:w-fit sm:justify-center [&::-webkit-scrollbar]:hidden">
-						<TabsTrigger
-							value="ringkasan-kelas"
-							className="shrink-0 whitespace-nowrap"
-						>
-							Ringkasan &amp; Ingatkan
-						</TabsTrigger>
 						<TabsTrigger value="list" className="shrink-0 whitespace-nowrap">
 							SPP (Tuition)
 						</TabsTrigger>
@@ -357,48 +350,42 @@ export default function PembayaranClient({
 					</div>
 				</div>
 
-				{activeTab !== "ringkasan-kelas" && (
-					<div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-						<div className="relative w-full sm:max-w-xs">
-							<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-							<Input
-								placeholder="Cari nama murid..."
-								className="pl-8"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-							/>
-						</div>
-
-						<div className="flex flex-wrap gap-2">
-							<Select
-								value={statusFilter}
-								onValueChange={(val) =>
-									setStatusFilter(val as StatusPembayaran | "ALL")
-								}
-							>
-								<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
-									<SelectValue placeholder="Filter Status" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="ALL">Semua Status</SelectItem>
-									<SelectItem value={StatusPembayaran.LUNAS}>
-										{formatStatus(StatusPembayaran.LUNAS)}
-									</SelectItem>
-									<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
-										{formatStatus(StatusPembayaran.BELUM_LUNAS)}
-									</SelectItem>
-									<SelectItem value={StatusPembayaran.PENDING}>
-										{formatStatus(StatusPembayaran.PENDING)}
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
+				<div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<div className="relative w-full sm:max-w-xs">
+						<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+						<Input
+							placeholder="Cari nama murid..."
+							className="pl-8"
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+						/>
 					</div>
-				)}
 
-				<TabsContent value="ringkasan-kelas" className="space-y-4">
-					<PilihKelasPembayaran />
-				</TabsContent>
+					<div className="flex flex-wrap gap-2">
+						<Select
+							value={statusFilter}
+							onValueChange={(val) =>
+								setStatusFilter(val as StatusPembayaran | "ALL")
+							}
+						>
+							<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
+								<SelectValue placeholder="Filter Status" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="ALL">Semua Status</SelectItem>
+								<SelectItem value={StatusPembayaran.LUNAS}>
+									{formatStatus(StatusPembayaran.LUNAS)}
+								</SelectItem>
+								<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
+									{formatStatus(StatusPembayaran.BELUM_LUNAS)}
+								</SelectItem>
+								<SelectItem value={StatusPembayaran.PENDING}>
+									{formatStatus(StatusPembayaran.PENDING)}
+								</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+				</div>
 
 				<TabsContent value="list" className="space-y-4">
 					<HeaderActionPortal>

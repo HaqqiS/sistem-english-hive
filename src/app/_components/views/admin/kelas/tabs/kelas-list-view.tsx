@@ -15,7 +15,6 @@ import {
 	Trash,
 	TrendingUp,
 	User,
-	Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -34,18 +33,13 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { labelUmur } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import type { TypeKelasWithSesiPertemuanCount } from "@/types/kelas.type";
 import { formatToWITA } from "@/utils/dateUtils";
-import {
-	formatStatus,
-	statusOrderBukuColorMap,
-	statusPendaftaranColorMap,
-} from "@/utils/statusUtils";
+import { formatStatus, statusOrderBukuColorMap } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
+import RingkasanTagihanKelas from "../../pembayaran/ringkasan-tagihan-kelas";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 interface KelasListViewProps {
@@ -224,53 +218,12 @@ function KelasCard({
 								</div>
 							</div>
 
-							{/* Daftar Murid */}
-							<div>
-								<p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-									Murid Aktif ({kelas._count.pendaftaranKelases})
+							{/* Daftar Murid & Pembayaran (tabel gaya Excel, data dimuat saat drawer dibuka) */}
+							<div className="min-w-0">
+								<p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
+									Murid & Pembayaran ({kelas._count.pendaftaranKelases})
 								</p>
-								{kelas.pendaftaranKelases.length > 0 ? (
-									<div className="flex flex-col">
-										{kelas.pendaftaranKelases.map((p, index: number) => (
-											<div key={p.id} className="flex flex-col">
-												<div className="flex items-center justify-between py-2">
-													<div className="flex items-center">
-														<span className="text-muted-foreground min-w-[24px] text-sm">
-															{index + 1}.
-														</span>
-														<span className="text-sm">
-															{p.murid?.namaLengkap ?? "Unknown"} |{" "}
-															{p.murid
-																? labelUmur(
-																		p.murid.tanggalLahir,
-																		p.murid.umur,
-																		p.murid.createdAt,
-																	)
-																: "-"}{" "}
-															| {p.murid?.kelasSekolah}
-														</span>
-													</div>
-													<Badge
-														variant="outline"
-														className={cn(
-															"border-none",
-															statusPendaftaranColorMap[p.status],
-														)}
-													>
-														{formatStatus(p.status)}
-													</Badge>
-												</div>
-												{index < kelas.pendaftaranKelases.length - 1 && (
-													<Separator />
-												)}
-											</div>
-										))}
-									</div>
-								) : (
-									<p className="text-sm text-muted-foreground italic">
-										Belum ada murid aktif.
-									</p>
-								)}
+								<RingkasanTagihanKelas kelasId={kelas.id} />
 							</div>
 
 							{/* Actions */}
@@ -303,21 +256,6 @@ function KelasCard({
 									>
 										<ArrowRight className="h-4 w-4" />
 										<span className="sr-only">Detail Kelas</span>
-									</Link>
-								</Button>
-								<Button
-									asChild
-									size="icon"
-									variant="outline"
-									className="h-9 w-9 shrink-0 bg-white"
-									title="Pembayaran Kelas"
-								>
-									<Link
-										href={`/admin/pembayaran?kelasId=${kelas.id}`}
-										onClick={saveScrollPosition}
-									>
-										<Wallet className="h-4 w-4" />
-										<span className="sr-only">Pembayaran Kelas</span>
 									</Link>
 								</Button>
 								<DropdownMenu>

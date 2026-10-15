@@ -42,7 +42,6 @@ import {
 
 interface RingkasanTagihanKelasProps {
 	kelasId: string;
-	highlightMurid?: string;
 }
 
 type Jenis = "SPP" | "BUKU" | "REGISTRASI";
@@ -64,7 +63,6 @@ type Item = {
 
 export default function RingkasanTagihanKelas({
 	kelasId,
-	highlightMurid,
 }: RingkasanTagihanKelasProps) {
 	const utils = api.useUtils();
 	// Rincian tagihan Buku/Registrasi satu siswa (dibuka dari sel tabel)
@@ -290,7 +288,6 @@ export default function RingkasanTagihanKelas({
 		<div className="space-y-2">
 			<PembayaranGridKelas
 				data={data.data}
-				highlightMurid={highlightMurid}
 				onEditSpp={(spp) => {
 					const lunas = spp.statusBayar === StatusPembayaran.LUNAS;
 					openEditDialog({

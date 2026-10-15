@@ -71,7 +71,6 @@ export default function KelasJatuhTempoH14() {
 		await Promise.all([
 			utils.dashboard.getKelasJatuhTempoH14.invalidate(),
 			utils.pembayaran.getRingkasanKelas.invalidate(),
-			utils.pembayaran.getRingkasanSemuaKelas.invalidate(),
 			utils.pembayaran.getAllPaginated.invalidate(),
 			utils.tagihanLain.getAllBukuPaginated.invalidate(),
 			utils.tagihanLain.getAllRegistrasiPaginated.invalidate(),

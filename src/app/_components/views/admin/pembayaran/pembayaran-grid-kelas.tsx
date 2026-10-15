@@ -2,6 +2,7 @@
 
 import type { StatusPembayaran } from "@prisma/client";
 import { Check, Clock, Plus, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -9,9 +10,11 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA, formatToWITA } from "@/utils/dateUtils";
+import { formatStatus, statusPendaftaranColorMap } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 type RingkasanMurid =
@@ -22,7 +25,6 @@ export type JenisRincian = "BUKU" | "REGISTRASI";
 
 interface PembayaranGridKelasProps {
 	data: RingkasanMurid[];
-	highlightMurid?: string;
 	/** Klik sel SPP: buka dialog edit pembayaran tersebut. */
 	onEditSpp: (spp: PembayaranSpp) => void;
 	/** Klik tombol +: tambah pembayaran untuk siswa. */
@@ -87,6 +89,14 @@ function detailSpp(s: PembayaranSpp) {
 	};
 }
 
+/** Nomor pembayaran SPP terbesar di antara semua siswa (= jumlah kolom SPP). */
+function maksimumKe(data: RingkasanMurid[]): number {
+	return data.reduce(
+		(max, m) => Math.max(max, ...m.spp.map((s) => s.pembayaranKe), 0),
+		0,
+	);
+}
+
 // Kelas garis sel ala spreadsheet (border-separate agar garis tetap terlihat saat di-scroll)
 const SEL = "border-b border-r";
 const SEL_KOSONG =
@@ -94,21 +104,13 @@ const SEL_KOSONG =
 
 export function PembayaranGridKelas({
 	data,
-	highlightMurid,
 	onEditSpp,
 	onTambah,
 	onBukaRincian,
 }: PembayaranGridKelasProps) {
 	// Kolom = pembayaran ke-1 sampai ke-N (N = terbesar di antara semua siswa)
-	const maxKe = data.reduce(
-		(max, m) => Math.max(max, ...m.spp.map((s) => s.pembayaranKe), 0),
-		0,
-	);
+	const maxKe = maksimumKe(data);
 	const kolomKe = Array.from({ length: Math.max(maxKe, 1) }, (_, i) => i + 1);
-
-	const term = highlightMurid?.trim().toLowerCase();
-	const isHighlighted = (nama: string) =>
-		!!term && nama.toLowerCase().includes(term);
 
 	// Ringkasan baris bawah (seperti baris total di Excel)
 	const lunasPerKolom = kolomKe.map((ke) => {
@@ -204,6 +206,14 @@ export function PembayaranGridKelas({
 								>
 									Nama Siswa
 								</th>
+								<th
+									className={cn(
+										SEL,
+										"bg-muted sticky top-0 z-20 min-w-24 px-2 py-2 text-center text-xs font-semibold",
+									)}
+								>
+									Status
+								</th>
 								{kolomKe.map((ke) => (
 									<th
 										key={ke}
@@ -253,7 +263,6 @@ export function PembayaranGridKelas({
 								const sppByKe = new Map(
 									murid.spp.map((s) => [s.pembayaranKe, s]),
 								);
-								const highlight = isHighlighted(murid.namaLengkap);
 
 								return (
 									<tr key={murid.muridId} className="group">
@@ -269,12 +278,34 @@ export function PembayaranGridKelas({
 											className={cn(
 												SEL,
 												"sticky left-10 z-10 min-w-48 px-2 py-1.5 font-medium",
-												highlight
-													? "bg-primary/15"
-													: "bg-background group-hover:bg-muted",
+												"bg-background group-hover:bg-muted",
 											)}
 										>
-											{murid.namaLengkap}
+											<div>{murid.namaLengkap}</div>
+											<div className="text-muted-foreground text-xs font-normal">
+												{labelUmurTahun(
+													murid.tanggalLahir,
+													murid.umur,
+													murid.createdAt,
+												)}
+												{murid.kelasSekolah ? ` · ${murid.kelasSekolah}` : ""}
+											</div>
+										</td>
+
+										<td className={cn(SEL, "px-2 text-center")}>
+											{murid.statusPendaftaran ? (
+												<Badge
+													variant="outline"
+													className={cn(
+														"border-none whitespace-nowrap",
+														statusPendaftaranColorMap[murid.statusPendaftaran],
+													)}
+												>
+													{formatStatus(murid.statusPendaftaran)}
+												</Badge>
+											) : (
+												<span className="text-muted-foreground">-</span>
+											)}
 										</td>
 
 										{kolomKe.map((ke) => {
@@ -360,6 +391,7 @@ export function PembayaranGridKelas({
 								>
 									Lunas / Total ({data.length} siswa)
 								</td>
+								<td className={cn(SEL, "bg-muted sticky bottom-0 z-20 p-0")} />
 								{lunasPerKolom.map((r, i) => (
 									<td
 										key={kolomKe[i]}

@@ -47,6 +47,7 @@ export function usePendaftaranKelas(options?: UseProgramKelasOptions) {
 			apiUtils.murid.getAllPaginated.invalidate(), // Update status murid
 			apiUtils.murid.getMuridNotRegisteredPaginated.invalidate(),
 			apiUtils.pembayaran.getAllPaginated.invalidate(), // Update tagihan baru
+			apiUtils.pembayaran.getRingkasanKelas.invalidate(), // Update tabel pembayaran di drawer kelas
 		]);
 	};
 	// ========== MUTATIONS ==========

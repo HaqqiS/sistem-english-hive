@@ -715,7 +715,7 @@ export const pembayaranRouter = createTRPCRouter({
 		}),
 
 	// GET RINGKASAN TAGIHAN PER KELAS (SPP + Buku + Registrasi digabung per murid)
-	// Dipakai di halaman "Pembayaran Kelas" (/admin/pembayaran?kelasId=...)
+	// Dipakai di drawer kelas (halaman Kelas > daftar kelas): tabel pembayaran semua siswa
 	getRingkasanKelas: cabangProtectedProcedure
 		.input(z.object({ kelasId: z.string() }))
 		.query(async ({ ctx, input }) => {
@@ -775,7 +775,17 @@ export const pembayaranRouter = createTRPCRouter({
 							id: true,
 							muridId: true,
 							status: true,
-							murid: { select: { id: true, namaLengkap: true, noWA: true } },
+							murid: {
+								select: {
+									id: true,
+									namaLengkap: true,
+									noWA: true,
+									umur: true,
+									tanggalLahir: true,
+									createdAt: true,
+									kelasSekolah: true,
+								},
+							},
 						},
 					}),
 				]);
@@ -785,6 +795,12 @@ export const pembayaranRouter = createTRPCRouter({
 				namaLengkap: string;
 				noWA: string;
 				pendaftaranKelasId: string | null;
+				// Status siswa di kelas ini & info singkat siswa (untuk kolom Status dan baris umur)
+				statusPendaftaran: StatusPendaftaran | null;
+				umur: number | null;
+				tanggalLahir: Date | null;
+				createdAt: Date | null;
+				kelasSekolah: string | null;
 				spp: {
 					id: string;
 					label: string;
@@ -827,6 +843,11 @@ export const pembayaranRouter = createTRPCRouter({
 					namaLengkap,
 					noWA,
 					pendaftaranKelasId: null,
+					statusPendaftaran: null,
+					umur: null,
+					tanggalLahir: null,
+					createdAt: null,
+					kelasSekolah: null,
 					spp: [],
 					buku: [],
 					registrasi: [],
@@ -881,16 +902,33 @@ export const pembayaranRouter = createTRPCRouter({
 			}
 
 			// Utamakan pendaftaran yang masih berjalan jika siswa punya lebih dari satu
-			const pendaftaranByMurid = new Map<string, string>();
+			const pendaftaranByMurid = new Map<
+				string,
+				(typeof pendaftaranKelasList)[number]
+			>();
+			const pendaftaranById = new Map<
+				string,
+				(typeof pendaftaranKelasList)[number]
+			>();
 			for (const pk of pendaftaranKelasList) {
+				pendaftaranById.set(pk.id, pk);
 				if (!pendaftaranByMurid.has(pk.muridId) || pk.status !== "NON_AKTIF") {
-					pendaftaranByMurid.set(pk.muridId, pk.id);
+					pendaftaranByMurid.set(pk.muridId, pk);
 				}
 			}
 			for (const entry of muridMap.values()) {
-				if (!entry.pendaftaranKelasId) {
-					entry.pendaftaranKelasId =
-						pendaftaranByMurid.get(entry.muridId) ?? null;
+				entry.pendaftaranKelasId ??=
+					pendaftaranByMurid.get(entry.muridId)?.id ?? null;
+
+				const pk = entry.pendaftaranKelasId
+					? pendaftaranById.get(entry.pendaftaranKelasId)
+					: undefined;
+				if (pk) {
+					entry.statusPendaftaran = pk.status;
+					entry.umur = pk.murid.umur;
+					entry.tanggalLahir = pk.murid.tanggalLahir;
+					entry.createdAt = pk.murid.createdAt;
+					entry.kelasSekolah = pk.murid.kelasSekolah;
 				}
 			}
 
@@ -947,79 +985,5 @@ export const pembayaranRouter = createTRPCRouter({
 				},
 				data,
 			};
-		}),
-
-	// RINGKASAN SEMUA KELAS (untuk grid pemilihan kelas di tab "Ringkasan & Ingatkan")
-	getRingkasanSemuaKelas: cabangProtectedProcedure
-		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
-		.query(async ({ ctx, input }) => {
-			const { db, allowedCabangId } = ctx;
-			const filterCabangId = allowedCabangId ?? input?.cabangId ?? undefined;
-
-			const kelasList = await db.kelas.findMany({
-				where: {
-					statusKelas: { not: "COMPLETED" },
-					...(filterCabangId ? { cabangId: filterCabangId } : {}),
-				},
-				orderBy: { createdAt: "desc" },
-				select: {
-					id: true,
-					kodeKelas: true,
-					level: true,
-					statusKelas: true,
-					jenisKelasRel: { select: { nama: true, tipe: true } },
-					pendaftaranKelases: {
-						where: { status: "AKTIF" },
-						select: {
-							id: true,
-							murid: { select: { id: true, namaLengkap: true } },
-						},
-					},
-				},
-			});
-
-			const kelasIds = kelasList.map((k) => k.id);
-
-			const [pembayarans, tagihanLains] = await Promise.all([
-				db.pembayaran.findMany({
-					where: {
-						pendaftaranKelas: { kelasId: { in: kelasIds } },
-						statusBayar: { not: StatusPembayaran.LUNAS },
-					},
-					select: {
-						jumlahBayar: true,
-						pendaftaranKelas: { select: { kelasId: true } },
-					},
-				}),
-				db.tagihanLain.findMany({
-					where: {
-						kelasId: { in: kelasIds },
-						status: { not: StatusPembayaran.LUNAS },
-					},
-					select: { jumlah: true, kelasId: true },
-				}),
-			]);
-
-			const totalMap = new Map<string, number>();
-			for (const p of pembayarans) {
-				const kId = p.pendaftaranKelas.kelasId;
-				totalMap.set(kId, (totalMap.get(kId) ?? 0) + p.jumlahBayar);
-			}
-			for (const t of tagihanLains) {
-				if (!t.kelasId) continue;
-				totalMap.set(t.kelasId, (totalMap.get(t.kelasId) ?? 0) + t.jumlah);
-			}
-
-			return kelasList.map((k) => ({
-				id: k.id,
-				kodeKelas: k.kodeKelas,
-				jenisKelasNama: k.jenisKelasRel?.nama ?? "-",
-				tipe: k.jenisKelasRel?.tipe ?? "REGULAR",
-				level: k.level,
-				statusKelas: k.statusKelas ?? "RUNNING",
-				jumlahSiswa: k.pendaftaranKelases.length,
-				totalBelumLunas: totalMap.get(k.id) ?? 0,
-				siswa: k.pendaftaranKelases.map((pk) => pk.murid.namaLengkap),
-			}));
 		}),
 });

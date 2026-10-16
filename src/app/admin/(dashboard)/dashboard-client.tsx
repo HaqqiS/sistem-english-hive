@@ -1,6 +1,5 @@
 "use client";
 
-import KelasJatuhTempoH14 from "@/app/_components/views/admin/dashboard/kelas-jatuh-tempo-h14";
 import KpiCards from "@/app/_components/views/admin/dashboard/kpi-cards";
 import PrediksiPendapatanCard from "@/app/_components/views/admin/dashboard/prediksi-pendapatan-card";
 import RegistrationChart from "@/app/_components/views/admin/dashboard/registration-chart";
@@ -25,14 +24,6 @@ export default function DashboardClientPage() {
 
 			{/* Estimasi Pendapatan Bulan Ini: full width di bawah Jadwal Hari Ini */}
 			<PrediksiPendapatanCard />
-
-			{/* 3. Operational Section */}
-			<div className="grid grid-cols-1 gap-4">
-				{/* Kelas dengan tagihan (SPP/Buku/Registrasi) jatuh tempo H-14, dikelompokkan per kelas */}
-				<div className="col-span-1 space-y-4">
-					<KelasJatuhTempoH14 />
-				</div>
-			</div>
 		</div>
 	);
 }

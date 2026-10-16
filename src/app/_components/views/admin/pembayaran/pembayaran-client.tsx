@@ -39,6 +39,7 @@ import { toRupiah } from "@/utils/toRupiah";
 import { columns } from "./columns/columns-pembayaran";
 import EditPembayaran from "./drawer/edit-pembayaran";
 import TambahPembayaran from "./drawer/tambah-pembayaran";
+import KelasJatuhTempoH14 from "./kelas-jatuh-tempo-h14";
 import { type ReceiptItem, ReceiptPDF } from "./receipt-pdf";
 import TagihanLainTab from "./tabs/tagihan-lain-tab";
 
@@ -57,7 +58,11 @@ export default function PembayaranClient({
 	const [kelasIdFilter, setKelasIdFilter] = useState<string | "ALL">(
 		() => searchParams.get("kelasId") ?? "ALL",
 	);
-	const [activeTab, setActiveTab] = useState("list");
+	// Tab pertama yang terbuka: Kelas Jatuh Tempo (H-14). Jika halaman dibuka dengan
+	// ?kelasId=..., buka tab SPP karena filter kelas ada di sana.
+	const [activeTab, setActiveTab] = useState(() =>
+		searchParams.get("kelasId") ? "list" : "kelas-h14",
+	);
 	const [jenisKelasFilter, setJenisKelasFilter] = useState<string | "ALL">(
 		"ALL",
 	);
@@ -291,6 +296,12 @@ export default function PembayaranClient({
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 				<div className="flex items-center justify-between">
 					<TabsList className="w-full justify-start overflow-x-auto sm:w-fit sm:justify-center [&::-webkit-scrollbar]:hidden">
+						<TabsTrigger
+							value="kelas-h14"
+							className="shrink-0 whitespace-nowrap"
+						>
+							Kelas Jatuh Tempo (H-14)
+						</TabsTrigger>
 						<TabsTrigger value="list" className="shrink-0 whitespace-nowrap">
 							SPP (Tuition)
 						</TabsTrigger>
@@ -322,70 +333,74 @@ export default function PembayaranClient({
 				</div>
 
 				{/* Shared Filters Header */}
-				<div className="mt-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">
-					<div className="flex flex-1 items-center gap-3">
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-9 w-9 shrink-0"
-							onClick={async () => {
-								refetch(); // Refetch SPP (from usePembayaran)
-								await invalidateAllTagihan(); // Refetch all tagihan lain
-							}}
-							disabled={isLoading || isFetching}
-							title="Refresh"
-						>
-							<RefreshCw
-								className={`h-4 w-4 ${
-									isLoading || isFetching ? "animate-spin" : ""
-								}`}
-							/>
-						</Button>
-						<div className="flex flex-col">
-							<h1 className="text-xl">Data Pembayaran</h1>
-							<p className="text-muted-foreground text-sm">
-								Monitor pembayaran SPP dan Tagihan Lainnya.
-							</p>
+				{activeTab !== "kelas-h14" && (
+					<>
+						<div className="mt-4 flex flex-col justify-between gap-3 md:flex-row md:items-center">
+							<div className="flex flex-1 items-center gap-3">
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-9 w-9 shrink-0"
+									onClick={async () => {
+										refetch(); // Refetch SPP (from usePembayaran)
+										await invalidateAllTagihan(); // Refetch all tagihan lain
+									}}
+									disabled={isLoading || isFetching}
+									title="Refresh"
+								>
+									<RefreshCw
+										className={`h-4 w-4 ${
+											isLoading || isFetching ? "animate-spin" : ""
+										}`}
+									/>
+								</Button>
+								<div className="flex flex-col">
+									<h1 className="text-xl">Data Pembayaran</h1>
+									<p className="text-muted-foreground text-sm">
+										Monitor pembayaran SPP dan Tagihan Lainnya.
+									</p>
+								</div>
+							</div>
 						</div>
-					</div>
-				</div>
 
-				<div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-					<div className="relative w-full sm:max-w-xs">
-						<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-						<Input
-							placeholder="Cari nama murid..."
-							className="pl-8"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-						/>
-					</div>
+						<div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<div className="relative w-full sm:max-w-xs">
+								<Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+								<Input
+									placeholder="Cari nama murid..."
+									className="pl-8"
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+								/>
+							</div>
 
-					<div className="flex flex-wrap gap-2">
-						<Select
-							value={statusFilter}
-							onValueChange={(val) =>
-								setStatusFilter(val as StatusPembayaran | "ALL")
-							}
-						>
-							<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
-								<SelectValue placeholder="Filter Status" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="ALL">Semua Status</SelectItem>
-								<SelectItem value={StatusPembayaran.LUNAS}>
-									{formatStatus(StatusPembayaran.LUNAS)}
-								</SelectItem>
-								<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
-									{formatStatus(StatusPembayaran.BELUM_LUNAS)}
-								</SelectItem>
-								<SelectItem value={StatusPembayaran.PENDING}>
-									{formatStatus(StatusPembayaran.PENDING)}
-								</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-				</div>
+							<div className="flex flex-wrap gap-2">
+								<Select
+									value={statusFilter}
+									onValueChange={(val) =>
+										setStatusFilter(val as StatusPembayaran | "ALL")
+									}
+								>
+									<SelectTrigger className="w-full sm:w-fit sm:min-w-[150px]">
+										<SelectValue placeholder="Filter Status" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="ALL">Semua Status</SelectItem>
+										<SelectItem value={StatusPembayaran.LUNAS}>
+											{formatStatus(StatusPembayaran.LUNAS)}
+										</SelectItem>
+										<SelectItem value={StatusPembayaran.BELUM_LUNAS}>
+											{formatStatus(StatusPembayaran.BELUM_LUNAS)}
+										</SelectItem>
+										<SelectItem value={StatusPembayaran.PENDING}>
+											{formatStatus(StatusPembayaran.PENDING)}
+										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</div>
+					</>
+				)}
 
 				<TabsContent value="list" className="space-y-4">
 					<HeaderActionPortal>
@@ -657,6 +672,15 @@ export default function PembayaranClient({
 						filterCabang={activeCabangId}
 						filterStatus={statusFilter}
 						searchQuery={debouncedSearch}
+					/>
+				</TabsContent>
+
+				<TabsContent value="kelas-h14">
+					<KelasJatuhTempoH14
+						onLihatPembayaran={(kelasId) => {
+							setKelasIdFilter(kelasId);
+							setActiveTab("list");
+						}}
 					/>
 				</TabsContent>
 

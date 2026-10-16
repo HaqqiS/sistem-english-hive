@@ -52,7 +52,14 @@ import {
 } from "@/utils/noWAUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
-export default function KelasJatuhTempoH14() {
+interface KelasJatuhTempoH14Props {
+	/** Dipanggil saat tombol "Lihat Pembayaran Kelas" diklik (pindah ke tab SPP dengan filter kelas). */
+	onLihatPembayaran: (kelasId: string) => void;
+}
+
+export default function KelasJatuhTempoH14({
+	onLihatPembayaran,
+}: KelasJatuhTempoH14Props) {
 	const { activeCabangId } = useGlobalCabangStore();
 	const utils = api.useUtils();
 
@@ -186,10 +193,13 @@ export default function KelasJatuhTempoH14() {
 											{kelas.siswa.length} siswa
 										</Badge>
 									</div>
-									<Button asChild variant="link" size="sm">
-										<Link href={`/admin/pembayaran?kelasId=${kelas.kelasId}`}>
-											Lihat Pembayaran Kelas
-										</Link>
+									<Button
+										type="button"
+										variant="link"
+										size="sm"
+										onClick={() => onLihatPembayaran(kelas.kelasId)}
+									>
+										Lihat Pembayaran Kelas
 									</Button>
 								</div>
 								<div className="overflow-x-auto rounded-md border">

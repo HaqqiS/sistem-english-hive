@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import z from "zod";
 import {
 	calculateInitialBill,
+	calculateSisaPertemuan,
 	generateTagihan,
 } from "@/server/services/pembayaran.service";
 import {
@@ -70,7 +71,24 @@ export const pendaftaranKelasRouter = createTRPCRouter({
 				},
 			});
 
-			return pendaftaranKelas;
+			// Sisa pertemuan per murid (kuota lunas - pertemuan terpakai).
+			// null = kelas tanpa harga (tidak dibatasi kuota).
+			const withSisa = await Promise.all(
+				pendaftaranKelas.map(async (p) => {
+					try {
+						const billing = await calculateSisaPertemuan(db, p.id);
+						return {
+							...p,
+							sisaPertemuan:
+								billing.hargaPerSesi > 0 ? billing.sisaPertemuan : null,
+						};
+					} catch {
+						return { ...p, sisaPertemuan: null };
+					}
+				}),
+			);
+
+			return withSisa;
 		}),
 
 	getActivePendaftaranByMuridId: cabangProtectedProcedure

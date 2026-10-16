@@ -3,11 +3,13 @@
 import type { StatusOrderBuku } from "@prisma/client";
 import {
 	Album,
+	AlertCircle,
 	ArrowRight,
 	BookOpenCheck,
 	BookX,
 	CalendarClock,
 	CalendarDays,
+	CheckCircle2,
 	Clock,
 	Edit2,
 	EllipsisVertical,
@@ -182,6 +184,27 @@ function KelasCard({
 									</div>
 								)}
 							</div>
+
+							{/* Ringkasan pembayaran kelas (terlihat tanpa membuka drawer) */}
+							{kelas.ringkasanPembayaran.jumlahTagihan > 0 && (
+								<div className="flex flex-wrap items-center gap-2 text-xs">
+									<span className="inline-flex items-center gap-1.5 rounded-md bg-green-100 px-2.5 py-1 font-medium text-green-700 dark:bg-green-950/50 dark:text-green-300">
+										<CheckCircle2 className="h-3.5 w-3.5" />
+										Terbayar {toRupiah(kelas.ringkasanPembayaran.terbayar)}
+									</span>
+									{kelas.ringkasanPembayaran.belumLunas > 0 ? (
+										<span className="inline-flex items-center gap-1.5 rounded-md bg-red-100 px-2.5 py-1 font-medium text-red-700 dark:bg-red-950/50 dark:text-red-300">
+											<AlertCircle className="h-3.5 w-3.5" />
+											Belum lunas{" "}
+											{toRupiah(kelas.ringkasanPembayaran.belumLunas)}
+										</span>
+									) : (
+										<span className="text-muted-foreground">
+											Semua tagihan lunas
+										</span>
+									)}
+								</div>
+							)}
 						</div>
 					</AccordionTrigger>
 
@@ -220,9 +243,6 @@ function KelasCard({
 
 							{/* Daftar Murid & Pembayaran (tabel gaya Excel, data dimuat saat drawer dibuka) */}
 							<div className="min-w-0">
-								<p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
-									Murid & Pembayaran ({kelas._count.pendaftaranKelases})
-								</p>
 								<RingkasanTagihanKelas kelasId={kelas.id} />
 							</div>
 

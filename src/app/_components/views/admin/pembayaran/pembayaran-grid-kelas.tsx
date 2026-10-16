@@ -1,8 +1,7 @@
 "use client";
 
-import type { StatusPembayaran } from "@prisma/client";
+import type { StatusPembayaran, StatusPendaftaran } from "@prisma/client";
 import { Check, Clock, Plus, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -14,7 +13,7 @@ import { labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA, formatToWITA } from "@/utils/dateUtils";
-import { formatStatus, statusPendaftaranColorMap } from "@/utils/statusUtils";
+import { formatStatus } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 type RingkasanMurid =
@@ -99,6 +98,15 @@ function maksimumKe(data: RingkasanMurid[]): number {
 
 // Kelas garis sel ala spreadsheet (border-separate agar garis tetap terlihat saat di-scroll)
 const SEL = "border-b border-r";
+
+/** Warna sel nama siswa menurut status (nama status muncul saat di-hover). */
+const WARNA_STATUS: Record<StatusPendaftaran, string> = {
+	AKTIF: "bg-(--badge-aktif-bg) text-(--badge-aktif-fg)",
+	NON_AKTIF: "bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)",
+	TRIAL: "bg-(--badge-trial-bg) text-(--badge-trial-fg)",
+	WAITING_LIST: "bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)",
+	OFF_SEMENTARA: "bg-(--badge-off-bg) text-(--badge-off-fg)",
+};
 const SEL_KOSONG =
 	"flex h-9 items-center justify-center bg-muted/30 text-xs text-muted-foreground";
 
@@ -111,25 +119,6 @@ export function PembayaranGridKelas({
 	// Kolom = pembayaran ke-1 sampai ke-N (N = terbesar di antara semua siswa)
 	const maxKe = maksimumKe(data);
 	const kolomKe = Array.from({ length: Math.max(maxKe, 1) }, (_, i) => i + 1);
-
-	// Ringkasan baris bawah (seperti baris total di Excel)
-	const lunasPerKolom = kolomKe.map((ke) => {
-		const ada = data.flatMap((m) => m.spp.filter((s) => s.pembayaranKe === ke));
-		return {
-			lunas: ada.filter((s) => s.statusBayar === "LUNAS").length,
-			total: ada.length,
-		};
-	});
-	const ringkasJenis = (jenis: "buku" | "registrasi") => {
-		const ada = data.filter((m) => m[jenis].length > 0);
-		return {
-			lunas: ada.filter((m) => statusGabungan(m[jenis]) === "LUNAS").length,
-			total: ada.length,
-		};
-	};
-	const ringkasBuku = ringkasJenis("buku");
-	const ringkasReg = ringkasJenis("registrasi");
-	const totalSisa = data.reduce((sum, m) => sum + m.totalBelumLunas, 0);
 
 	const sel = (
 		jenis: "buku" | "registrasi",
@@ -145,18 +134,32 @@ export function PembayaranGridKelas({
 				</td>
 			);
 		}
+		// Tanggal lunas = tanggal bayar terakhir dari tagihan yang sudah lunas
+		const tglLunas =
+			st === "LUNAS"
+				? items
+						.filter((i) => i.tanggalBayar)
+						.map((i) => new Date(i.tanggalBayar as Date))
+						.sort((a, b) => b.getTime() - a.getTime())[0]
+				: undefined;
+
 		return (
 			<td key={jenis} className={cn(SEL, "p-0")}>
 				<button
 					type="button"
 					onClick={() => onBukaRincian(murid.muridId, label)}
 					className={cn(
-						"flex h-9 w-full min-w-24 items-center justify-center gap-1 px-2 text-xs font-medium whitespace-nowrap",
+						"flex h-9 w-full min-w-28 items-center justify-center gap-1 px-2 text-xs font-medium whitespace-nowrap",
 						ISI_STATUS[st],
 					)}
 				>
 					<IkonStatus status={st} className="h-3.5 w-3.5" />
-					{items.length > 1 ? `${items.length} tagihan` : LABEL_STATUS[st]}
+					{/* Lunas: langsung tanggal & bulan (seperti SPP); selain itu tulis statusnya */}
+					{tglLunas
+						? formatToWITA(tglLunas, "DD/MM")
+						: items.length > 1
+							? `${items.length} tagihan`
+							: LABEL_STATUS[st]}
 				</button>
 			</td>
 		);
@@ -165,26 +168,6 @@ export function PembayaranGridKelas({
 	return (
 		<TooltipProvider delayDuration={150}>
 			<div className="space-y-2">
-				{/* Legenda */}
-				<div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-					{(
-						[
-							["Lunas", "bg-green-600"],
-							["Belum lunas", "bg-red-600"],
-							["Pending", "bg-orange-500"],
-							["Belum ada", "border border-dashed"],
-						] as const
-					).map(([label, cls]) => (
-						<span key={label} className="flex items-center gap-1.5">
-							<span className={cn("size-3.5 rounded-sm", cls)} />
-							{label}
-						</span>
-					))}
-					<span className="ml-auto hidden sm:inline">
-						Angka di sel = tanggal bayar / jatuh tempo (dd/MM)
-					</span>
-				</div>
-
 				{/* Tabel gaya spreadsheet: header & kolom nama dibekukan, scroll ke samping/bawah */}
 				<div className="bg-background max-h-[70vh] max-w-full overflow-auto rounded-md border-t border-l">
 					<table className="w-max min-w-full border-separate border-spacing-0 text-sm">
@@ -207,12 +190,13 @@ export function PembayaranGridKelas({
 									Nama Siswa
 								</th>
 								<th
+									title="Sisa jumlah pertemuan"
 									className={cn(
 										SEL,
-										"bg-muted sticky top-0 z-20 min-w-24 px-2 py-2 text-center text-xs font-semibold",
+										"bg-muted sticky top-0 z-20 w-16 min-w-16 px-1 py-2 text-center text-xs leading-tight font-semibold",
 									)}
 								>
-									Status
+									Sisa
 								</th>
 								{kolomKe.map((ke) => (
 									<th
@@ -275,36 +259,55 @@ export function PembayaranGridKelas({
 											{index + 1}
 										</td>
 										<td
+											title={
+												murid.statusPendaftaran
+													? formatStatus(murid.statusPendaftaran)
+													: undefined
+											}
 											className={cn(
 												SEL,
 												"sticky left-10 z-10 min-w-48 px-2 py-1.5 font-medium",
-												"bg-background group-hover:bg-muted",
+												murid.statusPendaftaran
+													? cn(
+															WARNA_STATUS[murid.statusPendaftaran],
+															"group-hover:brightness-95",
+														)
+													: "bg-background group-hover:bg-muted",
 											)}
 										>
-											<div>{murid.namaLengkap}</div>
-											<div className="text-muted-foreground text-xs font-normal">
-												{labelUmurTahun(
-													murid.tanggalLahir,
-													murid.umur,
-													murid.createdAt,
-												)}
-												{murid.kelasSekolah ? ` · ${murid.kelasSekolah}` : ""}
+											<div className="flex flex-wrap items-baseline gap-x-1.5">
+												<span>{murid.namaLengkap}</span>
+												<span className="text-xs font-normal whitespace-nowrap opacity-70">
+													{labelUmurTahun(
+														murid.tanggalLahir,
+														murid.umur,
+														murid.createdAt,
+													)}
+												</span>
 											</div>
 										</td>
 
-										<td className={cn(SEL, "px-2 text-center")}>
-											{murid.statusPendaftaran ? (
-												<Badge
-													variant="outline"
+										<td className={cn(SEL, "px-1 text-center")}>
+											{murid.sisaPertemuan === null ? (
+												<span
+													title="Tidak dibatasi kuota"
+													className="text-muted-foreground"
+												>
+													-
+												</span>
+											) : (
+												<span
 													className={cn(
-														"border-none whitespace-nowrap",
-														statusPendaftaranColorMap[murid.statusPendaftaran],
+														"inline-flex min-w-8 items-center justify-center rounded-md px-1.5 py-0.5 text-sm font-semibold",
+														murid.sisaPertemuan <= 0
+															? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300"
+															: murid.sisaPertemuan <= 2
+																? "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300"
+																: "bg-muted text-foreground",
 													)}
 												>
-													{formatStatus(murid.statusPendaftaran)}
-												</Badge>
-											) : (
-												<span className="text-muted-foreground">-</span>
+													{murid.sisaPertemuan}
+												</span>
 											)}
 										</td>
 
@@ -379,61 +382,6 @@ export function PembayaranGridKelas({
 								);
 							})}
 						</tbody>
-
-						<tfoot>
-							<tr>
-								<td
-									colSpan={2}
-									className={cn(
-										SEL,
-										"bg-muted sticky bottom-0 left-0 z-30 px-2 py-2 text-xs font-semibold",
-									)}
-								>
-									Lunas / Total ({data.length} siswa)
-								</td>
-								<td className={cn(SEL, "bg-muted sticky bottom-0 z-20 p-0")} />
-								{lunasPerKolom.map((r, i) => (
-									<td
-										key={kolomKe[i]}
-										className={cn(
-											SEL,
-											"bg-muted sticky bottom-0 z-20 px-2 py-2 text-center text-xs font-semibold",
-										)}
-									>
-										{r.lunas}/{r.total}
-									</td>
-								))}
-								<td
-									className={cn(
-										SEL,
-										"bg-muted sticky bottom-0 z-20 px-2 py-2 text-center text-xs font-semibold",
-									)}
-								>
-									{ringkasBuku.lunas}/{ringkasBuku.total}
-								</td>
-								<td
-									className={cn(
-										SEL,
-										"bg-muted sticky bottom-0 z-20 px-2 py-2 text-center text-xs font-semibold",
-									)}
-								>
-									{ringkasReg.lunas}/{ringkasReg.total}
-								</td>
-								<td
-									className={cn(
-										SEL,
-										"bg-muted sticky bottom-0 z-20 px-2 py-2 text-right text-xs font-semibold whitespace-nowrap",
-									)}
-								>
-									{totalSisa > 0 ? (
-										<span className="text-red-600">{toRupiah(totalSisa)}</span>
-									) : (
-										<span className="text-green-700">Lunas</span>
-									)}
-								</td>
-								<td className={cn(SEL, "bg-muted sticky bottom-0 z-20 p-0")} />
-							</tr>
-						</tfoot>
 					</table>
 				</div>
 			</div>

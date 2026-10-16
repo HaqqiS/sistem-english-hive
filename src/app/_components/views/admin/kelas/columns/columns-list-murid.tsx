@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -74,38 +73,36 @@ export const columns = ({
 	{
 		accessorKey: "murid.namaLengkap",
 		header: "Nama Murid",
-		cell: ({ row }) => (
-			<Link href={`/admin/pembayaran/${row.original.murid.id}`}>
-				<Button
-					variant="link"
-					className="text-foreground h-auto min-w-0 w-fit justify-start whitespace-normal break-words px-0 text-left text-base"
-				>
-					{row.original.murid.namaLengkap}
-				</Button>
-			</Link>
-		),
-		enableHiding: false,
-	},
-	{
-		accessorKey: "murid.umur",
-		header: "Umur & Kelas Sekolah",
-		cell: ({ row }) => (
-			<div>
-				<div className="text-muted-foreground text-[11px] uppercase tracking-wide md:hidden">
-					Umur &amp; Kelas Sekolah
-				</div>
-				<div>
-					{labelUmurTahun(
-						row.original.murid.tanggalLahir,
-						row.original.murid.umur,
-						row.original.murid.createdAt,
+		cell: ({ row }) => {
+			const { murid } = row.original;
+			const umur = labelUmurTahun(
+				murid.tanggalLahir,
+				murid.umur,
+				murid.createdAt,
+			);
+			return (
+				<div className="min-w-0">
+					<div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+						<Link href={`/admin/pembayaran/${murid.id}`}>
+							<Button
+								variant="link"
+								className="text-foreground h-auto min-w-0 w-fit justify-start whitespace-normal break-words px-0 text-left text-base"
+							>
+								{murid.namaLengkap}
+							</Button>
+						</Link>
+						<span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
+							{umur}
+						</span>
+					</div>
+					{murid.kelasSekolah && (
+						<div className="text-muted-foreground text-xs">
+							{murid.kelasSekolah}
+						</div>
 					)}
 				</div>
-				<div className="text-muted-foreground text-xs">
-					{row.original.murid.kelasSekolah}
-				</div>
-			</div>
-		),
+			);
+		},
 		enableHiding: false,
 	},
 	{
@@ -158,12 +155,16 @@ export const columns = ({
 			const status = row.original.status;
 
 			return (
-				<Badge
-					variant="outline"
-					className={cn("w-fit font-medium", statusPendaftaranColorMap[status])}
+				<span
+					title={formatStatus(status)}
+					className={cn(
+						"inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+						statusPendaftaranColorMap[status],
+					)}
 				>
+					<span className="size-1.5 shrink-0 rounded-full bg-current" />
 					{formatStatus(status)}
-				</Badge>
+				</span>
 			);
 		},
 		filterFn: (row, id, value: unknown) => {
@@ -173,6 +174,39 @@ export const columns = ({
 				return stringValues.includes(String(cell));
 			}
 			return String(cell) === String(value);
+		},
+	},
+	{
+		id: "sisaPertemuan",
+		header: () => <div className="w-full md:text-center">Sisa Pertemuan</div>,
+		cell: ({ row }) => {
+			const sisa = row.original.sisaPertemuan;
+			if (sisa === null) {
+				return (
+					<div
+						className="text-muted-foreground md:text-center"
+						title="Tidak dibatasi kuota"
+					>
+						-
+					</div>
+				);
+			}
+			return (
+				<div className="md:text-center">
+					<span
+						className={cn(
+							"inline-flex min-w-9 items-center justify-center rounded-md px-2 py-0.5 text-sm font-semibold",
+							sisa <= 0
+								? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300"
+								: sisa <= 2
+									? "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300"
+									: "bg-muted text-foreground",
+						)}
+					>
+						{sisa}
+					</span>
+				</div>
+			);
 		},
 	},
 	{

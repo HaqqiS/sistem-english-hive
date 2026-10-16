@@ -801,6 +801,8 @@ export const pembayaranRouter = createTRPCRouter({
 				tanggalLahir: Date | null;
 				createdAt: Date | null;
 				kelasSekolah: string | null;
+				// Sisa pertemuan (kuota lunas - terpakai); null = kelas tanpa batas kuota
+				sisaPertemuan: number | null;
 				spp: {
 					id: string;
 					label: string;
@@ -848,6 +850,7 @@ export const pembayaranRouter = createTRPCRouter({
 					tanggalLahir: null,
 					createdAt: null,
 					kelasSekolah: null,
+					sisaPertemuan: null,
 					spp: [],
 					buku: [],
 					registrasi: [],
@@ -931,6 +934,23 @@ export const pembayaranRouter = createTRPCRouter({
 					entry.kelasSekolah = pk.murid.kelasSekolah;
 				}
 			}
+
+			// Sisa pertemuan per siswa (paralel; per-kelas)
+			await Promise.all(
+				Array.from(muridMap.values()).map(async (entry) => {
+					if (!entry.pendaftaranKelasId) return;
+					try {
+						const billing = await calculateSisaPertemuan(
+							db,
+							entry.pendaftaranKelasId,
+						);
+						entry.sisaPertemuan =
+							billing.hargaPerSesi > 0 ? billing.sisaPertemuan : null;
+					} catch {
+						entry.sisaPertemuan = null;
+					}
+				}),
+			);
 
 			const data = Array.from(muridMap.values())
 				.map((entry) => {

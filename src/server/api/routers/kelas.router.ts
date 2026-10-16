@@ -1010,8 +1010,68 @@ async function getKelasByStatus(
 
 	// Filter sesiPertemuan < 24 dihapus — status (RUNNING/LEVEL_UP/COMPLETED) sudah
 	// menjadi sumber kebenaran. COMPLETED otomatis tidak muncul karena query filter by status.
+	// Total pembayaran per kelas (ditampilkan di kartu kelas tanpa membuka drawer).
+	// Aturan sama dengan ringkasan di drawer: SPP + Buku + Registrasi,
+	// "belum lunas" = semua tagihan yang statusnya bukan LUNAS.
+	const kelasIds = allKelasData.map((k) => k.id);
+	const [sppList, tagihanList] =
+		kelasIds.length > 0
+			? await Promise.all([
+					db.pembayaran.findMany({
+						where: { pendaftaranKelas: { kelasId: { in: kelasIds } } },
+						select: {
+							jumlahBayar: true,
+							statusBayar: true,
+							pendaftaranKelas: { select: { kelasId: true } },
+						},
+					}),
+					db.tagihanLain.findMany({
+						where: {
+							kelasId: { in: kelasIds },
+							kategori: { in: ["BUKU", "REGISTRASI"] },
+						},
+						select: { kelasId: true, jumlah: true, status: true },
+					}),
+				])
+			: [[], []];
+
+	const ringkasanMap = new Map<
+		string,
+		{ terbayar: number; belumLunas: number; jumlahTagihan: number }
+	>();
+	const tambah = (kelasId: string, jumlah: number, lunas: boolean) => {
+		const cur = ringkasanMap.get(kelasId) ?? {
+			terbayar: 0,
+			belumLunas: 0,
+			jumlahTagihan: 0,
+		};
+		cur.jumlahTagihan += 1;
+		if (lunas) cur.terbayar += jumlah;
+		else cur.belumLunas += jumlah;
+		ringkasanMap.set(kelasId, cur);
+	};
+	for (const p of sppList) {
+		tambah(
+			p.pendaftaranKelas.kelasId,
+			p.jumlahBayar,
+			p.statusBayar === "LUNAS",
+		);
+	}
+	for (const t of tagihanList) {
+		if (t.kelasId) tambah(t.kelasId, t.jumlah, t.status === "LUNAS");
+	}
+
+	const kelasDenganRingkasan = allKelasData.map((k) => ({
+		...k,
+		ringkasanPembayaran: ringkasanMap.get(k.id) ?? {
+			terbayar: 0,
+			belumLunas: 0,
+			jumlahTagihan: 0,
+		},
+	}));
+
 	const rankMap = await getJenisKelasRankMap(db);
-	return sortKelasWithRank(allKelasData, rankMap);
+	return sortKelasWithRank(kelasDenganRingkasan, rankMap);
 }
 
 // --- Helpers for Custom Sorting ---

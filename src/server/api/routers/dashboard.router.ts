@@ -1,6 +1,7 @@
 import {
 	KategoriTagihan,
 	type Prisma,
+	type PrismaClient,
 	StatusKelas,
 	StatusMurid,
 	StatusPembayaran,
@@ -513,71 +514,23 @@ export const dashboardRouter = createTRPCRouter({
 				})
 				.optional(),
 		)
-		.query(async ({ ctx, input }) => {
-			const { db, allowedCabangId } = ctx;
-			const filterCabangId = allowedCabangId ?? input?.cabangId;
-			const jumlahBulan = input?.jumlahBulan ?? 12;
+		.query(async ({ ctx, input }) =>
+			hitungAkurasiTagihanLain(ctx, input, KategoriTagihan.REGISTRASI),
+		),
 
-			// 2 slot paling akhir selalu bulan berjalan (offset 0) & bulan depan
-			// (offset -1). Sisanya (jumlahBulan - 2) slot ke belakang.
-			const offsetTertua = jumlahBulan - 2;
-
-			const rangeStart = dayjs()
-				.subtract(offsetTertua, "month")
-				.startOf("month")
-				.toDate();
-			const rangeEnd = dayjs().add(1, "month").endOf("month").toDate();
-
-			const tagihanRegistrasi = await db.tagihanLain.findMany({
-				where: {
-					kategori: KategoriTagihan.REGISTRASI,
-					createdAt: { gte: rangeStart, lte: rangeEnd },
-					murid: filterCabangId ? { cabangId: filterCabangId } : undefined,
-				},
-				select: {
-					jumlah: true,
-					createdAt: true,
-					status: true,
-				},
-			});
-
-			type BulanAgg = {
-				totalTagihan: number;
-				totalTerbayar: number;
-				isBulanBerjalanAtauDepan: boolean;
-			};
-			const grouped = new Map<string, BulanAgg>();
-			for (let i = offsetTertua; i >= -1; i--) {
-				const key = dayjs().subtract(i, "month").format("MMM YYYY");
-				grouped.set(key, {
-					totalTagihan: 0,
-					totalTerbayar: 0,
-					isBulanBerjalanAtauDepan: i <= 0,
-				});
-			}
-
-			for (const t of tagihanRegistrasi) {
-				const key = dayjs(t.createdAt).format("MMM YYYY");
-				const agg = grouped.get(key);
-				if (!agg) continue;
-
-				agg.totalTagihan += t.jumlah;
-				if (t.status === StatusPembayaran.LUNAS) {
-					agg.totalTerbayar += t.jumlah;
-				}
-			}
-
-			return Array.from(grouped.entries()).map(([bulan, agg]) => ({
-				bulan,
-				totalTagihan: agg.totalTagihan,
-				totalTerbayar: agg.totalTerbayar,
-				isBulanBerjalanAtauDepan: agg.isBulanBerjalanAtauDepan,
-				akurasiPersen:
-					agg.totalTagihan > 0
-						? Math.round((agg.totalTerbayar / agg.totalTagihan) * 1000) / 10
-						: null,
-			}));
-		}),
+	// 3e. Akurasi Buku: sama seperti Registrasi, untuk tagihan kategori BUKU.
+	getAkurasiBuku: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional().nullable(),
+					jumlahBulan: z.number().min(3).max(24).default(12),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) =>
+			hitungAkurasiTagihanLain(ctx, input, KategoriTagihan.BUKU),
+		),
 
 	// 4. Jadwal Hari Ini
 	getTodaySchedule: cabangProtectedProcedure
@@ -961,3 +914,76 @@ export const dashboardRouter = createTRPCRouter({
 			});
 		}),
 });
+
+/**
+ * Akurasi tagihan di TagihanLain (Registrasi / Buku) per bulan.
+ * Basis bulan = createdAt tagihan; terbayar = status LUNAS.
+ * 2 slot terakhir selalu bulan berjalan & bulan depan (belum final).
+ */
+async function hitungAkurasiTagihanLain(
+	ctx: { db: PrismaClient; allowedCabangId: string | undefined },
+	input: { cabangId?: string | null; jumlahBulan: number } | undefined,
+	kategori: KategoriTagihan,
+) {
+	const { db, allowedCabangId } = ctx;
+	const filterCabangId = allowedCabangId ?? input?.cabangId;
+	const jumlahBulan = input?.jumlahBulan ?? 12;
+
+	const offsetTertua = jumlahBulan - 2;
+
+	const rangeStart = dayjs()
+		.subtract(offsetTertua, "month")
+		.startOf("month")
+		.toDate();
+	const rangeEnd = dayjs().add(1, "month").endOf("month").toDate();
+
+	const tagihan = await db.tagihanLain.findMany({
+		where: {
+			kategori,
+			createdAt: { gte: rangeStart, lte: rangeEnd },
+			murid: filterCabangId ? { cabangId: filterCabangId } : undefined,
+		},
+		select: {
+			jumlah: true,
+			createdAt: true,
+			status: true,
+		},
+	});
+
+	type BulanAgg = {
+		totalTagihan: number;
+		totalTerbayar: number;
+		isBulanBerjalanAtauDepan: boolean;
+	};
+	const grouped = new Map<string, BulanAgg>();
+	for (let i = offsetTertua; i >= -1; i--) {
+		const key = dayjs().subtract(i, "month").format("MMM YYYY");
+		grouped.set(key, {
+			totalTagihan: 0,
+			totalTerbayar: 0,
+			isBulanBerjalanAtauDepan: i <= 0,
+		});
+	}
+
+	for (const t of tagihan) {
+		const key = dayjs(t.createdAt).format("MMM YYYY");
+		const agg = grouped.get(key);
+		if (!agg) continue;
+
+		agg.totalTagihan += t.jumlah;
+		if (t.status === StatusPembayaran.LUNAS) {
+			agg.totalTerbayar += t.jumlah;
+		}
+	}
+
+	return Array.from(grouped.entries()).map(([bulan, agg]) => ({
+		bulan,
+		totalTagihan: agg.totalTagihan,
+		totalTerbayar: agg.totalTerbayar,
+		isBulanBerjalanAtauDepan: agg.isBulanBerjalanAtauDepan,
+		akurasiPersen:
+			agg.totalTagihan > 0
+				? Math.round((agg.totalTerbayar / agg.totalTagihan) * 1000) / 10
+				: null,
+	}));
+}

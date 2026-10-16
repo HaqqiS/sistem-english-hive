@@ -189,12 +189,17 @@ function AkurasiChartSection({
 }
 
 export default function PrediksiPendapatanCard() {
-	const { prediksiPendapatan, akurasiPrediksi, akurasiRegistrasi } =
-		useDashboard();
+	const {
+		prediksiPendapatan,
+		akurasiPrediksi,
+		akurasiRegistrasi,
+		akurasiBuku,
+	} = useDashboard();
 	const { data, isLoading } = prediksiPendapatan;
 	const { data: dataAkurasi, isLoading: isLoadingAkurasi } = akurasiPrediksi;
 	const { data: dataRegistrasi, isLoading: isLoadingRegistrasi } =
 		akurasiRegistrasi;
+	const { data: dataBuku, isLoading: isLoadingBuku } = akurasiBuku;
 
 	const totalSiswa =
 		(data?.reguler.jumlahSiswa ?? 0) + (data?.privat.jumlahSiswa ?? 0);
@@ -284,6 +289,14 @@ export default function PrediksiPendapatanCard() {
 					data={dataRegistrasi}
 					isLoading={isLoadingRegistrasi}
 					pesanKosong="Belum ada tagihan registrasi untuk dibandingkan."
+				/>
+
+				{/* Chart akurasi Buku */}
+				<AkurasiChartSection
+					title="Akurasi Buku"
+					data={dataBuku}
+					isLoading={isLoadingBuku}
+					pesanKosong="Belum ada tagihan buku untuk dibandingkan."
 				/>
 			</CardContent>
 		</Card>

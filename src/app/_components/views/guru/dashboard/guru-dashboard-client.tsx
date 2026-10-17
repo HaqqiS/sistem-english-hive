@@ -4,6 +4,7 @@ import { StatusAbsenGuru } from "@prisma/client";
 import {
 	AlertCircle,
 	ArrowLeft,
+	Ban,
 	CalendarClock,
 	Check,
 	CheckCircle2,
@@ -524,6 +525,12 @@ export default function GuruDashboardClient() {
 									: "berjalan";
 						const meta = SESI_STATE[state];
 
+						// Admin memblokir absensi jadwal ini untuk hari ini: guru tidak bisa
+						// memulai / bergabung ke sesi sampai blokir dibuka.
+						const diblokir =
+							!!jadwal.blokirAbsensi &&
+							(state === "belum" || state === "gabung");
+
 						// Pertemuan yang akan/sedang berlangsung hari ini. Kalau sesi hari ini
 						// sudah dibuat, jumlahSesi sudah termasuk pertemuan ini.
 						const pertemuanKe = sudahDimulai
@@ -716,6 +723,22 @@ export default function GuruDashboardClient() {
 									)}
 								</div>
 
+								{/* Pemberitahuan: absensi diblokir admin */}
+								{jadwal.blokirAbsensi &&
+									(state === "belum" || state === "gabung") && (
+										<div className="flex items-start gap-2 border-t border-red-200 bg-red-50 px-4 py-3 text-sm dark:border-red-900/50 dark:bg-red-950/30">
+											<Ban className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+											<div className="min-w-0">
+												<p className="font-semibold text-red-700 dark:text-red-300">
+													Absensi diblokir admin hari ini
+												</p>
+												<p className="text-xs break-words text-red-700/90 dark:text-red-300/90">
+													{jadwal.blokirAbsensi.catatan}
+												</p>
+											</div>
+										</div>
+									)}
+
 								{/* Aksi utama */}
 								<div className="bg-muted/30 border-t p-3">
 									{state === "selesai" ? (
@@ -748,7 +771,7 @@ export default function GuruDashboardClient() {
 											variant="outline"
 											className="border-primary/50 text-primary hover:bg-primary/10 bg-background h-11 w-full text-base"
 											onClick={() => handleMulaiSesiClick(jadwal)}
-											disabled={isStartingSesi}
+											disabled={isStartingSesi || diblokir}
 										>
 											{isThisItemLoading ? (
 												<Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -764,7 +787,7 @@ export default function GuruDashboardClient() {
 											<Button
 												className="h-11 w-full text-base"
 												onClick={() => handleMulaiSesiClick(jadwal)}
-												disabled={isStartingSesi}
+												disabled={isStartingSesi || diblokir}
 											>
 												{isThisItemLoading ? (
 													<Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -778,7 +801,7 @@ export default function GuruDashboardClient() {
 													variant="outline"
 													className="h-10 w-full text-sm"
 													onClick={() => openBuatKodeDialog(jadwal)}
-													disabled={isStartingSesi}
+													disabled={isStartingSesi || diblokir}
 												>
 													<KeyRound className="mr-2 h-4 w-4" />
 													Buat Kode Pengganti

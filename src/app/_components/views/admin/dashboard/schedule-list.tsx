@@ -2,6 +2,7 @@
 
 import type { StatusKelas } from "@prisma/client";
 import {
+	Ban,
 	CalendarDays,
 	CheckCircle2,
 	ChevronDown,
@@ -9,22 +10,47 @@ import {
 	Clock,
 	DoorOpen,
 	GraduationCap,
+	Loader2,
+	ShieldCheck,
 	User,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	PERTEMUAN_FINAL_TEST,
 	PERTEMUAN_MIDDLE_TEST,
 } from "@/constants/sesi-event";
 import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
 import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 
 type StatusWaktu = "BERLANGSUNG" | "AKAN_DATANG" | "SELESAI";
 type EventLabel = "MIDDLE TEST" | "FINAL TEST";
+
+/** Target dialog blokir absensi guru (jadwal yang sedang diatur). */
+type BlokirTarget = {
+	id: string;
+	kode: string;
+	guru: string;
+	terblokir: boolean;
+};
+
+/** Isian cepat untuk catatan; admin tetap bisa mengetik manual. */
+const PRESET_CATATAN = ["Murid izin", "Murid izin sakit", "Rescheduled"];
 
 /** Warna pinggir kartu mengikuti status kelas (sama dengan warna badge status kelas). */
 const BORDER_STATUS_KELAS: Record<StatusKelas, string> = {
@@ -68,6 +94,33 @@ export default function ScheduleList() {
 	const [tampilSelesai, setTampilSelesai] = useState(false);
 	// Filter cepat: hanya tampilkan kelas yang sedang ada event test tertentu
 	const [filterEvent, setFilterEvent] = useState<EventLabel | null>(null);
+
+	// Blokir absensi guru (khusus hari ini) + catatan manual dari admin
+	const utils = api.useUtils();
+	const [blokirTarget, setBlokirTarget] = useState<BlokirTarget | null>(null);
+	const [catatan, setCatatan] = useState("");
+	const tutupDialog = () => {
+		setBlokirTarget(null);
+		setCatatan("");
+	};
+	const blokirMutation = api.dashboard.blokirAbsensiGuru.useMutation({
+		onSuccess: async () => {
+			toast.success("Absensi guru diblokir untuk hari ini");
+			await utils.dashboard.getTodaySchedule.invalidate();
+			tutupDialog();
+		},
+		onError: (e) => toast.error(e.message),
+	});
+	const bukaBlokirMutation = api.dashboard.bukaBlokirAbsensiGuru.useMutation({
+		onSuccess: async () => {
+			toast.success("Blokir absensi dibuka");
+			await utils.dashboard.getTodaySchedule.invalidate();
+			tutupDialog();
+		},
+		onError: (e) => toast.error(e.message),
+	});
+	const sedangMemproses =
+		blokirMutation.isPending || bukaBlokirMutation.isPending;
 	useEffect(() => {
 		const t = setInterval(() => setNow(jamSekarang()), 60_000);
 		return () => clearInterval(t);
@@ -108,6 +161,7 @@ export default function ScheduleList() {
 						eventUjian: getEventUjian(pertemuanKe),
 						kode: j.kelas.kodeKelas,
 						statusKelas: j.kelas.statusKelas,
+						blokir: j.blokirAbsensi,
 						ruang: j.ruang.namaRuang,
 						mulai,
 						selesai,
@@ -314,13 +368,19 @@ export default function ScheduleList() {
 															"opacity-75",
 													)}
 												>
-													{/* Kartu 2 baris: (1) kode kelas + status, (2) jam · ruang · guru */}
+													{/* Kartu 2 baris: (1) kode kelas + status, (2) ruang & guru ke bawah, lalu tombol blokir di kiri */}
 													<div className="space-y-1 px-3 py-2">
 														<div className="flex items-start justify-between gap-2">
 															<div className="min-w-0">
 																<p className="text-sm leading-snug font-semibold break-words">
 																	{i.kode}
 																</p>
+																{i.blokir && (
+																	<span className="mt-1 mr-1 inline-flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] leading-none font-extrabold tracking-wide text-white">
+																		<Ban className="h-3 w-3" />
+																		ABSENSI DIBLOKIR
+																	</span>
+																)}
 																{i.eventUjian && (
 																	<span
 																		title={`Pertemuan ke-${i.pertemuanKe}`}
@@ -358,21 +418,59 @@ export default function ScheduleList() {
 																</Badge>
 															) : null}
 														</div>
-														<div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-															<span className="flex items-center gap-1 font-mono">
-																<Clock className="h-3 w-3 shrink-0" />
-																{i.mulai}
-																{i.selesai ? ` - ${i.selesai}` : ""}
-															</span>
-															<span className="flex items-center gap-1">
+														<div className="text-muted-foreground flex flex-col gap-0.5 text-xs">
+															<span className="flex items-center gap-1.5">
 																<DoorOpen className="h-3 w-3 shrink-0" />
 																{i.ruang}
 															</span>
-															<span className="flex items-center gap-1">
-																<User className="h-3 w-3 shrink-0" />
+															<span className="flex items-start gap-1.5">
+																<User className="mt-0.5 h-3 w-3 shrink-0" />
 																<span className="break-words">{i.guru}</span>
 															</span>
 														</div>
+
+														{!i.sudahAbsen && (
+															<div className="pt-1">
+																<button
+																	type="button"
+																	onClick={() => {
+																		setBlokirTarget({
+																			id: i.id,
+																			kode: i.kode,
+																			guru: i.guru,
+																			terblokir: !!i.blokir,
+																		});
+																		setCatatan(i.blokir?.catatan ?? "");
+																	}}
+																	className={cn(
+																		"inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
+																		i.blokir
+																			? "bg-red-600 text-white hover:bg-red-700"
+																			: "bg-green-50 text-green-700 ring-1 ring-green-200 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-300 dark:ring-green-900",
+																	)}
+																>
+																	{i.blokir ? (
+																		<ShieldCheck className="h-3.5 w-3.5" />
+																	) : (
+																		<Ban className="h-3.5 w-3.5" />
+																	)}
+																	{i.blokir
+																		? "Ubah / Buka blokir"
+																		: "Blokir absensi"}
+																</button>
+															</div>
+														)}
+
+														{i.blokir && (
+															<p className="text-xs break-words text-red-700 dark:text-red-300">
+																<span className="font-semibold">Catatan:</span>{" "}
+																{i.blokir.catatan}
+																<span className="text-muted-foreground">
+																	{" "}
+																	· {i.blokir.olehNama}
+																</span>
+															</p>
+														)}
 													</div>
 												</div>
 											);
@@ -384,6 +482,98 @@ export default function ScheduleList() {
 					</div>
 				)}
 			</CardContent>
+
+			{/* Dialog blokir absensi guru (khusus hari ini) */}
+			<Dialog
+				open={!!blokirTarget}
+				onOpenChange={(open) => {
+					if (!open && !sedangMemproses) tutupDialog();
+				}}
+			>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>
+							{blokirTarget?.terblokir
+								? "Ubah / Buka Blokir Absensi"
+								: "Blokir Absensi Guru"}
+						</DialogTitle>
+						<DialogDescription>
+							<span className="font-medium break-words">
+								{blokirTarget?.kode}
+							</span>
+							{blokirTarget?.guru && blokirTarget.guru !== "-"
+								? ` · ${blokirTarget.guru}`
+								: ""}
+							. Guru tidak bisa memulai atau bergabung ke sesi kelas ini sampai
+							blokir dibuka. Berlaku hanya hari ini (
+							{dayjs().format("D MMMM YYYY")}).
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="space-y-2">
+						<div className="flex flex-wrap gap-1.5">
+							{PRESET_CATATAN.map((p) => (
+								<button
+									key={p}
+									type="button"
+									onClick={() => setCatatan(p)}
+									className="bg-muted hover:bg-muted/70 rounded-full px-2.5 py-1 text-xs font-medium transition-colors"
+								>
+									{p}
+								</button>
+							))}
+						</div>
+						<Textarea
+							value={catatan}
+							onChange={(e) => setCatatan(e.target.value)}
+							placeholder="Catatan untuk guru, mis. Izin menghadiri acara keluarga"
+							maxLength={300}
+							rows={3}
+						/>
+						<p className="text-muted-foreground text-right text-xs">
+							{catatan.length}/300
+						</p>
+					</div>
+
+					<DialogFooter className="gap-2 sm:gap-2">
+						{blokirTarget?.terblokir && (
+							<Button
+								variant="outline"
+								disabled={sedangMemproses}
+								onClick={() =>
+									blokirTarget &&
+									bukaBlokirMutation.mutate({ jadwalKelasId: blokirTarget.id })
+								}
+							>
+								{bukaBlokirMutation.isPending ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : (
+									<ShieldCheck className="mr-2 h-4 w-4" />
+								)}
+								Buka Blokir
+							</Button>
+						)}
+						<Button
+							variant="destructive"
+							disabled={sedangMemproses || catatan.trim().length < 3}
+							onClick={() =>
+								blokirTarget &&
+								blokirMutation.mutate({
+									jadwalKelasId: blokirTarget.id,
+									catatan: catatan.trim(),
+								})
+							}
+						>
+							{blokirMutation.isPending ? (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							) : (
+								<Ban className="mr-2 h-4 w-4" />
+							)}
+							{blokirTarget?.terblokir ? "Simpan Catatan" : "Blokir Absensi"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</Card>
 	);
 }

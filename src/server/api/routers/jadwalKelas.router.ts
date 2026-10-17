@@ -2,6 +2,7 @@ import { Hari, Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
+import { getBlokirHariIni } from "@/server/services/blokir-absensi.service";
 import {
 	createBulkJadwal,
 	updateJadwal,
@@ -506,6 +507,8 @@ export const jadwalKelasRouter = createTRPCRouter({
 			);
 
 			// 4. Proses data agar rapi untuk UI
+			const blokirMap = await getBlokirHariIni(db);
+
 			const hasil = jadwalHariIni.map((jadwal) => {
 				const jam = jadwal.jamSlotTetap ?? jadwal.jamSlotCustom;
 				const sesiRecord = sesiMap.get(jadwal.id);
@@ -579,6 +582,7 @@ export const jadwalKelasRouter = createTRPCRouter({
 					sudahBergabungSesiIni,
 					isJadwalPengganti: targetGuruId !== session.user.id,
 					logAktivitas,
+					blokirAbsensi: blokirMap.get(jadwal.id) ?? null,
 				};
 			});
 

@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import dayjs from "dayjs";
 import z from "zod";
 import { UserRole } from "@/server/auth/type";
+import { getBlokirJadwal } from "@/server/services/blokir-absensi.service";
 import { getPeriodeGaji } from "@/server/services/gaji.service";
 import {
 	createSesiPertemuanCore,
@@ -393,6 +394,15 @@ export const absenGuruRouter = createTRPCRouter({
 						code: "FORBIDDEN",
 						message:
 							"Anda tidak berhak memulai sesi untuk kelas di cabang lain.",
+					});
+				}
+
+				// Admin dapat memblokir absensi jadwal ini untuk hari ini (izin, dll)
+				const blokir = await getBlokirJadwal(db, jadwalKelasId);
+				if (blokir) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: `Absensi kelas ini diblokir admin hari ini: ${blokir.catatan}`,
 					});
 				}
 

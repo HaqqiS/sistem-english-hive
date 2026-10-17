@@ -7,9 +7,16 @@ import {
 	StatusPembayaran,
 	StatusPendaftaran,
 } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 import z from "zod";
 import { JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
 import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
+import { UserRole } from "@/server/auth/type";
+import {
+	getBlokirHariIni,
+	hapusBlokirJadwal,
+	setBlokirJadwal,
+} from "@/server/services/blokir-absensi.service";
 import dayjs from "@/utils/dateUtils";
 
 export const dashboardRouter = createTRPCRouter({
@@ -554,7 +561,7 @@ export const dashboardRouter = createTRPCRouter({
 
 			if (!hariPrisma) return [];
 
-			return db.jadwalKelas.findMany({
+			const jadwalHariIniList = await db.jadwalKelas.findMany({
 				where: {
 					hari: hariPrisma,
 					// Filter cabang via Kelas karena JadwalKelas tidak punya cabangId langsung (opsional, tapi safer via relation)
@@ -617,6 +624,65 @@ export const dashboardRouter = createTRPCRouter({
 				// Order by jam mulai (sedikit tricky karena ada 2 source, kita bisa sort di JS atau terima order database apa adanya lalu sort di client/server)
 				// Untuk simpelnya kita tidak sorting di level DB dulu karena conditional column sorting
 			});
+
+			// Sertakan status blokir absensi hari ini (jika ada) per jadwal
+			const blokirMap = await getBlokirHariIni(db);
+			return jadwalHariIniList.map((j) => ({
+				...j,
+				blokirAbsensi: blokirMap.get(j.id) ?? null,
+			}));
+		}),
+
+	// 4b. Admin memblokir absensi guru untuk jadwal ini, khusus hari ini
+	blokirAbsensiGuru: cabangProtectedProcedure
+		.input(
+			z.object({
+				cabangId: z.string().optional().nullable(),
+				jadwalKelasId: z.string().min(1),
+				catatan: z
+					.string()
+					.trim()
+					.min(3, "Catatan minimal 3 karakter")
+					.max(300, "Catatan maksimal 300 karakter"),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
+			if (session.user.role === UserRole.GURU) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Hanya admin yang dapat memblokir absensi guru.",
+				});
+			}
+			await pastikanJadwalHariIni(db, input.jadwalKelasId, allowedCabangId);
+			await setBlokirJadwal(db, {
+				jadwalKelasId: input.jadwalKelasId,
+				catatan: input.catatan,
+				olehId: session.user.id,
+				olehNama: session.user.name ?? "Admin",
+			});
+			return { success: true };
+		}),
+
+	// 4c. Buka kembali blokir absensi untuk jadwal ini (hari ini)
+	bukaBlokirAbsensiGuru: cabangProtectedProcedure
+		.input(
+			z.object({
+				cabangId: z.string().optional().nullable(),
+				jadwalKelasId: z.string().min(1),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { db, session, allowedCabangId } = ctx;
+			if (session.user.role === UserRole.GURU) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Hanya admin yang dapat membuka blokir absensi guru.",
+				});
+			}
+			await pastikanJadwalHariIni(db, input.jadwalKelasId, allowedCabangId);
+			await hapusBlokirJadwal(db, input.jadwalKelasId);
+			return { success: true };
 		}),
 
 	// 5. Distribusi Sumber Info (Pie Chart)
@@ -990,4 +1056,43 @@ async function hitungAkurasiTagihanLain(
 				? Math.round((agg.totalTerbayar / agg.totalTagihan) * 1000) / 10
 				: null,
 	}));
+}
+
+/** Jadwal harus ada, di cabang yang boleh diakses, dan memang jadwal hari ini. */
+async function pastikanJadwalHariIni(
+	db: PrismaClient,
+	jadwalKelasId: string,
+	allowedCabangId: string | undefined,
+) {
+	const HARI_ENUM = [
+		"MINGGU",
+		"SENIN",
+		"SELASA",
+		"RABU",
+		"KAMIS",
+		"JUMAT",
+		"SABTU",
+	];
+	const jadwal = await db.jadwalKelas.findUnique({
+		where: { id: jadwalKelasId },
+		select: { hari: true, kelas: { select: { cabangId: true } } },
+	});
+	if (!jadwal) {
+		throw new TRPCError({
+			code: "NOT_FOUND",
+			message: "Jadwal tidak ditemukan.",
+		});
+	}
+	if (allowedCabangId && jadwal.kelas.cabangId !== allowedCabangId) {
+		throw new TRPCError({
+			code: "FORBIDDEN",
+			message: "Jadwal ini bukan milik cabang Anda.",
+		});
+	}
+	if (jadwal.hari !== HARI_ENUM[dayjs().day()]) {
+		throw new TRPCError({
+			code: "BAD_REQUEST",
+			message: "Blokir hanya dapat diatur untuk jadwal hari ini.",
+		});
+	}
 }

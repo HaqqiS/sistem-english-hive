@@ -13,16 +13,17 @@ export default function DashboardClientPage() {
 			{/* 1. KPI Cards */}
 			<KpiCards />
 
-			{/* 2. Charts Section */}
+			{/* 2. Charts Section (kolom kanan di sebelah Sumber Info sengaja dikosongkan dulu) */}
 			<div className="grid gap-4 md:grid-cols-2">
 				<RegistrationChart />
 				<RevenueChart />
 				<SumberInfoChart />
-				{/* Jadwal Hari Ini: ambil 50% (berdampingan dengan Sumber Info) */}
-				<ScheduleList />
 			</div>
 
-			{/* Estimasi Pendapatan Bulan Ini: full width di bawah Jadwal Hari Ini */}
+			{/* 3. Jadwal Hari Ini (termasuk event Middle/Final Test): full width */}
+			<ScheduleList />
+
+			{/* 4. Estimasi Pendapatan Bulan Ini: full width */}
 			<PrediksiPendapatanCard />
 		</div>
 	);

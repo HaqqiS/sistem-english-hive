@@ -566,6 +566,8 @@ export const dashboardRouter = createTRPCRouter({
 							kodeKelas: true,
 							jenisKelasRel: { select: { nama: true } },
 							statusKelas: true,
+							// Jumlah sesi yang sudah ada (untuk menentukan pertemuan ke-berapa & event test)
+							_count: { select: { sesiPertemuanKelases: true } },
 							// Ambil guru yang sedang aktif mengajar kelas ini
 							historyGuruKelases: {
 								where: {
@@ -590,11 +592,13 @@ export const dashboardRouter = createTRPCRouter({
 					jamSlotTetap: {
 						select: {
 							jamMulai: true,
+							jamSelesai: true,
 						},
 					},
 					jamSlotCustom: {
 						select: {
 							jamMulai: true,
+							jamSelesai: true,
 						},
 					},
 					sesiPertemuanKelases: {

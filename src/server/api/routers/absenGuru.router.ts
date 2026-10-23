@@ -29,7 +29,227 @@ import { paginationSchema } from "@/types/pagination.type";
 import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
+/** Siswa dianggap perlu ditindaklanjuti kalau alpa >= ini pada N sesi terakhir kelasnya. */
+const MIN_ALPA_TINDAK_LANJUT = 2;
+const JENDELA_SESI_TINDAK_LANJUT = 8;
+
 export const absenGuruRouter = createTRPCRouter({
+	// Ringkasan dashboard guru: statistik bulan ini, kelas aktif (+ siswa baru),
+	// dan siswa yang perlu ditindaklanjuti karena sering alpa.
+	getOverviewGuru: cabangProtectedProcedure
+		.input(z.object({ cabangId: z.string().optional() }).optional())
+		.query(async ({ ctx }) => {
+			const { db, session } = ctx;
+			const guruId = session.user.id;
+
+			const awalBulan = dayjs().tz(TIMEZONE_BISNIS).startOf("month").toDate();
+			const akhirBulan = dayjs().tz(TIMEZONE_BISNIS).endOf("month").toDate();
+			const bulanIni = { gte: awalBulan, lte: akhirBulan };
+
+			// ── Statistik bulan ini ──────────────────────────────
+			const [sesiBulanIni, izinBulanIni, digantikanBulanIni] =
+				await Promise.all([
+					// Sesi yang benar-benar diajar guru ini
+					db.absensiGuru.count({
+						where: {
+							guruId,
+							status: StatusAbsenGuru.HADIR,
+							sesiPertemuanKelas: { tanggalWaktu: bulanIni },
+						},
+					}),
+					// Guru ini tercatat izin / sakit
+					db.absensiGuru.count({
+						where: {
+							guruId,
+							status: { in: [StatusAbsenGuru.IJIN, StatusAbsenGuru.SAKIT] },
+							sesiPertemuanKelas: { tanggalWaktu: bulanIni },
+						},
+					}),
+					// Sesi di kelas guru utama ini yang diajar orang lain (digantikan)
+					db.sesiPertemuanKelas.count({
+						where: {
+							tanggalWaktu: bulanIni,
+							kelas: {
+								historyGuruKelases: {
+									some: {
+										guruId,
+										statusGuru: "ACTIVE",
+										peran: PeranGuru.UTAMA,
+									},
+								},
+							},
+							absensiGurus: { some: {}, none: { guruId } },
+						},
+					}),
+				]);
+
+			// ── Kelas aktif milik guru ini ───────────────────────
+			const kelasAktif = await db.kelas.findMany({
+				where: {
+					statusKelas: { in: ["RUNNING", "TRIAL"] },
+					historyGuruKelases: { some: { guruId, statusGuru: "ACTIVE" } },
+				},
+				orderBy: { kodeKelas: "asc" },
+				select: {
+					id: true,
+					kodeKelas: true,
+					level: true,
+					statusKelas: true,
+					jenisKelasRel: { select: { nama: true } },
+					historyGuruKelases: {
+						where: { guruId, statusGuru: "ACTIVE" },
+						select: { peran: true },
+						take: 1,
+					},
+					jadwalKelas: {
+						select: {
+							hari: true,
+							ruang: { select: { namaRuang: true } },
+							jamSlotTetap: { select: { jamMulai: true, jamSelesai: true } },
+							jamSlotCustom: { select: { jamMulai: true, jamSelesai: true } },
+						},
+					},
+					pendaftaranKelases: {
+						where: {
+							status: {
+								in: [StatusPendaftaran.AKTIF, StatusPendaftaran.TRIAL],
+							},
+						},
+						select: {
+							murid: { select: { id: true, namaLengkap: true } },
+						},
+					},
+				},
+			});
+
+			const kelasIds = kelasAktif.map((k) => k.id);
+			const muridIds = [
+				...new Set(
+					kelasAktif.flatMap((k) =>
+						k.pendaftaranKelases.map((p) => p.murid.id),
+					),
+				),
+			];
+
+			// Sesi tiap kelas (terbaru dulu) untuk "siswa baru" & "perlu ditindaklanjuti"
+			const semuaSesi =
+				kelasIds.length > 0
+					? await db.sesiPertemuanKelas.findMany({
+							where: { kelasId: { in: kelasIds } },
+							orderBy: { tanggalWaktu: "desc" },
+							select: { id: true, kelasId: true },
+						})
+					: [];
+			const jumlahSesiPerKelas = new Map<string, number>();
+			const sesiTerakhirPerKelas = new Map<string, string[]>();
+			for (const sesi of semuaSesi) {
+				jumlahSesiPerKelas.set(
+					sesi.kelasId,
+					(jumlahSesiPerKelas.get(sesi.kelasId) ?? 0) + 1,
+				);
+				const arr = sesiTerakhirPerKelas.get(sesi.kelasId) ?? [];
+				if (arr.length < JENDELA_SESI_TINDAK_LANJUT) arr.push(sesi.id);
+				sesiTerakhirPerKelas.set(sesi.kelasId, arr);
+			}
+
+			// Siapa saja yang sudah pernah diabsen di kelas ini (apa pun statusnya)
+			const pernahDiabsen =
+				muridIds.length > 0
+					? await db.absensiMurid.findMany({
+							where: {
+								muridId: { in: muridIds },
+								sesiPertemuanKelas: { kelasId: { in: kelasIds } },
+							},
+							select: {
+								muridId: true,
+								sesiPertemuanKelas: { select: { kelasId: true } },
+							},
+						})
+					: [];
+			const sudahPernahDiabsen = new Set(
+				pernahDiabsen.map(
+					(a) => `${a.sesiPertemuanKelas.kelasId}:${a.muridId}`,
+				),
+			);
+
+			// Alpa pada sesi-sesi terakhir tiap kelas
+			const idSesiJendela = [...sesiTerakhirPerKelas.values()].flat();
+			const alpaList =
+				idSesiJendela.length > 0 && muridIds.length > 0
+					? await db.absensiMurid.findMany({
+							where: {
+								status: StatusAbsenMurid.ALPA,
+								muridId: { in: muridIds },
+								sesiPertemuanKelasId: { in: idSesiJendela },
+							},
+							select: {
+								muridId: true,
+								sesiPertemuanKelas: { select: { kelasId: true } },
+							},
+						})
+					: [];
+			const alpaPerSiswa = new Map<string, number>();
+			for (const a of alpaList) {
+				const key = `${a.sesiPertemuanKelas.kelasId}:${a.muridId}`;
+				alpaPerSiswa.set(key, (alpaPerSiswa.get(key) ?? 0) + 1);
+			}
+
+			const kelasHasil = kelasAktif.map((k) => {
+				const sudahAdaSesi = (jumlahSesiPerKelas.get(k.id) ?? 0) > 0;
+				// "Baru" = belum pernah diabsen sama sekali di kelas ini, padahal kelas
+				// sudah berjalan (kalau belum ada sesi, semua siswa sama-sama belum diabsen)
+				const siswaBaru = sudahAdaSesi
+					? k.pendaftaranKelases
+							.filter((p) => !sudahPernahDiabsen.has(`${k.id}:${p.murid.id}`))
+							.map((p) => p.murid.namaLengkap)
+					: [];
+
+				return {
+					id: k.id,
+					kodeKelas: k.kodeKelas,
+					program: k.jenisKelasRel?.nama ?? "-",
+					level: k.level,
+					statusKelas: k.statusKelas,
+					peran: k.historyGuruKelases[0]?.peran ?? PeranGuru.UTAMA,
+					jumlahSiswa: k.pendaftaranKelases.length,
+					siswaBaru,
+					jadwal: k.jadwalKelas.map((j) => {
+						const slot = j.jamSlotTetap ?? j.jamSlotCustom;
+						return {
+							hari: j.hari,
+							jamMulai: slot?.jamMulai ?? "-",
+							jamSelesai: slot?.jamSelesai ?? null,
+							ruang: j.ruang.namaRuang,
+						};
+					}),
+				};
+			});
+
+			const perluTindakLanjut = kelasAktif
+				.flatMap((k) =>
+					k.pendaftaranKelases.map((p) => ({
+						muridId: p.murid.id,
+						nama: p.murid.namaLengkap,
+						kodeKelas: k.kodeKelas,
+						jumlahAlpa: alpaPerSiswa.get(`${k.id}:${p.murid.id}`) ?? 0,
+					})),
+				)
+				.filter((s) => s.jumlahAlpa >= MIN_ALPA_TINDAK_LANJUT)
+				.sort((a, b) => b.jumlahAlpa - a.jumlahAlpa)
+				.slice(0, 10);
+
+			return {
+				statistik: {
+					sesiBulanIni,
+					digantikan: digantikanBulanIni,
+					izin: izinBulanIni,
+				},
+				kelasAktif: kelasHasil,
+				perluTindakLanjut,
+				jendelaSesi: JENDELA_SESI_TINDAK_LANJUT,
+			};
+		}),
+
 	getAllAbsensi: cabangProtectedProcedure
 		.input(
 			paginationSchema.extend({

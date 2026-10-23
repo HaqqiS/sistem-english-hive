@@ -39,8 +39,11 @@ export function NavMain({ projects }: NavMainProps) {
 						isActive = pathname === item.url;
 					} else {
 						// Ini adalah link sub-halaman (cth: /admin/kelas).
-						// Gunakan startsWith untuk menangani dynamic routes (cth: /admin/users/123)
-						isActive = pathname.startsWith(item.url);
+						// Cocokkan per segmen (bukan sekadar awalan teks) supaya
+						// /guru/jadwal-hari-ini tidak ikut menyalakan menu /guru/jadwal,
+						// tapi dynamic routes (cth: /admin/users/123) tetap aktif.
+						isActive =
+							pathname === item.url || pathname.startsWith(`${item.url}/`);
 					}
 
 					return (

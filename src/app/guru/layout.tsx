@@ -10,6 +10,12 @@ const teacherNavItems: NavItem[] = [
 		icon: "Home",
 	},
 	{
+		title: "Jadwal Hari Ini",
+		shortTitle: "Hari Ini",
+		url: "/guru/jadwal-hari-ini",
+		icon: "CalendarCheck",
+	},
+	{
 		title: "Absensi Murid",
 		url: "/guru/absen",
 		icon: "Users",

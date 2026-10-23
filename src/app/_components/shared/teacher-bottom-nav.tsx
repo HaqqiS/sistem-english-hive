@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import {
+	CalendarCheck,
 	CalendarDays,
 	FileText,
 	Home,
@@ -18,6 +19,7 @@ import type { NavItem } from "@/types/nav.type";
 // Kalau nanti ada menu baru dengan icon lain, tinggal tambahkan di sini.
 const iconMap: Record<string, LucideIcon> = {
 	Home,
+	CalendarCheck,
 	Users,
 	CalendarDays,
 	LayoutGrid,
@@ -39,13 +41,13 @@ export function TeacherBottomNav({ navItems }: TeacherBottomNavProps) {
 
 	return (
 		<nav
-			className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] lg:hidden"
+			className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] lg:hidden"
 			aria-label="Navigasi Dashboard Guru"
 		>
 			{/* Kapsul mengambang ala tab bar iOS 26 / WhatsApp terbaru:
 			    glass-blur, rounded-full, item aktif jadi pill yang meluncur (layoutId).
 			    Label tetap tampil di bawah tiap ikon supaya jelas fungsinya. */}
-			<div className="border-border/60 bg-background/70 flex items-center gap-1 rounded-[28px] border p-1.5 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.25)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+			<div className="border-border/60 bg-background/70 flex w-full max-w-md items-center gap-0.5 rounded-[28px] border p-1.5 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.25)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
 				{navItems.map((item) => {
 					const Icon = iconMap[item.icon] ?? Home;
 					const isActive = isItemActive(item, pathname);
@@ -55,7 +57,7 @@ export function TeacherBottomNav({ navItems }: TeacherBottomNavProps) {
 							key={item.url}
 							href={item.url}
 							aria-current={isActive ? "page" : undefined}
-							className="relative flex items-center"
+							className="relative flex min-w-0 flex-1 items-center"
 						>
 							{isActive && (
 								<motion.span
@@ -66,7 +68,7 @@ export function TeacherBottomNav({ navItems }: TeacherBottomNavProps) {
 							)}
 							<span
 								className={cn(
-									"relative z-10 flex w-16 flex-col items-center justify-center gap-0.5 rounded-3xl px-2 py-1.5 transition-colors",
+									"relative z-10 flex w-full flex-col items-center justify-center gap-0.5 rounded-3xl px-1 py-1.5 transition-colors",
 									isActive
 										? "text-primary-foreground"
 										: "text-muted-foreground",
@@ -74,7 +76,7 @@ export function TeacherBottomNav({ navItems }: TeacherBottomNavProps) {
 							>
 								<Icon className="h-5 w-5 shrink-0" />
 								<span className="line-clamp-1 text-center text-[10px] leading-none font-medium">
-									{item.title}
+									{item.shortTitle ?? item.title}
 								</span>
 							</span>
 						</Link>

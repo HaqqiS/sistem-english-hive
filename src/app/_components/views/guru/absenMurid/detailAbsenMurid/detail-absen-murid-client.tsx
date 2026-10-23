@@ -66,7 +66,7 @@ export default function DetailAbsenMuridClient() {
 	// Setelah animasi sukses tampil sebentar, arahkan kembali ke dashboard guru
 	useEffect(() => {
 		if (!successState) return;
-		const timer = setTimeout(() => router.push("/guru"), 2000);
+		const timer = setTimeout(() => router.push("/guru/jadwal-hari-ini"), 2000);
 		return () => clearTimeout(timer);
 	}, [successState, router]);
 

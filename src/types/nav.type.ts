@@ -1,5 +1,7 @@
 export type NavItem = {
 	title: string;
+	/** Judul pendek untuk ruang sempit (mis. bottom nav HP). */
+	shortTitle?: string;
 	url: string;
 	icon: string;
 	label?: string;

@@ -10,11 +10,8 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 export default async function GuruDashboard() {
-	// 1. Prefetch data yang dibutuhkan di server
-	await Promise.all([
-		api.jadwalKelas.getJadwalHariIniForGuru.prefetch({}),
-		api.ruang.getAll.prefetch({}), // Dibutuhkan untuk dialog "Ganti Ruang"
-	]);
+	// Prefetch ringkasan guru di server (jadwal hari ini ada di /guru/jadwal-hari-ini)
+	await api.absenGuru.getOverviewGuru.prefetch();
 
 	return (
 		<div className="flex flex-1 flex-col gap-4 p-4">

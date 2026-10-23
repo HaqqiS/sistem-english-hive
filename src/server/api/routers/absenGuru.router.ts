@@ -29,9 +29,8 @@ import { paginationSchema } from "@/types/pagination.type";
 import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
-/** Siswa dianggap perlu ditindaklanjuti kalau alpa >= ini pada N sesi terakhir kelasnya. */
-const MIN_ALPA_TINDAK_LANJUT = 2;
-const JENDELA_SESI_TINDAK_LANJUT = 8;
+/** Siswa muncul di "Students to Follow Up" bila alpa berturut-turut >= ini. */
+const MIN_ALPA_BERTURUT = 2;
 
 export const absenGuruRouter = createTRPCRouter({
 	// Ringkasan dashboard guru: statistik bulan ini, kelas aktif (+ siswa baru),
@@ -131,7 +130,7 @@ export const absenGuruRouter = createTRPCRouter({
 				),
 			];
 
-			// Sesi tiap kelas (terbaru dulu) untuk "siswa baru" & "perlu ditindaklanjuti"
+			// Semua sesi tiap kelas, terbaru dulu (untuk "siswa baru" & absen berturut-turut)
 			const semuaSesi =
 				kelasIds.length > 0
 					? await db.sesiPertemuanKelas.findMany({
@@ -140,62 +139,56 @@ export const absenGuruRouter = createTRPCRouter({
 							select: { id: true, kelasId: true },
 						})
 					: [];
-			const jumlahSesiPerKelas = new Map<string, number>();
-			const sesiTerakhirPerKelas = new Map<string, string[]>();
+			const idSesiPerKelas = new Map<string, string[]>();
+			const kelasIdPerSesi = new Map<string, string>();
 			for (const sesi of semuaSesi) {
-				jumlahSesiPerKelas.set(
-					sesi.kelasId,
-					(jumlahSesiPerKelas.get(sesi.kelasId) ?? 0) + 1,
-				);
-				const arr = sesiTerakhirPerKelas.get(sesi.kelasId) ?? [];
-				if (arr.length < JENDELA_SESI_TINDAK_LANJUT) arr.push(sesi.id);
-				sesiTerakhirPerKelas.set(sesi.kelasId, arr);
+				const arr = idSesiPerKelas.get(sesi.kelasId) ?? [];
+				arr.push(sesi.id);
+				idSesiPerKelas.set(sesi.kelasId, arr);
+				kelasIdPerSesi.set(sesi.id, sesi.kelasId);
 			}
 
-			// Siapa saja yang sudah pernah diabsen di kelas ini (apa pun statusnya)
-			const pernahDiabsen =
-				muridIds.length > 0
+			// Seluruh catatan absen siswa-siswa ini pada sesi-sesi kelasnya
+			const catatanAbsen =
+				muridIds.length > 0 && semuaSesi.length > 0
 					? await db.absensiMurid.findMany({
 							where: {
 								muridId: { in: muridIds },
-								sesiPertemuanKelas: { kelasId: { in: kelasIds } },
+								sesiPertemuanKelasId: { in: semuaSesi.map((x) => x.id) },
 							},
 							select: {
 								muridId: true,
-								sesiPertemuanKelas: { select: { kelasId: true } },
+								status: true,
+								sesiPertemuanKelasId: true,
 							},
 						})
 					: [];
-			const sudahPernahDiabsen = new Set(
-				pernahDiabsen.map(
-					(a) => `${a.sesiPertemuanKelas.kelasId}:${a.muridId}`,
-				),
-			);
-
-			// Alpa pada sesi-sesi terakhir tiap kelas
-			const idSesiJendela = [...sesiTerakhirPerKelas.values()].flat();
-			const alpaList =
-				idSesiJendela.length > 0 && muridIds.length > 0
-					? await db.absensiMurid.findMany({
-							where: {
-								status: StatusAbsenMurid.ALPA,
-								muridId: { in: muridIds },
-								sesiPertemuanKelasId: { in: idSesiJendela },
-							},
-							select: {
-								muridId: true,
-								sesiPertemuanKelas: { select: { kelasId: true } },
-							},
-						})
-					: [];
-			const alpaPerSiswa = new Map<string, number>();
-			for (const a of alpaList) {
-				const key = `${a.sesiPertemuanKelas.kelasId}:${a.muridId}`;
-				alpaPerSiswa.set(key, (alpaPerSiswa.get(key) ?? 0) + 1);
+			const statusPerSesi = new Map<string, StatusAbsenMurid>();
+			const sudahPernahDiabsen = new Set<string>(); // "kelasId:muridId"
+			for (const c of catatanAbsen) {
+				statusPerSesi.set(`${c.muridId}:${c.sesiPertemuanKelasId}`, c.status);
+				const kelasId = kelasIdPerSesi.get(c.sesiPertemuanKelasId);
+				if (kelasId) sudahPernahDiabsen.add(`${kelasId}:${c.muridId}`);
 			}
+
+			// Alpa BERTURUT-TURUT dihitung dari sesi terbaru ke belakang. Berhenti saat
+			// ketemu sesi dengan status selain ALPA (hadir / off sementara) atau sesi
+			// tanpa catatan (siswa belum terdaftar saat itu).
+			const hitungAlpaBerturut = (kelasId: string, muridId: string) => {
+				let berturut = 0;
+				for (const sesiId of idSesiPerKelas.get(kelasId) ?? []) {
+					if (
+						statusPerSesi.get(`${muridId}:${sesiId}`) !== StatusAbsenMurid.ALPA
+					) {
+						break;
+					}
+					berturut += 1;
+				}
+				return berturut;
+			};
 
 			const kelasHasil = kelasAktif.map((k) => {
-				const sudahAdaSesi = (jumlahSesiPerKelas.get(k.id) ?? 0) > 0;
+				const sudahAdaSesi = (idSesiPerKelas.get(k.id)?.length ?? 0) > 0;
 				// "Baru" = belum pernah diabsen sama sekali di kelas ini, padahal kelas
 				// sudah berjalan (kalau belum ada sesi, semua siswa sama-sama belum diabsen)
 				const siswaBaru = sudahAdaSesi
@@ -231,12 +224,11 @@ export const absenGuruRouter = createTRPCRouter({
 						muridId: p.murid.id,
 						nama: p.murid.namaLengkap,
 						kodeKelas: k.kodeKelas,
-						jumlahAlpa: alpaPerSiswa.get(`${k.id}:${p.murid.id}`) ?? 0,
+						alpaBerturut: hitungAlpaBerturut(k.id, p.murid.id),
 					})),
 				)
-				.filter((s) => s.jumlahAlpa >= MIN_ALPA_TINDAK_LANJUT)
-				.sort((a, b) => b.jumlahAlpa - a.jumlahAlpa)
-				.slice(0, 10);
+				.filter((x) => x.alpaBerturut >= MIN_ALPA_BERTURUT)
+				.sort((x, y) => y.alpaBerturut - x.alpaBerturut);
 
 			return {
 				statistik: {
@@ -246,7 +238,6 @@ export const absenGuruRouter = createTRPCRouter({
 				},
 				kelasAktif: kelasHasil,
 				perluTindakLanjut,
-				jendelaSesi: JENDELA_SESI_TINDAK_LANJUT,
 			};
 		}),
 

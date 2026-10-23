@@ -247,19 +247,19 @@ export default function GuruOverview() {
 											<span
 												className={cn(
 													"shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap",
-													s.jumlahAlpa >= 3
+													s.alpaBerturut >= 3
 														? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300"
 														: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
 												)}
 											>
-												absent {s.jumlahAlpa} times
+												absent {s.alpaBerturut} times in a row
 											</span>
 										</li>
 									))}
 								</ul>
 								<p className="text-muted-foreground mt-3 text-[11px]">
-									Counted from the last {data.jendelaSesi} sessions of each
-									class.
+									2 in a row is a warning, 3 or more is urgent. The count
+									restarts after the student attends.
 								</p>
 							</>
 						)}

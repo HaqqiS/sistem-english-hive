@@ -40,10 +40,12 @@ export default function DetailAbsenMuridClient() {
 		},
 	});
 
-	// Hitung murid yang belum diabsen
+	// Hitung murid yang belum diabsen.
+	// Murid yang terkunci (tanggal masuk kelasnya belum tercapai) tidak ikut dihitung,
+	// karena memang belum bisa diabsen.
 	const unmarkedMuridList = useMemo(() => {
 		if (!data?.muridList) return [];
-		return data.muridList.filter((m) => !m.status);
+		return data.muridList.filter((m) => !m.status && !m.terkunci);
 	}, [data?.muridList]);
 
 	const isAllMarked = unmarkedMuridList.length === 0;

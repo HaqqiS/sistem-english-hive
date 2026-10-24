@@ -3,7 +3,7 @@
 import { StatusAbsenMurid, StatusPendaftaran } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { UseTRPCMutationResult } from "@trpc/react-query/shared";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { RouterInputs, RouterOutputs } from "@/trpc/react";
 import type { MuridForAbsensi } from "@/types/absenMurid.type";
+import dayjs from "@/utils/dateUtils";
 import { formatStatus, statusPendaftaranColorMap } from "@/utils/statusUtils";
 
 type AbsensiMutation = UseTRPCMutationResult<
@@ -82,6 +83,14 @@ export const createDetailAbsenMuridColumns = ({
 							{formatStatus(StatusPendaftaran.OFF_SEMENTARA)}
 						</Badge>
 					)}
+					{row.original.terkunci && (
+						<Badge
+							variant="outline"
+							className="text-[10px] px-1.5 py-0 h-4 text-muted-foreground"
+						>
+							Mulai {dayjs(row.original.tanggalMulai).format("D MMM YYYY")}
+						</Badge>
+					)}
 				</div>
 			);
 		},
@@ -111,6 +120,20 @@ export const createDetailAbsenMuridColumns = ({
 						title="Murid sedang OFF Sementara — absensi tidak dapat diubah"
 					>
 						Off
+					</Badge>
+				);
+			}
+
+			// Murid belum sampai tanggal masuk kelasnya: belum bisa diabsen (walau statusnya aktif)
+			if (row.original.terkunci) {
+				return (
+					<Badge
+						variant="outline"
+						className="h-7 px-2 text-xs cursor-not-allowed opacity-80"
+						title={`Belum bisa diabsen: murid mulai ${dayjs(row.original.tanggalMulai).format("D MMMM YYYY")}`}
+					>
+						<Lock className="mr-1 h-3 w-3" />
+						{dayjs(row.original.tanggalMulai).format("D MMM")}
 					</Badge>
 				);
 			}

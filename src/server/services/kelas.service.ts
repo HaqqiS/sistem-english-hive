@@ -6,7 +6,7 @@ import {
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { BATAS_SESI, JUMLAH_PERTEMUAN_PER_BLOK } from "@/constants/pembayaran";
-import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
+import dayjs, { formatToWITA, TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { syncMuridStatus } from "./pendaftaran.service";
 
 // Tipe untuk Transaksi Prisma (agar bisa dipakai di dalam tx)
@@ -406,3 +406,15 @@ export const createSesiPertemuanCore = async (
 		isExisting: false,
 	};
 };
+
+/**
+ * Siswa belum boleh diabsen jika tanggal masuk kelasnya (tanggalMulai, "YYYY-MM-DD")
+ * belum tercapai pada tanggal sesi. Tanggal sesi dibaca dalam WITA supaya
+ * tidak meleset sehari bila server berjalan di zona waktu lain (mis. UTC).
+ * tanggalMulai kosong = tidak dibatasi.
+ */
+export const belumMulaiKelas = (
+	tanggalMulai: string | null | undefined,
+	tanggalSesi: Date,
+): boolean =>
+	!!tanggalMulai && tanggalMulai > formatToWITA(tanggalSesi, "YYYY-MM-DD");

@@ -6,8 +6,8 @@ import {
 	Bell,
 	BookOpen,
 	CalendarCheck,
-	Check,
 	CheckCircle2,
+	ClipboardCheck,
 	ClipboardList,
 	Clock,
 	DoorOpen,
@@ -17,13 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import {
-	type ReactNode,
-	useCallback,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+import { type ReactNode, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -40,61 +34,6 @@ const HARI_SINGKAT: Record<string, string> = {
 	MINGGU: "Sun",
 };
 const URUTAN_HARI = Object.keys(HARI_SINGKAT);
-
-/**
- * Centang pada setiap item To Do. Ini hanya PENANDA pribadi (disimpan di
- * perangkat ini, per akun guru): item tidak hilang karena dicentang, baru
- * hilang setelah tindakan yang sebenarnya dilakukan.
- */
-function useCentangToDo(userId: string | undefined, kunciAktif: string[]) {
-	const kunci = userId ? `guru-todo-centang:${userId}` : null;
-	const [dicentang, setDicentang] = useState<Set<string>>(new Set());
-
-	useEffect(() => {
-		if (!kunci) return;
-		try {
-			const raw = localStorage.getItem(kunci);
-			setDicentang(new Set(raw ? (JSON.parse(raw) as string[]) : []));
-		} catch {
-			setDicentang(new Set());
-		}
-	}, [kunci]);
-
-	const simpan = useCallback(
-		(next: Set<string>) => {
-			if (!kunci) return;
-			try {
-				localStorage.setItem(kunci, JSON.stringify([...next]));
-			} catch {
-				// penyimpanan tidak tersedia: centang tetap berlaku selama halaman terbuka
-			}
-		},
-		[kunci],
-	);
-
-	// Buang centang untuk item yang sudah tidak ada lagi (tindakannya sudah dilakukan)
-	const kunciGabung = kunciAktif.join("|");
-	useEffect(() => {
-		const aktif = new Set(kunciGabung ? kunciGabung.split("|") : []);
-		setDicentang((cur) => {
-			const next = new Set([...cur].filter((k) => aktif.has(k)));
-			if (next.size === cur.size) return cur;
-			simpan(next);
-			return next;
-		});
-	}, [kunciGabung, simpan]);
-
-	const toggle = (k: string) =>
-		setDicentang((cur) => {
-			const next = new Set(cur);
-			if (next.has(k)) next.delete(k);
-			else next.add(k);
-			simpan(next);
-			return next;
-		});
-
-	return { dicentang, toggle };
-}
 
 function sapaan() {
 	const jam = dayjs().tz(TIMEZONE_BISNIS).hour();
@@ -133,8 +72,7 @@ export default function GuruOverview() {
 		[penerimaBuku],
 	);
 
-	// Daftar To Do bernomor. Kunci item dibuat supaya centang otomatis "reset"
-	// kalau kondisinya berubah (hari baru, daftar buku berubah, sisa pertemuan berubah).
+	// Daftar To Do bernomor.
 	const hariKunci = dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM-DD");
 	const todoItems = useMemo(() => {
 		if (!data) return [];
@@ -144,10 +82,36 @@ export default function GuruOverview() {
 			node: ReactNode;
 		}[] = [];
 
-		const att = data.toDo.attendanceBelumDiisi;
-		if (att.total > 0) {
+		// Jadwal HARI INI yang belum diabsen (jadwal yang diblokir admin tidak dihitung)
+		const daftarJadwal = (
+			jadwal: {
+				kodeKelas: string;
+				jamMulai: string;
+				jamSelesai: string | null;
+			}[],
+		) => (
+			<span className="mt-1 block space-y-0.5 text-xs opacity-90">
+				{jadwal.map((j) => (
+					<span
+						key={`${j.kodeKelas}-${j.jamMulai}`}
+						className="block break-words"
+					>
+						•{" "}
+						<span className="font-mono">
+							{j.jamMulai}
+							{j.jamSelesai ? ` - ${j.jamSelesai}` : ""}
+						</span>{" "}
+						· {j.kodeKelas}
+					</span>
+				))}
+			</span>
+		);
+
+		// 1) Sesi belum dibuka sama sekali
+		const belumMulai = data.toDo.attendanceBelumDimulai;
+		if (belumMulai.total > 0) {
 			items.push({
-				key: `attendance:${hariKunci}`,
+				key: `attendance-belum-mulai:${hariKunci}`,
 				tone: "bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
 				node: (
 					<Link
@@ -156,11 +120,36 @@ export default function GuruOverview() {
 					>
 						<ClipboardList className="mt-0.5 h-4 w-4 shrink-0" />
 						<span className="min-w-0">
-							<span className="font-semibold">{att.total} attendance</span>{" "}
-							belum diisi
-							<span className="block text-xs break-words opacity-80">
-								{att.kelas.join(" · ")}
-							</span>
+							<span className="font-semibold">
+								{belumMulai.total} {belumMulai.total > 1 ? "classes" : "class"}
+							</span>{" "}
+							not marked yet
+							{daftarJadwal(belumMulai.jadwal)}
+						</span>
+					</Link>
+				),
+			});
+		}
+
+		// 2) Sesi sudah dibuka ("Continue Attendance") tapi belum diselesaikan
+		const belumSelesai = data.toDo.attendanceBelumSelesai;
+		if (belumSelesai.total > 0) {
+			items.push({
+				key: `attendance-belum-selesai:${hariKunci}`,
+				tone: "bg-orange-100 text-orange-900 dark:bg-orange-950/40 dark:text-orange-200",
+				node: (
+					<Link
+						href="/guru/jadwal-hari-ini"
+						className="flex items-start gap-2 hover:underline"
+					>
+						<ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0" />
+						<span className="min-w-0">
+							<span className="font-semibold">
+								{belumSelesai.total}{" "}
+								{belumSelesai.total > 1 ? "classes" : "class"}
+							</span>{" "}
+							attendance not finished yet
+							{daftarJadwal(belumSelesai.jadwal)}
 						</span>
 					</Link>
 				),
@@ -191,7 +180,6 @@ export default function GuruOverview() {
 										•{" "}
 										<span className="font-semibold">{b.murid.namaLengkap}</span>{" "}
 										· {b.stokBuku.jenisKelas.nama} Level {b.stokBuku.level}
-										{b.kelas?.kodeKelas ? ` · ${b.kelas.kodeKelas}` : ""}
 									</li>
 								))}
 							</ul>
@@ -225,12 +213,7 @@ export default function GuruOverview() {
 		return items;
 	}, [data, bukuSiapAmbil, hariKunci]);
 
-	const { dicentang, toggle: toggleCentang } = useCentangToDo(
-		session?.user?.id,
-		todoItems.map((i) => i.key),
-	);
 	const totalToDo = todoItems.length;
-	const totalDicentang = todoItems.filter((i) => dicentang.has(i.key)).length;
 
 	const namaLengkap = session?.user?.name ?? "";
 
@@ -359,54 +342,22 @@ export default function GuruOverview() {
 								</p>
 							</div>
 						) : (
-							<>
-								<ol className="space-y-2">
-									{todoItems.map((item, idx) => {
-										const sudah = dicentang.has(item.key);
-										return (
-											<li
-												key={item.key}
-												className={cn(
-													"flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-sm",
-													item.tone,
-												)}
-											>
-												<span className="mt-0.5 w-4 shrink-0 text-xs font-bold opacity-70">
-													{idx + 1}.
-												</span>
-												<button
-													type="button"
-													onClick={() => toggleCentang(item.key)}
-													aria-pressed={sudah}
-													aria-label={sudah ? "Uncheck item" : "Check item"}
-													className={cn(
-														"mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border-2 transition-colors",
-														sudah
-															? "border-current bg-current"
-															: "bg-background border-current/50 hover:border-current",
-													)}
-												>
-													{sudah && (
-														<Check className="h-3.5 w-3.5 text-white dark:text-black" />
-													)}
-												</button>
-												<div
-													className={cn(
-														"min-w-0 flex-1",
-														sudah && "opacity-60",
-													)}
-												>
-													{item.node}
-												</div>
-											</li>
-										);
-									})}
-								</ol>
-								<p className="text-muted-foreground mt-3 text-[11px]">
-									Checking an item is only a reminder mark ({totalDicentang}/
-									{totalToDo}). It stays here until the actual action is done.
-								</p>
-							</>
+							<ol className="space-y-2">
+								{todoItems.map((item, idx) => (
+									<li
+										key={item.key}
+										className={cn(
+											"flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-sm",
+											item.tone,
+										)}
+									>
+										<span className="mt-0.5 w-4 shrink-0 text-xs font-bold opacity-70">
+											{idx + 1}.
+										</span>
+										<div className="min-w-0 flex-1">{item.node}</div>
+									</li>
+								))}
+							</ol>
 						)}
 					</div>
 				</section>

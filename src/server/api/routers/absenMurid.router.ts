@@ -1,9 +1,12 @@
 import { Prisma, StatusAbsenMurid, StatusPendaftaran } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import z from "zod";
-import { handleClassCompletion } from "@/server/services/kelas.service";
+import {
+	belumMulaiKelas,
+	handleClassCompletion,
+} from "@/server/services/kelas.service";
 import { processAutoBilling } from "@/server/services/pembayaran.service";
-import { formatDateToYYYYMMDD } from "@/utils/dateUtils";
+import dayjs from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 export const absenMuridRouter = createTRPCRouter({
 	getMuridForAbsensi: cabangProtectedProcedure
@@ -68,14 +71,9 @@ export const absenMuridRouter = createTRPCRouter({
 			);
 			const existingMuridIds = existingAbsensi.map((a) => a.muridId);
 
-			// Tanggal sesi ini (WITA) dalam format "YYYY-MM-DD", dipakai untuk
-			// membandingkan dengan tanggalMulai (tanggal masuk kelas) tiap siswa.
-			const sesiDateStr = formatDateToYYYYMMDD(sesi.tanggalWaktu);
-
 			// 4. Dapatkan semua murid yang terdaftar & aktif di kelas ini (ATAU punya history absensi)
-			//    Siswa yang tanggal masuk kelasnya (tanggalMulai) BELUM TERCAPAI pada
-			//    tanggal sesi ini TIDAK ditampilkan — kecuali dia sudah punya data
-			//    absensi tercatat sebelumnya untuk sesi ini (supaya data lama tidak hilang).
+			//    Siswa yang tanggal masuk kelasnya (tanggalMulai) belum tercapai pada
+			//    tanggal sesi ini tetap ditampilkan, tapi TERKUNCI (belum bisa diabsen).
 			const pendaftar = await db.pendaftaranKelas.findMany({
 				where: {
 					kelasId: sesi.kelasId,
@@ -88,10 +86,6 @@ export const absenMuridRouter = createTRPCRouter({
 									StatusPendaftaran.OFF_SEMENTARA,
 								],
 							},
-							OR: [
-								{ tanggalMulai: null },
-								{ tanggalMulai: { lte: sesiDateStr } },
-							],
 						},
 						{
 							muridId: { in: existingMuridIds },
@@ -101,6 +95,7 @@ export const absenMuridRouter = createTRPCRouter({
 				select: {
 					id: true,
 					status: true,
+					tanggalMulai: true,
 					murid: {
 						select: {
 							id: true,
@@ -123,6 +118,11 @@ export const absenMuridRouter = createTRPCRouter({
 					statusPendaftaran: p.status,
 					absensiId: absensi?.id ?? null,
 					status: absensi?.status ?? null,
+					tanggalMulai: p.tanggalMulai,
+					// Terkunci: tanggal masuk kelas belum tercapai & belum ada absensi tercatat
+					// (absensi yang sudah ada / data lama tetap bisa diedit).
+					terkunci:
+						!absensi && belumMulaiKelas(p.tanggalMulai, sesi.tanggalWaktu),
 				};
 			});
 
@@ -158,6 +158,7 @@ export const absenMuridRouter = createTRPCRouter({
 				where: { id: sesiId },
 				select: {
 					kelasId: true,
+					tanggalWaktu: true,
 					kelas: { select: { cabangId: true } },
 				},
 			});
@@ -182,7 +183,7 @@ export const absenMuridRouter = createTRPCRouter({
 					muridId: muridId,
 					kelasId: sesiCheck.kelasId,
 				},
-				select: { id: true, status: true },
+				select: { id: true, status: true, tanggalMulai: true },
 			});
 
 			if (!pendaftaran) {
@@ -203,6 +204,26 @@ export const absenMuridRouter = createTRPCRouter({
 					message:
 						"Absensi tidak dapat diubah: murid sedang dalam status OFF Sementara.",
 				});
+			}
+
+			// Guard: tanggal masuk kelas murid belum tercapai => belum bisa diabsen,
+			// meskipun statusnya AKTIF. Absensi yang sudah tercatat (data lama) tetap bisa diubah.
+			if (belumMulaiKelas(pendaftaran.tanggalMulai, sesiCheck.tanggalWaktu)) {
+				const sudahAdaAbsen = await db.absensiMurid.findUnique({
+					where: {
+						muridId_sesiPertemuanKelasId: {
+							muridId: muridId,
+							sesiPertemuanKelasId: sesiId,
+						},
+					},
+					select: { id: true },
+				});
+				if (!sudahAdaAbsen) {
+					throw new TRPCError({
+						code: "PRECONDITION_FAILED",
+						message: `Murid baru bisa diabsen mulai ${dayjs(pendaftaran.tanggalMulai).format("D MMMM YYYY")}.`,
+					});
+				}
 			}
 
 			if (!isStatusValid) {

@@ -1,5 +1,4 @@
 import {
-	type Hari,
 	PeranGuru,
 	Prisma,
 	StatusAbsenGuru,
@@ -7,19 +6,13 @@ import {
 	StatusPendaftaran,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import dayjs from "dayjs";
 import z from "zod";
-import {
-	PERTEMUAN_FINAL_TEST,
-	PERTEMUAN_MIDDLE_TEST,
-} from "@/constants/sesi-event";
+import { BATAS_SESI } from "@/constants/pembayaran";
 import { UserRole } from "@/server/auth/type";
-import {
-	getBlokirHariIni,
-	getBlokirJadwal,
-} from "@/server/services/blokir-absensi.service";
+import { getBlokirJadwal } from "@/server/services/blokir-absensi.service";
 import { getPeriodeGaji } from "@/server/services/gaji.service";
 import {
+	belumMulaiKelas,
 	createSesiPertemuanCore,
 	handleAutoLevelUp,
 } from "@/server/services/kelas.service";
@@ -34,27 +27,53 @@ import {
 	updateAbsensiGuruSchema,
 } from "@/types/absenGuru.type";
 import { paginationSchema } from "@/types/pagination.type";
-import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
+import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
 
-/** Pengingat test muncul bila tinggal <= ini pertemuan lagi menuju test. */
-const REMINDER_TEST_PERTEMUAN = 3;
+/** Siswa perlu ditindaklanjuti kalau alpa berturut-turut >= ini. */
+const MIN_ALPA_TINDAK_LANJUT = 2;
+/** Berapa sesi terakhir tiap kelas yang dicek untuk hitungan alpa berturut-turut. */
+const JENDELA_SESI_TINDAK_LANJUT = 8;
 
-/** Siswa muncul di "Students to Follow Up" bila alpa berturut-turut >= ini. */
-const MIN_ALPA_BERTURUT = 2;
+/** Pengingat test tampil saat tinggal 1-2 pertemuan lagi. */
+const JENDELA_PENGINGAT_TEST = 2;
+/** SESUAIKAN: pertemuan ke berapa Middle Test & Final Test dilaksanakan. */
+const SESI_MIDDLE_TEST = 12;
+const SESI_FINAL_TEST = BATAS_SESI;
+
+/**
+ * false = semua jadwal hari ini yang belum diabsen langsung diingatkan sejak pagi.
+ * true  = baru diingatkan setelah jam mulai kelasnya lewat.
+ */
+const HANYA_JADWAL_SUDAH_MULAI = false;
+
+const NAMA_HARI = [
+	"MINGGU",
+	"SENIN",
+	"SELASA",
+	"RABU",
+	"KAMIS",
+	"JUMAT",
+	"SABTU",
+] as const;
 
 export const absenGuruRouter = createTRPCRouter({
 	// Ringkasan dashboard guru: statistik bulan ini, kelas aktif (+ siswa baru),
-	// dan siswa yang perlu ditindaklanjuti karena sering alpa.
+	// siswa yang perlu ditindaklanjuti (alpa berturut-turut), dan daftar To Do
+	// (jadwal hari ini yang belum diabsen + pengingat Middle/Final Test).
 	getOverviewGuru: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional() }).optional())
 		.query(async ({ ctx }) => {
 			const { db, session } = ctx;
 			const guruId = session.user.id;
 
-			const awalBulan = dayjs().tz(TIMEZONE_BISNIS).startOf("month").toDate();
-			const akhirBulan = dayjs().tz(TIMEZONE_BISNIS).endOf("month").toDate();
+			const sekarang = dayjs().tz(TIMEZONE_BISNIS);
+			const awalBulan = sekarang.startOf("month").toDate();
+			const akhirBulan = sekarang.endOf("month").toDate();
 			const bulanIni = { gte: awalBulan, lte: akhirBulan };
+			const awalHari = sekarang.startOf("day").toDate();
+			const hariIni = NAMA_HARI[sekarang.day()];
+			const jamSekarang = sekarang.format("HH:mm");
 
 			// ── Statistik bulan ini ──────────────────────────────
 			const [sesiBulanIni, izinBulanIni, digantikanBulanIni] =
@@ -113,6 +132,7 @@ export const absenGuruRouter = createTRPCRouter({
 					},
 					jadwalKelas: {
 						select: {
+							id: true,
 							hari: true,
 							ruang: { select: { namaRuang: true } },
 							jamSlotTetap: { select: { jamMulai: true, jamSelesai: true } },
@@ -141,31 +161,65 @@ export const absenGuruRouter = createTRPCRouter({
 				),
 			];
 
-			// Semua sesi tiap kelas, terbaru dulu (untuk "siswa baru" & absen berturut-turut)
+			// Semua sesi tiap kelas (terbaru dulu)
 			const semuaSesi =
 				kelasIds.length > 0
 					? await db.sesiPertemuanKelas.findMany({
 							where: { kelasId: { in: kelasIds } },
 							orderBy: { tanggalWaktu: "desc" },
-							select: { id: true, kelasId: true },
+							select: {
+								id: true,
+								kelasId: true,
+								jadwalKelasId: true,
+								tanggalWaktu: true,
+								isSelesaiAbsen: true,
+							},
 						})
 					: [];
-			const idSesiPerKelas = new Map<string, string[]>();
-			const kelasIdPerSesi = new Map<string, string>();
-			for (const sesi of semuaSesi) {
-				const arr = idSesiPerKelas.get(sesi.kelasId) ?? [];
-				arr.push(sesi.id);
-				idSesiPerKelas.set(sesi.kelasId, arr);
-				kelasIdPerSesi.set(sesi.id, sesi.kelasId);
-			}
 
-			// Seluruh catatan absen siswa-siswa ini pada sesi-sesi kelasnya
-			const catatanAbsen =
-				muridIds.length > 0 && semuaSesi.length > 0
+			const jumlahSesiPerKelas = new Map<string, number>();
+			const sesiTerakhirPerKelas = new Map<string, string[]>();
+			for (const sesi of semuaSesi) {
+				jumlahSesiPerKelas.set(
+					sesi.kelasId,
+					(jumlahSesiPerKelas.get(sesi.kelasId) ?? 0) + 1,
+				);
+				const arr = sesiTerakhirPerKelas.get(sesi.kelasId) ?? [];
+				if (arr.length < JENDELA_SESI_TINDAK_LANJUT) arr.push(sesi.id);
+				sesiTerakhirPerKelas.set(sesi.kelasId, arr);
+			}
+			const sesiSelesaiIds = new Set(
+				semuaSesi.filter((s) => s.isSelesaiAbsen).map((s) => s.id),
+			);
+
+			// Siapa saja yang sudah pernah diabsen di kelas ini (apa pun statusnya)
+			const pernahDiabsen =
+				muridIds.length > 0
 					? await db.absensiMurid.findMany({
 							where: {
 								muridId: { in: muridIds },
-								sesiPertemuanKelasId: { in: semuaSesi.map((x) => x.id) },
+								sesiPertemuanKelas: { kelasId: { in: kelasIds } },
+							},
+							select: {
+								muridId: true,
+								sesiPertemuanKelas: { select: { kelasId: true } },
+							},
+						})
+					: [];
+			const sudahPernahDiabsen = new Set(
+				pernahDiabsen.map(
+					(a) => `${a.sesiPertemuanKelas.kelasId}:${a.muridId}`,
+				),
+			);
+
+			// Absensi murid pada sesi-sesi terakhir tiap kelas (untuk alpa berturut-turut)
+			const idSesiJendela = [...sesiTerakhirPerKelas.values()].flat();
+			const absensiJendela =
+				idSesiJendela.length > 0 && muridIds.length > 0
+					? await db.absensiMurid.findMany({
+							where: {
+								muridId: { in: muridIds },
+								sesiPertemuanKelasId: { in: idSesiJendela },
 							},
 							select: {
 								muridId: true,
@@ -174,32 +228,33 @@ export const absenGuruRouter = createTRPCRouter({
 							},
 						})
 					: [];
-			const statusPerSesi = new Map<string, StatusAbsenMurid>();
-			const sudahPernahDiabsen = new Set<string>(); // "kelasId:muridId"
-			for (const c of catatanAbsen) {
-				statusPerSesi.set(`${c.muridId}:${c.sesiPertemuanKelasId}`, c.status);
-				const kelasId = kelasIdPerSesi.get(c.sesiPertemuanKelasId);
-				if (kelasId) sudahPernahDiabsen.add(`${kelasId}:${c.muridId}`);
+			const statusPerSesiMurid = new Map<string, StatusAbsenMurid>();
+			for (const a of absensiJendela) {
+				statusPerSesiMurid.set(
+					`${a.sesiPertemuanKelasId}:${a.muridId}`,
+					a.status,
+				);
 			}
 
-			// Alpa BERTURUT-TURUT dihitung dari sesi terbaru ke belakang. Berhenti saat
-			// ketemu sesi dengan status selain ALPA (hadir / off sementara) atau sesi
-			// tanpa catatan (siswa belum terdaftar saat itu).
+			/**
+			 * Alpa berturut-turut dihitung dari sesi terbaru yang absennya sudah
+			 * diselesaikan. Berhenti begitu murid HADIR (hitungan mulai ulang).
+			 * Sesi tanpa catatan / OFF_SEMENTARA dilewati, tidak memutus hitungan.
+			 */
 			const hitungAlpaBerturut = (kelasId: string, muridId: string) => {
-				let berturut = 0;
-				for (const sesiId of idSesiPerKelas.get(kelasId) ?? []) {
-					if (
-						statusPerSesi.get(`${muridId}:${sesiId}`) !== StatusAbsenMurid.ALPA
-					) {
-						break;
-					}
-					berturut += 1;
+				let hitung = 0;
+				for (const sesiId of sesiTerakhirPerKelas.get(kelasId) ?? []) {
+					if (!sesiSelesaiIds.has(sesiId)) continue;
+					const status = statusPerSesiMurid.get(`${sesiId}:${muridId}`);
+					if (!status || status === StatusAbsenMurid.OFF_SEMENTARA) continue;
+					if (status === StatusAbsenMurid.ALPA) hitung++;
+					else break;
 				}
-				return berturut;
+				return hitung;
 			};
 
 			const kelasHasil = kelasAktif.map((k) => {
-				const sudahAdaSesi = (idSesiPerKelas.get(k.id)?.length ?? 0) > 0;
+				const sudahAdaSesi = (jumlahSesiPerKelas.get(k.id) ?? 0) > 0;
 				// "Baru" = belum pernah diabsen sama sekali di kelas ini, padahal kelas
 				// sudah berjalan (kalau belum ada sesi, semua siswa sama-sama belum diabsen)
 				const siswaBaru = sudahAdaSesi
@@ -238,84 +293,91 @@ export const absenGuruRouter = createTRPCRouter({
 						alpaBerturut: hitungAlpaBerturut(k.id, p.murid.id),
 					})),
 				)
-				.filter((x) => x.alpaBerturut >= MIN_ALPA_BERTURUT)
-				.sort((x, y) => y.alpaBerturut - x.alpaBerturut);
+				.filter((s) => s.alpaBerturut >= MIN_ALPA_TINDAK_LANJUT)
+				.sort((a, b) => b.alpaBerturut - a.alpaBerturut)
+				.slice(0, 10);
 
-			// ── To Do ───────────────────────────────────────────
-			// 1) Attendance yang belum diisi = kelas HARI INI (milik guru ini) yang sudah
-			//    mulai tetapi absensinya belum diselesaikan guru. Jadwal yang sedang
-			//    diblokir admin tidak ikut dihitung.
-			const nowWita = dayjs().tz(TIMEZONE_BISNIS);
-			const awalHariIni = nowWita.startOf("day").toDate();
-			const jamSekarang = nowWita.format("HH:mm");
-			const HARI_ENUM: Hari[] = [
-				"MINGGU",
-				"SENIN",
-				"SELASA",
-				"RABU",
-				"KAMIS",
-				"JUMAT",
-				"SABTU",
-			];
+			// ── To Do: jadwal HARI INI yang belum diabsen ────────
+			// Ada 2 kondisi (jadwal yang diblokir admin tidak dihitung):
+			//  - BELUM DIMULAI : sesi hari ini belum dibuka ("Mulai Sesi" belum ditekan)
+			//  - BELUM SELESAI : sesi sudah dibuka tapi tombol "Selesaikan Absensi"
+			//                    belum ditekan (status "Lanjutkan Absensi")
+			// Kalau sudah "Absensi Telah Selesai", tidak muncul di To Do.
+			const statusSesiHariIni = new Map<string, "BERJALAN" | "SELESAI">();
+			for (const s of semuaSesi) {
+				if (!s.jadwalKelasId || s.tanggalWaktu < awalHari) continue;
+				if (s.isSelesaiAbsen === true) {
+					statusSesiHariIni.set(s.jadwalKelasId, "SELESAI");
+				} else if (!statusSesiHariIni.has(s.jadwalKelasId)) {
+					statusSesiHariIni.set(s.jadwalKelasId, "BERJALAN");
+				}
+			}
 
-			const [jadwalHariIniSaya, blokirMap] = await Promise.all([
-				db.jadwalKelas.findMany({
-					where: {
-						hari: HARI_ENUM[nowWita.day()],
-						kelas: {
-							statusKelas: { in: ["RUNNING", "TRIAL"] },
-							historyGuruKelases: {
-								some: { guruId, statusGuru: "ACTIVE" },
-							},
-						},
-					},
-					select: {
-						id: true,
-						kelas: { select: { kodeKelas: true } },
-						jamSlotTetap: { select: { jamMulai: true } },
-						jamSlotCustom: { select: { jamMulai: true } },
-						sesiPertemuanKelases: {
-							where: { tanggalWaktu: { gte: awalHariIni } },
-							select: { isSelesaiAbsen: true },
-						},
-					},
-				}),
-				getBlokirHariIni(db),
-			]);
+			const kandidatJadwal = kelasAktif
+				.flatMap((k) =>
+					k.jadwalKelas
+						.filter((j) => String(j.hari) === hariIni)
+						.map((j) => {
+							const slot = j.jamSlotTetap ?? j.jamSlotCustom;
+							return {
+								jadwalId: j.id,
+								kodeKelas: k.kodeKelas,
+								jamMulai: slot?.jamMulai ?? "-",
+								jamSelesai: slot?.jamSelesai ?? null,
+								statusSesi: statusSesiHariIni.get(j.id),
+							};
+						}),
+				)
+				.filter((j) => j.statusSesi !== "SELESAI")
+				.filter(
+					(j) =>
+						// Pembatasan jam hanya untuk yang belum dimulai
+						j.statusSesi === "BERJALAN" ||
+						!HANYA_JADWAL_SUDAH_MULAI ||
+						(j.jamMulai !== "-" && j.jamMulai <= jamSekarang),
+				);
 
-			const kelasBelumAbsen = jadwalHariIniSaya
-				.filter((j) => {
-					if (blokirMap.has(j.id)) return false;
-					const jamMulai =
-						j.jamSlotTetap?.jamMulai ?? j.jamSlotCustom?.jamMulai;
-					if (!jamMulai || jamSekarang < jamMulai) return false; // belum mulai
-					return !j.sesiPertemuanKelases.some((x) => x.isSelesaiAbsen);
-				})
-				.map((j) => j.kelas.kodeKelas);
+			const hasilBlokir = await Promise.all(
+				kandidatJadwal.map((j) => getBlokirJadwal(db, j.jadwalId)),
+			);
+			const jadwalTidakDiblokir = kandidatJadwal
+				.filter((_, i) => !hasilBlokir[i])
+				.sort((a, b) => a.jamMulai.localeCompare(b.jamMulai));
 
-			// 2) Pengingat Middle / Final Test (tinggal <= N pertemuan)
-			const pengingatTest = kelasAktif
-				.flatMap((k) => {
-					const jumlahSesi = idSesiPerKelas.get(k.id)?.length ?? 0;
-					return (
-						[
-							{ jenis: "MIDDLE" as const, nomor: PERTEMUAN_MIDDLE_TEST },
-							{ jenis: "FINAL" as const, nomor: PERTEMUAN_FINAL_TEST },
-						] as const
-					)
-						.map((t) => ({
+			const ringkasJadwal = (j: (typeof jadwalTidakDiblokir)[number]) => ({
+				kodeKelas: j.kodeKelas,
+				jamMulai: j.jamMulai,
+				jamSelesai: j.jamSelesai,
+			});
+			const jadwalBelumDimulai = jadwalTidakDiblokir
+				.filter((j) => j.statusSesi === undefined)
+				.map(ringkasJadwal);
+			const jadwalBelumSelesai = jadwalTidakDiblokir
+				.filter((j) => j.statusSesi === "BERJALAN")
+				.map(ringkasJadwal);
+
+			// ── To Do: pengingat Middle/Final Test ───────────────
+			const pengingatTest: {
+				jenis: "MIDDLE" | "FINAL";
+				kodeKelas: string;
+				pertemuanLagi: number;
+			}[] = [];
+			for (const k of kelasAktif) {
+				const jumlah = jumlahSesiPerKelas.get(k.id) ?? 0;
+				for (const t of [
+					{ jenis: "MIDDLE", target: SESI_MIDDLE_TEST },
+					{ jenis: "FINAL", target: SESI_FINAL_TEST },
+				] as const) {
+					const lagi = t.target - jumlah;
+					if (lagi >= 1 && lagi <= JENDELA_PENGINGAT_TEST) {
+						pengingatTest.push({
 							jenis: t.jenis,
 							kodeKelas: k.kodeKelas,
-							// banyak pertemuan lagi sampai test (termasuk pertemuan test-nya)
-							pertemuanLagi: t.nomor - jumlahSesi,
-						}))
-						.filter(
-							(r) =>
-								r.pertemuanLagi >= 1 &&
-								r.pertemuanLagi <= REMINDER_TEST_PERTEMUAN,
-						);
-				})
-				.sort((a, b) => a.pertemuanLagi - b.pertemuanLagi);
+							pertemuanLagi: lagi,
+						});
+					}
+				}
+			}
 
 			return {
 				statistik: {
@@ -323,15 +385,20 @@ export const absenGuruRouter = createTRPCRouter({
 					digantikan: digantikanBulanIni,
 					izin: izinBulanIni,
 				},
-				kelasAktif: kelasHasil,
-				perluTindakLanjut,
 				toDo: {
-					attendanceBelumDiisi: {
-						total: kelasBelumAbsen.length,
-						kelas: kelasBelumAbsen,
+					attendanceBelumDimulai: {
+						total: jadwalBelumDimulai.length,
+						jadwal: jadwalBelumDimulai,
+					},
+					attendanceBelumSelesai: {
+						total: jadwalBelumSelesai.length,
+						jadwal: jadwalBelumSelesai,
 					},
 					pengingatTest,
 				},
+				kelasAktif: kelasHasil,
+				perluTindakLanjut,
+				jendelaSesi: JENDELA_SESI_TINDAK_LANJUT,
 			};
 		}),
 
@@ -832,15 +899,26 @@ export const absenGuruRouter = createTRPCRouter({
 									],
 								},
 							},
-							select: { id: true, muridId: true, status: true },
+							select: {
+								id: true,
+								muridId: true,
+								status: true,
+								tanggalMulai: true,
+							},
 						});
 
-						const muridAktif = semuaMuridKelas.filter(
+						// Siswa yang tanggal masuk kelasnya belum tercapai tidak dibuatkan
+						// absensi (ALPA/OFF) dan tidak ikut ditagih otomatis.
+						const muridSudahMulai = semuaMuridKelas.filter(
+							(m) => !belumMulaiKelas(m.tanggalMulai, tanggalWaktuSesi),
+						);
+
+						const muridAktif = muridSudahMulai.filter(
 							(m) =>
 								m.status === StatusPendaftaran.AKTIF ||
 								m.status === StatusPendaftaran.TRIAL,
 						);
-						const muridOffSementara = semuaMuridKelas.filter(
+						const muridOffSementara = muridSudahMulai.filter(
 							(m) => m.status === StatusPendaftaran.OFF_SEMENTARA,
 						);
 

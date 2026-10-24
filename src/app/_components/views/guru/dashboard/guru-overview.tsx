@@ -243,7 +243,11 @@ export default function GuruOverview() {
 					label="Sessions This Month"
 					value={statistik?.sesiBulanIni}
 					isLoading={isLoading}
-					sub="classes you taught"
+					sub={
+						statistik
+							? `classes you taught · ${dayjs(statistik.periode.mulai).format("D MMM")} - ${dayjs(statistik.periode.selesai).format("D MMM")}`
+							: "classes you taught"
+					}
 				/>
 				<StatCard
 					icon={ArrowLeftRight}

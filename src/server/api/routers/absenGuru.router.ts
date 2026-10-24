@@ -1,4 +1,5 @@
 import {
+	type Hari,
 	PeranGuru,
 	Prisma,
 	StatusAbsenGuru,
@@ -8,8 +9,15 @@ import {
 import { TRPCError } from "@trpc/server";
 import dayjs from "dayjs";
 import z from "zod";
+import {
+	PERTEMUAN_FINAL_TEST,
+	PERTEMUAN_MIDDLE_TEST,
+} from "@/constants/sesi-event";
 import { UserRole } from "@/server/auth/type";
-import { getBlokirJadwal } from "@/server/services/blokir-absensi.service";
+import {
+	getBlokirHariIni,
+	getBlokirJadwal,
+} from "@/server/services/blokir-absensi.service";
 import { getPeriodeGaji } from "@/server/services/gaji.service";
 import {
 	createSesiPertemuanCore,
@@ -28,6 +36,9 @@ import {
 import { paginationSchema } from "@/types/pagination.type";
 import { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { cabangProtectedProcedure, createTRPCRouter } from "../trpc";
+
+/** Pengingat test muncul bila tinggal <= ini pertemuan lagi menuju test. */
+const REMINDER_TEST_PERTEMUAN = 3;
 
 /** Siswa muncul di "Students to Follow Up" bila alpa berturut-turut >= ini. */
 const MIN_ALPA_BERTURUT = 2;
@@ -230,6 +241,82 @@ export const absenGuruRouter = createTRPCRouter({
 				.filter((x) => x.alpaBerturut >= MIN_ALPA_BERTURUT)
 				.sort((x, y) => y.alpaBerturut - x.alpaBerturut);
 
+			// ── To Do ───────────────────────────────────────────
+			// 1) Attendance yang belum diisi = kelas HARI INI (milik guru ini) yang sudah
+			//    mulai tetapi absensinya belum diselesaikan guru. Jadwal yang sedang
+			//    diblokir admin tidak ikut dihitung.
+			const nowWita = dayjs().tz(TIMEZONE_BISNIS);
+			const awalHariIni = nowWita.startOf("day").toDate();
+			const jamSekarang = nowWita.format("HH:mm");
+			const HARI_ENUM: Hari[] = [
+				"MINGGU",
+				"SENIN",
+				"SELASA",
+				"RABU",
+				"KAMIS",
+				"JUMAT",
+				"SABTU",
+			];
+
+			const [jadwalHariIniSaya, blokirMap] = await Promise.all([
+				db.jadwalKelas.findMany({
+					where: {
+						hari: HARI_ENUM[nowWita.day()],
+						kelas: {
+							statusKelas: { in: ["RUNNING", "TRIAL"] },
+							historyGuruKelases: {
+								some: { guruId, statusGuru: "ACTIVE" },
+							},
+						},
+					},
+					select: {
+						id: true,
+						kelas: { select: { kodeKelas: true } },
+						jamSlotTetap: { select: { jamMulai: true } },
+						jamSlotCustom: { select: { jamMulai: true } },
+						sesiPertemuanKelases: {
+							where: { tanggalWaktu: { gte: awalHariIni } },
+							select: { isSelesaiAbsen: true },
+						},
+					},
+				}),
+				getBlokirHariIni(db),
+			]);
+
+			const kelasBelumAbsen = jadwalHariIniSaya
+				.filter((j) => {
+					if (blokirMap.has(j.id)) return false;
+					const jamMulai =
+						j.jamSlotTetap?.jamMulai ?? j.jamSlotCustom?.jamMulai;
+					if (!jamMulai || jamSekarang < jamMulai) return false; // belum mulai
+					return !j.sesiPertemuanKelases.some((x) => x.isSelesaiAbsen);
+				})
+				.map((j) => j.kelas.kodeKelas);
+
+			// 2) Pengingat Middle / Final Test (tinggal <= N pertemuan)
+			const pengingatTest = kelasAktif
+				.flatMap((k) => {
+					const jumlahSesi = idSesiPerKelas.get(k.id)?.length ?? 0;
+					return (
+						[
+							{ jenis: "MIDDLE" as const, nomor: PERTEMUAN_MIDDLE_TEST },
+							{ jenis: "FINAL" as const, nomor: PERTEMUAN_FINAL_TEST },
+						] as const
+					)
+						.map((t) => ({
+							jenis: t.jenis,
+							kodeKelas: k.kodeKelas,
+							// banyak pertemuan lagi sampai test (termasuk pertemuan test-nya)
+							pertemuanLagi: t.nomor - jumlahSesi,
+						}))
+						.filter(
+							(r) =>
+								r.pertemuanLagi >= 1 &&
+								r.pertemuanLagi <= REMINDER_TEST_PERTEMUAN,
+						);
+				})
+				.sort((a, b) => a.pertemuanLagi - b.pertemuanLagi);
+
 			return {
 				statistik: {
 					sesiBulanIni,
@@ -238,6 +325,13 @@ export const absenGuruRouter = createTRPCRouter({
 				},
 				kelasAktif: kelasHasil,
 				perluTindakLanjut,
+				toDo: {
+					attendanceBelumDiisi: {
+						total: kelasBelumAbsen.length,
+						kelas: kelasBelumAbsen,
+					},
+					pengingatTest,
+				},
 			};
 		}),
 

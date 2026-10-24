@@ -3,15 +3,27 @@
 import {
 	AlertTriangle,
 	ArrowLeftRight,
+	Bell,
+	BookOpen,
 	CalendarCheck,
+	Check,
 	CheckCircle2,
+	ClipboardList,
 	Clock,
 	DoorOpen,
 	GraduationCap,
 	Sparkles,
 	Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -28,6 +40,61 @@ const HARI_SINGKAT: Record<string, string> = {
 	MINGGU: "Sun",
 };
 const URUTAN_HARI = Object.keys(HARI_SINGKAT);
+
+/**
+ * Centang pada setiap item To Do. Ini hanya PENANDA pribadi (disimpan di
+ * perangkat ini, per akun guru): item tidak hilang karena dicentang, baru
+ * hilang setelah tindakan yang sebenarnya dilakukan.
+ */
+function useCentangToDo(userId: string | undefined, kunciAktif: string[]) {
+	const kunci = userId ? `guru-todo-centang:${userId}` : null;
+	const [dicentang, setDicentang] = useState<Set<string>>(new Set());
+
+	useEffect(() => {
+		if (!kunci) return;
+		try {
+			const raw = localStorage.getItem(kunci);
+			setDicentang(new Set(raw ? (JSON.parse(raw) as string[]) : []));
+		} catch {
+			setDicentang(new Set());
+		}
+	}, [kunci]);
+
+	const simpan = useCallback(
+		(next: Set<string>) => {
+			if (!kunci) return;
+			try {
+				localStorage.setItem(kunci, JSON.stringify([...next]));
+			} catch {
+				// penyimpanan tidak tersedia: centang tetap berlaku selama halaman terbuka
+			}
+		},
+		[kunci],
+	);
+
+	// Buang centang untuk item yang sudah tidak ada lagi (tindakannya sudah dilakukan)
+	const kunciGabung = kunciAktif.join("|");
+	useEffect(() => {
+		const aktif = new Set(kunciGabung ? kunciGabung.split("|") : []);
+		setDicentang((cur) => {
+			const next = new Set([...cur].filter((k) => aktif.has(k)));
+			if (next.size === cur.size) return cur;
+			simpan(next);
+			return next;
+		});
+	}, [kunciGabung, simpan]);
+
+	const toggle = (k: string) =>
+		setDicentang((cur) => {
+			const next = new Set(cur);
+			if (next.has(k)) next.delete(k);
+			else next.add(k);
+			simpan(next);
+			return next;
+		});
+
+	return { dicentang, toggle };
+}
 
 function sapaan() {
 	const jam = dayjs().tz(TIMEZONE_BISNIS).hour();
@@ -53,7 +120,119 @@ export default function GuruOverview() {
 	const { data: session } = useSession();
 	const { data, isLoading } = api.absenGuru.getOverviewGuru.useQuery();
 
-	const namaPanjang = session?.user?.name ?? "";
+	// Buku yang sudah bisa diambil tapi belum diambil (query sama dengan kartu
+	// Pengambilan Buku, jadi tidak ada request tambahan)
+	const { data: penerimaBuku } = api.stokBuku.getPenerimaForGuru.useQuery({
+		guruId: undefined,
+	});
+	const bukuSiapAmbil = useMemo(
+		() =>
+			(penerimaBuku ?? []).filter(
+				(b) => b.statusOrder === "BISA_DIAMBIL" && b.status !== "SUDAH_DIAMBIL",
+			),
+		[penerimaBuku],
+	);
+
+	// Daftar To Do bernomor. Kunci item dibuat supaya centang otomatis "reset"
+	// kalau kondisinya berubah (hari baru, daftar buku berubah, sisa pertemuan berubah).
+	const hariKunci = dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM-DD");
+	const todoItems = useMemo(() => {
+		if (!data) return [];
+		const items: {
+			key: string;
+			tone: string;
+			node: ReactNode;
+		}[] = [];
+
+		const att = data.toDo.attendanceBelumDiisi;
+		if (att.total > 0) {
+			items.push({
+				key: `attendance:${hariKunci}`,
+				tone: "bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
+				node: (
+					<Link
+						href="/guru/jadwal-hari-ini"
+						className="flex items-start gap-2 hover:underline"
+					>
+						<ClipboardList className="mt-0.5 h-4 w-4 shrink-0" />
+						<span className="min-w-0">
+							<span className="font-semibold">{att.total} attendance</span>{" "}
+							belum diisi
+							<span className="block text-xs break-words opacity-80">
+								{att.kelas.join(" · ")}
+							</span>
+						</span>
+					</Link>
+				),
+			});
+		}
+
+		if (bukuSiapAmbil.length > 0) {
+			items.push({
+				key: `buku:${bukuSiapAmbil
+					.map((b) => b.id)
+					.sort()
+					.join(",")}`,
+				tone: "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200",
+				node: (
+					<div className="flex items-start gap-2">
+						<BookOpen className="mt-0.5 h-4 w-4 shrink-0" />
+						<div className="min-w-0">
+							<p>
+								<span className="font-semibold">
+									{bukuSiapAmbil.length} book
+									{bukuSiapAmbil.length > 1 ? "s" : ""}
+								</span>{" "}
+								ready to pick up
+							</p>
+							<ul className="mt-1 space-y-0.5 text-xs opacity-90">
+								{bukuSiapAmbil.map((b) => (
+									<li key={b.id} className="break-words">
+										•{" "}
+										<span className="font-semibold">{b.murid.namaLengkap}</span>{" "}
+										· {b.stokBuku.jenisKelas.nama} Level {b.stokBuku.level}
+										{b.kelas?.kodeKelas ? ` · ${b.kelas.kodeKelas}` : ""}
+									</li>
+								))}
+							</ul>
+						</div>
+					</div>
+				),
+			});
+		}
+
+		for (const r of data.toDo.pengingatTest) {
+			items.push({
+				key: `test:${r.jenis}:${r.kodeKelas}:${r.pertemuanLagi}`,
+				tone:
+					r.pertemuanLagi === 1
+						? "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300"
+						: "bg-violet-100 text-violet-900 dark:bg-violet-950/40 dark:text-violet-200",
+				node: (
+					<div className="flex items-start gap-2">
+						<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+						<span className="min-w-0 break-words">
+							{r.jenis === "FINAL" ? "Final Test" : "Middle Test"} for{" "}
+							<span className="font-semibold">{r.kodeKelas}</span>{" "}
+							{r.pertemuanLagi === 1
+								? "is at the next meeting."
+								: `is in ${r.pertemuanLagi} meetings.`}
+						</span>
+					</div>
+				),
+			});
+		}
+		return items;
+	}, [data, bukuSiapAmbil, hariKunci]);
+
+	const { dicentang, toggle: toggleCentang } = useCentangToDo(
+		session?.user?.id,
+		todoItems.map((i) => i.key),
+	);
+	const totalToDo = todoItems.length;
+	const totalDicentang = todoItems.filter((i) => dicentang.has(i.key)).length;
+
+	const namaLengkap = session?.user?.name ?? "";
 
 	const statistik = data?.statistik;
 	const totalDigantikan = (statistik?.digantikan ?? 0) + (statistik?.izin ?? 0);
@@ -67,7 +246,7 @@ export default function GuruOverview() {
 				<div className="relative">
 					<h2 className="text-xl leading-tight font-bold sm:text-2xl">
 						{sapaan()}
-						{namaPanjang ? `, ${namaPanjang}` : ""} 👋
+						{namaLengkap ? `, ${namaLengkap}` : ""} 👋
 					</h2>
 					<p className="mt-1 text-sm opacity-90">{tanggalInggris()}</p>
 				</div>
@@ -97,118 +276,7 @@ export default function GuruOverview() {
 				/>
 			</div>
 
-			<div className="grid gap-4 lg:grid-cols-3">
-				{/* 4. My Active Classes */}
-				<section className="bg-card rounded-2xl border p-4 shadow-sm lg:col-span-2">
-					<div className="mb-3 flex items-center justify-between gap-2">
-						<h3 className="flex items-center gap-2 text-base font-semibold">
-							<GraduationCap className="text-primary h-4 w-4" />
-							My Active Classes
-						</h3>
-						{data && (
-							<Badge variant="secondary" className="rounded-full">
-								{data.kelasAktif.length}
-							</Badge>
-						)}
-					</div>
-
-					{isLoading ? (
-						<div className="grid gap-3 md:grid-cols-2">
-							<Skeleton className="h-36 rounded-xl" />
-							<Skeleton className="h-36 rounded-xl" />
-						</div>
-					) : !data || data.kelasAktif.length === 0 ? (
-						<p className="text-muted-foreground py-6 text-center text-sm">
-							You have no active classes right now.
-						</p>
-					) : (
-						<div className="grid gap-3 md:grid-cols-2">
-							{data.kelasAktif.map((k) => {
-								const jadwal = [...k.jadwal].sort(
-									(a, b) =>
-										URUTAN_HARI.indexOf(a.hari) - URUTAN_HARI.indexOf(b.hari) ||
-										a.jamMulai.localeCompare(b.jamMulai),
-								);
-								return (
-									<div
-										key={k.id}
-										className="bg-background space-y-2.5 rounded-xl border p-3"
-									>
-										<div className="flex items-start justify-between gap-2">
-											<div className="min-w-0 space-y-1.5">
-												<p className="text-sm leading-snug font-semibold break-words">
-													{k.kodeKelas}
-												</p>
-												{(k.peran === "ASISTING" ||
-													k.statusKelas === "TRIAL") && (
-													<div className="flex flex-wrap gap-1.5">
-														{k.peran === "ASISTING" && (
-															<Badge
-																variant="outline"
-																className="h-5 px-1.5 text-[10px]"
-															>
-																Assistant
-															</Badge>
-														)}
-														{k.statusKelas === "TRIAL" && (
-															<Badge className="h-5 border-0 bg-sky-100 px-1.5 text-[10px] text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
-																Trial
-															</Badge>
-														)}
-													</div>
-												)}
-											</div>
-											<span className="bg-muted flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium">
-												<Users className="h-3.5 w-3.5" />
-												{k.jumlahSiswa}
-											</span>
-										</div>
-
-										<div className="text-muted-foreground space-y-1 text-xs">
-											{jadwal.length === 0 ? (
-												<p>No schedule yet</p>
-											) : (
-												jadwal.map((j) => (
-													<p
-														key={`${j.hari}-${j.jamMulai}-${j.ruang}`}
-														className="flex flex-wrap items-center gap-x-2 gap-y-0.5"
-													>
-														<span className="text-foreground w-8 font-semibold">
-															{HARI_SINGKAT[j.hari] ?? j.hari}
-														</span>
-														<span className="flex items-center gap-1 font-mono">
-															<Clock className="h-3 w-3" />
-															{j.jamMulai}
-															{j.jamSelesai ? ` - ${j.jamSelesai}` : ""}
-														</span>
-														<span className="flex items-center gap-1">
-															<DoorOpen className="h-3 w-3" />
-															{j.ruang}
-														</span>
-													</p>
-												))
-											)}
-										</div>
-
-										{k.siswaBaru.length > 0 && (
-											<div className="flex items-start gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
-												<Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-												<span className="break-words">
-													<span className="font-semibold">New student:</span>{" "}
-													{k.siswaBaru.join(", ")}
-													<span className="block opacity-80">
-														Never marked present or absent in this class yet
-													</span>
-												</span>
-											</div>
-										)}
-									</div>
-								);
-							})}
-						</div>
-					)}
-				</section>
-
+			<div className="grid gap-4 md:grid-cols-2">
 				{/* 5. Students to Follow Up */}
 				<section className="bg-card overflow-hidden rounded-2xl border shadow-sm">
 					<div className="flex items-center gap-2 border-b bg-amber-50 px-4 py-3 dark:bg-amber-950/20">
@@ -265,7 +333,195 @@ export default function GuruOverview() {
 						)}
 					</div>
 				</section>
+
+				{/* 6. To Do */}
+				<section className="bg-card overflow-hidden rounded-2xl border shadow-sm">
+					<div className="bg-primary/5 flex items-center justify-between gap-2 border-b px-4 py-3">
+						<h3 className="flex items-center gap-2 text-base font-semibold">
+							<Bell className="text-primary h-4 w-4" />
+							To Do
+						</h3>
+						{data && totalToDo > 0 && (
+							<Badge className="rounded-full">{totalToDo}</Badge>
+						)}
+					</div>
+					<div className="p-4">
+						{isLoading || !data ? (
+							<div className="space-y-2">
+								<Skeleton className="h-10 rounded-lg" />
+								<Skeleton className="h-10 rounded-lg" />
+							</div>
+						) : totalToDo === 0 ? (
+							<div className="flex flex-col items-center gap-2 py-6 text-center">
+								<CheckCircle2 className="h-6 w-6 text-green-600" />
+								<p className="text-muted-foreground text-sm">
+									All caught up. Nothing to do right now.
+								</p>
+							</div>
+						) : (
+							<>
+								<ol className="space-y-2">
+									{todoItems.map((item, idx) => {
+										const sudah = dicentang.has(item.key);
+										return (
+											<li
+												key={item.key}
+												className={cn(
+													"flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-sm",
+													item.tone,
+												)}
+											>
+												<span className="mt-0.5 w-4 shrink-0 text-xs font-bold opacity-70">
+													{idx + 1}.
+												</span>
+												<button
+													type="button"
+													onClick={() => toggleCentang(item.key)}
+													aria-pressed={sudah}
+													aria-label={sudah ? "Uncheck item" : "Check item"}
+													className={cn(
+														"mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border-2 transition-colors",
+														sudah
+															? "border-current bg-current"
+															: "bg-background border-current/50 hover:border-current",
+													)}
+												>
+													{sudah && (
+														<Check className="h-3.5 w-3.5 text-white dark:text-black" />
+													)}
+												</button>
+												<div
+													className={cn(
+														"min-w-0 flex-1",
+														sudah && "opacity-60",
+													)}
+												>
+													{item.node}
+												</div>
+											</li>
+										);
+									})}
+								</ol>
+								<p className="text-muted-foreground mt-3 text-[11px]">
+									Checking an item is only a reminder mark ({totalDicentang}/
+									{totalToDo}). It stays here until the actual action is done.
+								</p>
+							</>
+						)}
+					</div>
+				</section>
 			</div>
+
+			{/* 4. My Active Classes */}
+			<section className="bg-card rounded-2xl border p-4 shadow-sm">
+				<div className="mb-3 flex items-center justify-between gap-2">
+					<h3 className="flex items-center gap-2 text-base font-semibold">
+						<GraduationCap className="text-primary h-4 w-4" />
+						My Active Classes
+					</h3>
+					{data && (
+						<Badge variant="secondary" className="rounded-full">
+							{data.kelasAktif.length}
+						</Badge>
+					)}
+				</div>
+
+				{isLoading ? (
+					<div className="grid gap-3 md:grid-cols-2">
+						<Skeleton className="h-36 rounded-xl" />
+						<Skeleton className="h-36 rounded-xl" />
+					</div>
+				) : !data || data.kelasAktif.length === 0 ? (
+					<p className="text-muted-foreground py-6 text-center text-sm">
+						You have no active classes right now.
+					</p>
+				) : (
+					<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+						{data.kelasAktif.map((k) => {
+							const jadwal = [...k.jadwal].sort(
+								(a, b) =>
+									URUTAN_HARI.indexOf(a.hari) - URUTAN_HARI.indexOf(b.hari) ||
+									a.jamMulai.localeCompare(b.jamMulai),
+							);
+							return (
+								<div
+									key={k.id}
+									className="bg-background space-y-2.5 rounded-xl border p-3"
+								>
+									<div className="flex items-start justify-between gap-2">
+										<div className="min-w-0 space-y-1.5">
+											<p className="text-sm leading-snug font-semibold break-words">
+												{k.kodeKelas}
+											</p>
+											{(k.peran === "ASISTING" ||
+												k.statusKelas === "TRIAL") && (
+												<div className="flex flex-wrap gap-1.5">
+													{k.peran === "ASISTING" && (
+														<Badge
+															variant="outline"
+															className="h-5 px-1.5 text-[10px]"
+														>
+															Assistant
+														</Badge>
+													)}
+													{k.statusKelas === "TRIAL" && (
+														<Badge className="h-5 border-0 bg-sky-100 px-1.5 text-[10px] text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
+															Trial
+														</Badge>
+													)}
+												</div>
+											)}
+										</div>
+										<span className="bg-muted flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium">
+											<Users className="h-3.5 w-3.5" />
+											{k.jumlahSiswa}
+										</span>
+									</div>
+
+									<div className="text-muted-foreground space-y-1 text-xs">
+										{jadwal.length === 0 ? (
+											<p>No schedule yet</p>
+										) : (
+											jadwal.map((j) => (
+												<p
+													key={`${j.hari}-${j.jamMulai}-${j.ruang}`}
+													className="flex flex-wrap items-center gap-x-2 gap-y-0.5"
+												>
+													<span className="text-foreground w-8 font-semibold">
+														{HARI_SINGKAT[j.hari] ?? j.hari}
+													</span>
+													<span className="flex items-center gap-1 font-mono">
+														<Clock className="h-3 w-3" />
+														{j.jamMulai}
+														{j.jamSelesai ? ` - ${j.jamSelesai}` : ""}
+													</span>
+													<span className="flex items-center gap-1">
+														<DoorOpen className="h-3 w-3" />
+														{j.ruang}
+													</span>
+												</p>
+											))
+										)}
+									</div>
+
+									{k.siswaBaru.length > 0 && (
+										<div className="flex items-start gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-2 text-xs text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+											<Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+											<span className="break-words">
+												<span className="font-semibold">New student:</span>{" "}
+												{k.siswaBaru.join(", ")}
+												<span className="block opacity-80">
+													Never marked present or absent in this class yet
+												</span>
+											</span>
+										</div>
+									)}
+								</div>
+							);
+						})}
+					</div>
+				)}
+			</section>
 		</div>
 	);
 }

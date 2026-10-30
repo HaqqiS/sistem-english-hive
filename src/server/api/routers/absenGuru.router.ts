@@ -68,15 +68,21 @@ export const absenGuruRouter = createTRPCRouter({
 			const guruId = session.user.id;
 
 			const sekarang = dayjs().tz(TIMEZONE_BISNIS);
-			// "Bulan ini" = periode tanggal 26 s/d 25 (sama dengan periode gaji).
-			// Tgl 1-25 → periode yang berakhir di bulan ini; tgl 26+ → periode yang
-			// berakhir di bulan depan.
-			const bulanPeriode =
-				sekarang.date() >= 26 ? sekarang.add(1, "month") : sekarang;
-			const { startDate: awalBulan, endDate: akhirBulan } = getPeriodeGaji(
-				bulanPeriode.format("YYYY-MM"),
-			);
-			const bulanIni = { gte: awalBulan, lte: akhirBulan };
+			// "Bulan ini" = periode tanggal 26 s/d 25, dihitung langsung dalam WITA
+			// (26 jam 00:00 s/d 25 jam 23:59:59). Tgl 1-25 → periode yang berakhir
+			// di bulan ini; tgl 26+ → periode yang berakhir di bulan depan.
+			const bulanAkhirPeriode = (
+				sekarang.date() >= 26 ? sekarang.add(1, "month") : sekarang
+			).startOf("month");
+			const akhirPeriode = bulanAkhirPeriode.date(25).endOf("day");
+			const awalPeriode = bulanAkhirPeriode
+				.subtract(1, "month")
+				.date(26)
+				.startOf("day");
+			const bulanIni = {
+				gte: awalPeriode.toDate(),
+				lte: akhirPeriode.toDate(),
+			};
 			const awalHari = sekarang.startOf("day").toDate();
 			const hariIni = NAMA_HARI[sekarang.day()];
 			const jamSekarang = sekarang.format("HH:mm");
@@ -391,8 +397,8 @@ export const absenGuruRouter = createTRPCRouter({
 					digantikan: digantikanBulanIni,
 					izin: izinBulanIni,
 					periode: {
-						mulai: dayjs(awalBulan).tz(TIMEZONE_BISNIS).format("YYYY-MM-DD"),
-						selesai: dayjs(akhirBulan).tz(TIMEZONE_BISNIS).format("YYYY-MM-DD"),
+						mulai: awalPeriode.format("YYYY-MM-DD"),
+						selesai: akhirPeriode.format("YYYY-MM-DD"),
 					},
 				},
 				toDo: {

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { IMaskInput } from "react-imask";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
 	FormControl,
 	FormField,
@@ -127,11 +128,13 @@ export default function UpLevelKelasForm({
 					<FormItem>
 						<FormLabel>Harga Program Kelas Baru</FormLabel>
 						<FormControl>
-							<Input
+							<CurrencyInput
 								placeholder="Masukkan harga program kelas"
-								type="number"
-								{...field}
-								onChange={(e) => field.onChange(e.target.valueAsNumber)}
+								name={field.name}
+								ref={field.ref}
+								onBlur={field.onBlur}
+								value={field.value}
+								onValueChange={field.onChange}
 								required
 							/>
 						</FormControl>

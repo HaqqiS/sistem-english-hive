@@ -18,6 +18,7 @@ import { usePembayaran } from "@/hooks/usePembayaran";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { TypePembayaranJatuhTempo } from "@/types/pembayaran.type";
+import { LunaskanDialog, type LunaskanResult } from "./lunaskan-dialog";
 
 interface CardJatuhTempoProps {
 	className?: string;
@@ -30,6 +31,9 @@ export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 		pageIndex: 0,
 		pageSize: 50,
 	});
+
+	const [itemToLunaskan, setItemToLunaskan] =
+		useState<TypePembayaranJatuhTempo | null>(null);
 
 	const ROW_SELECTION_KEY = "jatuh-tempo-row-selection";
 
@@ -63,15 +67,25 @@ export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 		pagination: pagination,
 	});
 
-	// Handler Verifikasi Cepat
+	// Handler Verifikasi Cepat: buka dialog untuk pilih metode, tanggal & diskon
 	const handleVerifyClick = (item: TypePembayaranJatuhTempo) => {
-		mutations.update.mutate({
-			id: item.id,
-			jumlahBayar: item.jumlahBayar,
-			statusBayar: StatusPembayaran.LUNAS, // Langsung set LUNAS
-			tanggalBayar: new Date().toISOString(), // Tanggal hari ini
-			note: item.note ?? undefined,
-		});
+		setItemToLunaskan(item);
+	};
+
+	const handleConfirmLunaskan = (result: LunaskanResult) => {
+		if (!itemToLunaskan) return;
+		mutations.update.mutate(
+			{
+				id: itemToLunaskan.id,
+				jumlahBayar: itemToLunaskan.jumlahBayar,
+				statusBayar: StatusPembayaran.LUNAS,
+				tanggalBayar: result.tanggalBayar,
+				metodeBayar: result.metodeBayar,
+				diskon: result.diskonById[itemToLunaskan.id] ?? 0,
+				note: itemToLunaskan.note ?? undefined,
+			},
+			{ onSuccess: () => setItemToLunaskan(null) },
+		);
 	};
 
 	const tableColumns = columnsJatuhTempo({
@@ -125,6 +139,24 @@ export default function CardJatuhTempo({ className }: CardJatuhTempoProps) {
 					/>
 				)}
 			</CardContent>
+
+			<LunaskanDialog
+				open={itemToLunaskan !== null}
+				onOpenChange={(open) => !open && setItemToLunaskan(null)}
+				items={
+					itemToLunaskan
+						? [
+								{
+									id: itemToLunaskan.id,
+									label: `${itemToLunaskan.pendaftaranKelas.murid.namaLengkap} - SPP Ke-${itemToLunaskan.pembayaranKe}`,
+									jumlah: itemToLunaskan.jumlahBayar,
+								},
+							]
+						: []
+				}
+				onConfirm={handleConfirmLunaskan}
+				isPending={mutations.update.isPending}
+			/>
 		</Card>
 	);
 }

@@ -330,6 +330,8 @@ export const pembayaranRouter = createTRPCRouter({
 					jumlahBayar: true,
 					tanggalJatuhTempo: true,
 					tanggalBayar: true,
+					metodeBayar: true,
+					diskon: true,
 					note: true,
 					statusBayar: true,
 					verifiedBy: { select: { name: true } },
@@ -444,6 +446,29 @@ export const pembayaranRouter = createTRPCRouter({
 				});
 			}
 
+			// 2b. Validasi metode bayar & diskon (hanya relevan saat LUNAS)
+			const sedangMelunasi =
+				input.statusBayar === StatusPembayaran.LUNAS &&
+				existingPayment.statusBayar !== StatusPembayaran.LUNAS;
+
+			if (sedangMelunasi && !input.metodeBayar) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Metode pembayaran (Cash / Transfer / QRIS) harus dipilih.",
+				});
+			}
+
+			const diskonEfektif = input.diskon ?? existingPayment.diskon;
+			if (
+				input.statusBayar === StatusPembayaran.LUNAS &&
+				diskonEfektif > input.jumlahBayar
+			) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Diskon tidak boleh melebihi nominal tagihan.",
+				});
+			}
+
 			try {
 				// 3. Prepare update data
 				const updateData: Prisma.PembayaranUpdateInput = {
@@ -457,9 +482,20 @@ export const pembayaranRouter = createTRPCRouter({
 				if (input.statusBayar === StatusPembayaran.LUNAS) {
 					updateData.verifiedBy = { connect: { id: session.user.id } };
 					updateData.tanggalBayar = input.tanggalBayar ?? new Date();
+					// Hanya timpa jika dikirim, supaya edit nominal/tanggal tidak
+					// menghapus metode & diskon yang sudah tercatat.
+					if (input.metodeBayar !== undefined) {
+						updateData.metodeBayar = input.metodeBayar;
+					}
+					if (input.diskon !== undefined) {
+						updateData.diskon = input.diskon;
+					}
 				} else {
 					updateData.verifiedBy = { disconnect: true };
 					updateData.tanggalBayar = null;
+					// Dikembalikan ke belum lunas: bersihkan data pelunasan
+					updateData.metodeBayar = null;
+					updateData.diskon = 0;
 				}
 
 				const updated = await db.pembayaran.update({
@@ -548,6 +584,14 @@ export const pembayaranRouter = createTRPCRouter({
 			}
 
 			const tanggalTransaksi = input.tanggalBayar ?? new Date();
+			const diskon = input.diskon ?? 0;
+
+			if (diskon > input.jumlahBayar) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Diskon tidak boleh melebihi nominal tagihan.",
+				});
+			}
 
 			try {
 				let urutan = input.pembayaranKe;
@@ -567,6 +611,8 @@ export const pembayaranRouter = createTRPCRouter({
 						tanggalBayar: tanggalTransaksi,
 						pembayaranKe: urutan,
 						statusBayar: StatusPembayaran.LUNAS,
+						metodeBayar: input.metodeBayar,
+						diskon,
 						verifiedById: session.user.id,
 						note: input.note ?? "Tagihan Manual Admin",
 					},

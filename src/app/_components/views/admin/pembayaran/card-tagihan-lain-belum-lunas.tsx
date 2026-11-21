@@ -18,6 +18,7 @@ import { useTagihanLain } from "@/hooks/useTagihanLain";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { RouterOutputs } from "@/trpc/react";
+import { LunaskanDialog, type LunaskanResult } from "./lunaskan-dialog";
 
 type TypeTagihanLainBelumLunas =
 	RouterOutputs["tagihanLain"]["getAllBelumLunas"]["data"][number];
@@ -71,10 +72,24 @@ export default function CardTagihanLainBelumLunas({
 		pagination: pagination,
 	});
 
+	const [itemToLunaskan, setItemToLunaskan] =
+		useState<TypeTagihanLainBelumLunas | null>(null);
+
 	const handleVerifyClick = (item: TypeTagihanLainBelumLunas) => {
-		mutations.markAsPaid.mutate({
-			id: item.id,
-		});
+		setItemToLunaskan(item);
+	};
+
+	const handleConfirmLunaskan = (result: LunaskanResult) => {
+		if (!itemToLunaskan) return;
+		mutations.markAsPaid.mutate(
+			{
+				id: itemToLunaskan.id,
+				metodeBayar: result.metodeBayar,
+				tanggalBayar: result.tanggalBayar,
+				diskon: result.diskonById[itemToLunaskan.id] ?? 0,
+			},
+			{ onSuccess: () => setItemToLunaskan(null) },
+		);
 	};
 
 	const tableColumns = columnsTagihanLainBelumLunas({
@@ -128,6 +143,24 @@ export default function CardTagihanLainBelumLunas({
 					/>
 				)}
 			</CardContent>
+
+			<LunaskanDialog
+				open={itemToLunaskan !== null}
+				onOpenChange={(open) => !open && setItemToLunaskan(null)}
+				items={
+					itemToLunaskan
+						? [
+								{
+									id: itemToLunaskan.id,
+									label: `${itemToLunaskan.murid.namaLengkap} - ${itemToLunaskan.judul}`,
+									jumlah: itemToLunaskan.jumlah,
+								},
+							]
+						: []
+				}
+				onConfirm={handleConfirmLunaskan}
+				isPending={mutations.markAsPaid.isPending}
+			/>
 		</Card>
 	);
 }

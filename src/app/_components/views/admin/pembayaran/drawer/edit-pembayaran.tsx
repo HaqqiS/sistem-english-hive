@@ -35,6 +35,8 @@ export default function EditPembayaran() {
 						? formatDateToYYYYMMDD(selectedPembayaran.tanggalJatuhTempo)
 						: undefined,
 					note: selectedPembayaran.note ?? "",
+					metodeBayar: selectedPembayaran.metodeBayar ?? undefined,
+					diskon: selectedPembayaran.diskon,
 				}
 			: undefined,
 		defaultValues: {
@@ -44,6 +46,8 @@ export default function EditPembayaran() {
 			tanggalBayar: undefined,
 			tanggalJatuhTempo: undefined,
 			note: "",
+			metodeBayar: undefined,
+			diskon: 0,
 		},
 	});
 
@@ -73,6 +77,17 @@ export default function EditPembayaran() {
 	});
 
 	const onSubmit = (data: TypeClientUpdatePembayaranSchema) => {
+		// Saat berpindah ke LUNAS, metode pembayaran wajib dipilih (sama dengan aturan server)
+		const sedangMelunasi =
+			data.statusBayar === "LUNAS" &&
+			selectedPembayaran?.statusBayar !== "LUNAS";
+		if (sedangMelunasi && !data.metodeBayar) {
+			form.setError("metodeBayar", {
+				message: "Pilih metode pembayaran (Cash / Transfer / QRIS)",
+			});
+			return;
+		}
+
 		// The mutation expects a Date object (from server schema)
 		// But 'data' here has a string string because of client schema.
 		// We need to manually convert it before sending to mutation if the mutation expects TypeUpdatePembayaranSchema

@@ -15,6 +15,7 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
 	Dialog,
 	DialogContent,
@@ -441,12 +442,13 @@ export default function RingkasanTagihanKelas({
 						)}
 						<div className="space-y-2">
 							<Label htmlFor="add-jumlah">Jumlah Bayar</Label>
-							<Input
+							<CurrencyInput
 								id="add-jumlah"
-								type="number"
 								value={addJumlah}
-								onChange={(e) => setAddJumlah(e.target.value)}
-								placeholder="Contoh: 300000"
+								onValueChange={(v) =>
+									setAddJumlah(v === undefined ? "" : String(v))
+								}
+								placeholder="Contoh: Rp 300.000"
 							/>
 						</div>
 						{addJenis === "SPP" && (
@@ -484,11 +486,12 @@ export default function RingkasanTagihanKelas({
 					<div className="space-y-4">
 						<div className="space-y-2">
 							<Label htmlFor="edit-jumlah">Jumlah</Label>
-							<Input
+							<CurrencyInput
 								id="edit-jumlah"
-								type="number"
 								value={editJumlah}
-								onChange={(e) => setEditJumlah(e.target.value)}
+								onValueChange={(v) =>
+									setEditJumlah(v === undefined ? "" : String(v))
+								}
 							/>
 						</div>
 						{editItem?.jenis === "SPP" && (

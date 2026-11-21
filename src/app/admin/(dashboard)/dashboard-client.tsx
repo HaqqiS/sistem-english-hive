@@ -3,6 +3,7 @@
 import KpiCards from "@/app/_components/views/admin/dashboard/kpi-cards";
 import PrediksiPendapatanCard from "@/app/_components/views/admin/dashboard/prediksi-pendapatan-card";
 import RegistrationChart from "@/app/_components/views/admin/dashboard/registration-chart";
+import RekapPembayaranCard from "@/app/_components/views/admin/dashboard/rekap-pembayaran-card";
 import RevenueChart from "@/app/_components/views/admin/dashboard/revenue-chart";
 import ScheduleList from "@/app/_components/views/admin/dashboard/schedule-list";
 import SumberInfoChart from "@/app/_components/views/admin/dashboard/sumber-info-chart";
@@ -19,6 +20,9 @@ export default function DashboardClientPage() {
 				<RevenueChart />
 				<SumberInfoChart />
 			</div>
+
+			{/* 2b. Rekap Pembayaran per Metode (Cash/Transfer/QRIS) + Diskon */}
+			<RekapPembayaranCard />
 
 			{/* 3. Jadwal Hari Ini (termasuk event Middle/Final Test): full width */}
 			<ScheduleList />

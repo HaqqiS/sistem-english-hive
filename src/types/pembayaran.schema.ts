@@ -1,5 +1,11 @@
-import { StatusPembayaran } from "@prisma/client";
+import { MetodeBayar, StatusPembayaran } from "@prisma/client";
 import z from "zod";
+
+/** Diskon dicatat terpisah, TIDAK mengurangi nominal tagihan. */
+export const diskonSchema = z.coerce
+	.number({ invalid_type_error: "Diskon harus berupa angka" })
+	.int("Diskon harus bilangan bulat")
+	.min(0, "Diskon tidak boleh negatif");
 
 const basePembayaranSchema = z.object({
 	pendaftaranKelasId: z.string(),
@@ -18,6 +24,8 @@ const basePembayaranSchema = z.object({
 		}),
 	pembayaranKe: z.number().optional(),
 	note: z.string().optional(),
+	metodeBayar: z.nativeEnum(MetodeBayar).optional(),
+	diskon: diskonSchema.optional(),
 });
 
 export const clientCreatePembayaranSchema = basePembayaranSchema;

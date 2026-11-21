@@ -12,19 +12,13 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+	LunaskanDialog,
+	type LunaskanResult,
+} from "@/app/_components/views/admin/pembayaran/lunaskan-dialog";
 import SalinTeksButton from "@/app/_components/views/admin/pembayaran/salin-teks-button";
 import StatusDiingatkanBadge from "@/app/_components/views/admin/pembayaran/status-diingatkan-badge";
 import TambahTagihanCepat from "@/app/_components/views/admin/pembayaran/tambah-tagihan-cepat";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +59,18 @@ export default function KelasJatuhTempoH14({
 
 	const [searchKelas, setSearchKelas] = useState("");
 	const [searchSiswa, setSearchSiswa] = useState("");
-	const [muridToLunaskan, setMuridToLunaskan] = useState<string | null>(null);
+	// Target dialog "Lunaskan Semua": semua tagihan belum lunas satu siswa di satu kelas
+	const [lunaskanTarget, setLunaskanTarget] = useState<{
+		namaLengkap: string;
+		namaKelas: string;
+		kodeKelas: string;
+		semuaTagihan: {
+			id: string;
+			jenis: "SPP" | "BUKU" | "REGISTRASI";
+			label: string;
+			jumlah: number;
+		}[];
+	} | null>(null);
 
 	const { data, isLoading } = api.dashboard.getKelasJatuhTempoH14.useQuery({
 		cabangId: activeCabangId,
@@ -105,34 +110,39 @@ export default function KelasJatuhTempoH14({
 			.filter((k): k is NonNullable<typeof k> => k !== null);
 	}, [data, searchKelas, searchSiswa]);
 
-	const handleLunaskanSemua = async (
-		semuaTagihan: {
-			id: string;
-			jenis: "SPP" | "BUKU" | "REGISTRASI";
-			jumlah: number;
-		}[],
-	) => {
+	const handleLunaskanSemua = async (result: LunaskanResult) => {
+		if (!lunaskanTarget) return;
 		const idToast = toast.loading("Melunaskan semua tagihan...");
 		try {
 			await Promise.all(
-				semuaTagihan.map((item) =>
-					item.jenis === "SPP"
+				lunaskanTarget.semuaTagihan.map((item) => {
+					const diskon = result.diskonById[item.id] ?? 0;
+					return item.jenis === "SPP"
 						? updateSppMutation.mutateAsync({
 								id: item.id,
 								jumlahBayar: item.jumlah,
 								statusBayar: StatusPembayaran.LUNAS,
-								tanggalBayar: new Date().toISOString(),
+								tanggalBayar: result.tanggalBayar,
+								metodeBayar: result.metodeBayar,
+								diskon,
 							})
-						: markAsPaidMutation.mutateAsync({ id: item.id }),
-				),
+						: markAsPaidMutation.mutateAsync({
+								id: item.id,
+								metodeBayar: result.metodeBayar,
+								tanggalBayar: result.tanggalBayar,
+								diskon,
+							});
+				}),
 			);
 			await invalidateAll();
 			toast.success("Semua tagihan berhasil dilunaskan", { id: idToast });
 		} catch (error) {
 			console.error(error);
 			toast.error("Gagal melunaskan sebagian/semua tagihan", { id: idToast });
+			// Sebagian mungkin sudah berhasil: segarkan data supaya tampilan akurat
+			await invalidateAll();
 		} finally {
-			setMuridToLunaskan(null);
+			setLunaskanTarget(null);
 		}
 	};
 
@@ -323,55 +333,27 @@ export default function KelasJatuhTempoH14({
 																	disabled={waItems.length === 0}
 																/>
 
-																<AlertDialog
-																	open={muridToLunaskan === s.muridId}
-																	onOpenChange={(open) =>
-																		setMuridToLunaskan(open ? s.muridId : null)
+																<Button
+																	variant="default"
+																	size="sm"
+																	disabled={
+																		s.totalBelumLunas === 0 || isPending
 																	}
+																	onClick={() =>
+																		setLunaskanTarget({
+																			namaLengkap: s.namaLengkap,
+																			namaKelas: kelas.namaKelas,
+																			kodeKelas: kelas.kodeKelas,
+																			semuaTagihan: s.semuaTagihan,
+																		})
+																	}
+																	className="gap-1"
 																>
-																	<Button
-																		variant="default"
-																		size="sm"
-																		disabled={
-																			s.totalBelumLunas === 0 || isPending
-																		}
-																		onClick={() =>
-																			setMuridToLunaskan(s.muridId)
-																		}
-																		className="gap-1"
-																	>
-																		<CheckCircle2 className="h-4 w-4" />
-																		<span className="hidden xl:inline">
-																			Lunaskan Semua
-																		</span>
-																	</Button>
-																	<AlertDialogContent>
-																		<AlertDialogHeader>
-																			<AlertDialogTitle>
-																				Lunaskan Semua Tagihan
-																			</AlertDialogTitle>
-																			<AlertDialogDescription>
-																				Semua tagihan SPP, Buku, dan Registrasi
-																				milik {s.namaLengkap} di kelas{" "}
-																				{kelas.kodeKelas} (total{" "}
-																				{toRupiah(s.totalBelumLunas)}) akan
-																				ditandai Lunas. Lanjutkan?
-																			</AlertDialogDescription>
-																		</AlertDialogHeader>
-																		<AlertDialogFooter>
-																			<AlertDialogCancel>
-																				Batal
-																			</AlertDialogCancel>
-																			<AlertDialogAction
-																				onClick={() =>
-																					handleLunaskanSemua(s.semuaTagihan)
-																				}
-																			>
-																				Ya, Lunaskan
-																			</AlertDialogAction>
-																		</AlertDialogFooter>
-																	</AlertDialogContent>
-																</AlertDialog>
+																	<CheckCircle2 className="h-4 w-4" />
+																	<span className="hidden xl:inline">
+																		Lunaskan Semua
+																	</span>
+																</Button>
 															</div>
 														</TableCell>
 													</TableRow>
@@ -385,6 +367,30 @@ export default function KelasJatuhTempoH14({
 					</div>
 				)}
 			</CardContent>
+
+			<LunaskanDialog
+				open={lunaskanTarget !== null}
+				onOpenChange={(open) => !open && setLunaskanTarget(null)}
+				title="Lunaskan Semua Tagihan"
+				subjek={
+					lunaskanTarget
+						? [
+								{ label: "Nama siswa", value: lunaskanTarget.namaLengkap },
+								{ label: "Kelas", value: lunaskanTarget.namaKelas },
+								{ label: "Kode kelas", value: lunaskanTarget.kodeKelas },
+							]
+						: undefined
+				}
+				items={
+					lunaskanTarget?.semuaTagihan.map((t) => ({
+						id: t.id,
+						label: t.label,
+						jumlah: t.jumlah,
+					})) ?? []
+				}
+				onConfirm={handleLunaskanSemua}
+				isPending={isPending}
+			/>
 		</Card>
 	);
 }

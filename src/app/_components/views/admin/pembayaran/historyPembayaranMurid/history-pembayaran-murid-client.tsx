@@ -36,6 +36,7 @@ import {
 } from "../columns/columns-tagihan-lain";
 import EditPembayaran from "../drawer/edit-pembayaran";
 import EditTagihanLain from "../drawer/edit-tagihan-lain";
+import { LunaskanDialog, type LunaskanResult } from "../lunaskan-dialog";
 import { type ReceiptItem, ReceiptPDF } from "../receipt-pdf";
 
 export default function HistoryPembayaranMuridClient() {
@@ -48,6 +49,12 @@ export default function HistoryPembayaranMuridClient() {
 
 	// State untuk Tagihan Lain
 	const [deleteTagihanLainOpen, setDeleteTagihanLainOpen] = useState(false);
+	// Target dialog pelunasan (SPP atau Tagihan Lain)
+	const [lunaskanTarget, setLunaskanTarget] = useState<
+		| { jenis: "SPP"; item: TypePembayaran }
+		| { jenis: "TAGIHAN_LAIN"; item: TypeTagihanLain }
+		| null
+	>(null);
 	const [tagihanLainToDelete, setTagihanLainToDelete] =
 		useState<TypeTagihanLain | null>(null);
 
@@ -127,21 +134,17 @@ export default function HistoryPembayaranMuridClient() {
 	};
 
 	const handleVerifyClick = (item: TypePembayaran) => {
-		const newStatus =
-			item.statusBayar === StatusPembayaran.LUNAS
-				? StatusPembayaran.BELUM_LUNAS
-				: StatusPembayaran.LUNAS;
-
-		mutations.update.mutate({
-			id: item.id,
-			jumlahBayar: item.jumlahBayar,
-			note: item.note ?? undefined,
-			statusBayar: newStatus,
-			tanggalBayar:
-				newStatus === StatusPembayaran.LUNAS
-					? new Date().toISOString()
-					: undefined,
-		});
+		// Sudah LUNAS -> batalkan status langsung
+		if (item.statusBayar === StatusPembayaran.LUNAS) {
+			mutations.update.mutate({
+				id: item.id,
+				jumlahBayar: item.jumlahBayar,
+				note: item.note ?? undefined,
+				statusBayar: StatusPembayaran.BELUM_LUNAS,
+			});
+			return;
+		}
+		setLunaskanTarget({ jenis: "SPP", item });
 	};
 
 	const handleEditClick = (item: TypePembayaran) => {
@@ -219,9 +222,64 @@ export default function HistoryPembayaranMuridClient() {
 				status: StatusPembayaran.BELUM_LUNAS,
 			});
 		} else {
-			mutationsTagihanLain.markAsPaid.mutate({ id: item.id });
+			setLunaskanTarget({ jenis: "TAGIHAN_LAIN", item });
 		}
 	};
+
+	const handleConfirmLunaskan = (result: LunaskanResult) => {
+		if (!lunaskanTarget) return;
+		const { item } = lunaskanTarget;
+		const diskon = result.diskonById[item.id] ?? 0;
+		const onSuccess = () => setLunaskanTarget(null);
+
+		if (lunaskanTarget.jenis === "SPP") {
+			const spp = lunaskanTarget.item;
+			mutations.update.mutate(
+				{
+					id: spp.id,
+					jumlahBayar: spp.jumlahBayar,
+					note: spp.note ?? undefined,
+					statusBayar: StatusPembayaran.LUNAS,
+					tanggalBayar: result.tanggalBayar,
+					metodeBayar: result.metodeBayar,
+					diskon,
+				},
+				{ onSuccess },
+			);
+		} else {
+			mutationsTagihanLain.markAsPaid.mutate(
+				{
+					id: item.id,
+					metodeBayar: result.metodeBayar,
+					tanggalBayar: result.tanggalBayar,
+					diskon,
+				},
+				{ onSuccess },
+			);
+		}
+	};
+
+	const lunaskanItems = (() => {
+		if (!lunaskanTarget) return [];
+		if (lunaskanTarget.jenis === "SPP") {
+			const { item } = lunaskanTarget;
+			return [
+				{
+					id: item.id,
+					label: `${item.pendaftaranKelas.murid.namaLengkap} - SPP Ke-${item.pembayaranKe}`,
+					jumlah: item.jumlahBayar,
+				},
+			];
+		}
+		const { item } = lunaskanTarget;
+		return [
+			{
+				id: item.id,
+				label: `${item.murid.namaLengkap} - ${item.judul}`,
+				jumlah: item.jumlah,
+			},
+		];
+	})();
 
 	const handleEditTagihanLain = (item: TypeTagihanLain) => {
 		setTagihanLainToEdit(item);
@@ -783,6 +841,18 @@ export default function HistoryPembayaranMuridClient() {
 				isLoading={mutationsTagihanLain.delete.isPending}
 				confirmText="Hapus Tagihan"
 				cancelText="Batal"
+			/>
+
+			{/* Dialog Pelunasan (metode, tanggal, diskon) */}
+			<LunaskanDialog
+				open={lunaskanTarget !== null}
+				onOpenChange={(open) => !open && setLunaskanTarget(null)}
+				items={lunaskanItems}
+				onConfirm={handleConfirmLunaskan}
+				isPending={
+					mutations.update.isPending ||
+					mutationsTagihanLain.markAsPaid.isPending
+				}
 			/>
 		</div>
 	);

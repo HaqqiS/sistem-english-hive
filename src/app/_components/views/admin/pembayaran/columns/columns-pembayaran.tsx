@@ -38,7 +38,7 @@ import type { TypePembayaran } from "@/types/pembayaran.type";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppReminder } from "@/utils/noWAUtils";
 import { formatStatus, statusPembayaranColorMap } from "@/utils/statusUtils";
-import { toRupiah } from "@/utils/toRupiah";
+import { NominalDiskon } from "../nominal-diskon";
 
 // Kita gunakan tipe data dari router getAll yang baru
 
@@ -145,9 +145,10 @@ export const columns = ({
 			</Button>
 		),
 		cell: ({ row }) => (
-			<div className="min-w-[100px] font-medium">
-				{toRupiah(row.original.jumlahBayar)}
-			</div>
+			<NominalDiskon
+				jumlah={row.original.jumlahBayar}
+				diskon={row.original.diskon}
+			/>
 		),
 	},
 

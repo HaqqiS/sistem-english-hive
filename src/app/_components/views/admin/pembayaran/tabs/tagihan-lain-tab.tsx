@@ -25,6 +25,7 @@ import {
 } from "../columns/columns-tagihan-lain";
 import EditTagihanLain from "../drawer/edit-tagihan-lain";
 import TambahTagihanLain from "../drawer/tambah-tagihan-lain";
+import { LunaskanDialog, type LunaskanResult } from "../lunaskan-dialog";
 import { type ReceiptItem, ReceiptPDF } from "../receipt-pdf";
 
 interface TagihanLainTabProps {
@@ -73,6 +74,10 @@ export default function TagihanLainTab({
 	// Edit State
 	const [editDialogOpen, setEditDialogOpen] = useState(false);
 	const [itemToEdit, setItemToEdit] = useState<TypeTagihanLain | null>(null);
+	// State Dialog Pelunasan (metode, tanggal, diskon)
+	const [itemToLunaskan, setItemToLunaskan] = useState<TypeTagihanLain | null>(
+		null,
+	);
 
 	// --- HOOK ---
 	const {
@@ -168,8 +173,21 @@ export default function TagihanLainTab({
 				status: StatusPembayaran.BELUM_LUNAS,
 			});
 		} else {
-			mutations.markAsPaid.mutate({ id: item.id });
+			setItemToLunaskan(item);
 		}
+	};
+
+	const handleConfirmLunaskan = (result: LunaskanResult) => {
+		if (!itemToLunaskan) return;
+		mutations.markAsPaid.mutate(
+			{
+				id: itemToLunaskan.id,
+				metodeBayar: result.metodeBayar,
+				tanggalBayar: result.tanggalBayar,
+				diskon: result.diskonById[itemToLunaskan.id] ?? 0,
+			},
+			{ onSuccess: () => setItemToLunaskan(null) },
+		);
 	};
 
 	const handleEditClick = (item: TypeTagihanLain) => {
@@ -359,6 +377,24 @@ export default function TagihanLainTab({
 						</div>
 					);
 				}}
+			/>
+
+			<LunaskanDialog
+				open={itemToLunaskan !== null}
+				onOpenChange={(open) => !open && setItemToLunaskan(null)}
+				items={
+					itemToLunaskan
+						? [
+								{
+									id: itemToLunaskan.id,
+									label: `${itemToLunaskan.murid.namaLengkap} - ${itemToLunaskan.judul}`,
+									jumlah: itemToLunaskan.jumlah,
+								},
+							]
+						: []
+				}
+				onConfirm={handleConfirmLunaskan}
+				isPending={mutations.markAsPaid.isPending}
 			/>
 		</div>
 	);

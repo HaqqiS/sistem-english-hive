@@ -22,6 +22,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { METODE_BAYAR_LABEL } from "@/constants/pembayaran";
 import { useJenisKelas } from "@/hooks/useJenisKelas";
 import { useKelas } from "@/hooks/useKelas";
 import { usePembayaran } from "@/hooks/usePembayaran";
@@ -40,6 +41,7 @@ import { columns } from "./columns/columns-pembayaran";
 import EditPembayaran from "./drawer/edit-pembayaran";
 import TambahPembayaran from "./drawer/tambah-pembayaran";
 import KelasJatuhTempoH14 from "./kelas-jatuh-tempo-h14";
+import { LunaskanDialog, type LunaskanResult } from "./lunaskan-dialog";
 import { type ReceiptItem, ReceiptPDF } from "./receipt-pdf";
 import TagihanLainTab from "./tabs/tagihan-lain-tab";
 
@@ -103,6 +105,10 @@ export default function PembayaranClient({
 	// State Delete
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [itemToDelete, setItemToDelete] = useState<TypePembayaran | null>(null);
+	// State Dialog Pelunasan (metode, tanggal, diskon)
+	const [itemToLunaskan, setItemToLunaskan] = useState<TypePembayaran | null>(
+		null,
+	);
 	// State Bulk Delete
 	const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 	const [idsToBulkDelete, setIdsToBulkDelete] = useState<string[]>([]);
@@ -175,22 +181,34 @@ export default function PembayaranClient({
 	};
 
 	const handleVerifyClick = (item: TypePembayaran) => {
-		// Toggle status: Jika LUNAS -> BELUM_LUNAS, jika BELUM -> LUNAS
-		const newStatus =
-			item.statusBayar === StatusPembayaran.LUNAS
-				? StatusPembayaran.BELUM_LUNAS
-				: StatusPembayaran.LUNAS;
+		// Sudah LUNAS -> batalkan status (langsung, seperti sebelumnya)
+		if (item.statusBayar === StatusPembayaran.LUNAS) {
+			mutations.update.mutate({
+				id: item.id,
+				jumlahBayar: item.jumlahBayar, // Required by schema
+				note: item.note ?? undefined, // Optional in schema
+				statusBayar: StatusPembayaran.BELUM_LUNAS,
+			});
+			return;
+		}
+		// Belum lunas -> minta metode, tanggal & diskon lewat dialog
+		setItemToLunaskan(item);
+	};
 
-		mutations.update.mutate({
-			id: item.id,
-			jumlahBayar: item.jumlahBayar, // Required by schema
-			note: item.note ?? undefined, // Optional in schema
-			statusBayar: newStatus,
-			tanggalBayar:
-				newStatus === StatusPembayaran.LUNAS
-					? new Date().toISOString()
-					: undefined,
-		});
+	const handleConfirmLunaskan = (result: LunaskanResult) => {
+		if (!itemToLunaskan) return;
+		mutations.update.mutate(
+			{
+				id: itemToLunaskan.id,
+				jumlahBayar: itemToLunaskan.jumlahBayar,
+				note: itemToLunaskan.note ?? undefined,
+				statusBayar: StatusPembayaran.LUNAS,
+				tanggalBayar: result.tanggalBayar,
+				metodeBayar: result.metodeBayar,
+				diskon: result.diskonById[itemToLunaskan.id] ?? 0,
+			},
+			{ onSuccess: () => setItemToLunaskan(null) },
+		);
 	};
 
 	const handleEditClick = (item: TypePembayaran) => {
@@ -215,6 +233,10 @@ export default function PembayaranClient({
 				"Tanggal Bayar": item.tanggalBayar
 					? formatDateToYYYYMMDD(item.tanggalBayar)
 					: "-",
+				"Metode Bayar": item.metodeBayar
+					? (METODE_BAYAR_LABEL[item.metodeBayar] ?? item.metodeBayar)
+					: "-",
+				"Diskon (Rp)": item.diskon,
 				"Diverifikasi Oleh": item.verifiedBy?.name ?? "-",
 				Catatan: item.note ?? "-",
 			}));
@@ -688,6 +710,24 @@ export default function PembayaranClient({
 					<CardJatuhTempo className="w-full border-0 shadow-none" />
 				</TabsContent>
 			</Tabs>
+
+			<LunaskanDialog
+				open={itemToLunaskan !== null}
+				onOpenChange={(open) => !open && setItemToLunaskan(null)}
+				items={
+					itemToLunaskan
+						? [
+								{
+									id: itemToLunaskan.id,
+									label: `${itemToLunaskan.pendaftaranKelas.murid.namaLengkap} - SPP Ke-${itemToLunaskan.pembayaranKe}`,
+									jumlah: itemToLunaskan.jumlahBayar,
+								},
+							]
+						: []
+				}
+				onConfirm={handleConfirmLunaskan}
+				isPending={mutations.update.isPending}
+			/>
 		</div>
 	);
 }

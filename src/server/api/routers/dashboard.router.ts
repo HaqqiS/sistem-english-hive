@@ -1,5 +1,6 @@
 import {
 	KategoriTagihan,
+	type MetodeBayar,
 	type Prisma,
 	type PrismaClient,
 	StatusKelas,
@@ -17,7 +18,7 @@ import {
 	hapusBlokirJadwal,
 	setBlokirJadwal,
 } from "@/server/services/blokir-absensi.service";
-import dayjs from "@/utils/dateUtils";
+import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 
 export const dashboardRouter = createTRPCRouter({
 	// 1. KPI Stats
@@ -733,6 +734,107 @@ export const dashboardRouter = createTRPCRouter({
 			return finalResult;
 		}),
 
+	// Rekap Pembayaran per Metode (Cash / Transfer / QRIS) + Diskon.
+	// - "total" = nominal tagihan PENUH (jumlahBayar / jumlah). Diskon TIDAK
+	//   mengurangi total; diskon hanya dicatat & dijumlahkan terpisah.
+	// - Hanya tagihan berstatus LUNAS dengan tanggalBayar di dalam bulan terpilih
+	//   (batas bulan dihitung dalam WITA). SPP + Buku + Registrasi digabung.
+	// - Pelunasan lama yang belum punya metode masuk ke "BELUM_DICATAT".
+	getRekapPembayaran: cabangProtectedProcedure
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional().nullable(),
+					// Format "YYYY-MM". Kosong = bulan berjalan (WITA).
+					bulan: z
+						.string()
+						.regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+						.optional(),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const { db, allowedCabangId } = ctx;
+			const filterCabangId = allowedCabangId ?? input?.cabangId;
+
+			const bulan =
+				input?.bulan ?? dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM");
+			const awal = dayjs.tz(`${bulan}-01`, TIMEZONE_BISNIS).startOf("month");
+			const rentang = {
+				gte: awal.toDate(),
+				lte: awal.endOf("month").toDate(),
+			};
+
+			const [sppGroups, lainGroups] = await Promise.all([
+				db.pembayaran.groupBy({
+					by: ["metodeBayar"],
+					where: {
+						statusBayar: StatusPembayaran.LUNAS,
+						tanggalBayar: rentang,
+						pendaftaranKelas: filterCabangId
+							? { Kelas: { cabangId: filterCabangId } }
+							: undefined,
+					},
+					_sum: { jumlahBayar: true, diskon: true },
+					_count: { _all: true },
+				}),
+				db.tagihanLain.groupBy({
+					by: ["metodeBayar", "kategori"],
+					where: {
+						status: StatusPembayaran.LUNAS,
+						tanggalBayar: rentang,
+						murid: filterCabangId ? { cabangId: filterCabangId } : undefined,
+					},
+					_sum: { jumlah: true, diskon: true },
+					_count: { _all: true },
+				}),
+			]);
+
+			type Kunci = MetodeBayar | "BELUM_DICATAT";
+			const kosong = () => ({ total: 0, diskon: 0, jumlahTransaksi: 0 });
+			const perMetode: Record<Kunci, ReturnType<typeof kosong>> = {
+				CASH: kosong(),
+				TRANSFER: kosong(),
+				QRIS: kosong(),
+				BELUM_DICATAT: kosong(),
+			};
+			const diskonPerJenis = { spp: 0, buku: 0, registrasi: 0, lainnya: 0 };
+
+			for (const g of sppGroups) {
+				const bucket = perMetode[g.metodeBayar ?? "BELUM_DICATAT"];
+				const diskon = g._sum.diskon ?? 0;
+				bucket.total += g._sum.jumlahBayar ?? 0;
+				bucket.diskon += diskon;
+				bucket.jumlahTransaksi += g._count._all;
+				diskonPerJenis.spp += diskon;
+			}
+
+			for (const g of lainGroups) {
+				const bucket = perMetode[g.metodeBayar ?? "BELUM_DICATAT"];
+				const diskon = g._sum.diskon ?? 0;
+				bucket.total += g._sum.jumlah ?? 0;
+				bucket.diskon += diskon;
+				bucket.jumlahTransaksi += g._count._all;
+				if (g.kategori === KategoriTagihan.BUKU) {
+					diskonPerJenis.buku += diskon;
+				} else if (g.kategori === KategoriTagihan.REGISTRASI) {
+					diskonPerJenis.registrasi += diskon;
+				} else {
+					diskonPerJenis.lainnya += diskon;
+				}
+			}
+
+			const semua = Object.values(perMetode);
+			return {
+				bulan,
+				perMetode,
+				diskonPerJenis,
+				totalSemuaMetode: semua.reduce((a, b) => a + b.total, 0),
+				totalDiskon: semua.reduce((a, b) => a + b.diskon, 0),
+				totalTransaksi: semua.reduce((a, b) => a + b.jumlahTransaksi, 0),
+			};
+		}),
+
 	// KELAS DENGAN TAGIHAN SPP JATUH TEMPO H-14 (dikelompokkan per kelas)
 	getKelasJatuhTempoH14: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
@@ -764,6 +866,8 @@ export const dashboardRouter = createTRPCRouter({
 								select: {
 									id: true,
 									kodeKelas: true,
+									level: true,
+									jenisKelasRel: { select: { nama: true } },
 									cabang: {
 										select: {
 											noRekening: true,
@@ -792,6 +896,7 @@ export const dashboardRouter = createTRPCRouter({
 				{
 					kelasId: string;
 					kodeKelas: string;
+					namaKelas: string;
 					cabang: {
 						noRekening: string | null;
 						bank: string | null;
@@ -820,6 +925,7 @@ export const dashboardRouter = createTRPCRouter({
 					triggerMap.set(key, {
 						kelasId: kelas.id,
 						kodeKelas: kelas.kodeKelas,
+						namaKelas: `${kelas.jenisKelasRel?.nama ?? "Kelas"} Level ${kelas.level}`,
 						cabang: kelas.cabang,
 						muridId: murid.id,
 						namaLengkap: murid.namaLengkap,
@@ -920,6 +1026,7 @@ export const dashboardRouter = createTRPCRouter({
 				{
 					kelasId: string;
 					kodeKelas: string;
+					namaKelas: string;
 					cabang: {
 						noRekening: string | null;
 						bank: string | null;
@@ -963,6 +1070,7 @@ export const dashboardRouter = createTRPCRouter({
 					kelasMap.set(trig.kelasId, {
 						kelasId: trig.kelasId,
 						kodeKelas: trig.kodeKelas,
+						namaKelas: trig.namaKelas,
 						cabang: trig.cabang,
 						siswa: [siswaItem],
 					});

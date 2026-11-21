@@ -4,6 +4,7 @@ import { StatusPembayaran } from "@prisma/client";
 import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
 	FormControl,
 	FormField,
@@ -11,7 +12,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -20,6 +20,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { METODE_BAYAR_OPTIONS } from "@/constants/pembayaran";
 import type { TypeClientUpdatePembayaranSchema } from "@/types/pembayaran.type"; // Updated import
 
 interface EditPembayaranFormProps {
@@ -85,11 +86,13 @@ export default function EditPembayaranForm({
 					<FormItem>
 						<FormLabel>Jumlah Bayar (Rp)</FormLabel>
 						<FormControl>
-							<Input
-								type="number"
+							<CurrencyInput
 								placeholder="Masukkan nominal"
-								{...field}
-								onChange={(e) => field.onChange(e.target.valueAsNumber)}
+								name={field.name}
+								ref={field.ref}
+								onBlur={field.onBlur}
+								value={field.value}
+								onValueChange={field.onChange}
 							/>
 						</FormControl>
 						<FormMessage />
@@ -111,6 +114,63 @@ export default function EditPembayaranForm({
 					name="tanggalBayar"
 					label="Tanggal Pembayaran"
 				/>
+			)}
+
+			{/* Metode Pembayaran & Diskon (hanya saat Lunas) */}
+			{statusBayar === StatusPembayaran.LUNAS && (
+				<>
+					<FormField
+						control={form.control}
+						name="metodeBayar"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Metode Pembayaran</FormLabel>
+								<Select
+									onValueChange={field.onChange}
+									value={field.value ?? ""}
+								>
+									<FormControl>
+										<SelectTrigger>
+											<SelectValue placeholder="Pilih metode (Cash / Transfer / QRIS)" />
+										</SelectTrigger>
+									</FormControl>
+									<SelectContent>
+										{METODE_BAYAR_OPTIONS.map((opt) => (
+											<SelectItem key={opt.value} value={opt.value}>
+												{opt.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="diskon"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Diskon (Rp, opsional)</FormLabel>
+								<FormControl>
+									<CurrencyInput
+										placeholder="Rp 0"
+										name={field.name}
+										ref={field.ref}
+										onBlur={field.onBlur}
+										value={field.value}
+										onValueChange={field.onChange}
+									/>
+								</FormControl>
+								<p className="text-muted-foreground text-xs">
+									Hanya dicatat, tidak mengurangi nominal tagihan.
+								</p>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+				</>
 			)}
 
 			{/* Catatan */}

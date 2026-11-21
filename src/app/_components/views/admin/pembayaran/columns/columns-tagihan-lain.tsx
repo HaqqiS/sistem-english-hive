@@ -38,7 +38,7 @@ import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppReminder } from "@/utils/noWAUtils";
 import { formatStatus, statusPembayaranColorMap } from "@/utils/statusUtils";
-import { toRupiah } from "@/utils/toRupiah";
+import { NominalDiskon } from "../nominal-diskon";
 
 // Type definition inferred from Router
 export type TypeTagihanLain =
@@ -134,9 +134,10 @@ export const columnsTagihanLain = ({
 			</Button>
 		),
 		cell: ({ row }) => (
-			<div className="min-w-[100px] font-medium">
-				{toRupiah(row.original.jumlah)}
-			</div>
+			<NominalDiskon
+				jumlah={row.original.jumlah}
+				diskon={row.original.diskon}
+			/>
 		),
 	},
 
@@ -435,9 +436,10 @@ export const columnsTagihanLainGlobal = ({
 			</Button>
 		),
 		cell: ({ row }) => (
-			<div className="min-w-[100px] font-medium">
-				{toRupiah(row.original.jumlah)}
-			</div>
+			<NominalDiskon
+				jumlah={row.original.jumlah}
+				diskon={row.original.diskon}
+			/>
 		),
 	},
 

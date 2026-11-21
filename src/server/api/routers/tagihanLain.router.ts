@@ -10,6 +10,7 @@ import { cabangProtectedProcedure, createTRPCRouter } from "@/server/api/trpc";
 import { paginationSchema } from "@/types/pagination.type";
 import {
 	createTagihanLainSchema,
+	markAsPaidSchema,
 	updateTagihanLainSchema,
 } from "@/types/tagihanLain.type";
 
@@ -185,6 +186,15 @@ export const tagihanLainRouter = createTRPCRouter({
 				}
 			}
 
+			const langsungLunas = input.status === StatusPembayaran.LUNAS;
+			const diskon = langsungLunas ? (input.diskon ?? 0) : 0;
+			if (diskon > input.jumlah) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Diskon tidak boleh melebihi nominal tagihan.",
+				});
+			}
+
 			return db.tagihanLain.create({
 				data: {
 					muridId: input.muridId,
@@ -194,13 +204,16 @@ export const tagihanLainRouter = createTRPCRouter({
 					deskripsi: input.deskripsi,
 					status: input.status,
 					kelasId: input.kelasId,
+					// Metode & diskon hanya disimpan jika langsung dibuat sebagai LUNAS
+					metodeBayar: langsungLunas ? input.metodeBayar : undefined,
+					diskon,
 				},
 			});
 		}),
 
 	// 3. Mark as Paid
 	markAsPaid: cabangProtectedProcedure
-		.input(z.object({ id: z.string() }))
+		.input(markAsPaidSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 
@@ -223,11 +236,22 @@ export const tagihanLainRouter = createTRPCRouter({
 				});
 			}
 
+			if (input.diskon > existing.jumlah) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Diskon tidak boleh melebihi nominal tagihan.",
+				});
+			}
+
 			return db.tagihanLain.update({
 				where: { id: input.id },
 				data: {
 					status: "LUNAS",
-					tanggalBayar: new Date(),
+					tanggalBayar: input.tanggalBayar
+						? new Date(input.tanggalBayar)
+						: new Date(),
+					metodeBayar: input.metodeBayar,
+					diskon: input.diskon,
 					verifiedById: ctx.session.user.id,
 				},
 			});
@@ -299,7 +323,12 @@ export const tagihanLainRouter = createTRPCRouter({
 					kelasId: input.kelasId,
 					// Bersihkan audit trail jika status dikembalikan ke belum lunas
 					...(input.status === "BELUM_LUNAS" || input.status === "PENDING"
-						? { tanggalBayar: null, verifiedById: null }
+						? {
+								tanggalBayar: null,
+								verifiedById: null,
+								metodeBayar: null,
+								diskon: 0,
+							}
 						: {}),
 				},
 			});

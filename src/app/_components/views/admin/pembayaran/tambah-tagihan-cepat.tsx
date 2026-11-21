@@ -5,6 +5,7 @@ import { BookOpen, IdCard, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
 	Dialog,
 	DialogContent,
@@ -124,12 +125,11 @@ export default function TambahTagihanCepat({
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="jumlah">Jumlah (Rp)</Label>
-						<Input
+						<CurrencyInput
 							id="jumlah"
-							type="number"
 							value={jumlah}
-							onChange={(e) => setJumlah(e.target.value)}
-							placeholder="50000"
+							onValueChange={(v) => setJumlah(v === undefined ? "" : String(v))}
+							placeholder="Rp 50.000"
 						/>
 					</div>
 				</div>

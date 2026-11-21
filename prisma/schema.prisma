@@ -377,6 +377,10 @@ model Pembayaran {
   tanggalJatuhTempo  DateTime
   jumlahBayar        Int
   tanggalBayar       DateTime?
+  // Metode pembayaran saat dilunasi (null = belum lunas / data lama yang belum dicatat)
+  metodeBayar        MetodeBayar?
+  // Diskon yang diberikan untuk tagihan ini. Hanya dicatat; TIDAK mengurangi jumlahBayar.
+  diskon             Int              @default(0)
   imageUrl           String?
   statusBayar        StatusPembayaran @default(BELUM_LUNAS)
   note               String?
@@ -406,6 +410,10 @@ model TagihanLain {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   tanggalBayar    DateTime?
+  // Metode pembayaran saat dilunasi (null = belum lunas / data lama yang belum dicatat)
+  metodeBayar     MetodeBayar?
+  // Diskon yang diberikan untuk tagihan ini. Hanya dicatat; TIDAK mengurangi jumlah.
+  diskon          Int              @default(0)
   verifiedById    String?
   sudahDiingatkan Boolean          @default(false)
   kelas           Kelas?           @relation(fields: [kelasId], references: [id])
@@ -548,6 +556,12 @@ enum StatusPembayaran {
   LUNAS
   BELUM_LUNAS
   PENDING
+}
+
+enum MetodeBayar {
+  CASH
+  TRANSFER
+  QRIS
 }
 
 enum KategoriTagihan {

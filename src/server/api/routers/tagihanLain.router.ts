@@ -313,6 +313,20 @@ export const tagihanLainRouter = createTRPCRouter({
 				});
 			}
 
+			const statusAkhir = input.status ?? existing.status;
+			const akanLunas = statusAkhir === "LUNAS";
+			const baruMelunasi = akanLunas && existing.status !== "LUNAS";
+
+			// Diskon tidak boleh melebihi nominal tagihan (nominal baru jika diubah)
+			const jumlahAkhir = input.jumlah ?? existing.jumlah;
+			const diskonAkhir = input.diskon ?? existing.diskon;
+			if (akanLunas && diskonAkhir > jumlahAkhir) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Diskon tidak boleh melebihi nominal tagihan.",
+				});
+			}
+
 			return db.tagihanLain.update({
 				where: { id: input.id },
 				data: {
@@ -329,6 +343,21 @@ export const tagihanLainRouter = createTRPCRouter({
 								metodeBayar: null,
 								diskon: 0,
 							}
+						: {}),
+					// Pelunasan lewat edit: catat tanggal & verifikator supaya
+					// ikut terhitung di rekap dashboard
+					...(baruMelunasi
+						? {
+								tanggalBayar: new Date(),
+								verifiedById: ctx.session.user.id,
+							}
+						: {}),
+					// Metode & diskon hanya diubah jika dikirim dan tagihan LUNAS
+					...(akanLunas && input.metodeBayar !== undefined
+						? { metodeBayar: input.metodeBayar }
+						: {}),
+					...(akanLunas && input.diskon !== undefined
+						? { diskon: input.diskon }
 						: {}),
 				},
 			});

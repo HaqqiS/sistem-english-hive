@@ -1,4 +1,9 @@
-import { Prisma, StatusPembayaran, StatusPendaftaran } from "@prisma/client";
+import {
+	type MetodeBayar,
+	Prisma,
+	StatusPembayaran,
+	StatusPendaftaran,
+} from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { UserRole } from "@/server/auth/type";
@@ -856,6 +861,8 @@ export const pembayaranRouter = createTRPCRouter({
 					statusBayar: StatusPembayaran;
 					tanggalJatuhTempo: Date;
 					tanggalBayar: Date | null;
+					metodeBayar: MetodeBayar | null;
+					diskon: number;
 					pembayaranKe: number;
 					sudahDiingatkan: boolean;
 				}[];
@@ -865,6 +872,8 @@ export const pembayaranRouter = createTRPCRouter({
 					jumlah: number;
 					status: StatusPembayaran;
 					tanggalBayar: Date | null;
+					metodeBayar: MetodeBayar | null;
+					diskon: number;
 					sudahDiingatkan: boolean;
 				}[];
 				registrasi: {
@@ -873,6 +882,8 @@ export const pembayaranRouter = createTRPCRouter({
 					jumlah: number;
 					status: StatusPembayaran;
 					tanggalBayar: Date | null;
+					metodeBayar: MetodeBayar | null;
+					diskon: number;
 					sudahDiingatkan: boolean;
 				}[];
 			};
@@ -916,6 +927,8 @@ export const pembayaranRouter = createTRPCRouter({
 					statusBayar: p.statusBayar,
 					tanggalJatuhTempo: p.tanggalJatuhTempo,
 					tanggalBayar: p.tanggalBayar,
+					metodeBayar: p.metodeBayar,
+					diskon: p.diskon,
 					pembayaranKe: p.pembayaranKe,
 					sudahDiingatkan: p.sudahDiingatkan,
 				});
@@ -933,6 +946,8 @@ export const pembayaranRouter = createTRPCRouter({
 					jumlah: t.jumlah,
 					status: t.status,
 					tanggalBayar: t.tanggalBayar,
+					metodeBayar: t.metodeBayar,
+					diskon: t.diskon,
 					sudahDiingatkan: t.sudahDiingatkan,
 				};
 				if (t.kategori === "BUKU") {

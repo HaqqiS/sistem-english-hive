@@ -24,6 +24,9 @@ export const updateTagihanLainSchema = z.object({
 	deskripsi: z.string().nullish(),
 	status: z.nativeEnum(StatusPembayaran).optional(),
 	kelasId: z.string().optional(), // Allow updating class
+	// Hanya berlaku jika tagihan berstatus LUNAS (diabaikan/dibersihkan jika belum lunas)
+	metodeBayar: z.nativeEnum(MetodeBayar).optional(),
+	diskon: diskonSchema.optional(),
 	// We don't typically allow updating muridId or kategori
 });
 

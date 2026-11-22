@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { EditDrawer } from "@/app/_components/shared/edit-drawer";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
 	Form,
 	FormControl,
@@ -21,6 +22,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { METODE_BAYAR_OPTIONS } from "@/constants/pembayaran";
 import { usePendaftaranKelas } from "@/hooks/usePendaftaranKelas";
 import { useTagihanLain } from "@/hooks/useTagihanLain";
 import {
@@ -43,6 +45,7 @@ export default function EditTagihanLain({
 }: EditTagihanLainProps) {
 	const isBuku = data?.kategori === "BUKU";
 	const isRegistrasi = data?.kategori === "REGISTRASI";
+	const isLunas = data?.status === "LUNAS";
 
 	const form = useForm<UpdateTagihanLainInput>({
 		resolver: zodResolver(updateTagihanLainSchema),
@@ -53,6 +56,8 @@ export default function EditTagihanLain({
 			deskripsi: "",
 			status: "BELUM_LUNAS",
 			kelasId: "",
+			metodeBayar: undefined,
+			diskon: 0,
 		},
 	});
 
@@ -66,6 +71,8 @@ export default function EditTagihanLain({
 				deskripsi: data.deskripsi ?? "",
 				status: data.status,
 				kelasId: data.kelasId ?? "",
+				metodeBayar: data.metodeBayar ?? undefined,
+				diskon: data.diskon,
 			});
 		}
 	}, [data, isOpen, form]);
@@ -89,6 +96,9 @@ export default function EditTagihanLain({
 			...values,
 			// If not BUKU, ensure we don't accidentally send a classId if user somehow set it (though UI hides it)
 			kelasId: isBuku ? values.kelasId : undefined,
+			// Metode & diskon hanya dikirim untuk tagihan yang sudah lunas
+			metodeBayar: isLunas ? values.metodeBayar : undefined,
+			diskon: isLunas ? values.diskon : undefined,
 		});
 	};
 
@@ -198,6 +208,63 @@ export default function EditTagihanLain({
 							</FormItem>
 						)}
 					/>
+
+					{/* --- METODE & DISKON (hanya tagihan yang sudah lunas) --- */}
+					{isLunas && (
+						<>
+							<FormField
+								control={form.control}
+								name="metodeBayar"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Metode Pembayaran</FormLabel>
+										<Select
+											onValueChange={field.onChange}
+											value={field.value ?? ""}
+										>
+											<FormControl>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder="Belum dicatat - pilih metode" />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent>
+												{METODE_BAYAR_OPTIONS.map((opt) => (
+													<SelectItem key={opt.value} value={opt.value}>
+														{opt.label}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="diskon"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Diskon (Rp, opsional)</FormLabel>
+										<FormControl>
+											<CurrencyInput
+												placeholder="Rp 0"
+												name={field.name}
+												ref={field.ref}
+												onBlur={field.onBlur}
+												value={field.value}
+												onValueChange={field.onChange}
+											/>
+										</FormControl>
+										<p className="text-muted-foreground text-xs">
+											Hanya dicatat, tidak mengurangi nominal tagihan.
+										</p>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</>
+					)}
 
 					{/* --- DESKRIPSI --- */}
 					<FormField

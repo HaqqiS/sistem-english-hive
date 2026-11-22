@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { clientUpdatePembayaranSchema } from "@/types/pembayaran.schema";
-import { markAsPaidSchema } from "@/types/tagihanLain.type";
+import {
+	markAsPaidSchema,
+	updateTagihanLainSchema,
+} from "@/types/tagihanLain.type";
 
 describe("markAsPaidSchema (pelunasan Tagihan Lain)", () => {
 	it("menerima metode, tanggal, dan diskon valid", () => {
@@ -72,6 +75,32 @@ describe("clientUpdatePembayaranSchema (SPP)", () => {
 	it("menolak diskon negatif", () => {
 		expect(
 			clientUpdatePembayaranSchema.safeParse({ ...base, diskon: -5 }).success,
+		).toBe(false);
+	});
+});
+
+describe("updateTagihanLainSchema (edit Tagihan Lain)", () => {
+	it("metode dan diskon opsional (edit biasa tanpa diskon tetap valid)", () => {
+		expect(updateTagihanLainSchema.safeParse({ id: "t1" }).success).toBe(true);
+	});
+
+	it("menerima edit diskon dan metode", () => {
+		expect(
+			updateTagihanLainSchema.safeParse({
+				id: "t1",
+				metodeBayar: "CASH",
+				diskon: 15000,
+			}).success,
+		).toBe(true);
+	});
+
+	it("menolak diskon negatif dan metode tidak dikenal", () => {
+		expect(
+			updateTagihanLainSchema.safeParse({ id: "t1", diskon: -1 }).success,
+		).toBe(false);
+		expect(
+			updateTagihanLainSchema.safeParse({ id: "t1", metodeBayar: "KARTU" })
+				.success,
 		).toBe(false);
 	});
 });

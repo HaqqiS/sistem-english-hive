@@ -1,6 +1,10 @@
 "use client";
 
-import { KategoriTagihan, StatusPembayaran } from "@prisma/client";
+import {
+	KategoriTagihan,
+	type MetodeBayar,
+	StatusPembayaran,
+} from "@prisma/client";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,6 +36,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { METODE_BAYAR_OPTIONS } from "@/constants/pembayaran";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { formatDateToYYYYMMDD, formatDateWITA } from "@/utils/dateUtils";
@@ -60,6 +65,9 @@ type Item = {
 	jumlah: number;
 	tanggal: Date | string | null; // tanggalBayar (lunas) atau tanggalJatuhTempo (belum lunas, SPP saja)
 	lunas: boolean;
+	// Info pelunasan (hanya bermakna jika lunas)
+	diskon: number;
+	metodeBayar: MetodeBayar | null;
 };
 
 export default function RingkasanTagihanKelas({
@@ -89,6 +97,8 @@ export default function RingkasanTagihanKelas({
 	const [editItem, setEditItem] = useState<Item | null>(null);
 	const [editJumlah, setEditJumlah] = useState("");
 	const [editTanggal, setEditTanggal] = useState("");
+	const [editDiskon, setEditDiskon] = useState("");
+	const [editMetode, setEditMetode] = useState<MetodeBayar | "">("");
 
 	// --- Dialog state: Hapus Item ---
 	const [deleteItem, setDeleteItem] = useState<Item | null>(null);
@@ -172,6 +182,8 @@ export default function RingkasanTagihanKelas({
 		setEditTanggal(
 			item.tanggal ? formatDateToYYYYMMDD(new Date(item.tanggal)) : "",
 		);
+		setEditDiskon(item.diskon > 0 ? String(item.diskon) : "");
+		setEditMetode(item.metodeBayar ?? "");
 	};
 
 	const handleSubmitAdd = () => {
@@ -219,6 +231,15 @@ export default function RingkasanTagihanKelas({
 			return;
 		}
 
+		// Diskon & metode hanya relevan untuk tagihan yang sudah lunas
+		const diskon = editItem.lunas ? Number(editDiskon || 0) : undefined;
+		if (diskon !== undefined && diskon > jumlah) {
+			toast.error("Diskon tidak boleh melebihi nominal tagihan.");
+			return;
+		}
+		const metodeBayar =
+			editItem.lunas && editMetode !== "" ? editMetode : undefined;
+
 		if (editItem.jenis === "SPP") {
 			updateSppMutation.mutate({
 				id: editItem.id,
@@ -228,11 +249,15 @@ export default function RingkasanTagihanKelas({
 					: StatusPembayaran.BELUM_LUNAS,
 				tanggalBayar: editItem.lunas ? editTanggal : undefined,
 				tanggalJatuhTempo: !editItem.lunas ? editTanggal : undefined,
+				diskon,
+				metodeBayar,
 			});
 		} else {
 			updateTagihanMutation.mutate({
 				id: editItem.id,
 				jumlah,
+				diskon,
+				metodeBayar,
 			});
 		}
 	};
@@ -281,6 +306,8 @@ export default function RingkasanTagihanKelas({
 						tanggal:
 							t.status === StatusPembayaran.LUNAS ? t.tanggalBayar : null,
 						lunas: t.status === StatusPembayaran.LUNAS,
+						diskon: t.diskon,
+						metodeBayar: t.metodeBayar,
 					} satisfies Item,
 				}))
 			: [];
@@ -298,6 +325,8 @@ export default function RingkasanTagihanKelas({
 						jumlah: spp.jumlahBayar,
 						tanggal: lunas ? spp.tanggalBayar : spp.tanggalJatuhTempo,
 						lunas,
+						diskon: spp.diskon,
+						metodeBayar: spp.metodeBayar,
 					});
 				}}
 				onTambah={(murid) => {
@@ -508,6 +537,42 @@ export default function RingkasanTagihanKelas({
 									onChange={(e) => setEditTanggal(e.target.value)}
 								/>
 							</div>
+						)}
+						{editItem?.lunas && (
+							<>
+								<div className="space-y-2">
+									<Label htmlFor="edit-metode">Metode Pembayaran</Label>
+									<Select
+										value={editMetode}
+										onValueChange={(v) => setEditMetode(v as MetodeBayar)}
+									>
+										<SelectTrigger id="edit-metode" className="w-full">
+											<SelectValue placeholder="Belum dicatat - pilih metode" />
+										</SelectTrigger>
+										<SelectContent>
+											{METODE_BAYAR_OPTIONS.map((opt) => (
+												<SelectItem key={opt.value} value={opt.value}>
+													{opt.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="edit-diskon">Diskon (opsional)</Label>
+									<CurrencyInput
+										id="edit-diskon"
+										value={editDiskon}
+										onValueChange={(v) =>
+											setEditDiskon(v === undefined ? "" : String(v))
+										}
+										placeholder="Rp 0"
+									/>
+									<p className="text-muted-foreground text-xs">
+										Hanya dicatat, tidak mengurangi nominal tagihan.
+									</p>
+								</div>
+							</>
 						)}
 					</div>
 					<DialogFooter>

@@ -14,7 +14,7 @@ export default function DashboardClientPage() {
 			{/* 1. KPI Cards */}
 			<KpiCards />
 
-			{/* 2. Charts Section (kolom kanan di sebelah Sumber Info sengaja dikosongkan dulu) */}
+			{/* 2. Charts Section: Tren Pendaftaran lebar penuh, lalu Pendapatan & Sumber Info berdampingan */}
 			<div className="grid gap-4 md:grid-cols-2">
 				<RegistrationChart />
 				<RevenueChart />

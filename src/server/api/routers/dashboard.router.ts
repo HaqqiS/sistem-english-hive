@@ -202,6 +202,9 @@ export const dashboardRouter = createTRPCRouter({
 		}),
 
 	// 2. Trend Pendaftaran (6 Bulan Terakhir)
+	// - pendaftar: murid yang mendaftar (createdAt) pada bulan tersebut
+	// - aktif: dari pendaftar bulan itu, berapa yang SAAT INI berstatus AKTIF
+	//   (definisi "aktif" sama dengan KPI Murid Aktif), untuk melihat konversi.
 	getRegistrationTrend: cabangProtectedProcedure
 		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
 		.query(async ({ ctx, input }) => {
@@ -212,35 +215,35 @@ export const dashboardRouter = createTRPCRouter({
 				.startOf("month")
 				.toDate();
 
-			// Gunakan groupBy untuk performa (support depends on DB, but findMany + JS reduce is safer for diverse dates)
 			const registrations = await db.murid.findMany({
 				where: {
 					createdAt: { gte: sixMonthsAgo },
 					cabangId: filterCabangId ?? undefined,
 				},
-				select: { createdAt: true },
+				select: { createdAt: true, statusMurid: true },
 				orderBy: { createdAt: "asc" },
 			});
 
 			// Grouping per bulan
-			const grouped = new Map<string, number>();
+			const grouped = new Map<string, { pendaftar: number; aktif: number }>();
 
 			// Init 6 bulan terakhir dengan 0 agar grafik rata
 			for (let i = 5; i >= 0; i--) {
 				const key = dayjs().subtract(i, "month").format("MMM YYYY");
-				grouped.set(key, 0);
+				grouped.set(key, { pendaftar: 0, aktif: 0 });
 			}
 
 			for (const r of registrations) {
-				const key = dayjs(r.createdAt).format("MMM YYYY");
-				if (grouped.has(key)) {
-					grouped.set(key, (grouped.get(key) || 0) + 1);
-				}
+				const bucket = grouped.get(dayjs(r.createdAt).format("MMM YYYY"));
+				if (!bucket) continue;
+				bucket.pendaftar += 1;
+				if (r.statusMurid === StatusMurid.AKTIF) bucket.aktif += 1;
 			}
 
-			return Array.from(grouped.entries()).map(([name, value]) => ({
+			return Array.from(grouped.entries()).map(([name, v]) => ({
 				name,
-				value,
+				pendaftar: v.pendaftar,
+				aktif: v.aktif,
 			}));
 		}),
 

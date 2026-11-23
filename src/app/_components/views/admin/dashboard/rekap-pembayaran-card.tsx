@@ -2,6 +2,7 @@
 
 import { Banknote, Landmark, QrCode, TicketPercent } from "lucide-react";
 import { useState } from "react";
+import { MonthPickerString } from "@/app/_components/shared/MonthPickerString";
 import {
 	Card,
 	CardContent,
@@ -9,7 +10,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import { api } from "@/trpc/react";
@@ -54,14 +54,9 @@ export default function RekapPembayaranCard() {
 						terpisah dan tidak mengurangi total.
 					</CardDescription>
 				</div>
-				<Input
-					type="month"
-					value={bulan}
-					max={dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM")}
-					onChange={(e) => e.target.value && setBulan(e.target.value)}
-					className="w-full sm:w-44"
-					aria-label="Pilih bulan"
-				/>
+				<div className="w-full sm:w-48">
+					<MonthPickerString value={bulan} onChange={setBulan} />
+				</div>
 			</CardHeader>
 
 			<CardContent className="space-y-4">

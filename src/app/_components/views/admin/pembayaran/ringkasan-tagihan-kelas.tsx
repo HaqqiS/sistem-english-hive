@@ -8,6 +8,7 @@ import {
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DatePickerString } from "@/app/_components/shared/DatePickerString";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -483,11 +484,11 @@ export default function RingkasanTagihanKelas({
 						{addJenis === "SPP" && (
 							<div className="space-y-2">
 								<Label htmlFor="add-tanggal">Tanggal Bayar</Label>
-								<Input
+								<DatePickerString
 									id="add-tanggal"
-									type="date"
 									value={addTanggal}
-									onChange={(e) => setAddTanggal(e.target.value)}
+									onChange={setAddTanggal}
+									disableFuture
 								/>
 							</div>
 						)}
@@ -530,11 +531,12 @@ export default function RingkasanTagihanKelas({
 										? "Tanggal Dilunaskan"
 										: "Tanggal Jatuh Tempo"}
 								</Label>
-								<Input
+								<DatePickerString
 									id="edit-tanggal"
-									type="date"
 									value={editTanggal}
-									onChange={(e) => setEditTanggal(e.target.value)}
+									onChange={setEditTanggal}
+									// Tanggal dilunaskan tidak boleh masa depan; jatuh tempo boleh
+									disableFuture={editItem.lunas}
 								/>
 							</div>
 						)}

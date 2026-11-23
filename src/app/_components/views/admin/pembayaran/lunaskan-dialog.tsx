@@ -3,6 +3,7 @@
 import type { MetodeBayar } from "@prisma/client";
 import { Banknote, Landmark, Loader2, QrCode } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { DatePickerString } from "@/app/_components/shared/DatePickerString";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import {
@@ -13,12 +14,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { METODE_BAYAR_OPTIONS } from "@/constants/pembayaran";
 import { cn } from "@/lib/utils";
-import dayjs, { TIMEZONE_BISNIS } from "@/utils/dateUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 export type LunaskanItem = {
@@ -57,8 +56,6 @@ const METODE_ICON = {
 	TRANSFER: Landmark,
 	QRIS: QrCode,
 } as const;
-
-const hariIni = () => dayjs().tz(TIMEZONE_BISNIS).format("YYYY-MM-DD");
 
 /**
  * Dialog pelunasan: pilih metode (Cash / Transfer / QRIS), tanggal pelunasan,
@@ -179,12 +176,12 @@ export function LunaskanDialog({
 						<Label htmlFor={`${baseId}-tanggal`}>
 							Tanggal Pelunasan <span className="text-destructive">*</span>
 						</Label>
-						<Input
+						<DatePickerString
 							id={`${baseId}-tanggal`}
-							type="date"
 							value={tanggal}
-							max={hariIni()}
-							onChange={(e) => setTanggal(e.target.value)}
+							onChange={setTanggal}
+							placeholder="Pilih tanggal pelunasan"
+							disableFuture
 						/>
 					</div>
 

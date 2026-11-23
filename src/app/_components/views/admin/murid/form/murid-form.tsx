@@ -4,7 +4,7 @@ import { Gender } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { FormStringDatePicker } from "@/app/_components/shared/FormStringDatePicker";
+import { FormTanggalLahirPicker } from "@/app/_components/shared/FormTanggalLahirPicker";
 import { Button } from "@/components/ui/button";
 import {
 	FormControl,
@@ -228,14 +228,12 @@ export default function MuridForm({
 
 					{/* Inner Grid: Tanggal Lahir & WA & Instagram */}
 					<div className={cn("grid gap-2", gridColsClass)}>
-						<FormStringDatePicker
+						<FormTanggalLahirPicker
 							control={form.control}
 							name="tanggalLahir"
 							label={t.tanggalLahir}
 							placeholder={t.pilihTanggalLahir}
-							showYearDropdown
-							disableFuture
-							defaultMonth={new Date(new Date().getFullYear() - 10, 0)}
+							lang={lang}
 						/>
 
 						<FormField

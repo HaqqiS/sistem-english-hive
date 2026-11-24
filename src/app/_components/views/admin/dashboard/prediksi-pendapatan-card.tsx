@@ -25,7 +25,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { api } from "@/trpc/react";
 import { toRupiah } from "@/utils/toRupiah";
+import { RentangBulanToggle, useRentangBulan } from "./rentang-bulan";
 
 function warnaAkurasi(persen: number) {
 	if (persen >= 90) return "text-emerald-600 bg-emerald-100";
@@ -61,12 +64,16 @@ function AkurasiChartSection({
 	data,
 	isLoading,
 	pesanKosong,
+	jumlahBulan,
 }: {
 	title: string;
 	data: AkurasiItem[] | undefined;
 	isLoading: boolean;
 	pesanKosong: string;
+	jumlahBulan: number;
 }) {
+	// Rentang panjang: batang lebih ramping agar tetap muat di layar sempit
+	const barSize = jumlahBulan > 6 ? 14 : 18;
 	const bulanDenganData = data?.filter((b) => b.akurasiPersen !== null) ?? [];
 	const rataRataAkurasi =
 		bulanDenganData.length > 0
@@ -158,14 +165,14 @@ function AkurasiChartSection({
 							dataKey="totalTagihan"
 							fill="var(--color-totalTagihan)"
 							radius={[4, 4, 0, 0]}
-							barSize={18}
+							barSize={barSize}
 						/>
 						<Bar
 							yAxisId="rupiah"
 							dataKey="totalTerbayar"
 							fill="var(--color-totalTerbayar)"
 							radius={[4, 4, 0, 0]}
-							barSize={18}
+							barSize={barSize}
 						/>
 						<Line
 							yAxisId="persen"
@@ -188,33 +195,47 @@ function AkurasiChartSection({
 	);
 }
 
+/**
+ * Estimasi pendapatan bulan ini + grafik akurasi SPP / Registrasi / Buku.
+ * Rentang grafik akurasi otomatis 6 bulan di HP dan 12 bulan di layar lebar,
+ * dan bisa diganti manual lewat tombol 6 / 12 Bln.
+ */
 export default function PrediksiPendapatanCard() {
-	const {
-		prediksiPendapatan,
-		akurasiPrediksi,
-		akurasiRegistrasi,
-		akurasiBuku,
-	} = useDashboard();
+	const { prediksiPendapatan } = useDashboard();
 	const { data, isLoading } = prediksiPendapatan;
-	const { data: dataAkurasi, isLoading: isLoadingAkurasi } = akurasiPrediksi;
+
+	const { activeCabangId } = useGlobalCabangStore();
+	const { jumlahBulan, setPilihan } = useRentangBulan();
+	const inputAkurasi = {
+		cabangId:
+			activeCabangId === "ALL" || !activeCabangId ? undefined : activeCabangId,
+		jumlahBulan,
+	};
+	const { data: dataAkurasi, isLoading: isLoadingAkurasi } =
+		api.dashboard.getAkurasiPrediksi.useQuery(inputAkurasi);
 	const { data: dataRegistrasi, isLoading: isLoadingRegistrasi } =
-		akurasiRegistrasi;
-	const { data: dataBuku, isLoading: isLoadingBuku } = akurasiBuku;
+		api.dashboard.getAkurasiRegistrasi.useQuery(inputAkurasi);
+	const { data: dataBuku, isLoading: isLoadingBuku } =
+		api.dashboard.getAkurasiBuku.useQuery(inputAkurasi);
 
 	const totalSiswa =
 		(data?.reguler.jumlahSiswa ?? 0) + (data?.privat.jumlahSiswa ?? 0);
 
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					<TrendingUp className="h-4 w-4 text-muted-foreground" />
-					Estimasi Pendapatan Bulan Ini
-				</CardTitle>
-				<CardDescription>
-					Dihitung dari jumlah siswa aktif Reguler & Privat dikali harga
-					kelasnya, untuk {data?.bulan ?? "bulan ini"}.
-				</CardDescription>
+			<CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+				<div className="space-y-1">
+					<CardTitle className="flex items-center gap-2">
+						<TrendingUp className="h-4 w-4 text-muted-foreground" />
+						Estimasi Pendapatan Bulan Ini
+					</CardTitle>
+					<CardDescription>
+						Dihitung dari jumlah siswa aktif Reguler & Privat dikali harga
+						kelasnya, untuk {data?.bulan ?? "bulan ini"}. Grafik akurasi di
+						bawah menampilkan {jumlahBulan} bulan.
+					</CardDescription>
+				</div>
+				<RentangBulanToggle jumlahBulan={jumlahBulan} onChange={setPilihan} />
 			</CardHeader>
 			<CardContent className="space-y-5">
 				{isLoading ? (
@@ -278,6 +299,7 @@ export default function PrediksiPendapatanCard() {
 				{/* Chart akurasi prediksi SPP */}
 				<AkurasiChartSection
 					title="Akurasi SPP"
+					jumlahBulan={jumlahBulan}
 					data={dataAkurasi}
 					isLoading={isLoadingAkurasi}
 					pesanKosong="Belum ada tagihan SPP untuk dibandingkan."
@@ -286,6 +308,7 @@ export default function PrediksiPendapatanCard() {
 				{/* Chart akurasi Registrasi */}
 				<AkurasiChartSection
 					title="Akurasi Registrasi"
+					jumlahBulan={jumlahBulan}
 					data={dataRegistrasi}
 					isLoading={isLoadingRegistrasi}
 					pesanKosong="Belum ada tagihan registrasi untuk dibandingkan."
@@ -294,6 +317,7 @@ export default function PrediksiPendapatanCard() {
 				{/* Chart akurasi Buku */}
 				<AkurasiChartSection
 					title="Akurasi Buku"
+					jumlahBulan={jumlahBulan}
 					data={dataBuku}
 					isLoading={isLoadingBuku}
 					pesanKosong="Belum ada tagihan buku untuk dibandingkan."

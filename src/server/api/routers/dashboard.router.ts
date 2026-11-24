@@ -201,23 +201,32 @@ export const dashboardRouter = createTRPCRouter({
 			};
 		}),
 
-	// 2. Trend Pendaftaran (6 Bulan Terakhir)
+	// 2. Trend Pendaftaran (default 6 bulan terakhir, bisa 1-24 bulan)
 	// - pendaftar: murid yang mendaftar (createdAt) pada bulan tersebut
 	// - aktif: dari pendaftar bulan itu, berapa yang SAAT INI berstatus AKTIF
 	//   (definisi "aktif" sama dengan KPI Murid Aktif), untuk melihat konversi.
 	getRegistrationTrend: cabangProtectedProcedure
-		.input(z.object({ cabangId: z.string().optional().nullable() }).optional())
+		.input(
+			z
+				.object({
+					cabangId: z.string().optional().nullable(),
+					jumlahBulan: z.number().int().min(1).max(24).default(6),
+				})
+				.optional(),
+		)
 		.query(async ({ ctx, input }) => {
 			const { db, allowedCabangId } = ctx;
 			const filterCabangId = allowedCabangId ?? input?.cabangId;
-			const sixMonthsAgo = dayjs()
-				.subtract(6, "month")
+			const jumlahBulan = input?.jumlahBulan ?? 6;
+			// Bulan berjalan dihitung sebagai bulan terakhir dari rentang
+			const awalRentang = dayjs()
+				.subtract(jumlahBulan - 1, "month")
 				.startOf("month")
 				.toDate();
 
 			const registrations = await db.murid.findMany({
 				where: {
-					createdAt: { gte: sixMonthsAgo },
+					createdAt: { gte: awalRentang },
 					cabangId: filterCabangId ?? undefined,
 				},
 				select: { createdAt: true, statusMurid: true },
@@ -227,8 +236,8 @@ export const dashboardRouter = createTRPCRouter({
 			// Grouping per bulan
 			const grouped = new Map<string, { pendaftar: number; aktif: number }>();
 
-			// Init 6 bulan terakhir dengan 0 agar grafik rata
-			for (let i = 5; i >= 0; i--) {
+			// Init semua bulan dalam rentang dengan 0 agar grafik rata
+			for (let i = jumlahBulan - 1; i >= 0; i--) {
 				const key = dayjs().subtract(i, "month").format("MMM YYYY");
 				grouped.set(key, { pendaftar: 0, aktif: 0 });
 			}

@@ -11,9 +11,6 @@ export const useDashboard = () => {
 	const kpiStats = api.dashboard.getKpiStats.useQuery({
 		cabangId: payloadCabangId,
 	});
-	const registrationTrend = api.dashboard.getRegistrationTrend.useQuery({
-		cabangId: payloadCabangId,
-	});
 	const revenueTrend = api.dashboard.getRevenueTrend.useQuery({
 		cabangId: payloadCabangId,
 	});
@@ -21,18 +18,6 @@ export const useDashboard = () => {
 		api.dashboard.getPrediksiPendapatanBulanan.useQuery({
 			cabangId: payloadCabangId,
 		});
-	const akurasiPrediksi = api.dashboard.getAkurasiPrediksi.useQuery({
-		cabangId: payloadCabangId,
-		jumlahBulan: 12,
-	});
-	const akurasiRegistrasi = api.dashboard.getAkurasiRegistrasi.useQuery({
-		cabangId: payloadCabangId,
-		jumlahBulan: 12,
-	});
-	const akurasiBuku = api.dashboard.getAkurasiBuku.useQuery({
-		cabangId: payloadCabangId,
-		jumlahBulan: 12,
-	});
 	const sumberInfoDistribution =
 		api.dashboard.getSumberInfoDistribution.useQuery({
 			cabangId: payloadCabangId,
@@ -49,12 +34,8 @@ export const useDashboard = () => {
 
 	return {
 		kpiStats,
-		registrationTrend,
 		revenueTrend,
 		prediksiPendapatan,
-		akurasiPrediksi,
-		akurasiRegistrasi,
-		akurasiBuku,
 		sumberInfoDistribution,
 		todaySchedule,
 		invalidateDashboard,

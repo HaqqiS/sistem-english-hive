@@ -17,7 +17,9 @@ import {
 	ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDashboard } from "@/hooks/useDashboard";
+import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
+import { api } from "@/trpc/react";
+import { RentangBulanToggle, useRentangBulan } from "./rentang-bulan";
 
 const chartConfig = {
 	pendaftar: {
@@ -56,18 +58,26 @@ function Ringkasan({
 }
 
 /**
- * Tren pendaftaran 6 bulan terakhir, lebar penuh, membandingkan jumlah
- * pendaftar baru dengan yang saat ini berstatus Aktif per bulan.
+ * Tren pendaftaran lebar penuh, membandingkan jumlah pendaftar baru dengan yang
+ * saat ini berstatus Aktif per bulan. Rentang otomatis 6 bulan di HP dan
+ * 12 bulan di layar lebar, dan bisa diganti manual lewat tombol 6 / 12 Bln.
  */
 export default function RegistrationChart() {
-	const { registrationTrend } = useDashboard();
-	const { data, isLoading } = registrationTrend;
+	const { activeCabangId } = useGlobalCabangStore();
+	const { jumlahBulan, setPilihan } = useRentangBulan();
+
+	const { data, isLoading } = api.dashboard.getRegistrationTrend.useQuery({
+		cabangId:
+			activeCabangId === "ALL" || !activeCabangId ? undefined : activeCabangId,
+		jumlahBulan,
+	});
 
 	const chartData = data ?? [];
 	const totalPendaftar = chartData.reduce((a, b) => a + b.pendaftar, 0);
 	const totalAktif = chartData.reduce((a, b) => a + b.aktif, 0);
 	const konversi =
 		totalPendaftar > 0 ? Math.round((totalAktif / totalPendaftar) * 100) : 0;
+	const barMaks = jumlahBulan > 6 ? 36 : 56;
 
 	return (
 		<Card className="md:col-span-2">
@@ -75,25 +85,28 @@ export default function RegistrationChart() {
 				<div className="space-y-1">
 					<CardTitle>Tren Pendaftaran Murid</CardTitle>
 					<CardDescription>
-						6 bulan terakhir: jumlah pendaftar dibandingkan dengan yang saat ini
-						berstatus aktif
+						{jumlahBulan} bulan terakhir: jumlah pendaftar dibandingkan dengan
+						yang saat ini berstatus aktif
 					</CardDescription>
 				</div>
-				{!isLoading && (
-					<div className="flex flex-wrap gap-2">
-						<Ringkasan
-							label="Total Pendaftar"
-							nilai={String(totalPendaftar)}
-							warna="var(--chart-1)"
-						/>
-						<Ringkasan
-							label="Menjadi Aktif"
-							nilai={String(totalAktif)}
-							warna="var(--chart-2)"
-						/>
-						<Ringkasan label="Konversi Aktif" nilai={`${konversi}%`} />
-					</div>
-				)}
+				<div className="flex flex-col gap-3 lg:items-end">
+					<RentangBulanToggle jumlahBulan={jumlahBulan} onChange={setPilihan} />
+					{!isLoading && (
+						<div className="flex flex-wrap gap-2">
+							<Ringkasan
+								label="Total Pendaftar"
+								nilai={String(totalPendaftar)}
+								warna="var(--chart-1)"
+							/>
+							<Ringkasan
+								label="Menjadi Aktif"
+								nilai={String(totalAktif)}
+								warna="var(--chart-2)"
+							/>
+							<Ringkasan label="Konversi Aktif" nilai={`${konversi}%`} />
+						</div>
+					)}
+				</div>
 			</CardHeader>
 			<CardContent className="px-2 sm:p-6">
 				{isLoading ? (
@@ -115,6 +128,10 @@ export default function RegistrationChart() {
 								tickLine={false}
 								axisLine={false}
 								tickMargin={8}
+								// 12 bulan: tampilkan nama bulan saja agar label tidak berdesakan
+								tickFormatter={(v: string) =>
+									jumlahBulan > 6 ? v.replace(/ \d{4}$/, "") : v
+								}
 							/>
 							<ChartTooltip
 								cursor={{ fill: "var(--muted)", opacity: 0.2 }}
@@ -130,7 +147,7 @@ export default function RegistrationChart() {
 								dataKey="pendaftar"
 								fill="var(--color-pendaftar)"
 								radius={[6, 6, 0, 0]}
-								maxBarSize={56}
+								maxBarSize={barMaks}
 							>
 								<LabelList
 									dataKey="pendaftar"
@@ -144,7 +161,7 @@ export default function RegistrationChart() {
 								dataKey="aktif"
 								fill="var(--color-aktif)"
 								radius={[6, 6, 0, 0]}
-								maxBarSize={56}
+								maxBarSize={barMaks}
 							>
 								<LabelList
 									dataKey="aktif"

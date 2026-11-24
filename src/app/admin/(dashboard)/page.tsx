@@ -10,7 +10,8 @@ export default async function AdminDashboardPage() {
 	await Promise.all([
 		api.pembayaran.getTagihanJatuhTempo.prefetch({}),
 		api.dashboard.getKpiStats.prefetch({}),
-		api.dashboard.getRegistrationTrend.prefetch({}),
+		// Default layar lebar = 12 bulan (HP memakai 6 bulan, diambil saat dibuka)
+		api.dashboard.getRegistrationTrend.prefetch({ jumlahBulan: 12 }),
 		api.dashboard.getRevenueTrend.prefetch({}),
 		api.dashboard.getTodaySchedule.prefetch({}),
 	]);

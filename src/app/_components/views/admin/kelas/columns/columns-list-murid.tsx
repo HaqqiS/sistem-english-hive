@@ -23,7 +23,10 @@ import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA } from "@/utils/dateUtils";
 import { formatWhatsAppLink } from "@/utils/noWAUtils";
-import { formatStatus, statusPendaftaranColorMap } from "@/utils/statusUtils";
+import {
+	formatStatusPendaftaran,
+	statusPendaftaranColorMap,
+} from "@/utils/statusUtils";
 
 export type DaftarMuridType =
 	RouterOutputs["pendaftaranKelas"]["getPendaftarByKelasId"][number];
@@ -156,14 +159,14 @@ export const columns = ({
 
 			return (
 				<span
-					title={formatStatus(status)}
+					title={formatStatusPendaftaran(status)}
 					className={cn(
 						"inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
 						statusPendaftaranColorMap[status],
 					)}
 				>
 					<span className="size-1.5 shrink-0 rounded-full bg-current" />
-					{formatStatus(status)}
+					{formatStatusPendaftaran(status)}
 				</span>
 			);
 		},

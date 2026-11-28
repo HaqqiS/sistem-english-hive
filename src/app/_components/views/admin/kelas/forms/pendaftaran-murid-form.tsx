@@ -41,7 +41,7 @@ import { hitungUmur, labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import { useGlobalCabangStore } from "@/store/useGlobalCabangStore";
 import type { TypeClientTambahMuridSchema } from "@/types/pendaftaranKelas.type";
-import { formatStatus } from "@/utils/statusUtils";
+import { formatStatusPendaftaran } from "@/utils/statusUtils";
 
 interface PendaftaranMuridFormProps {
 	onSubmit: (data: TypeClientTambahMuridSchema) => void;
@@ -283,7 +283,7 @@ export default function PendaftaranMuridForm({
 									{Object.values(StatusPendaftaran).map((status) => (
 										<SelectItem key={status} value={status}>
 											<span className="capitalize">
-												{formatStatus(status).toLowerCase()}
+												{formatStatusPendaftaran(status).toLowerCase()}
 											</span>
 										</SelectItem>
 									))}

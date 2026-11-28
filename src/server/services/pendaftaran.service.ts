@@ -289,7 +289,8 @@ export const createBulkPendaftaran = async ({
 
 /**
  * Sinkronisasi statusMurid berdasarkan seluruh riwayat pendaftaran kelas murid tersebut.
- * Prioritas Status: AKTIF > TRIAL > WAITING_LIST > NON_AKTIF
+ * Prioritas Status: AKTIF > TRIAL > OFF_SEMENTARA > WAITING_LIST > LULUS
+ * (kelas berhenti/selesai disimpan NON_AKTIF dan ditampilkan "Lulus"; status murid-nya LULUS)
  */
 export const syncMuridStatus = async (tx: PrismaTx, muridId: string) => {
 	const allRegistrations = await tx.pendaftaranKelas.findMany({
@@ -299,7 +300,7 @@ export const syncMuridStatus = async (tx: PrismaTx, muridId: string) => {
 
 	const statuses = allRegistrations.map((r) => r.status);
 
-	let finalStatus: StatusMurid = StatusMurid.NON_AKTIF;
+	let finalStatus: StatusMurid = StatusMurid.LULUS;
 
 	if (statuses.includes(StatusPendaftaran.AKTIF)) {
 		finalStatus = StatusMurid.AKTIF;

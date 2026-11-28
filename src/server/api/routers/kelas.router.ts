@@ -693,11 +693,11 @@ export const kelasRouter = createTRPCRouter({
 
 						// Status murid mengikuti status di kelas yang tersisa.
 						// Jika murid tidak punya kelas lagi dan statusnya masih terikat kelas,
-						// jadikan NON_AKTIF.
+						// jadikan LULUS.
 						await syncStatusMuridBanyak(
 							tx,
 							muridTerdampak.map((m) => m.muridId),
-							{ statusJikaTanpaKelas: StatusMurid.NON_AKTIF },
+							{ statusJikaTanpaKelas: StatusMurid.LULUS },
 						);
 
 						return deleted;

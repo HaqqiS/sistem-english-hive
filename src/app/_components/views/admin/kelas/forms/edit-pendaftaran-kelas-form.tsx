@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { usePendaftaranKelasStore } from "@/store/useKelasStore";
 import type { TypeClientUpdatePendaftaranKelasSchema } from "@/types/pendaftaranKelas.type";
-import { formatStatus } from "@/utils/statusUtils";
+import { formatStatusPendaftaran } from "@/utils/statusUtils";
 
 interface EditPendaftaranKelasFormProps {
 	onSubmit: (data: TypeClientUpdatePendaftaranKelasSchema) => void;
@@ -81,7 +81,7 @@ export default function EditPendaftaranKelasForm({
 									{Object.values(StatusPendaftaran).map((status) => (
 										<SelectItem key={status} value={status}>
 											<span className="capitalize">
-												{formatStatus(status).toLowerCase()}
+												{formatStatusPendaftaran(status).toLowerCase()}
 											</span>
 										</SelectItem>
 									))}

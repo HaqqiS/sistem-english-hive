@@ -204,7 +204,9 @@ export const dashboardRouter = createTRPCRouter({
 	// 2. Trend Pendaftaran (default 6 bulan terakhir, bisa 1-24 bulan)
 	// - pendaftar: murid yang mendaftar (createdAt) pada bulan tersebut
 	// - aktif: dari pendaftar bulan itu, berapa yang SAAT INI berstatus AKTIF
-	//   (definisi "aktif" sama dengan KPI Murid Aktif), untuk melihat konversi.
+	//   (definisi "aktif" sama dengan KPI Murid Aktif)
+	// - lulus: dari pendaftar bulan itu, berapa yang SAAT INI berstatus LULUS
+	//   Aktif + Lulus dipakai sebagai pembilang konversi terhadap pendaftar.
 	getRegistrationTrend: cabangProtectedProcedure
 		.input(
 			z
@@ -234,12 +236,15 @@ export const dashboardRouter = createTRPCRouter({
 			});
 
 			// Grouping per bulan
-			const grouped = new Map<string, { pendaftar: number; aktif: number }>();
+			const grouped = new Map<
+				string,
+				{ pendaftar: number; aktif: number; lulus: number }
+			>();
 
 			// Init semua bulan dalam rentang dengan 0 agar grafik rata
 			for (let i = jumlahBulan - 1; i >= 0; i--) {
 				const key = dayjs().subtract(i, "month").format("MMM YYYY");
-				grouped.set(key, { pendaftar: 0, aktif: 0 });
+				grouped.set(key, { pendaftar: 0, aktif: 0, lulus: 0 });
 			}
 
 			for (const r of registrations) {
@@ -247,12 +252,14 @@ export const dashboardRouter = createTRPCRouter({
 				if (!bucket) continue;
 				bucket.pendaftar += 1;
 				if (r.statusMurid === StatusMurid.AKTIF) bucket.aktif += 1;
+				if (r.statusMurid === StatusMurid.LULUS) bucket.lulus += 1;
 			}
 
 			return Array.from(grouped.entries()).map(([name, v]) => ({
 				name,
 				pendaftar: v.pendaftar,
 				aktif: v.aktif,
+				lulus: v.lulus,
 			}));
 		}),
 

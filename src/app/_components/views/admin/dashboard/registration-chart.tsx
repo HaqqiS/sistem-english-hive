@@ -22,13 +22,19 @@ import { api } from "@/trpc/react";
 import { RentangBulanToggle, useRentangBulan } from "./rentang-bulan";
 
 const chartConfig = {
+	// Pendaftar memakai warna utama tema. Aktif & Lulus memakai warna yang jelas
+	// berbeda (palet chart tema ini gradasi satu warna sehingga sulit dibedakan).
 	pendaftar: {
 		label: "Pendaftar",
 		color: "var(--chart-1)",
 	},
 	aktif: {
-		label: "Menjadi Aktif",
-		color: "var(--chart-2)",
+		label: "Aktif",
+		color: "#3b82f6",
+	},
+	lulus: {
+		label: "Lulus",
+		color: "#f59e0b",
 	},
 } satisfies ChartConfig;
 
@@ -59,7 +65,7 @@ function Ringkasan({
 
 /**
  * Tren pendaftaran lebar penuh, membandingkan jumlah pendaftar baru dengan yang
- * saat ini berstatus Aktif per bulan. Rentang otomatis 6 bulan di HP dan
+ * saat ini berstatus Aktif dan Lulus per bulan. Rentang otomatis 6 bulan di HP dan
  * 12 bulan di layar lebar, dan bisa diganti manual lewat tombol 6 / 12 Bln.
  */
 export default function RegistrationChart() {
@@ -75,9 +81,13 @@ export default function RegistrationChart() {
 	const chartData = data ?? [];
 	const totalPendaftar = chartData.reduce((a, b) => a + b.pendaftar, 0);
 	const totalAktif = chartData.reduce((a, b) => a + b.aktif, 0);
+	const totalLulus = chartData.reduce((a, b) => a + b.lulus, 0);
+	// Konversi: pendaftar yang berhasil menjadi siswa (aktif + lulus)
 	const konversi =
-		totalPendaftar > 0 ? Math.round((totalAktif / totalPendaftar) * 100) : 0;
-	const barMaks = jumlahBulan > 6 ? 36 : 56;
+		totalPendaftar > 0
+			? Math.round(((totalAktif + totalLulus) / totalPendaftar) * 100)
+			: 0;
+	const barMaks = jumlahBulan > 6 ? 22 : 34;
 
 	return (
 		<Card className="md:col-span-2">
@@ -86,7 +96,7 @@ export default function RegistrationChart() {
 					<CardTitle>Tren Pendaftaran Murid</CardTitle>
 					<CardDescription>
 						{jumlahBulan} bulan terakhir: jumlah pendaftar dibandingkan dengan
-						yang saat ini berstatus aktif
+						yang saat ini berstatus aktif dan lulus
 					</CardDescription>
 				</div>
 				<div className="flex flex-col gap-3 lg:items-end">
@@ -99,11 +109,19 @@ export default function RegistrationChart() {
 								warna="var(--chart-1)"
 							/>
 							<Ringkasan
-								label="Menjadi Aktif"
+								label="Aktif"
 								nilai={String(totalAktif)}
-								warna="var(--chart-2)"
+								warna="#3b82f6"
 							/>
-							<Ringkasan label="Konversi Aktif" nilai={`${konversi}%`} />
+							<Ringkasan
+								label="Lulus"
+								nilai={String(totalLulus)}
+								warna="#f59e0b"
+							/>
+							<Ringkasan
+								label="Konversi (Aktif + Lulus)"
+								nilai={`${konversi}%`}
+							/>
 						</div>
 					)}
 				</div>
@@ -120,7 +138,7 @@ export default function RegistrationChart() {
 							accessibilityLayer
 							data={chartData}
 							margin={{ top: 24, left: 12, right: 12 }}
-							barGap={6}
+							barGap={4}
 						>
 							<CartesianGrid vertical={false} />
 							<XAxis
@@ -165,6 +183,20 @@ export default function RegistrationChart() {
 							>
 								<LabelList
 									dataKey="aktif"
+									position="top"
+									offset={6}
+									className="fill-foreground"
+									fontSize={12}
+								/>
+							</Bar>
+							<Bar
+								dataKey="lulus"
+								fill="var(--color-lulus)"
+								radius={[6, 6, 0, 0]}
+								maxBarSize={barMaks}
+							>
+								<LabelList
+									dataKey="lulus"
 									position="top"
 									offset={6}
 									className="fill-foreground"

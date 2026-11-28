@@ -40,7 +40,8 @@ export const statusKelasColorMap: Record<StatusKelas, string> = {
 
 export const statusPendaftaranColorMap: Record<StatusPendaftaran, string> = {
 	AKTIF: "bg-(--badge-aktif-bg) text-(--badge-aktif-fg) border-0",
-	NON_AKTIF: "bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg) border-0",
+	// Di kelas, NON_AKTIF ditampilkan sebagai "Lulus" (lihat formatStatusPendaftaran)
+	NON_AKTIF: "bg-(--badge-lulus-bg) text-(--badge-lulus-fg) border-0",
 	TRIAL: "bg-(--badge-trial-bg) text-(--badge-trial-fg) border-0",
 	WAITING_LIST:
 		"bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg) border-0",
@@ -78,3 +79,12 @@ export const statusAbsenGuruColorMap: Record<StatusAbsenGuru, string> = {
 export const formatStatus = (status: string) => {
 	return status.replace(/_/g, " ");
 };
+
+/**
+ * Teks status pendaftaran siswa di kelas. Di kelas tidak ada pilihan "Non Aktif":
+ * nilai NON_AKTIF (yang tersimpan di database) ditampilkan sebagai "LULUS" dan
+ * menjalankan fungsi yang sama seperti sebelumnya (berhenti/selesai dari kelas).
+ * Hanya teks tampilan: database tidak diubah.
+ */
+export const formatStatusPendaftaran = (status: string) =>
+	status === "NON_AKTIF" ? "LULUS" : formatStatus(status);

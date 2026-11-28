@@ -21,8 +21,12 @@ const PRIORITAS: StatusPendaftaran[] = [
 
 /**
  * Status murid yang "dimiliki" oleh status di kelas.
- * Status lain (LULUS, PENDAFTAR_BARU, PLACEMENT_TEST, dst.) adalah status manual
- * dan tidak ditimpa saat murid tidak lagi punya kelas.
+ * Status lain (NON_AKTIF, PENDAFTAR_BARU, PLACEMENT_TEST, dst.) adalah status
+ * manual dan tidak ditimpa saat murid tidak lagi punya kelas. Termasuk data lama
+ * yang berstatus NON_AKTIF: dibiarkan sampai diubah manual.
+ *
+ * Catatan: saat semua kelas murid berhenti/selesai (di kelas ditampilkan "Lulus",
+ * tersimpan NON_AKTIF), status murid menjadi LULUS (dulu NON_AKTIF).
  */
 const STATUS_TERIKAT_KELAS: StatusMurid[] = [
 	"AKTIF",
@@ -57,12 +61,12 @@ export function hitungStatusMurid(
 		if (!STATUS_TERIKAT_KELAS.includes(statusSaatIni)) return undefined;
 	} else {
 		const ada = new Set(statusPendaftarans);
-		target = PRIORITAS.find((s) => ada.has(s));
-		// Semua kelas NON_AKTIF: jangan timpa status manual (mis. LULUS)
-		if (
-			target === "NON_AKTIF" &&
-			!STATUS_TERIKAT_KELAS.includes(statusSaatIni)
-		) {
+		const ditemukan = PRIORITAS.find((s) => ada.has(s));
+		// Semua kelas berhenti/selesai -> murid LULUS (fungsi yang dulu dipegang NON_AKTIF).
+		// Status lain di sini namanya sama di kedua enum.
+		target = ditemukan === "NON_AKTIF" ? "LULUS" : ditemukan;
+		// Jangan timpa status manual (mis. NON_AKTIF, termasuk data lama)
+		if (target === "LULUS" && !STATUS_TERIKAT_KELAS.includes(statusSaatIni)) {
 			return undefined;
 		}
 	}

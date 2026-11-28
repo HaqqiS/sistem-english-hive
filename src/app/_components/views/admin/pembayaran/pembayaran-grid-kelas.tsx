@@ -13,7 +13,7 @@ import { labelUmurTahun } from "@/lib/hitung-umur";
 import { cn } from "@/lib/utils";
 import type { RouterOutputs } from "@/trpc/react";
 import { formatDateWITA, formatToWITA } from "@/utils/dateUtils";
-import { formatStatus } from "@/utils/statusUtils";
+import { formatStatusPendaftaran } from "@/utils/statusUtils";
 import { toRupiah } from "@/utils/toRupiah";
 
 type RingkasanMurid =
@@ -102,7 +102,8 @@ const SEL = "border-b border-r";
 /** Warna sel nama siswa menurut status (nama status muncul saat di-hover). */
 const WARNA_STATUS: Record<StatusPendaftaran, string> = {
 	AKTIF: "bg-(--badge-aktif-bg) text-(--badge-aktif-fg)",
-	NON_AKTIF: "bg-(--badge-non-aktif-bg) text-(--badge-non-aktif-fg)",
+	// Ditampilkan sebagai "Lulus" (lihat formatStatusPendaftaran)
+	NON_AKTIF: "bg-(--badge-lulus-bg) text-(--badge-lulus-fg)",
 	TRIAL: "bg-(--badge-trial-bg) text-(--badge-trial-fg)",
 	WAITING_LIST: "bg-(--badge-waiting-list-bg) text-(--badge-waiting-list-fg)",
 	OFF_SEMENTARA: "bg-(--badge-off-bg) text-(--badge-off-fg)",
@@ -261,7 +262,7 @@ export function PembayaranGridKelas({
 										<td
 											title={
 												murid.statusPendaftaran
-													? formatStatus(murid.statusPendaftaran)
+													? formatStatusPendaftaran(murid.statusPendaftaran)
 													: undefined
 											}
 											className={cn(
